@@ -212,11 +212,20 @@ def fetch_jogos_espn(fd_code: str, data_str: str | None = None) -> list[dict]:
 
 
 def fetch_todas_ligas(data_str: str | None = None) -> list[dict]:
-    """Obtém jogos de todas as ligas configuradas."""
+    """Obtém jogos de todas as ligas configuradas (nacionais + europeias + taças)."""
     todos = []
     for fd_code in LIGAS:
-        todos.extend(fetch_jogos_espn(fd_code, data_str))
-    return todos
+        jogos = fetch_jogos_espn(fd_code, data_str)
+        todos.extend(jogos)
+    # Remove duplicados (mesmo jogo pode aparecer em várias pesquisas)
+    vistos = set()
+    unicos = []
+    for j in todos:
+        chave = (j["casa_espn"], j["fora_espn"], str(j.get("hora_utc", "")))
+        if chave not in vistos:
+            vistos.add(chave)
+            unicos.append(j)
+    return unicos
 
 
 def normalizar_jogo(jogo: dict, modelos: dict) -> dict | None:

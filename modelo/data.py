@@ -138,6 +138,7 @@ class DataLoader:
         df["home_goals"] = pd.to_numeric(df["home_goals"], errors="coerce").fillna(0).astype(int)
         df["away_goals"] = pd.to_numeric(df["away_goals"], errors="coerce").fillna(0).astype(int)
         if "date" in df.columns:
-            df["date"] = pd.to_datetime(df["date"], dayfirst=False, errors="coerce")
+            # Aceita tanto DD/MM/YYYY (football-data.co.uk) como YYYY-MM-DD
+            df["date"] = pd.to_datetime(df["date"], dayfirst=True, errors="coerce")
         df = df.dropna(subset=required)
         return df.reset_index(drop=True)
