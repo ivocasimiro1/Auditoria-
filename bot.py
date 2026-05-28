@@ -25,7 +25,8 @@ try:
 except ImportError:
     pass
 
-TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
+TOKEN    = os.environ.get("TELEGRAM_TOKEN", "")
+ADMIN_IDS = [int(x) for x in os.environ.get("ADMIN_IDS", "").split(",") if x.strip()]
 
 try:
     from telegram import Update, BotCommand
@@ -55,6 +56,12 @@ from modelo.dixon_coles import DixonColesModel
 from modelo.value_betting import analisar_mercados
 from modelo.ligas import LIGAS, normalizar_equipa
 from modelo.live import predict_com_fallback
+from database import (
+    registar_utilizador, tem_subscricao_ativa, info_subscricao,
+    ativar_subscricao, total_utilizadores, total_subscricoes,
+    todos_utilizadores_ativos, bloquear_utilizador, registar_broadcast,
+)
+from telegram.error import Forbidden, BadRequest
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -165,18 +172,52 @@ def formatar_resumo(resultados: list[dict]) -> str:
 # Handlers
 # ---------------------------------------------------------------------------
 
-async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    msg = (
-        "⚽ <b>EdgeBet — Apostas Inteligentes</b>\n\n"
-        "Modelo estatístico Dixon-Coles com dados reais das principais ligas europeias.\n\n"
-        "<b>Comandos:</b>\n"
-        "/hoje — jogos e melhores apostas do dia\n"
-        "/live — jogos em directo agora\n"
-        "/prever &lt;casa&gt; &lt;fora&gt; — prever jogo específico\n"
-        "/ligas — ligas disponíveis\n"
-        "/ajuda — mais informação\n\n"
-        "<i>Aposte sempre de forma responsável.</i>"
+def _e_admin(tid: int) -> bool:
+    return tid in ADMIN_IDS
+
+
+async def _verificar_acesso(update: Update) -> bool:
+    """Verifica se o utilizador tem subscrição activa. Envia mensagem se não tiver."""
+    tid = update.effective_user.id
+    if _e_admin(tid):
+        return True
+    if tem_subscricao_ativa(tid):
+        return True
+    await update.message.reply_html(
+        "🔒 <b>Acesso restrito</b>\n\n"
+        "Este bot é exclusivo para subscritores EdgeBet Pro.\n\n"
+        "👉 Junta-te em @EdgeBetMarketingBot para acesso gratuito e upgrade Pro.\n"
+        "👉 /pro — ver planos e preços"
     )
+    return False
+
+
+async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    registar_utilizador(user.id, user.username, user.first_name, bot="pro")
+    sub  = info_subscricao(user.id)
+    acesso = tem_subscricao_ativa(user.id) or _e_admin(user.id)
+
+    if acesso:
+        expira_str = f"\n📅 Subscrição válida até: <b>{sub['expira'][:10]}</b>" if sub else ""
+        msg = (
+            f"⚽ <b>EdgeBet Pro — Bem-vindo, {user.first_name}!</b>"
+            f"{expira_str}\n\n"
+            "<b>Comandos:</b>\n"
+            "/hoje — melhores apostas do dia\n"
+            "/live — jogos em directo agora\n"
+            "/prever &lt;casa&gt; &lt;fora&gt; — prever jogo específico\n"
+            "/ligas — ligas disponíveis\n"
+            "/ajuda — mais informação\n\n"
+            "<i>Aposte sempre de forma responsável.</i>"
+        )
+    else:
+        msg = (
+            "🔒 <b>EdgeBet Pro</b>\n\n"
+            "Este é o bot exclusivo para subscritores.\n\n"
+            "👉 Para acesso gratuito e upgrade: @EdgeBetMarketingBot\n"
+            "👉 Para subscrever directamente: /pro"
+        )
     await update.message.reply_html(msg)
 
 
@@ -210,7 +251,39 @@ async def cmd_ajuda(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_html(msg)
 
 
+async def cmd_pro(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    from conteudo import INFO_PRO
+    await update.message.reply_html(INFO_PRO, disable_web_page_preview=True)
+
+
+async def cmd_admin_pro(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    tid = update.effective_user.id
+    if not _e_admin(tid):
+        return
+    args = ctx.args or []
+    if not args:
+        su = total_utilizadores()
+        ss = total_subscricoes()
+        await update.message.reply_html(
+            f"📊 <b>Admin Pro</b>\n"
+            f"👥 Utilizadores: {su['total']} ({su['hoje']} hoje)\n"
+            f"💳 Subscrições: {ss['ativas']} · Receita: €{ss['receita_total']:.2f}\n\n"
+            f"/admin ativar [id] [plano]"
+        )
+        return
+    if args[0] == "ativar" and len(args) >= 3:
+        try:
+            target, plano = int(args[1]), args[2]
+        except ValueError:
+            await update.message.reply_html("ID inválido.")
+            return
+        ativar_subscricao(target, plano, ref="admin_pro")
+        await update.message.reply_html(f"✅ Pro {plano} ativado para {target}.")
+
+
 async def cmd_hoje(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    if not await _verificar_acesso(update):
+        return
     await update.message.reply_html("⏳ A analisar jogos de hoje...")
     resultados = analisar_dia(MODELOS)
     msg = formatar_resumo(resultados)
@@ -218,6 +291,8 @@ async def cmd_hoje(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_live(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    if not await _verificar_acesso(update):
+        return
     await update.message.reply_html("🔴 A procurar jogos em directo...")
     resultados = analisar_dia(MODELOS)
     live = [r for r in resultados if r["estado"] == "in"]
@@ -229,6 +304,8 @@ async def cmd_live(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_prever(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    if not await _verificar_acesso(update):
+        return
     args = ctx.args
     if len(args) < 2:
         await update.message.reply_html(
@@ -326,6 +403,8 @@ def main():
     app.add_handler(CommandHandler("hoje",   cmd_hoje))
     app.add_handler(CommandHandler("live",   cmd_live))
     app.add_handler(CommandHandler("prever", cmd_prever))
+    app.add_handler(CommandHandler("pro",    cmd_pro))
+    app.add_handler(CommandHandler("admin",  cmd_admin_pro))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, msg_desconhecida))
 
     print("🤖  Bot a correr. Prima Ctrl+C para parar.\n")
