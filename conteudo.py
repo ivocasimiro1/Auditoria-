@@ -15,7 +15,7 @@ BOAS_VINDAS = """
 Somos o primeiro modelo de apostas de futebol com <b>inteligência artificial</b> em Portugal.
 
 📊 O que faço por ti:
-• Analis o as principais ligas europeias todos os dias
+• Analiso as principais ligas europeias todos os dias
 • Identifico apostas com <b>valor positivo</b> (EV+)
 • Envio dicas <b>gratuitas</b> diariamente
 • Dou previsões ao minuto para jogos em directo 🔴
