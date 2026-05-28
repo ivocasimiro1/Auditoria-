@@ -33,7 +33,7 @@ BOAS_VINDAS_REFERIDO = """
 Chegaste através de um amigo — isso significa que já sabes que isto funciona!
 
 🎁 <b>Oferta especial para novos utilizadores:</b>
-Os primeiros 7 dias do EdgeBet Pro por apenas <b>€9.90</b> (depois €29/mês).
+Primeiro mês do EdgeBet Pro por apenas <b>€9.99</b>.
 
 Digita /pro para saber mais ou /dica para a tua primeira previsão gratuita.
 """
@@ -102,20 +102,19 @@ Para acesso Pro: /pro
 # ---------------------------------------------------------------------------
 
 FAQ_PRECO = """
-💰 <b>Preços EdgeBet Pro</b>
+💰 <b>Preço EdgeBet Pro</b>
 
-📅 Mensal:      <b>€29</b>/mês
-📆 Trimestral:  <b>€69</b> (€23/mês) — poupa 21%
-🗓 Anual:       <b>€199</b> (€16.6/mês) — poupa 43%
+📅 Mensal: <b>€9.99</b>/mês
 
 ✅ O que inclui:
 • Todas as dicas sem limite (5-15/dia)
 • Previsões em directo ao minuto 🔴
 • Alertas automáticos de valor
-• 6 ligas europeias cobertas
+• 11 ligas europeias + Champions League
+• Taças nacionais e competições europeias
 • Gestão de bankroll com Kelly Criterion
 
-💳 Pagamento via MBWay, Revolut ou PayPal.
+💳 Pagamento via <b>MBWay: 968 200 400</b>
 Para subscrever: /pro
 """
 
@@ -155,14 +154,14 @@ Podes ver o nosso historial completo com /roi
 FAQ_SUBSCREVER = """
 📱 <b>Como subscrever o EdgeBet Pro</b>
 
-1️⃣ Escolhe o plano: /pro
-2️⃣ Envia o valor via:
-   • <b>MBWay:</b> +351 9XX XXX XXX
-   • <b>Revolut:</b> @edgebet
-   • <b>PayPal:</b> pagamentos@edgebet.pt
+Plano único: <b>€9.99/mês</b>
 
-3️⃣ Envia o comprovativo aqui
-4️⃣ Ativamos o acesso em menos de 1 hora ✅
+1️⃣ Envia <b>€9.99</b> via MBWay para:
+   📱 <b>968 200 400</b>
+
+2️⃣ Envia o comprovativo aqui neste chat
+
+3️⃣ Ativamos o acesso em menos de 1 hora ✅
 
 Tens dúvidas? Fala com o nosso suporte: /suporte
 """
@@ -172,7 +171,7 @@ FAQ_CANCELAR = """
 
 • Podes cancelar a qualquer momento
 • Sem contratos ou fidelização
-• Reembolso parcial nos primeiros 7 dias se não ficares satisfeito
+• Reembolso nos primeiros 7 dias se não ficares satisfeito
 
 Para cancelar, envia /suporte e dizemos-te como proceder.
 """
@@ -193,19 +192,21 @@ Esta funcionalidade é exclusiva do plano Pro → /pro
 """
 
 FAQ_LIGAS = """
-🌍 <b>Ligas Cobertas</b>
+🌍 <b>Ligas e Competições Cobertas</b>
 
-🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League (Inglaterra)
-🇪🇸 La Liga (Espanha)
-🇮🇹 Serie A (Itália)
-🇩🇪 Bundesliga (Alemanha)
-🇫🇷 Ligue 1 (França)
-🇵🇹 Primeira Liga (Portugal)
+<b>Ligas Nacionais:</b>
+🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League · 🇪🇸 La Liga · 🇮🇹 Serie A
+🇩🇪 Bundesliga · 🇫🇷 Ligue 1 · 🇵🇹 Primeira Liga
+🇳🇱 Eredivisie · 🇧🇪 Jupiler · 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Escócia · 🇹🇷 Turquia · 🇬🇷 Grécia
 
-Em breve: Champions League, Liga Europa, Championship.
+<b>Competições Europeias:</b>
+🏆 Champions League · 🥈 Europa League · 🥉 Conference League
+
+<b>Taças:</b>
+FA Cup · Copa del Rey · Coppa Italia · DFB Pokal · Taça de Portugal
 
 Dicas gratuitas: 1 por dia
-Pro: todas as ligas, todos os jogos ✅
+Pro (€9.99/mês): todas as ligas, todos os jogos ✅
 """
 
 FAQ_REFERIDO = """
@@ -213,9 +214,9 @@ FAQ_REFERIDO = """
 
 Convida amigos e ganhas dias Pro GRATUITOS!
 
-🎁 Por cada amigo que subscreveres:
+🎁 Por cada amigo que subscrever:
 • Tu ganhas: <b>5 dias Pro</b> grátis
-• O teu amigo ganha: <b>7 dias de trial</b> a €9.90
+• O teu amigo ganha: <b>3 dias grátis</b> para experimentar
 
 Como partilhar:
 1️⃣ Copia o teu link pessoal abaixo
@@ -237,10 +238,10 @@ Já enviámos {total_dicas} dicas gratuitas desde que entraste.
 💡 Sabias que os nossos subscritores Pro tiveram acesso a {total_pro} dicas
 adicionais no mesmo período?
 
-🔥 <b>Oferta especial desta semana:</b>
-Primeiro mês a <b>€19</b> (em vez de €29) com o código <code>START19</code>
+🔥 <b>Só €9.99/mês</b> — menos que um café por semana!
 
-Válido até {data_limite}. Subscreve: /pro
+Subscreve agora via MBWay <b>968 200 400</b>
+Válido até {data_limite}. Detalhes: /pro
 """
 
 FUNIL_DIA7 = """
@@ -250,11 +251,10 @@ FUNIL_DIA7 = """
 • {dicas_enviadas} dicas gratuitas enviadas
 • ROI das dicas Pro: <b>{roi:+.1f}%</b>
 
-Utilizadores Pro que começaram há 7 dias com €1000 de bankroll
-teriam agora aproximadamente <b>€{bankroll_estimado:.0f}</b>.
+Com apenas <b>€9.99/mês</b> tens acesso a tudo.
+É menos do que uma aposta perdida!
 
-💰 O plano Pro custa €29/mês. Vale claramente a pena.
-
+MBWay: <b>968 200 400</b>
 👉 /pro para começar
 """
 
@@ -266,8 +266,9 @@ Só para teres uma ideia do que perdes sem Pro:
 Esta semana enviámos {dicas_pro} dicas Pro com ROI médio de {roi:+.1f}%.
 As dicas gratuitas que recebeste representam apenas 15% do total.
 
-🎯 <b>Última oferta especial:</b> 3 meses por €59 (em vez de €87).
+🎯 <b>€9.99/mês</b> — sem compromisso, cancelas quando quiseres.
 
+MBWay: <b>968 200 400</b>
 /pro para não perderes mais.
 """
 
@@ -284,19 +285,18 @@ O único modelo de apostas de futebol com IA em Portugal.
 ✅ 5-15 dicas/dia (todas as ligas)
 ✅ Análise live ao minuto 🔴
 ✅ Alertas automáticos de valor
+✅ Champions League, UEL, Conference League
+✅ 11 ligas nacionais + taças
 ✅ Gestão de bankroll (Kelly Criterion)
-✅ Historial verificável e transparente
 ✅ Suporte personalizado
 
-💰 <b>Planos:</b>
-• Mensal:     <b>€29</b>/mês
-• Trimestral: <b>€69</b> (~€23/mês) ⭐ Mais popular
-• Anual:      <b>€199</b> (~€17/mês) 🏆 Melhor valor
+💰 <b>Plano único: €9.99/mês</b>
+Sem contratos. Cancelas quando quiseres.
 
 💳 <b>Como subscrever:</b>
-1. Transfere o valor via MBWay/Revolut/PayPal
-2. Envia o comprovativo aqui
-3. Acesso ativado em menos de 1 hora
+1️⃣ Envia <b>€9.99</b> via MBWay para <b>968 200 400</b>
+2️⃣ Envia o comprovativo aqui
+3️⃣ Acesso ativado em menos de 1 hora ✅
 
 📞 Dúvidas? /suporte
 
@@ -311,8 +311,8 @@ SUPORTE = """
 💬 <b>Suporte EdgeBet</b>
 
 Para falar com a equipa:
-📧 Email: suporte@edgebet.pt
-💬 Telegram: @EdgeBetSuport
+💬 Telegram: @EdgeBettApostasBot
+📱 MBWay (pagamentos): 968 200 400
 
 Horário: todos os dias, 9h-23h
 
@@ -356,7 +356,7 @@ def formatar_lista_jogos(jogos: list[dict]) -> str:
     if not jogos:
         return "Nenhum jogo de destaque hoje."
     linhas = []
-    for j in jogos[:8]:  # máx 8 jogos no preview
+    for j in jogos[:8]:
         hora = j.get("hora", "")
         linhas.append(f"  {j.get('emoji','⚽')} {hora}  {j['casa']} vs {j['fora']}")
     return "\n".join(linhas)
