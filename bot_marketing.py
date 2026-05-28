@@ -541,12 +541,17 @@ def main():
     # FAQ para mensagens livres
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, msg_livre))
 
-    # Jobs diários automáticos
+    # Jobs diários automáticos (requer python-telegram-bot[job-queue])
     jq = app.job_queue
-    jq.run_daily(job_preview_manha,    time=time(9,  0,  tzinfo=timezone.utc), name="preview_manha")
-    jq.run_daily(job_dica_tarde,       time=time(14, 0,  tzinfo=timezone.utc), name="dica_tarde")
-    jq.run_daily(job_resumo_noite,     time=time(21, 30, tzinfo=timezone.utc), name="resumo_noite")
-    jq.run_daily(job_alertas_expiracao,time=time(10, 0,  tzinfo=timezone.utc), name="alertas_exp")
+    if jq is not None:
+        jq.run_daily(job_preview_manha,     time=time(9,  0,  tzinfo=timezone.utc), name="preview_manha")
+        jq.run_daily(job_dica_tarde,        time=time(14, 0,  tzinfo=timezone.utc), name="dica_tarde")
+        jq.run_daily(job_resumo_noite,      time=time(21, 30, tzinfo=timezone.utc), name="resumo_noite")
+        jq.run_daily(job_alertas_expiracao, time=time(10, 0,  tzinfo=timezone.utc), name="alertas_exp")
+        print("⏰  Envios automáticos diários activados.")
+    else:
+        print("⚠️  Envios automáticos desactivados.")
+        print("   Para activar: pip install \"python-telegram-bot[job-queue]\"")
 
     print("📣  Marketing Bot a correr. Ctrl+C para parar.\n")
     app.run_polling(drop_pending_updates=True)
