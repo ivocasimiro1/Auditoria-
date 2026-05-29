@@ -1,286 +1,226 @@
 /* ── Team color palette ── */
 :root {
-  --c-USA:#B22234; --c-MEX:#006847; --c-CAN:#FF0000; --c-PAN:#005293;
-  --c-ENG:#003090; --c-ARG:#74ACDF; --c-NED:#FF6600; --c-SEN:#00853F;
-  --c-FRA:#002395; --c-BRA:#009C3B; --c-BEL:#000000; --c-MAR:#C1272D;
-  --c-POR:#006600; --c-ESP:#AA151B; --c-GER:#000000; --c-JPN:#BC002D;
-  --c-URU:#5EB6E4; --c-COL:#FCD116; --c-KOR:#003478; --c-CMR:#007A5E;
-  --c-CRO:#FF0000; --c-AUS:#00008B; --c-NGA:#008751; --c-POL:#DC143C;
-  --c-ITA:#003399; --c-SUI:#FF0000; --c-ECU:#FFD100; --c-GHA:#006B3F;
-  --c-DEN:#C60C30; --c-TUN:#E70013; --c-NZL:#00247D; --c-SAU:#006C35;
-  --c-IRN:#239F40; --c-WAL:#00AB39; --c-CRC:#002B7F; --c-SRB:#C6363C;
-  --c-EGY:#CE1126; --c-SCO:#003087; --c-AUT:#ED2939; --c-TUR:#E30A17;
-  --c-QAT:#8D1B3D; --c-HND:#0073CF; --c-SVK:#0B4EA2; --c-CMV:#003893;
-  --c-VEN:#CF142B; --c-MEX2:#006847; --c-MEX3:#006847; --c-CMR2:#007A5E;
+  --c-USA:#B22234;--c-MEX:#006847;--c-CAN:#FF0000;--c-PAN:#005293;
+  --c-ENG:#003090;--c-ARG:#74ACDF;--c-NED:#FF6600;--c-SEN:#00853F;
+  --c-FRA:#002395;--c-BRA:#009C3B;--c-BEL:#000000;--c-MAR:#C1272D;
+  --c-POR:#006600;--c-ESP:#AA151B;--c-GER:#000000;--c-JPN:#BC002D;
+  --c-URU:#5EB6E4;--c-COL:#FCD116;--c-KOR:#003478;--c-CMR:#007A5E;
+  --c-CRO:#FF0000;--c-AUS:#00008B;--c-NGA:#008751;--c-POL:#DC143C;
+  --c-ITA:#003399;--c-SUI:#FF0000;--c-ECU:#FFD100;--c-GHA:#006B3F;
+  --c-DEN:#C60C30;--c-TUN:#E70013;--c-NZL:#00247D;--c-SAU:#006C35;
+  --c-IRN:#239F40;--c-WAL:#00AB39;--c-CRC:#002B7F;--c-SRB:#C6363C;
+  --c-EGY:#CE1126;--c-SCO:#003087;--c-AUT:#ED2939;--c-TUR:#E30A17;
+  --c-QAT:#8D1B3D;--c-HND:#0073CF;--c-SVK:#0B4EA2;--c-CMV:#003893;
+  --c-VEN:#CF142B;--c-MEX2:#006847;--c-MEX3:#006847;--c-CMR2:#007A5E;
   --c-SPECIAL:#C8A000;
 }
 
-/* ── Base card ── */
+/* ── BASE CARD ── */
 .sticker-card {
   position: relative;
-  width: 130px;
-  min-height: 190px;
-  border-radius: 10px;
+  width: 130px; min-height: 192px;
+  border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
-  border: 2px solid var(--border);
-  background: var(--bg-card);
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  display: flex; flex-direction: column;
+  border: 1.5px solid rgba(255,255,255,0.08);
+  background: linear-gradient(160deg, #0f1922 0%, #0a1018 100%);
+  transition: transform 0.22s cubic-bezier(0.4,0,0.2,1),
+              box-shadow 0.22s ease,
+              border-color 0.22s ease;
   flex-shrink: 0;
 }
 
 .sticker-card:hover {
-  transform: translateY(-5px) scale(1.03);
-  box-shadow: 0 16px 36px rgba(0,0,0,0.55);
-  border-color: rgba(255,255,255,0.3);
+  transform: translateY(-6px) scale(1.04);
   z-index: 2;
 }
 
-/* ── Colour header band ── */
+/* ── TOP COLOUR BAND ── */
 .card-band {
-  height: 6px;
-  width: 100%;
+  height: 4px; width: 100%;
   background: var(--team-color, var(--blue));
   flex-shrink: 0;
 }
 
-/* ── Flag / image area ── */
+/* ── IMAGE AREA ── */
 .sticker-img {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(160deg, #0d1a2e 0%, #1a2a40 100%);
-  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
   position: relative;
-  min-height: 100px;
+  overflow: hidden;
+  min-height: 108px;
+  background: linear-gradient(160deg, rgba(255,255,255,0.03) 0%, transparent 100%);
 }
 
 .sticker-img img {
-  max-width: 88%;
-  max-height: 88%;
+  width: 90%; height: 90%;
   object-fit: contain;
-  position: relative;
-  z-index: 2;
-  border-radius: 4px;
+  position: relative; z-index: 2;
+  border-radius: 3px;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
 }
 
 .sticker-img .card-emoji {
-  font-size: 40px;
-  position: relative;
-  z-index: 2;
+  font-size: 38px; position: relative; z-index: 2;
 }
 
-/* Subtle glow behind flag */
-.sticker-img::after {
+/* Soft inner glow using team colour */
+.sticker-img::before {
   content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at center, rgba(255,255,255,0.04) 0%, transparent 70%);
-  pointer-events: none;
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 60%, var(--team-glow, rgba(59,130,246,0.12)) 0%, transparent 65%);
+  pointer-events: none; z-index: 1;
 }
 
-/* ── Info strip ── */
+/* ── INFO STRIP ── */
 .sticker-info {
-  background: var(--bg-card);
-  padding: 6px 8px 8px;
-  position: relative;
-  z-index: 2;
+  padding: 7px 9px 9px;
+  background: rgba(0,0,0,0.35);
   border-top: 1px solid rgba(255,255,255,0.06);
+  position: relative; z-index: 2;
 }
-
 .sticker-number {
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 9px; font-weight: 700;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.08em; text-transform: uppercase;
 }
-
 .sticker-name {
-  font-size: 11px;
-  font-weight: 800;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--text);
-  margin: 2px 0 1px;
-  line-height: 1.2;
+  font-size: 11px; font-weight: 800;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text); line-height: 1.2; margin: 2px 0 1px;
 }
-
 .sticker-team {
-  font-size: 9px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 9px; color: rgba(255,255,255,0.4);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* ── Status badge ── */
+/* ── STATUS BADGE ── */
 .sticker-status-badge {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  z-index: 5;
-  font-size: 8px;
-  font-weight: 800;
-  padding: 2px 5px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  line-height: 1.4;
+  position: absolute; top: 7px; right: 7px; z-index: 5;
+  font-size: 8px; font-weight: 800;
+  padding: 2px 6px; border-radius: 5px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  backdrop-filter: blur(4px);
 }
-.status-have_to_trade { background: var(--blue); color: #fff; }
-.status-need          { background: var(--red);  color: #fff; }
-.status-have_double   { background: #16a34a;      color: #fff; }
+.status-have_to_trade { background: rgba(59,130,246,0.85); color: #fff; }
+.status-need          { background: rgba(239,68,68,0.85);  color: #fff; }
+.status-have_double   { background: rgba(16,185,129,0.85); color: #fff; }
 
-/* ── Rarity indicators ── */
+/* ── RARITY CROWN ── */
+.rarity-crown {
+  position: absolute; top: 8px; left: 7px; z-index: 5;
+  font-size: 11px; line-height: 1;
+}
 
-/* HOLOGRAPHIC */
+/* ── COMMON hover glow ── */
+.sticker-card:hover {
+  box-shadow: 0 16px 40px rgba(0,0,0,0.6),
+              0 0 0 1px rgba(255,255,255,0.12);
+}
+
+/* ── FOIL ── */
+.sticker-card.rarity-foil {
+  border-color: rgba(192,192,192,0.3);
+}
+.sticker-card.rarity-foil .card-band {
+  background: linear-gradient(90deg, #a0aec0, #e2e8f0, #718096, #e2e8f0);
+  background-size: 200%;
+  animation: band-shift 2.5s linear infinite;
+}
+.sticker-card.rarity-foil::after {
+  content: '';
+  position: absolute; inset: 0; z-index: 3;
+  background: linear-gradient(115deg,
+    transparent 30%, rgba(220,220,255,0.07) 50%, transparent 70%);
+  pointer-events: none;
+  animation: foil-sweep 3s ease-in-out infinite;
+  border-radius: 12px;
+}
+@keyframes foil-sweep {
+  0%   { background-position: -100% 0; }
+  100% { background-position: 300% 0; }
+}
+.sticker-card.rarity-foil:hover {
+  box-shadow: 0 16px 40px rgba(0,0,0,0.6), 0 0 20px rgba(180,180,255,0.2);
+}
+
+/* ── HOLOGRAPHIC ── */
 .sticker-card.rarity-holographic {
-  border-color: var(--gold);
+  border-color: rgba(255,215,0,0.45);
 }
 .sticker-card.rarity-holographic .card-band {
-  background: linear-gradient(90deg, #ffd700, #ff6ec7, #6ec6ff, #ffd700);
-  background-size: 200% 100%;
-  animation: band-shift 3s linear infinite;
+  background: linear-gradient(90deg, #ffd700,#ff80c0,#80c0ff,#80ffb0,#ffd700);
+  background-size: 300%;
+  animation: band-shift 2s linear infinite;
+}
+.sticker-card.rarity-holographic::before {
+  content: '';
+  position: absolute; inset: 0; z-index: 3;
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(255,215,0,0.10) 0deg,
+    rgba(255,100,200,0.08) 90deg,
+    rgba(100,200,255,0.10) 180deg,
+    rgba(100,255,180,0.08) 270deg,
+    rgba(255,215,0,0.10) 360deg
+  );
+  pointer-events: none;
+  border-radius: 12px;
+  animation: holo-spin 6s linear infinite;
+  mix-blend-mode: overlay;
+}
+.sticker-card.rarity-holographic::after {
+  content: '';
+  position: absolute; inset: 0; z-index: 4;
+  background: linear-gradient(115deg,
+    transparent 20%, rgba(255,255,255,0.06) 50%, transparent 80%);
+  pointer-events: none; border-radius: 12px;
+  animation: foil-sweep 2.5s ease-in-out infinite;
+}
+@keyframes holo-spin { to { filter: hue-rotate(360deg); } }
+.sticker-card.rarity-holographic:hover {
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 32px rgba(255,215,0,0.25);
 }
 @keyframes band-shift { to { background-position: 200% 0; } }
 
-.sticker-card.rarity-holographic::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    rgba(255,215,0,0.12) 60deg,
-    rgba(200,16,46,0.10) 120deg,
-    rgba(0,61,165,0.10) 180deg,
-    rgba(255,215,0,0.12) 240deg,
-    transparent 300deg
-  );
-  pointer-events: none;
-  z-index: 1;
-  border-radius: 10px;
-  animation: holo-rotate 5s linear infinite;
-}
-@keyframes holo-rotate { to { filter: hue-rotate(360deg); } }
-
-.rarity-crown {
-  position: absolute;
-  top: 10px;
-  left: 6px;
-  z-index: 5;
-  font-size: 12px;
-  line-height: 1;
-  filter: drop-shadow(0 0 3px rgba(255,215,0,0.8));
-}
-
-/* FOIL */
-.sticker-card.rarity-foil {
-  border-color: #a8b8c8;
-}
-.sticker-card.rarity-foil .card-band {
-  background: linear-gradient(90deg, #c0c0c0, #e8e8e8, #a0a0a0, #e8e8e8);
-  background-size: 200% 100%;
-  animation: band-shift 2s linear infinite;
-}
-.sticker-card.rarity-foil::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg,
-    rgba(192,192,192,0.10) 0%,
-    transparent 50%,
-    rgba(192,192,192,0.10) 100%);
-  pointer-events: none;
-  z-index: 1;
-  border-radius: 10px;
-}
-
-/* ── User photo badge ── */
+/* ── User photo indicator ── */
 .has-user-photo .sticker-img img {
-  border: 2px solid var(--gold);
-  box-shadow: 0 0 8px rgba(255,215,0,0.4);
+  box-shadow: 0 0 0 2px var(--gold), 0 0 12px rgba(245,158,11,0.4);
 }
 
-/* ── Grid ── */
+/* ── GRID ── */
 .sticker-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  display: flex; flex-wrap: wrap; gap: 10px;
 }
 
-/* ── Team section ── */
-.team-section { margin-bottom: 36px; }
-
+/* ── TEAM HEADER ── */
+.team-section { margin-bottom: 38px; }
 .team-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 14px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
 }
-
 .team-flag-img {
-  width: 36px;
-  height: 24px;
-  object-fit: cover;
-  border-radius: 3px;
-  border: 1px solid rgba(255,255,255,0.15);
+  width: 38px; height: 25px;
+  object-fit: cover; border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
-
-.team-title { font-size: 15px; font-weight: 800; }
-.team-subtitle { font-size: 11px; color: var(--text-muted); }
-.team-count { font-size: 12px; color: var(--text-muted); margin-left: auto; text-align: right; }
-
-.team-progress-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 3px; width: 80px; overflow: hidden; }
-.team-progress-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--gold)); border-radius: 2px; transition: width 0.5s; }
-
-/* ── Listing card (OLX style) ── */
-.listing-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+.team-title    { font-size: 14px; font-weight: 800; }
+.team-subtitle { font-size: 10px; color: var(--text2); margin-top: 1px; }
+.team-count    { font-size: 11px; color: var(--text2); margin-left: auto; text-align: right; }
+.team-progress-bar {
+  height: 3px; background: rgba(255,255,255,0.08);
+  border-radius: 2px; margin-top: 4px; width: 80px; overflow: hidden;
 }
-.listing-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-  border-color: var(--blue-light);
-}
-.listing-img {
-  width: 100%;
-  aspect-ratio: 4/3;
-  object-fit: cover;
-  background: var(--bg-card2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 48px;
-}
-.listing-img img { width: 100%; height: 100%; object-fit: cover; }
-.listing-info { padding: 10px 12px; }
-.listing-title { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.listing-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
-.listing-price { font-size: 15px; font-weight: 800; color: var(--gold); margin-top: 4px; }
-.listing-type-trade { color: #60a5fa; }
-.listing-type-sell  { color: var(--gold); }
-.listing-type-gift  { color: #4ade80; }
-
-.listing-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 14px;
+.team-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--purple));
+  border-radius: 2px; transition: width 0.5s;
 }
 
 @media (max-width: 640px) {
   .sticker-card { width: 110px; min-height: 165px; }
-  .listing-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+  .sticker-name { font-size: 10px; }
 }

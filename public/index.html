@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Panini WC2026 — Troca de Cromos</title>
   <meta name="description" content="Plataforma de troca de cromos da caderneta Panini do Mundial 2026">
-  <meta name="theme-color" content="#003DA5">
+  <meta name="theme-color" content="#060a14">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/layout.css">
@@ -19,43 +19,59 @@
     <!-- Sidebar -->
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-logo">
-        <div class="logo-icon">⚽</div>
-        <div class="logo-text">Panini WC2026</div>
-        <div class="logo-sub">Troca de Cromos</div>
+        <div class="logo-ball">⚽</div>
+        <div>
+          <div class="logo-text">Panini WC2026</div>
+          <div class="logo-sub">Troca de Cromos</div>
+        </div>
       </div>
 
       <div class="sidebar-nav">
         <div class="nav-section">
           <div class="nav-section-title">Principal</div>
-          <button class="nav-item" data-route="/">🏠 Início</button>
-          <button class="nav-item" data-route="/catalog">📚 Catálogo</button>
-          <button class="nav-item" data-route="/collection">🗂️ Colecção</button>
+          <button class="nav-item" data-route="/">
+            <span class="nav-icon">🏠</span> Início
+          </button>
+          <button class="nav-item" data-route="/catalog">
+            <span class="nav-icon">📚</span> Catálogo
+          </button>
+          <button class="nav-item" data-route="/collection">
+            <span class="nav-icon">🗂️</span> Colecção
+          </button>
         </div>
         <div class="nav-section">
           <div class="nav-section-title">Trocas</div>
-          <button class="nav-item" data-route="/matches">🎯 Matches</button>
-          <button class="nav-item" data-route="/trades">🔄 Trocas</button>
-          <button class="nav-item" data-route="/listings">🏪 Anúncios</button>
+          <button class="nav-item" data-route="/matches">
+            <span class="nav-icon">🎯</span> Matches
+          </button>
+          <button class="nav-item" data-route="/trades">
+            <span class="nav-icon">🔄</span> Trocas
+          </button>
+          <button class="nav-item" data-route="/listings">
+            <span class="nav-icon">🏪</span> Anúncios
+          </button>
         </div>
         <div class="nav-section">
           <div class="nav-section-title">Conta</div>
           <button class="nav-item" data-route="/notifications">
-            🔔 Notificações
-            <span class="nav-badge notif-count" id="notif-count"></span>
+            <span class="nav-icon">🔔</span> Notificações
+            <span class="nav-badge" id="notif-count"></span>
           </button>
-          <button class="nav-item" data-route="/profile">👤 Perfil</button>
+          <button class="nav-item" data-route="/profile">
+            <span class="nav-icon">👤</span> Perfil
+          </button>
         </div>
       </div>
 
       <div class="sidebar-footer">
-        <div class="user-pill" data-route="/profile">
+        <div class="user-pill" id="nav-user-pill" data-route="/profile">
           <div class="user-avatar" id="nav-avatar">U</div>
-          <div class="user-info">
+          <div>
             <div class="user-name" id="nav-username">Utilizador</div>
             <div class="user-loc" id="nav-userloc"></div>
           </div>
         </div>
-        <button class="nav-item" id="logout-btn" style="margin-top:6px;color:var(--danger);">
+        <button class="logout-btn" id="logout-btn">
           🚪 Sair
         </button>
       </div>
@@ -77,7 +93,7 @@
         </div>
       </header>
 
-      <div id="main-content" style="flex:1;overflow-y:auto;">
+      <div id="main-content" class="page-scroll">
         <div class="loading-center"><div class="spinner"></div></div>
       </div>
     </div>
