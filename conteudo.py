@@ -49,13 +49,28 @@ DICA_TEMPLATE = """
 🏠 {casa} vs {fora} 🆚
 
 📌 Aposta: <b>{mercado}</b>
-💰 Odd: <b>{odd}</b>
+💰 Odd sugerida: <b>{odd}</b>
 📊 Prob. modelo: <b>{prob:.0%}</b>
 🔢 Unidades: <b>{stake}u</b>
-
+{odds_casas}
 <i>Esta é 1 de {total_hoje} dicas de hoje. Subscreve o Pro para todas: /pro</i>
 
 {rodape}
+"""
+
+DICA_PRO_TEMPLATE = """
+⚽ <b>DICA PRO — EdgeBet</b>
+
+{emoji} <b>{liga}</b>
+🏠 {casa} vs {fora} 🆚
+
+📌 Aposta: <b>{mercado}</b>
+💰 Odd sugerida: <b>{odd}</b>
+📊 Prob. modelo: <b>{prob:.0%}</b>
+📈 Valor esperado: <b>{ev:+.1%}</b>
+🔢 Unidades Kelly: <b>{stake}u</b>
+{odds_casas}
+<i>⚠️ Aposte com responsabilidade.</i>
 """
 
 SEM_JOGOS_HOJE = """

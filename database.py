@@ -146,9 +146,7 @@ def total_utilizadores() -> dict:
 # ---------------------------------------------------------------------------
 
 PLANOS = {
-    "mensal":     {"dias": 30,  "preco": 29.0},
-    "trimestral": {"dias": 90,  "preco": 69.0},
-    "anual":      {"dias": 365, "preco": 199.0},
+    "mensal": {"dias": 30, "preco": 9.99},
 }
 
 

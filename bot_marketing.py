@@ -71,6 +71,7 @@ from conteudo import (
     get_faq_resposta, formatar_lista_jogos,
 )
 from motor import treinar_todos, analisar_dia
+from modelo.odds_api import fetch_odds_jogo, formatar_odds_bookmakers
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -109,14 +110,15 @@ def _dica_do_dia() -> dict | None:
         melhor = com_valor[0]
         aposta = melhor["apostas"][0]
         return {
-            "liga":    melhor["liga"],
-            "emoji":   melhor["emoji"],
-            "casa":    melhor["casa_espn"],
-            "fora":    melhor["fora_espn"],
-            "mercado": aposta.mercado,
-            "odd":     aposta.odd,
-            "prob":    aposta.prob_modelo,
-            "stake":   1.0,
+            "fd_code":  melhor["fd_code"],
+            "liga":     melhor["liga"],
+            "emoji":    melhor["emoji"],
+            "casa":     melhor["casa_espn"],
+            "fora":     melhor["fora_espn"],
+            "mercado":  aposta.mercado,
+            "odd":      aposta.odd,
+            "prob":     aposta.prob_modelo,
+            "stake":    1.0,
             "total_hoje": len(com_valor),
         }
     except Exception:
@@ -156,8 +158,8 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if novo:
         await _enviar_dica(update, ctx)
 
-    # Agendar mensagens de funil
-    if novo:
+    # Agendar mensagens de funil (requer job-queue instalado)
+    if novo and ctx.job_queue is not None:
         ctx.job_queue.run_once(
             _funil_dia3, when=3 * 86400,
             chat_id=tid, data={"nome": nome, "tid": tid},
@@ -181,8 +183,14 @@ async def _enviar_dica(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_html(SEM_JOGOS_HOJE)
         return
 
+    # Buscar odds dos bookmakers
+    odds_bk = fetch_odds_jogo(dica["fd_code"], dica["casa"], dica["fora"])
+    odds_str = formatar_odds_bookmakers(odds_bk)
+    odds_bloco = f"\n{odds_str}\n" if odds_str else ""
+
     msg = DICA_TEMPLATE.format(
         **dica,
+        odds_casas=odds_bloco,
         rodape="💡 Quer acesso a <b>todas as dicas</b>? → /pro"
     )
     botoes = InlineKeyboardMarkup([[
@@ -231,10 +239,9 @@ async def cmd_roi(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_pro(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     botoes = InlineKeyboardMarkup([
-        [InlineKeyboardButton("📅 Mensal — €29",      callback_data="plano_mensal")],
-        [InlineKeyboardButton("📆 Trimestral — €69 ⭐", callback_data="plano_trimestral")],
-        [InlineKeyboardButton("🗓 Anual — €199 🏆",    callback_data="plano_anual")],
-        [InlineKeyboardButton("❓ Como subscrever",    callback_data="como_subscrever")],
+        [InlineKeyboardButton("💳 Subscrever por €9.99/mês", callback_data="como_subscrever")],
+        [InlineKeyboardButton("❓ Como funciona",            callback_data="ver_como_funciona")],
+        [InlineKeyboardButton("📊 Historial / ROI",          callback_data="ver_roi")],
     ])
     await update.message.reply_html(INFO_PRO, reply_markup=botoes,
                                     disable_web_page_preview=True)
@@ -276,12 +283,13 @@ async def callback_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     data  = query.data
 
     respostas = {
-        "ver_pro":         INFO_PRO,
-        "ver_roi":         None,  # tratado abaixo
-        "como_subscrever": FAQ_SUBSCREVER,
-        "plano_mensal":    FAQ_SUBSCREVER,
-        "plano_trimestral": FAQ_SUBSCREVER,
-        "plano_anual":     FAQ_SUBSCREVER,
+        "ver_pro":           INFO_PRO,
+        "ver_roi":           None,  # tratado abaixo
+        "ver_como_funciona": FAQ_COMO_FUNCIONA,
+        "como_subscrever":   FAQ_SUBSCREVER,
+        "plano_mensal":      FAQ_SUBSCREVER,
+        "plano_trimestral":  FAQ_SUBSCREVER,
+        "plano_anual":       FAQ_SUBSCREVER,
     }
 
     if data == "ver_roi":
@@ -290,7 +298,7 @@ async def callback_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                f"Acerto: <b>{roi.get('taxa_acerto', 0):.0f}%</b> · "
                f"Dicas: <b>{roi['total_dicas']}</b>")
         await query.edit_message_text(msg, parse_mode=ParseMode.HTML)
-    elif data in respostas:
+    elif data in respostas and respostas[data]:
         await query.edit_message_text(respostas[data], parse_mode=ParseMode.HTML,
                                       disable_web_page_preview=True)
 
@@ -377,24 +385,24 @@ async def cmd_admin(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         )
 
     elif sub == "ativar":
-        if len(args) < 3:
+        if len(args) < 2:
             await update.message.reply_html(
-                "Uso: /admin ativar [telegram_id] [mensal|trimestral|anual]"
+                "Uso: /admin ativar [telegram_id]"
             )
             return
         try:
             target_id = int(args[1])
-            plano     = args[2].lower()
         except ValueError:
             await update.message.reply_html("ID inválido.")
             return
-        ativar_subscricao(target_id, plano, valor=0.0, ref="admin")
+        ativar_subscricao(target_id, "mensal", valor=9.99, ref="mbway")
         await _enviar_seguro(ctx.bot, target_id,
-            f"🎉 O teu acesso EdgeBet <b>{plano.title()}</b> foi ativado!\n"
-            "Usa o Bot Pro para aceder a todas as funcionalidades.",
+            "🎉 O teu acesso <b>EdgeBet Pro</b> foi ativado!\n\n"
+            "Usa @EdgeBetProBot para aceder a todas as funcionalidades.\n"
+            "Boas apostas! 🔥"
         )
         await update.message.reply_html(
-            f"✅ Subscrição <b>{plano}</b> ativada para {target_id}."
+            f"✅ Subscrição <b>mensal (€9.99)</b> ativada para {target_id}."
         )
 
 
@@ -437,8 +445,12 @@ async def job_dica_tarde(ctx: ContextTypes.DEFAULT_TYPE):
     dica = _dica_do_dia()
     if not dica:
         return
+    odds_bk  = fetch_odds_jogo(dica["fd_code"], dica["casa"], dica["fora"])
+    odds_str  = formatar_odds_bookmakers(odds_bk)
+    odds_bloco = f"\n{odds_str}\n" if odds_str else ""
     msg = DICA_TEMPLATE.format(
         **dica,
+        odds_casas=odds_bloco,
         rodape="💡 Quer <b>todas as dicas</b> de hoje? → /pro"
     )
     await _broadcast_todos(ctx.bot, msg, "dica_tarde")

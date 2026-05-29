@@ -56,6 +56,7 @@ from modelo.dixon_coles import DixonColesModel
 from modelo.value_betting import analisar_mercados
 from modelo.ligas import LIGAS, normalizar_equipa
 from modelo.live import predict_com_fallback
+from modelo.odds_api import fetch_odds_jogo, formatar_odds_bookmakers
 from database import (
     registar_utilizador, tem_subscricao_ativa, info_subscricao,
     ativar_subscricao, total_utilizadores, total_subscricoes,
@@ -114,6 +115,10 @@ def formatar_previsao(r: dict, bankroll: float = 1000.0) -> str:
 
     eg = f"\n📊 Golos esperados: <b>{p['golos_esp_casa']:.2f} – {p['golos_esp_fora']:.2f}</b>\n"
 
+    # Odds das casas de apostas
+    odds_bk = fetch_odds_jogo(r.get("fd_code", ""), r.get("casa_espn", ""), r.get("fora_espn", ""))
+    odds_txt = "\n" + formatar_odds_bookmakers(odds_bk) + "\n" if odds_bk else ""
+
     apostas_txt = ""
     if r["apostas"]:
         apostas_txt = "\n🎯 <b>APOSTAS DE VALOR</b>\n"
@@ -126,11 +131,11 @@ def formatar_previsao(r: dict, bankroll: float = 1000.0) -> str:
                 f"   Stake: <b>€{stake:.0f}</b> de €{bankroll:.0f}\n"
             )
     elif r["estado"] != "post":
-        apostas_txt = "\n<i>ℹ️ Odds não disponíveis via ESPN — introduza manualmente.</i>\n"
+        apostas_txt = "\n<i>ℹ️ Odds ESPN não disponíveis — ver tabela acima.</i>\n"
 
     fallback_txt = "\n⚠️ <i>Equipa não no histórico — previsão com média da liga.</i>" if r["fallback"] else ""
 
-    return header + linhas + eg + apostas_txt + fallback_txt
+    return header + linhas + eg + odds_txt + apostas_txt + fallback_txt
 
 
 def formatar_resumo(resultados: list[dict]) -> str:
@@ -186,7 +191,7 @@ async def _verificar_acesso(update: Update) -> bool:
     await update.message.reply_html(
         "🔒 <b>Acesso restrito</b>\n\n"
         "Este bot é exclusivo para subscritores EdgeBet Pro.\n\n"
-        "👉 Junta-te em @EdgeBetMarketingBot para acesso gratuito e upgrade Pro.\n"
+        "👉 Dicas gratuitas e upgrade: @EdgeBettApostasBot\n"
         "👉 /pro — ver planos e preços"
     )
     return False
@@ -271,14 +276,14 @@ async def cmd_admin_pro(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"/admin ativar [id] [plano]"
         )
         return
-    if args[0] == "ativar" and len(args) >= 3:
+    if args[0] == "ativar" and len(args) >= 2:
         try:
-            target, plano = int(args[1]), args[2]
+            target = int(args[1])
         except ValueError:
             await update.message.reply_html("ID inválido.")
             return
-        ativar_subscricao(target, plano, ref="admin_pro")
-        await update.message.reply_html(f"✅ Pro {plano} ativado para {target}.")
+        ativar_subscricao(target, "mensal", valor=9.99, ref="admin_pro")
+        await update.message.reply_html(f"✅ Pro mensal (€9.99) ativado para {target}.")
 
 
 async def cmd_hoje(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
