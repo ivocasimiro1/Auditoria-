@@ -36,6 +36,7 @@ except ImportError:
 
 MARKETING_TOKEN = os.environ.get("MARKETING_TOKEN", "")
 ADMIN_IDS = [int(x) for x in os.environ.get("ADMIN_IDS", "").split(",") if x.strip()]
+CHANNEL_ID = os.environ.get("CHANNEL_ID", "")  # ex: @EdgeBetDicas
 
 try:
     from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -95,6 +96,20 @@ async def _enviar_seguro(bot, tid: int, texto: str, **kwargs) -> bool:
         bloquear_utilizador(tid)
         return False
     except Exception:
+        return False
+
+
+async def _publicar_canal(bot, texto: str) -> bool:
+    """Publica mensagem no canal público (se configurado)."""
+    if not CHANNEL_ID:
+        return False
+    try:
+        await bot.send_message(CHANNEL_ID, texto,
+                               parse_mode=ParseMode.HTML,
+                               disable_web_page_preview=True)
+        return True
+    except Exception as e:
+        logging.warning(f"Canal {CHANNEL_ID}: {e}")
         return False
 
 
@@ -484,6 +499,7 @@ async def cmd_admin(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         stats_u = total_utilizadores()
         stats_s = total_subscricoes()
         roi     = roi_historico()
+        canal_txt = f"\n📢 Canal: <b>{CHANNEL_ID}</b>" if CHANNEL_ID else ""
         msg = (
             f"📊 <b>Painel Admin EdgeBet</b>\n\n"
             f"👥 Utilizadores: <b>{stats_u['total']}</b> "
@@ -491,10 +507,11 @@ async def cmd_admin(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"✅ Ativos: <b>{stats_u['ativos']}</b>\n"
             f"💳 Subscrições ativas: <b>{stats_s['ativas']}</b>\n"
             f"💶 Receita total: <b>€{stats_s['receita_total']:.2f}</b>\n"
-            f"📈 ROI modelo: <b>{roi['roi']:+.1f}%</b>\n\n"
+            f"📈 ROI modelo: <b>{roi['roi']:+.1f}%</b>{canal_txt}\n\n"
             f"Comandos:\n"
             f"/admin hoje — jogos e dicas de hoje\n"
             f"/admin broadcast [msg] — enviar a todos\n"
+            f"/admin canal [msg] — publicar no canal\n"
             f"/admin ativar [id] — dar Pro\n"
             f"/admin resultado [w/l] [odd] — registar resultado de dica\n"
         )
@@ -598,6 +615,29 @@ async def cmd_admin(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"✅ Broadcast enviado a <b>{enviados}</b> utilizadores."
         )
 
+    elif sub == "canal":
+        if not CHANNEL_ID:
+            await update.message.reply_html(
+                "⚠️ Canal não configurado.\n"
+                "Define <code>CHANNEL_ID=@NomeDoCanal</code> no ficheiro .env"
+            )
+            return
+        if len(args) < 2:
+            await update.message.reply_html(
+                f"Uso: /admin canal [mensagem]\n"
+                f"Canal actual: <b>{CHANNEL_ID}</b>"
+            )
+            return
+        texto = " ".join(args[1:])
+        ok = await _publicar_canal(ctx.bot, texto)
+        if ok:
+            await update.message.reply_html(f"✅ Publicado em <b>{CHANNEL_ID}</b>.")
+        else:
+            await update.message.reply_html(
+                f"❌ Falha ao publicar em {CHANNEL_ID}.\n"
+                "Confirma que o bot é administrador do canal."
+            )
+
     elif sub == "ativar":
         if len(args) < 2:
             await update.message.reply_html(
@@ -671,6 +711,13 @@ async def job_dica_tarde(ctx: ContextTypes.DEFAULT_TYPE):
         rodape="💡 Quer <b>todas as dicas</b> de hoje? → /pro"
     )
     await _broadcast_todos(ctx.bot, msg, "dica_tarde")
+    # Publicar no canal (captação orgânica)
+    msg_canal = DICA_TEMPLATE.format(
+        **dica,
+        odds_casas=odds_bloco,
+        rodape=f"💡 Dicas gratuitas todos os dias → @{BOT_USERNAME}"
+    )
+    await _publicar_canal(ctx.bot, msg_canal)
     # Guardar dica para registo de resultado às 23h
     guardar_dica_do_dia(
         jogo=f"{dica['casa']} vs {dica['fora']}",
@@ -709,6 +756,18 @@ async def job_dica_live(ctx: ContextTypes.DEFAULT_TYPE):
             f"<i>Análise live ao minuto só no Pro → /pro</i>"
         )
         await _broadcast_todos(ctx.bot, msg, "dica_live")
+        msg_canal = (
+            f"🔴 <b>DICA LIVE — EdgeBet</b>\n\n"
+            f"{melhor['emoji']} <b>{melhor['liga']}</b>\n"
+            f"⏱ {minuto}'  {melhor['casa_espn']} <b>{gc}–{gf}</b> {melhor['fora_espn']}\n\n"
+            f"📌 Aposta: <b>{aposta.mercado}</b>\n"
+            f"💰 Odd: <b>{aposta.odd:.2f}</b>\n"
+            f"📊 Prob. modelo: <b>{aposta.prob_modelo:.0%}</b>\n"
+            f"🔢 Unidades: <b>1u</b>"
+            f"{odds_bloco}\n"
+            f"<i>Segue o canal para dicas diárias → @{BOT_USERNAME}</i>"
+        )
+        await _publicar_canal(ctx.bot, msg_canal)
     except Exception:
         pass
 
