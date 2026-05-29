@@ -1,4 +1,4 @@
-import { getDb } from '../db';
+import { queryOne, execute, transaction } from '../db';
 
 interface TeamDef {
   code: string;
@@ -248,57 +248,55 @@ const SPECIAL_CARDS = [
   { id: 'SP-020', name: 'WC 2026 Countdown', type: 'special' as const, rarity: 'common' as const },
 ];
 
-export function seedStickers(): void {
-  const db = getDb();
-
-  const count = (db.prepare('SELECT COUNT(*) as c FROM stickers').get() as { c: number }).c;
+export async function seedStickers(): Promise<void> {
+  const countRow = await queryOne<{ c: string }>('SELECT COUNT(*) as c FROM stickers');
+  const count = parseInt(countRow?.c ?? '0', 10);
   const expected = TEAMS.length * 20 + SPECIAL_CARDS.length;
   if (count === expected) return;
 
   // Re-seed needed
-  db.prepare('DELETE FROM user_stickers').run();
-  db.prepare('DELETE FROM stickers').run();
+  await execute('DELETE FROM user_stickers');
+  await execute('DELETE FROM stickers');
 
-  const insert = db.prepare(`
-    INSERT OR IGNORE INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  const insertMany = db.transaction(() => {
+  await transaction(async (client) => {
     let num = 1;
 
     for (const team of TEAMS) {
       // Badge card
-      insert.run(
-        `${team.code}-BADGE`, num++, team.code, team.name, team.group,
-        null, 'badge', 'foil', `/img/badges/${team.code.toLowerCase()}.svg`
+      await client.query(
+        `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (id) DO NOTHING`,
+        [`${team.code}-BADGE`, num++, team.code, team.name, team.group, null, 'badge', 'foil', `/img/badges/${team.code.toLowerCase()}.svg`]
       );
 
       // Team logo
-      insert.run(
-        `${team.code}-LOGO`, num++, team.code, team.name, team.group,
-        null, 'logo', 'common', `/img/logos/${team.code.toLowerCase()}.svg`
+      await client.query(
+        `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (id) DO NOTHING`,
+        [`${team.code}-LOGO`, num++, team.code, team.name, team.group, null, 'logo', 'common', `/img/logos/${team.code.toLowerCase()}.svg`]
       );
 
       // Players
-      team.players.forEach((player, i) => {
+      for (let i = 0; i < team.players.length; i++) {
+        const player = team.players[i];
         const rarity = i === 0 ? 'foil' : (i === team.players.length - 1 ? 'holographic' : 'common');
-        insert.run(
-          `${team.code}-P${String(i + 1).padStart(2, '0')}`, num++, team.code, team.name, team.group,
-          player, 'player', rarity, `/img/players/${team.code.toLowerCase()}_${i + 1}.svg`
+        await client.query(
+          `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (id) DO NOTHING`,
+          [`${team.code}-P${String(i + 1).padStart(2, '0')}`, num++, team.code, team.name, team.group, player, 'player', rarity, `/img/players/${team.code.toLowerCase()}_${i + 1}.svg`]
         );
-      });
+      }
     }
 
     // Special cards
-    SPECIAL_CARDS.forEach((sp) => {
-      insert.run(
-        sp.id, num++, 'SPECIAL', 'Especial', 'ESPECIAL',
-        sp.name, sp.type, sp.rarity, `/img/specials/${sp.id.toLowerCase()}.svg`
+    for (const sp of SPECIAL_CARDS) {
+      await client.query(
+        `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (id) DO NOTHING`,
+        [sp.id, num++, 'SPECIAL', 'Especial', 'ESPECIAL', sp.name, sp.type, sp.rarity, `/img/specials/${sp.id.toLowerCase()}.svg`]
       );
-    });
+    }
   });
 
-  insertMany();
   console.log('Stickers seeded successfully');
 }

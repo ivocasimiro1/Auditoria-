@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '../db';
+import { queryOne, execute } from '../db';
 import { generateToken } from '../middleware/auth';
 import type { User } from '../types';
 
@@ -20,24 +20,29 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const db = getDb();
-  const existing = db.prepare('SELECT id FROM users WHERE email = ? OR username = ?').get(email, username);
-  if (existing) {
-    res.status(409).json({ error: 'Email ou username já em uso' });
-    return;
+  try {
+    const existing = await queryOne('SELECT id FROM users WHERE email = $1 OR username = $2', [email, username]);
+    if (existing) {
+      res.status(409).json({ error: 'Email ou username já em uso' });
+      return;
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+    const id = uuidv4();
+    const now = Date.now();
+
+    await execute(
+      `INSERT INTO users (id, username, email, password_hash, location, rating_sum, rating_count, created_at)
+       VALUES ($1, $2, $3, $4, $5, 0, 0, $6)`,
+      [id, username, email, hash, location || null, now]
+    );
+
+    const token = generateToken(id);
+    res.status(201).json({ token, user: { id, username, email, location } });
+  } catch (err) {
+    console.error('Register error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
-
-  const hash = await bcrypt.hash(password, 10);
-  const id = uuidv4();
-  const now = Date.now();
-
-  db.prepare(`
-    INSERT INTO users (id, username, email, password_hash, location, rating_sum, rating_count, created_at)
-    VALUES (?, ?, ?, ?, ?, 0, 0, ?)
-  `).run(id, username, email, hash, location || null, now);
-
-  const token = generateToken(id);
-  res.status(201).json({ token, user: { id, username, email, location } });
 });
 
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
@@ -48,32 +53,36 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const db = getDb();
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as User | undefined;
+  try {
+    const user = await queryOne<User>('SELECT * FROM users WHERE email = $1', [email]);
 
-  if (!user) {
-    res.status(401).json({ error: 'Credenciais inválidas' });
-    return;
+    if (!user) {
+      res.status(401).json({ error: 'Credenciais inválidas' });
+      return;
+    }
+
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) {
+      res.status(401).json({ error: 'Credenciais inválidas' });
+      return;
+    }
+
+    const token = generateToken(user.id);
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        location: user.location,
+        avatar_url: user.avatar_url,
+        rating: user.rating_count > 0 ? user.rating_sum / user.rating_count : null,
+      },
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
-
-  const valid = await bcrypt.compare(password, user.password_hash);
-  if (!valid) {
-    res.status(401).json({ error: 'Credenciais inválidas' });
-    return;
-  }
-
-  const token = generateToken(user.id);
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      location: user.location,
-      avatar_url: user.avatar_url,
-      rating: user.rating_count > 0 ? user.rating_sum / user.rating_count : null,
-    },
-  });
 });
 
 export default router;

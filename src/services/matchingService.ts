@@ -1,4 +1,4 @@
-import { getDb } from '../db';
+import { query, queryOne } from '../db';
 
 export interface MatchResult {
   user: {
@@ -12,17 +12,17 @@ export interface MatchResult {
   match_score: number;
 }
 
-export function findMatches(userId: string, limit = 20): MatchResult[] {
-  const db = getDb();
-
+export async function findMatches(userId: string, limit = 20): Promise<MatchResult[]> {
   // Get current user's tradeable and needed stickers
-  const myTrade = db.prepare(
-    "SELECT sticker_id FROM user_stickers WHERE user_id = ? AND status = 'have_to_trade'"
-  ).all(userId) as { sticker_id: string }[];
+  const myTrade = await query<{ sticker_id: string }>(
+    "SELECT sticker_id FROM user_stickers WHERE user_id = $1 AND status = 'have_to_trade'",
+    [userId]
+  );
 
-  const myNeed = db.prepare(
-    "SELECT sticker_id FROM user_stickers WHERE user_id = ? AND status = 'need'"
-  ).all(userId) as { sticker_id: string }[];
+  const myNeed = await query<{ sticker_id: string }>(
+    "SELECT sticker_id FROM user_stickers WHERE user_id = $1 AND status = 'need'",
+    [userId]
+  );
 
   if (myTrade.length === 0 || myNeed.length === 0) return [];
 
@@ -30,20 +30,23 @@ export function findMatches(userId: string, limit = 20): MatchResult[] {
   const myNeedSet = new Set(myNeed.map(r => r.sticker_id));
 
   // Get all other users with their trade/need stickers
-  const others = db.prepare(
-    "SELECT DISTINCT user_id FROM user_stickers WHERE user_id != ?"
-  ).all(userId) as { user_id: string }[];
+  const others = await query<{ user_id: string }>(
+    "SELECT DISTINCT user_id FROM user_stickers WHERE user_id != $1",
+    [userId]
+  );
 
   const results: MatchResult[] = [];
 
   for (const { user_id } of others) {
-    const theirTrade = db.prepare(
-      "SELECT sticker_id FROM user_stickers WHERE user_id = ? AND status = 'have_to_trade'"
-    ).all(user_id) as { sticker_id: string }[];
+    const theirTrade = await query<{ sticker_id: string }>(
+      "SELECT sticker_id FROM user_stickers WHERE user_id = $1 AND status = 'have_to_trade'",
+      [user_id]
+    );
 
-    const theirNeed = db.prepare(
-      "SELECT sticker_id FROM user_stickers WHERE user_id = ? AND status = 'need'"
-    ).all(user_id) as { sticker_id: string }[];
+    const theirNeed = await query<{ sticker_id: string }>(
+      "SELECT sticker_id FROM user_stickers WHERE user_id = $1 AND status = 'need'",
+      [user_id]
+    );
 
     const theirTradeSet = new Set(theirTrade.map(r => r.sticker_id));
     const theirNeedSet = new Set(theirNeed.map(r => r.sticker_id));
@@ -57,9 +60,10 @@ export function findMatches(userId: string, limit = 20): MatchResult[] {
 
     const score = Math.min(iGive.length, iReceive.length);
 
-    const user = db.prepare(
-      'SELECT id, username, location, rating_sum, rating_count FROM users WHERE id = ?'
-    ).get(user_id) as { id: string; username: string; location?: string; rating_sum: number; rating_count: number } | undefined;
+    const user = await queryOne<{ id: string; username: string; location?: string; rating_sum: number; rating_count: number }>(
+      'SELECT id, username, location, rating_sum, rating_count FROM users WHERE id = $1',
+      [user_id]
+    );
 
     if (!user) continue;
 

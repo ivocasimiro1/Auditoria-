@@ -1,6 +1,6 @@
 import express from 'express';
 import path from 'path';
-import { getDb } from './db';
+import { initDb } from './db';
 import { seedStickers } from './seeds/stickers';
 import { seedUsers } from './seeds/users';
 import { errorHandler } from './middleware/errorHandler';
@@ -45,8 +45,8 @@ app.get('*', (_req, res) => {
 app.use(errorHandler);
 
 async function start(): Promise<void> {
-  getDb();
-  seedStickers();
+  await initDb();
+  await seedStickers();
   await seedUsers();
 
   app.listen(PORT, () => {

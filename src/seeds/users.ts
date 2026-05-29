@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '../db';
+import { query, queryOne, transaction } from '../db';
 
 const DEMO_USERS = [
   { username: 'joao_cromos', email: 'joao@demo.pt', password: 'demo123', location: 'Lisboa' },
@@ -16,21 +16,11 @@ const DEMO_USERS = [
 ];
 
 export async function seedUsers(): Promise<void> {
-  const db = getDb();
-  const count = (db.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number }).c;
+  const countRow = await queryOne<{ count: string }>('SELECT COUNT(*) as count FROM users');
+  const count = parseInt(countRow?.count ?? '0', 10);
   if (count > 0) return;
 
-  const insertUser = db.prepare(`
-    INSERT OR IGNORE INTO users (id, username, email, password_hash, location, rating_sum, rating_count, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  const insertSticker = db.prepare(`
-    INSERT OR IGNORE INTO user_stickers (user_id, sticker_id, status, updated_at)
-    VALUES (?, ?, ?, ?)
-  `);
-
-  const allStickers = db.prepare('SELECT id FROM stickers').all() as { id: string }[];
+  const allStickers = await query<{ id: string }>('SELECT id FROM stickers');
   const stickerIds = allStickers.map(s => s.id);
 
   for (const u of DEMO_USERS) {
@@ -38,29 +28,41 @@ export async function seedUsers(): Promise<void> {
     const userId = uuidv4();
     const now = Date.now();
 
-    insertUser.run(userId, u.username, u.email, hash, u.location, Math.floor(Math.random() * 25), Math.floor(Math.random() * 6), now);
+    await transaction(async (client) => {
+      await client.query(
+        `INSERT INTO users (id, username, email, password_hash, location, rating_sum, rating_count, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING`,
+        [userId, u.username, u.email, hash, u.location, Math.floor(Math.random() * 25), Math.floor(Math.random() * 6), now]
+      );
 
-    // Give each user a random partial collection
-    const shuffled = [...stickerIds].sort(() => Math.random() - 0.5);
-    const haveCount = Math.floor(stickerIds.length * (0.4 + Math.random() * 0.4));
-    const tradeCount = Math.floor(haveCount * 0.2);
+      // Give each user a random partial collection
+      const shuffled = [...stickerIds].sort(() => Math.random() - 0.5);
+      const haveCount = Math.floor(stickerIds.length * (0.4 + Math.random() * 0.4));
+      const tradeCount = Math.floor(haveCount * 0.2);
 
-    const haveIds = shuffled.slice(0, haveCount);
-    const tradeIds = haveIds.slice(0, tradeCount);
-    const needIds = shuffled.slice(haveCount, haveCount + Math.floor(stickerIds.length * 0.2));
+      const haveIds = shuffled.slice(0, haveCount);
+      const tradeIds = haveIds.slice(0, tradeCount);
+      const needIds = shuffled.slice(haveCount, haveCount + Math.floor(stickerIds.length * 0.2));
 
-    const insertBatch = db.transaction(() => {
       for (const sid of tradeIds) {
-        insertSticker.run(userId, sid, 'have_to_trade', now);
+        await client.query(
+          `INSERT INTO user_stickers (user_id, sticker_id, status, updated_at) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+          [userId, sid, 'have_to_trade', now]
+        );
       }
       for (const sid of haveIds.slice(tradeCount)) {
-        insertSticker.run(userId, sid, 'have_double', now);
+        await client.query(
+          `INSERT INTO user_stickers (user_id, sticker_id, status, updated_at) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+          [userId, sid, 'have_double', now]
+        );
       }
       for (const sid of needIds) {
-        insertSticker.run(userId, sid, 'need', now);
+        await client.query(
+          `INSERT INTO user_stickers (user_id, sticker_id, status, updated_at) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+          [userId, sid, 'need', now]
+        );
       }
     });
-    insertBatch();
   }
 
   console.log('Demo users seeded successfully');
