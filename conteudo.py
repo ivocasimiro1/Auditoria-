@@ -90,6 +90,28 @@ Amanhã voltamos com novas dicas! 💪
 Enquanto isso, consulta o nosso historial: /roi
 """
 
+SEM_DICAS_CANAL = """
+📊 <b>EdgeBet — Análise do dia</b>
+
+Hoje o modelo analisou todos os jogos disponíveis e <b>não encontrou apostas com valor positivo</b>.
+
+🧠 Preferimos não apostar a apostar sem vantagem matemática — é assim que o ROI se mantém positivo a longo prazo.
+
+📈 ROI acumulado: <b>{roi:+.1f}%</b> · Taxa de acerto: <b>{taxa:.0f}%</b> · Dicas registadas: <b>{total}</b>
+
+Amanhã analisamos novamente. 🔥
+<i>Dicas gratuitas todos os dias → @{bot}</i>
+"""
+
+JOGOS_AMIGAVEIS_CANAL = """
+🤝 <b>Jogos de hoje — {data}</b>
+
+{lista}
+
+⚠️ Amigáveis não têm análise do modelo — apenas informação dos jogos.
+<i>Segue o canal → @{bot}</i>
+"""
+
 # ---------------------------------------------------------------------------
 # Preview de manhã
 # ---------------------------------------------------------------------------

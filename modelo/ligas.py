@@ -44,6 +44,9 @@ LIGAS = {
     "UNL": {"nome": "Nations League",             "pais": "Europa",       "espn_slug": "uefa.nations",         "emoji": "🌍",  "tipo": "selecoes"},
     "GC":  {"nome": "Gold Cup (CONCACAF)",         "pais": "América N",    "espn_slug": "concacaf.gold",        "emoji": "🏆🌎", "tipo": "selecoes"},
     "ACN": {"nome": "CAN (Africa)",                "pais": "África",       "espn_slug": "caf.nations",          "emoji": "🌍🏆", "tipo": "selecoes"},
+    # ── Amigáveis ──────────────────────────────────────────────────────────
+    "AMI": {"nome": "Amigáveis Internacionais",    "pais": "Mundial",      "espn_slug": "fifa.friendly",        "emoji": "🤝",  "tipo": "selecoes"},
+    "AMC": {"nome": "Amigáveis de Clubes",         "pais": "Mundial",      "espn_slug": "club.friendly",        "emoji": "🤝",  "tipo": "selecoes"},
 }
 
 # Ligas com dados históricos (football-data.co.uk)

@@ -70,7 +70,7 @@ from conteudo import (
     PREVIEW_MANHA, RESUMO_NOITE, FAQ_PRECO, FAQ_COMO_FUNCIONA,
     FAQ_PRECISAO, FAQ_SUBSCREVER, FAQ_CANCELAR, FAQ_LIVE, FAQ_LIGAS,
     FAQ_REFERIDO, INFO_PRO, SUPORTE, FUNIL_DIA3, FUNIL_DIA7,
-    PARTILHAR_TEMPLATE, PARTILHAR_GRUPO,
+    PARTILHAR_TEMPLATE, PARTILHAR_GRUPO, SEM_DICAS_CANAL, JOGOS_AMIGAVEIS_CANAL,
     get_faq_resposta, formatar_lista_jogos,
 )
 from motor import treinar_todos, analisar_dia
@@ -702,6 +702,15 @@ async def job_dica_tarde(ctx: ContextTypes.DEFAULT_TYPE):
     """Enviado às 13h: dica gratuita pré-jogo do dia."""
     dica = _dica_do_dia()
     if not dica:
+        # Sem dicas de valor — publica mensagem informativa no canal
+        roi = roi_historico()
+        msg_canal = SEM_DICAS_CANAL.format(
+            roi=roi.get("roi", 0.0),
+            taxa=roi.get("taxa_acerto", 0.0),
+            total=roi.get("total_dicas", 0),
+            bot=BOT_USERNAME,
+        )
+        await _publicar_canal(ctx.bot, msg_canal)
         return
     odds_bk   = fetch_odds_jogo(dica["fd_code"], dica["casa"], dica["fora"])
     odds_str  = formatar_odds_bookmakers(odds_bk)
