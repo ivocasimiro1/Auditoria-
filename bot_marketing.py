@@ -62,6 +62,7 @@ from database import (
     bloquear_utilizador, total_utilizadores, total_subscricoes,
     roi_historico, registar_broadcast, ativar_subscricao,
     subscricoes_a_expirar, subscricoes_expiradas_hoje, tem_subscricao_ativa,
+    guardar_dica_do_dia, obter_dica_do_dia, registar_resultado_dica_do_dia,
 )
 from conteudo import (
     BOAS_VINDAS, BOAS_VINDAS_REFERIDO, DICA_TEMPLATE, SEM_JOGOS_HOJE,
@@ -355,6 +356,33 @@ async def callback_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     data  = query.data
 
+    # ── Resultado da dica do dia ──────────────────────────────────────────
+    if data.startswith("res_w_") or data == "res_l_0":
+        if data.startswith("res_w_"):
+            try:
+                odd = float(data.replace("res_w_", ""))
+            except ValueError:
+                odd = 2.0
+            lucro = round(odd - 1, 2)
+            registar_resultado_dica_do_dia("W", lucro)
+            roi = roi_historico()
+            await query.edit_message_text(
+                f"✅ <b>Ganhou!</b> +{lucro:.2f}u registado.\n"
+                f"📈 ROI acumulado: <b>{roi['roi']:+.1f}%</b> "
+                f"({roi['ganhas']}/{roi['total_dicas']} dicas)",
+                parse_mode=ParseMode.HTML,
+            )
+        else:
+            registar_resultado_dica_do_dia("L", -1.0)
+            roi = roi_historico()
+            await query.edit_message_text(
+                f"❌ <b>Perdeu.</b> -1u registado.\n"
+                f"📈 ROI acumulado: <b>{roi['roi']:+.1f}%</b> "
+                f"({roi['ganhas']}/{roi['total_dicas']} dicas)",
+                parse_mode=ParseMode.HTML,
+            )
+        return
+
     # ── Activação de pagamento via botão ──────────────────────────────────
     if data.startswith("pg_ok_") or data.startswith("pg_no_"):
         try:
@@ -643,6 +671,13 @@ async def job_dica_tarde(ctx: ContextTypes.DEFAULT_TYPE):
         rodape="💡 Quer <b>todas as dicas</b> de hoje? → /pro"
     )
     await _broadcast_todos(ctx.bot, msg, "dica_tarde")
+    # Guardar dica para registo de resultado às 23h
+    guardar_dica_do_dia(
+        jogo=f"{dica['casa']} vs {dica['fora']}",
+        liga=dica["liga"],
+        mercado=dica["mercado"],
+        odd=dica["odd"],
+    )
 
 
 async def job_dica_live(ctx: ContextTypes.DEFAULT_TYPE):
@@ -688,6 +723,30 @@ async def job_resumo_noite(ctx: ContextTypes.DEFAULT_TYPE):
         taxa=roi.get("taxa_acerto", 0.0),
     )
     await _broadcast_todos(ctx.bot, msg, "resumo_noite")
+
+
+async def job_pedir_resultado(ctx: ContextTypes.DEFAULT_TYPE):
+    """Enviado às 23h: pergunta ao admin se a dica do dia ganhou ou perdeu."""
+    dica = obter_dica_do_dia()
+    if not dica:
+        return
+    botoes = InlineKeyboardMarkup([[
+        InlineKeyboardButton("✅ Ganhou", callback_data=f"res_w_{dica['odd']}"),
+        InlineKeyboardButton("❌ Perdeu", callback_data="res_l_0"),
+    ]])
+    msg = (
+        f"📊 <b>A dica de hoje ganhou ou perdeu?</b>\n\n"
+        f"⚽ {dica['jogo']}\n"
+        f"📌 {dica['mercado']} @ <b>{dica['odd']:.2f}</b>\n\n"
+        f"Carrega num botão:"
+    )
+    for admin_id in ADMIN_IDS:
+        try:
+            await ctx.bot.send_message(admin_id, msg,
+                                       parse_mode=ParseMode.HTML,
+                                       reply_markup=botoes)
+        except Exception:
+            pass
 
 
 async def job_alertas_expiracao(ctx: ContextTypes.DEFAULT_TYPE):
@@ -813,6 +872,7 @@ def main():
         jq.run_daily(job_dica_tarde,        time=time(13, 0,  tzinfo=timezone.utc), name="dica_tarde")
         jq.run_daily(job_dica_live,         time=time(19, 30, tzinfo=timezone.utc), name="dica_live")
         jq.run_daily(job_resumo_noite,      time=time(21, 30, tzinfo=timezone.utc), name="resumo_noite")
+        jq.run_daily(job_pedir_resultado,   time=time(22, 0,  tzinfo=timezone.utc), name="pedir_resultado")
         jq.run_daily(job_alertas_expiracao, time=time(10, 0,  tzinfo=timezone.utc), name="alertas_exp")
         print("⏰  Envios automáticos diários activados.")
     else:

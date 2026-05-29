@@ -66,6 +66,18 @@ def init_db():
             agendada_para   TEXT,
             enviada         INTEGER DEFAULT 0
         );
+
+        CREATE TABLE IF NOT EXISTS dica_do_dia (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            data            TEXT DEFAULT (date('now')),
+            jogo            TEXT,
+            liga            TEXT,
+            mercado         TEXT,
+            odd             REAL,
+            resultado       TEXT,
+            lucro           REAL,
+            dica_id         INTEGER
+        );
         """)
 
 
@@ -233,6 +245,49 @@ def total_subscricoes() -> dict:
 # ---------------------------------------------------------------------------
 # Dicas e ROI
 # ---------------------------------------------------------------------------
+
+def guardar_dica_do_dia(jogo: str, liga: str, mercado: str, odd: float) -> int:
+    """Guarda a dica do dia para registo de resultado posterior."""
+    with get_db() as db:
+        db.execute("DELETE FROM dica_do_dia WHERE data = date('now')")
+        dica_id = registar_dica(jogo, liga, mercado, odd, stake=1.0, tipo="gratuita")
+        cur = db.execute(
+            """INSERT INTO dica_do_dia (jogo, liga, mercado, odd, dica_id)
+               VALUES (?,?,?,?,?)""",
+            (jogo, liga, mercado, odd, dica_id)
+        )
+        return cur.lastrowid
+
+
+def obter_dica_do_dia() -> dict | None:
+    """Obtém a dica do dia de hoje."""
+    with get_db() as db:
+        row = db.execute(
+            """SELECT * FROM dica_do_dia WHERE data = date('now')
+               AND resultado IS NULL"""
+        ).fetchone()
+        if row:
+            return dict(row)
+        return None
+
+
+def registar_resultado_dica_do_dia(resultado: str, lucro: float):
+    """Regista o resultado da dica do dia e actualiza o historial."""
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM dica_do_dia WHERE data = date('now')"
+        ).fetchone()
+        if not row:
+            return
+        db.execute(
+            "UPDATE dica_do_dia SET resultado=?, lucro=? WHERE id=?",
+            (resultado, lucro, row["id"])
+        )
+        db.execute(
+            "UPDATE dicas_enviadas SET resultado=?, lucro_unidades=? WHERE id=?",
+            (resultado, lucro, row["dica_id"])
+        )
+
 
 def registar_dica(jogo, liga, mercado, odd, stake=1.0, tipo="gratuita") -> int:
     with get_db() as db:
