@@ -101,6 +101,20 @@ router.put('/me', authenticateToken, async (req: Request, res: Response): Promis
   }
 });
 
+router.delete('/me', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    await execute('DELETE FROM user_stickers WHERE user_id = $1', [req.userId]);
+    await execute('DELETE FROM notifications WHERE user_id = $1', [req.userId]);
+    await execute('DELETE FROM trade_reviews WHERE reviewer_id = $1 OR reviewed_id = $2', [req.userId, req.userId]);
+    await execute('DELETE FROM listings WHERE user_id = $1', [req.userId]);
+    await execute('DELETE FROM users WHERE id = $1', [req.userId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete account error:', err);
+    res.status(500).json({ error: 'Erro ao eliminar conta' });
+  }
+});
+
 router.get('/:id/trades', async (req: Request, res: Response): Promise<void> => {
   try {
     const trades = await query(`

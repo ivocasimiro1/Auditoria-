@@ -34,7 +34,10 @@ export async function render() {
               <span style="font-size:13px;color:var(--text-muted);">${rating ? `${rating} (${profile.rating_count} avaliações)` : 'Sem avaliações'}</span>
             </div>
           </div>
-          ${isOwnProfile ? `<button class="btn btn-ghost btn-sm" id="edit-profile-btn">✏️ Editar</button>` : ''}
+          ${isOwnProfile ? `
+            <button class="btn btn-ghost btn-sm" id="edit-profile-btn">✏️ Editar</button>
+            <button class="btn btn-sm" style="background:transparent;border:1px solid var(--red);color:var(--red);padding:6px 12px;border-radius:8px;font-size:12px;" id="delete-account-btn">🗑️ Eliminar Conta</button>
+          ` : ''}
         </div>
         <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px;">
           <div>
@@ -89,7 +92,41 @@ export async function render() {
 
   if (isOwnProfile) {
     document.getElementById('edit-profile-btn')?.addEventListener('click', () => openEditModal(profile));
+    document.getElementById('delete-account-btn')?.addEventListener('click', () => confirmDeleteAccount());
   }
+}
+
+async function confirmDeleteAccount() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-header">
+        <span class="modal-title">🗑️ Eliminar Conta</span>
+        <button class="modal-close">✕</button>
+      </div>
+      <p style="color:var(--text-muted);margin-bottom:8px;">Tens a certeza? Esta ação é <strong style="color:var(--red);">irreversível</strong>.</p>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px;">Todos os teus dados, cromos e anúncios serão apagados.</p>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" style="flex:1;" id="cancel-delete-btn">Cancelar</button>
+        <button class="btn" style="flex:1;background:var(--red);color:#fff;" id="confirm-delete-btn">Sim, eliminar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+  document.getElementById('cancel-delete-btn').addEventListener('click', () => overlay.remove());
+  document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
+    try {
+      await apiFetch('/users/me', { method: 'DELETE' });
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.reload();
+    } catch (e) {
+      showToast(e.message, 'error');
+      overlay.remove();
+    }
+  });
 }
 
 function renderStars(rating) {
