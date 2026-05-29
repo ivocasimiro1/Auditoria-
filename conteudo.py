@@ -99,8 +99,8 @@ PREVIEW_MANHA = """
 
 {lista_jogos}
 
-🎯 A dica do dia chega às 15h00.
-🔴 Cobertura live a partir das 19h00.
+🎯 A dica do dia chega às 13h00.
+🔴 Dica live grátis às 19h30.
 
 👉 Acesso completo → /pro
 """

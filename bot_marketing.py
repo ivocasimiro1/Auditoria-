@@ -624,17 +624,17 @@ async def job_preview_manha(ctx: ContextTypes.DEFAULT_TYPE):
         lista    = formatar_lista_jogos(jogos)
         msg      = PREVIEW_MANHA.format(data=data_str, lista_jogos=lista)
     except Exception:
-        msg = "⚽ Bom dia! A dica do dia chega às 15h. /dica"
+        msg = "⚽ Bom dia! A dica do dia chega às 13h. /dica"
 
     await _broadcast_todos(ctx.bot, msg, "preview_manha")
 
 
 async def job_dica_tarde(ctx: ContextTypes.DEFAULT_TYPE):
-    """Enviado às 15h: dica gratuita do dia."""
+    """Enviado às 13h: dica gratuita pré-jogo do dia."""
     dica = _dica_do_dia()
     if not dica:
         return
-    odds_bk  = fetch_odds_jogo(dica["fd_code"], dica["casa"], dica["fora"])
+    odds_bk   = fetch_odds_jogo(dica["fd_code"], dica["casa"], dica["fora"])
     odds_str  = formatar_odds_bookmakers(odds_bk)
     odds_bloco = f"\n{odds_str}\n" if odds_str else ""
     msg = DICA_TEMPLATE.format(
@@ -643,6 +643,39 @@ async def job_dica_tarde(ctx: ContextTypes.DEFAULT_TYPE):
         rodape="💡 Quer <b>todas as dicas</b> de hoje? → /pro"
     )
     await _broadcast_todos(ctx.bot, msg, "dica_tarde")
+
+
+async def job_dica_live(ctx: ContextTypes.DEFAULT_TYPE):
+    """Enviado às 19h30: 1 dica live grátis se houver jogo com valor."""
+    try:
+        resultados = analisar_dia(MODELOS)
+        live_valor = [
+            r for r in resultados
+            if r["estado"] == "in" and r["apostas"] and r["previsao"] is not None
+        ]
+        if not live_valor:
+            return
+        melhor = live_valor[0]
+        aposta = melhor["apostas"][0]
+        gc, gf = melhor["golos_casa"], melhor["golos_fora"]
+        minuto = melhor["minuto"]
+        odds_bk = fetch_odds_jogo(melhor["fd_code"], melhor["casa_espn"], melhor["fora_espn"])
+        odds_str = formatar_odds_bookmakers(odds_bk)
+        odds_bloco = f"\n{odds_str}\n" if odds_str else ""
+        msg = (
+            f"🔴 <b>DICA LIVE — EdgeBet</b>\n\n"
+            f"{melhor['emoji']} <b>{melhor['liga']}</b>\n"
+            f"⏱ {minuto}'  {melhor['casa_espn']} <b>{gc}–{gf}</b> {melhor['fora_espn']}\n\n"
+            f"📌 Aposta: <b>{aposta.mercado}</b>\n"
+            f"💰 Odd: <b>{aposta.odd:.2f}</b>\n"
+            f"📊 Prob. modelo: <b>{aposta.prob_modelo:.0%}</b>\n"
+            f"🔢 Unidades: <b>1u</b>"
+            f"{odds_bloco}\n"
+            f"<i>Análise live ao minuto só no Pro → /pro</i>"
+        )
+        await _broadcast_todos(ctx.bot, msg, "dica_live")
+    except Exception:
+        pass
 
 
 async def job_resumo_noite(ctx: ContextTypes.DEFAULT_TYPE):
@@ -777,7 +810,8 @@ def main():
     jq = app.job_queue
     if jq is not None:
         jq.run_daily(job_preview_manha,     time=time(9,  0,  tzinfo=timezone.utc), name="preview_manha")
-        jq.run_daily(job_dica_tarde,        time=time(14, 0,  tzinfo=timezone.utc), name="dica_tarde")
+        jq.run_daily(job_dica_tarde,        time=time(13, 0,  tzinfo=timezone.utc), name="dica_tarde")
+        jq.run_daily(job_dica_live,         time=time(19, 30, tzinfo=timezone.utc), name="dica_live")
         jq.run_daily(job_resumo_noite,      time=time(21, 30, tzinfo=timezone.utc), name="resumo_noite")
         jq.run_daily(job_alertas_expiracao, time=time(10, 0,  tzinfo=timezone.utc), name="alertas_exp")
         print("⏰  Envios automáticos diários activados.")
