@@ -155,6 +155,25 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_html(msg, disable_web_page_preview=True)
 
+    # Notificar admin de novo utilizador
+    if novo:
+        stats = total_utilizadores()
+        user_tag = f"@{user.username}" if user.username else f"ID {tid}"
+        ref_txt = f"\n👥 Referido por: <code>{referido_por}</code>" if referido_por else ""
+        aviso_admin = (
+            f"🆕 <b>Novo utilizador no EdgeBet!</b>\n\n"
+            f"👤 {nome} ({user_tag})\n"
+            f"🆔 <code>{tid}</code>{ref_txt}\n\n"
+            f"📊 Total de utilizadores: <b>{stats['total']}</b> "
+            f"({stats['hoje']} hoje)"
+        )
+        for admin_id in ADMIN_IDS:
+            try:
+                await ctx.bot.send_message(admin_id, aviso_admin,
+                                           parse_mode=ParseMode.HTML)
+            except Exception:
+                pass
+
     # Enviar dica logo no start
     if novo:
         await _enviar_dica(update, ctx)
