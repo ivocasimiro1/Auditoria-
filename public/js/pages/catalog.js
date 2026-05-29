@@ -2,13 +2,33 @@ import { apiFetch, showToast, TYPE_LABELS } from '../app.js';
 
 // flagcdn.com country codes — free, no API key
 const FLAG_CODES = {
-  USA:'us', MEX:'mx', CAN:'ca', PAN:'pa', ENG:'gb-eng', ARG:'ar', NED:'nl', SEN:'sn',
-  FRA:'fr', BRA:'br', BEL:'be', MAR:'ma', POR:'pt', ESP:'es', GER:'de', JPN:'jp',
-  URU:'uy', COL:'co', KOR:'kr', CMR:'cm', CRO:'hr', AUS:'au', NGA:'ng', POL:'pl',
-  ITA:'it', SUI:'ch', ECU:'ec', GHA:'gh', DEN:'dk', TUN:'tn', NZL:'nz', SAU:'sa',
-  IRN:'ir', WAL:'gb-wls', CRC:'cr', SRB:'rs', EGY:'eg', SCO:'gb-sct', AUT:'at',
-  TUR:'tr', QAT:'qa', HND:'hn', SVK:'sk', CMV:'cv', VEN:'ve',
-  MEX2:'mx', MEX3:'mx', CMR2:'cm',
+  // Group A
+  MEX:'mx', ZAF:'za', KOR:'kr', CZE:'cz',
+  // Group B
+  CAN:'ca', BIH:'ba', QAT:'qa', SUI:'ch',
+  // Group C
+  BRA:'br', MAR:'ma', HAI:'ht', SCO:'gb-sct',
+  // Group D
+  USA:'us', PAR:'py', AUS:'au', TUR:'tr',
+  // Group E
+  GER:'de', CUW:'cw', CIV:'ci', ECU:'ec',
+  // Group F
+  NED:'nl', JPN:'jp', SWE:'se', TUN:'tn',
+  // Group G
+  BEL:'be', EGY:'eg', IRN:'ir', NZL:'nz',
+  // Group H
+  ESP:'es', CMV:'cv', SAU:'sa', URU:'uy',
+  // Group I
+  FRA:'fr', SEN:'sn', IRQ:'iq', NOR:'no',
+  // Group J
+  ARG:'ar', ALG:'dz', AUT:'at', JOR:'jo',
+  // Group K
+  POR:'pt', COD:'cd', UZB:'uz', COL:'co',
+  // Group L
+  ENG:'gb-eng', CRO:'hr', GHA:'gh', PAN:'pa',
+  // Legacy / kept for compatibility
+  CMR:'cm', NGA:'ng', POL:'pl', ITA:'it', DEN:'dk', WAL:'gb-wls', CRC:'cr',
+  SRB:'rs', HND:'hn', SVK:'sk', VEN:'ve',
 };
 
 const TYPE_ICONS = { player:'⚽', badge:'🛡️', logo:'🏷️', special:'✨', stadium:'🏟️' };

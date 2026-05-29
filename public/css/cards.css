@@ -1,17 +1,33 @@
 /* ── Team color palette ── */
 :root {
-  --c-USA:#B22234;--c-MEX:#006847;--c-CAN:#FF0000;--c-PAN:#005293;
-  --c-ENG:#003090;--c-ARG:#74ACDF;--c-NED:#FF6600;--c-SEN:#00853F;
-  --c-FRA:#002395;--c-BRA:#009C3B;--c-BEL:#000000;--c-MAR:#C1272D;
-  --c-POR:#006600;--c-ESP:#AA151B;--c-GER:#000000;--c-JPN:#BC002D;
-  --c-URU:#5EB6E4;--c-COL:#FCD116;--c-KOR:#003478;--c-CMR:#007A5E;
-  --c-CRO:#FF0000;--c-AUS:#00008B;--c-NGA:#008751;--c-POL:#DC143C;
-  --c-ITA:#003399;--c-SUI:#FF0000;--c-ECU:#FFD100;--c-GHA:#006B3F;
-  --c-DEN:#C60C30;--c-TUN:#E70013;--c-NZL:#00247D;--c-SAU:#006C35;
-  --c-IRN:#239F40;--c-WAL:#00AB39;--c-CRC:#002B7F;--c-SRB:#C6363C;
-  --c-EGY:#CE1126;--c-SCO:#003087;--c-AUT:#ED2939;--c-TUR:#E30A17;
-  --c-QAT:#8D1B3D;--c-HND:#0073CF;--c-SVK:#0B4EA2;--c-CMV:#003893;
-  --c-VEN:#CF142B;--c-MEX2:#006847;--c-MEX3:#006847;--c-CMR2:#007A5E;
+  /* Group A */
+  --c-MEX:#006847;--c-ZAF:#007A4D;--c-KOR:#003478;--c-CZE:#D7141A;
+  /* Group B */
+  --c-CAN:#FF0000;--c-BIH:#002395;--c-QAT:#8D1B3D;--c-SUI:#FF0000;
+  /* Group C */
+  --c-BRA:#009C3B;--c-MAR:#C1272D;--c-HAI:#00209F;--c-SCO:#003087;
+  /* Group D */
+  --c-USA:#B22234;--c-PAR:#D52B1E;--c-AUS:#00008B;--c-TUR:#E30A17;
+  /* Group E */
+  --c-GER:#000000;--c-CUW:#003DA5;--c-CIV:#F77F00;--c-ECU:#FFD100;
+  /* Group F */
+  --c-NED:#FF6600;--c-JPN:#BC002D;--c-SWE:#006AA7;--c-TUN:#E70013;
+  /* Group G */
+  --c-BEL:#000000;--c-EGY:#CE1126;--c-IRN:#239F40;--c-NZL:#00247D;
+  /* Group H */
+  --c-ESP:#AA151B;--c-CMV:#003893;--c-SAU:#006C35;--c-URU:#5EB6E4;
+  /* Group I */
+  --c-FRA:#002395;--c-SEN:#00853F;--c-IRQ:#CE1126;--c-NOR:#EF2B2D;
+  /* Group J */
+  --c-ARG:#74ACDF;--c-ALG:#006233;--c-AUT:#ED2939;--c-JOR:#007A3D;
+  /* Group K */
+  --c-POR:#006600;--c-COD:#007FFF;--c-UZB:#1EB53A;--c-COL:#FCD116;
+  /* Group L */
+  --c-ENG:#003090;--c-CRO:#FF0000;--c-GHA:#006B3F;--c-PAN:#005293;
+  /* Legacy kept for compatibility */
+  --c-CMR:#007A5E;--c-NGA:#008751;--c-POL:#DC143C;--c-ITA:#003399;
+  --c-DEN:#C60C30;--c-WAL:#00AB39;--c-CRC:#002B7F;--c-SRB:#C6363C;
+  --c-HND:#0073CF;--c-SVK:#0B4EA2;--c-VEN:#CF142B;
   --c-SPECIAL:#C8A000;
 }
 
