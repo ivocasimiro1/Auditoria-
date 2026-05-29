@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { query, queryOne, execute } from '../db';
 import { authenticateToken } from '../middleware/auth';
 import type { User } from '../types';
@@ -74,12 +75,25 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 router.put('/me', authenticateToken, async (req: Request, res: Response): Promise<void> => {
-  const { username, location, avatar_url } = req.body;
+  const { username, location, avatar_url, email, new_password, current_password } = req.body;
 
   try {
     if (username) {
       const existing = await queryOne('SELECT id FROM users WHERE username = $1 AND id != $2', [username, req.userId]);
       if (existing) { res.status(409).json({ error: 'Username já em uso' }); return; }
+    }
+
+    if (email) {
+      const existing = await queryOne('SELECT id FROM users WHERE email = $1 AND id != $2', [email, req.userId]);
+      if (existing) { res.status(409).json({ error: 'Email já em uso' }); return; }
+    }
+
+    if (new_password) {
+      if (!current_password) { res.status(400).json({ error: 'Precisas de introduzir a password atual' }); return; }
+      const user = await queryOne<{ password_hash: string }>('SELECT password_hash FROM users WHERE id = $1', [req.userId]);
+      if (!user || !bcrypt.compareSync(current_password, user.password_hash)) {
+        res.status(401).json({ error: 'Password atual incorreta' }); return;
+      }
     }
 
     const updates: string[] = [];
@@ -89,6 +103,8 @@ router.put('/me', authenticateToken, async (req: Request, res: Response): Promis
     if (username) { updates.push(`username = $${idx++}`); values.push(username); }
     if (location !== undefined) { updates.push(`location = $${idx++}`); values.push(location || null); }
     if (avatar_url !== undefined) { updates.push(`avatar_url = $${idx++}`); values.push(avatar_url || null); }
+    if (email) { updates.push(`email = $${idx++}`); values.push(email); }
+    if (new_password) { updates.push(`password_hash = $${idx++}`); values.push(bcrypt.hashSync(new_password, 10)); }
 
     if (updates.length === 0) { res.status(400).json({ error: 'Nada para atualizar' }); return; }
 
