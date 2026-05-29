@@ -465,9 +465,10 @@ async def cmd_admin(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"💶 Receita total: <b>€{stats_s['receita_total']:.2f}</b>\n"
             f"📈 ROI modelo: <b>{roi['roi']:+.1f}%</b>\n\n"
             f"Comandos:\n"
-            f"/admin stats — este painel\n"
+            f"/admin hoje — jogos e dicas de hoje\n"
             f"/admin broadcast [msg] — enviar a todos\n"
-            f"/admin ativar [id] [plano] — dar Pro\n"
+            f"/admin ativar [id] — dar Pro\n"
+            f"/admin resultado [w/l] [odd] — registar resultado de dica\n"
         )
         await update.message.reply_html(msg)
         return
@@ -476,6 +477,81 @@ async def cmd_admin(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     if sub == "stats":
         await cmd_admin(update, ctx)
+
+    elif sub == "hoje":
+        await update.message.reply_html("⏳ A analisar jogos de hoje...")
+        try:
+            resultados = analisar_dia(MODELOS)
+        except Exception as e:
+            await update.message.reply_html(f"⚠️ Erro: {e}")
+            return
+
+        if not resultados:
+            await update.message.reply_html("Sem jogos encontrados hoje.")
+            return
+
+        # Resumo dos jogos
+        linhas = [f"📅 <b>Hoje — {datetime.now().strftime('%d/%m/%Y')}</b>\n"]
+        dicas_valor = 0
+        for r in resultados:
+            hora = r["hora_utc"].strftime("%H:%M") if r.get("hora_utc") else "--:--"
+            estado = "🔴 LIVE" if r["estado"] == "in" else f"🕐 {hora}"
+            tem_valor = " 🎯" if r["apostas"] else ""
+            prob_str = ""
+            if r["previsao"]:
+                p = r["previsao"]
+                prob_str = (f" [{p['vitoria_casa']:.0%}/"
+                           f"{p['empate']:.0%}/"
+                           f"{p['vitoria_fora']:.0%}]")
+            linhas.append(
+                f"{r['emoji']} {estado}  "
+                f"{r['casa_espn']} vs {r['fora_espn']}"
+                f"{prob_str}{tem_valor}"
+            )
+            if r["apostas"]:
+                dicas_valor += 1
+                a = r["apostas"][0]
+                linhas.append(
+                    f"   └ <b>{a.mercado}</b> @ {a.odd:.2f} "
+                    f"(EV {a.valor_esperado:+.1%})"
+                )
+
+        stats_u = total_utilizadores()
+        linhas.append(
+            f"\n📊 <b>Resumo:</b> {len(resultados)} jogos · "
+            f"{dicas_valor} apostas de valor\n"
+            f"👥 Utilizadores: {stats_u['total']} ({stats_u['hoje']} hoje)"
+        )
+        await update.message.reply_html("\n".join(linhas))
+
+    elif sub == "resultado":
+        # /admin resultado w 2.10  ou  /admin resultado l
+        if len(args) < 2:
+            await update.message.reply_html(
+                "Uso:\n"
+                "/admin resultado w [odd] — dica ganhou\n"
+                "/admin resultado l [odd] — dica perdeu"
+            )
+            return
+        from database import registar_dica, atualizar_resultado_dica
+        outcome = args[1].lower()
+        try:
+            odd = float(args[2]) if len(args) > 2 else 2.0
+        except ValueError:
+            odd = 2.0
+        lucro = (odd - 1) if outcome == "w" else -1.0
+        resultado_txt = "W" if outcome == "w" else "L"
+        emoji = "✅" if outcome == "w" else "❌"
+        # Registar última dica gerada como resultado
+        dica_id = registar_dica("Manual", "—", "—", odd, stake=1.0, tipo="gratuita")
+        atualizar_resultado_dica(dica_id, resultado_txt, lucro)
+        roi = roi_historico()
+        await update.message.reply_html(
+            f"{emoji} Resultado registado: <b>{'GANHOU' if outcome=='w' else 'PERDEU'}</b> "
+            f"@ {odd:.2f}\n"
+            f"📈 ROI acumulado: <b>{roi['roi']:+.1f}%</b> "
+            f"({roi['ganhas']}/{roi['total_dicas']} dicas)"
+        )
 
     elif sub == "broadcast":
         if len(args) < 2:
