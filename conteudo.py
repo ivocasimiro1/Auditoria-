@@ -328,6 +328,38 @@ Sem contratos. Cancelas quando quiseres.
 """
 
 # ---------------------------------------------------------------------------
+# Partilha (captação viral)
+# ---------------------------------------------------------------------------
+
+PARTILHAR_TEMPLATE = """
+📣 <b>Partilha o EdgeBet e ganha dias Pro grátis!</b>
+
+Copia esta mensagem e partilha com amigos que apostam:
+
+┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+⚽ Estou a usar o <b>EdgeBet</b> — o modelo de apostas de futebol com IA que analisa 27 competições e dá dicas com odds positivas.
+
+🆓 Dicas gratuitas todos os dias.
+📊 Modelo matemático, não palpites.
+🏆 Champions League, Premier League, Mundial 2026 e mais.
+
+👉 Experimenta aqui (grátis): {link}
+┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+
+🎁 <b>Por cada amigo que se juntar, ganhas 5 dias Pro grátis!</b>
+
+O teu link pessoal:
+<code>{link}</code>
+"""
+
+PARTILHAR_GRUPO = """✂️ <b>Copia e cola num grupo de apostas:</b>
+
+⚽ Estou a usar um modelo de IA para apostas de futebol — já vi as dicas gratuitas e parecem sólidas. Chama-se EdgeBet, analisa as probabilidades reais e compara com as odds dos bookmakers.
+
+Dicas grátis todos os dias: {link}
+"""
+
+# ---------------------------------------------------------------------------
 # Suporte
 # ---------------------------------------------------------------------------
 

@@ -68,6 +68,7 @@ from conteudo import (
     PREVIEW_MANHA, RESUMO_NOITE, FAQ_PRECO, FAQ_COMO_FUNCIONA,
     FAQ_PRECISAO, FAQ_SUBSCREVER, FAQ_CANCELAR, FAQ_LIVE, FAQ_LIGAS,
     FAQ_REFERIDO, INFO_PRO, SUPORTE, FUNIL_DIA3, FUNIL_DIA7,
+    PARTILHAR_TEMPLATE, PARTILHAR_GRUPO,
     get_faq_resposta, formatar_lista_jogos,
 )
 from motor import treinar_todos, analisar_dia
@@ -170,6 +171,11 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             chat_id=tid, data={"nome": nome, "tid": tid},
             name=f"funil7_{tid}"
         )
+        ctx.job_queue.run_once(
+            _funil_dia14, when=14 * 86400,
+            chat_id=tid, data={"nome": nome, "tid": tid},
+            name=f"funil14_{tid}"
+        )
 
 
 async def cmd_dica(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -271,6 +277,16 @@ async def cmd_suporte(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_cancelar_info(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_html(FAQ_CANCELAR)
+
+
+async def cmd_partilhar(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    tid  = update.effective_user.id
+    link = f"https://t.me/{BOT_USERNAME}?start=ref_{tid}"
+    msg  = PARTILHAR_TEMPLATE.format(link=link)
+    await update.message.reply_html(msg, disable_web_page_preview=True)
+    # Segunda mensagem com texto para copiar para grupos
+    msg2 = PARTILHAR_GRUPO.format(link=link)
+    await update.message.reply_html(msg2, disable_web_page_preview=True)
 
 
 # ---------------------------------------------------------------------------
@@ -527,6 +543,18 @@ async def _funil_dia7(ctx: ContextTypes.DEFAULT_TYPE):
     await _enviar_seguro(ctx.bot, data["tid"], msg)
 
 
+async def _funil_dia14(ctx: ContextTypes.DEFAULT_TYPE):
+    from conteudo import FUNIL_DIA14
+    data = ctx.job.data
+    roi  = roi_historico()
+    msg  = FUNIL_DIA14.format(
+        nome=data["nome"],
+        dicas_pro=roi.get("total_dicas", 0) * 8,
+        roi=roi.get("roi", 0.0),
+    )
+    await _enviar_seguro(ctx.bot, data["tid"], msg)
+
+
 # ---------------------------------------------------------------------------
 # Arranque
 # ---------------------------------------------------------------------------
@@ -563,6 +591,7 @@ def main():
     app.add_handler(CommandHandler("preco",        cmd_preco))
     app.add_handler(CommandHandler("comofunciona", cmd_comofunciona))
     app.add_handler(CommandHandler("referido",     cmd_referido))
+    app.add_handler(CommandHandler("partilhar",   cmd_partilhar))
     app.add_handler(CommandHandler("suporte",      cmd_suporte))
     app.add_handler(CommandHandler("cancelar",     cmd_cancelar_info))
     app.add_handler(CommandHandler("admin",        cmd_admin))
