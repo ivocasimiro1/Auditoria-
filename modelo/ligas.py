@@ -1,6 +1,6 @@
 """
 Configuração de ligas e normalização de nomes de equipas.
-Inclui ligas nacionais, competições europeias e taças.
+Inclui ligas nacionais, competições europeias, taças e seleções nacionais.
 """
 
 import difflib
@@ -9,6 +9,7 @@ from datetime import date
 # tipo "nacional"  → treina modelo com dados históricos (football-data.co.uk)
 # tipo "europeia"  → só ESPN (previsão cross-liga)
 # tipo "taca"      → só ESPN
+# tipo "selecoes"  → só ESPN, sem modelo Dixon-Coles (seleções nacionais)
 
 LIGAS = {
     # ── Ligas Nacionais Principais ─────────────────────────────────────────
@@ -28,19 +29,27 @@ LIGAS = {
     "UCL": {"nome": "Champions League",  "pais": "Europa",     "espn_slug": "uefa.champions",   "emoji": "🏆", "tipo": "europeia"},
     "UEL": {"nome": "Europa League",     "pais": "Europa",     "espn_slug": "uefa.europa",      "emoji": "🥈", "tipo": "europeia"},
     "UCO": {"nome": "Conference League", "pais": "Europa",     "espn_slug": "uefa.europa.conf", "emoji": "🥉", "tipo": "europeia"},
-    "UNL": {"nome": "Nations League",    "pais": "Europa",     "espn_slug": "uefa.nations",     "emoji": "🌍", "tipo": "europeia"},
     # ── Taças Nacionais ────────────────────────────────────────────────────
     "FAC": {"nome": "FA Cup",            "pais": "Inglaterra", "espn_slug": "eng.fa",           "emoji": "🏆🏴󠁧󠁢󠁥󠁮󠁧󠁿", "tipo": "taca"},
     "CDR": {"nome": "Copa del Rey",      "pais": "Espanha",    "espn_slug": "esp.copa_del_rey", "emoji": "🏆🇪🇸", "tipo": "taca"},
     "CIT": {"nome": "Coppa Italia",      "pais": "Itália",     "espn_slug": "ita.coppa_italia", "emoji": "🏆🇮🇹", "tipo": "taca"},
     "DFB": {"nome": "DFB Pokal",         "pais": "Alemanha",   "espn_slug": "ger.dfb_pokal",    "emoji": "🏆🇩🇪", "tipo": "taca"},
     "TCP": {"nome": "Taça de Portugal",  "pais": "Portugal",   "espn_slug": "por.cup",          "emoji": "🏆🇵🇹", "tipo": "taca"},
+    # ── Seleções Nacionais ─────────────────────────────────────────────────
+    "WCQ": {"nome": "Qualif. Mundial 2026 (UEFA)", "pais": "Europa",       "espn_slug": "fifa.worldq.uefa",     "emoji": "🌍🏆", "tipo": "selecoes"},
+    "WCS": {"nome": "Qualif. Mundial 2026 (CONMEBOL)", "pais": "América",  "espn_slug": "fifa.worldq.conmebol", "emoji": "🌎🏆", "tipo": "selecoes"},
+    "WCA": {"nome": "Qualif. Mundial 2026 (CONCACAF)", "pais": "América N","espn_slug": "fifa.worldq.concacaf", "emoji": "🌎🏆", "tipo": "selecoes"},
+    "EUQ": {"nome": "Qualif. Euro 2028",           "pais": "Europa",       "espn_slug": "uefa.euro.qualifying", "emoji": "🇪🇺", "tipo": "selecoes"},
+    "CAM": {"nome": "Copa América",                "pais": "América Sul",  "espn_slug": "conmebol.america",     "emoji": "🏆🌎", "tipo": "selecoes"},
+    "UNL": {"nome": "Nations League",             "pais": "Europa",       "espn_slug": "uefa.nations",         "emoji": "🌍",  "tipo": "selecoes"},
+    "GC":  {"nome": "Gold Cup (CONCACAF)",         "pais": "América N",    "espn_slug": "concacaf.gold",        "emoji": "🏆🌎", "tipo": "selecoes"},
+    "ACN": {"nome": "CAN (Africa)",                "pais": "África",       "espn_slug": "caf.nations",          "emoji": "🌍🏆", "tipo": "selecoes"},
 }
 
 # Ligas com dados históricos (football-data.co.uk)
 LIGAS_NACIONAIS = {k: v for k, v in LIGAS.items() if v["tipo"] == "nacional"}
-# Competições sem dados históricos próprios (cross-liga)
-LIGAS_ESPN_ONLY = {k: v for k, v in LIGAS.items() if v["tipo"] in ("europeia", "taca")}
+# Competições sem dados históricos próprios (cross-liga e seleções)
+LIGAS_ESPN_ONLY = {k: v for k, v in LIGAS.items() if v["tipo"] in ("europeia", "taca", "selecoes")}
 
 # ---------------------------------------------------------------------------
 # Mapa ESPN → football-data.co.uk

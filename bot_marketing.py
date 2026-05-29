@@ -104,7 +104,7 @@ def _dica_do_dia() -> dict | None:
     """Gera a melhor dica gratuita do dia a partir do modelo."""
     try:
         resultados = analisar_dia(MODELOS, limiar_ev=0.06)
-        com_valor  = [r for r in resultados if r["apostas"] and r["estado"] == "pre"]
+        com_valor  = [r for r in resultados if r["apostas"] and r["estado"] == "pre" and r["previsao"] is not None]
         if not com_valor:
             return None
         melhor = com_valor[0]

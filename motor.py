@@ -1,7 +1,7 @@
 """
 Motor central do EdgeBet.
 Treina os modelos e gera previsões + apostas de valor.
-Suporta ligas nacionais (com histórico) e competições europeias/taças (cross-liga).
+Suporta ligas nacionais (com histórico), competições europeias/taças (cross-liga) e seleções nacionais.
 """
 
 import numpy as np
@@ -178,7 +178,7 @@ def analisar_dia(
 ) -> list[dict]:
     """
     Obtém jogos de hoje (ou data_str=YYYYMMDD) e gera previsões.
-    Suporta ligas nacionais e competições europeias/taças.
+    Suporta ligas nacionais, competições europeias/taças e seleções nacionais.
     Ordena: live primeiro, depois por hora.
     """
     jogos_raw = fetch_todas_ligas(data_str)
@@ -206,6 +206,11 @@ def analisar_dia(
                 )
             except Exception:
                 continue
+        elif tipo_liga == "selecoes":
+            # Competições de seleções nacionais: sem modelo Dixon-Coles
+            # Apenas mostra informação + odds dos bookmakers
+            prev = None
+            fallback = False
         else:
             # Previsão cross-liga (europeia / taça)
             prev, fallback = prever_cross_liga(
@@ -217,10 +222,10 @@ def analisar_dia(
             if prev is None:
                 continue
 
-        # Apostas de valor (se ESPN tiver odds)
+        # Apostas de valor (se ESPN tiver odds e houver previsão do modelo)
         odds    = jogo["odds"]
         apostas = []
-        if any(v is not None for v in odds.values()):
+        if prev is not None and any(v is not None for v in odds.values()):
             apostas = analisar_mercados(
                 prev,
                 odds_casa   = odds.get("o1") or 0,

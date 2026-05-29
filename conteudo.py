@@ -73,6 +73,15 @@ DICA_PRO_TEMPLATE = """
 <i>⚠️ Aposte com responsabilidade.</i>
 """
 
+JOGO_SELECOES_TEMPLATE = """
+🌍 <b>{emoji} {liga}</b>
+🏟 {casa} vs {fora}
+🕐 {hora}
+
+{odds_casas}
+<i>Jogo de seleções — acompanha as odds e aposta com responsabilidade.</i>
+"""
+
 SEM_JOGOS_HOJE = """
 📅 Hoje não há jogos com valor suficiente nas ligas analisadas.
 

@@ -87,9 +87,6 @@ def _estado_emoji(estado: str) -> str:
 
 def formatar_previsao(r: dict, bankroll: float = 1000.0) -> str:
     p   = r["previsao"]
-    vc  = p["vitoria_casa"]
-    emp = p["empate"]
-    vf  = p["vitoria_fora"]
 
     estado  = r["estado"]
     minuto  = r["minuto"]
@@ -102,6 +99,16 @@ def formatar_previsao(r: dict, bankroll: float = 1000.0) -> str:
         hora = r["hora_utc"]
         hora_str = hora.strftime("%H:%M UTC") if hora else ""
         header += f"🕐 {hora_str}  {r['casa_espn']} vs {r['fora_espn']}\n"
+
+    # Jogos de seleções: sem modelo Dixon-Coles, só info + odds
+    if p is None:
+        odds_bk = fetch_odds_jogo(r.get("fd_code", ""), r.get("casa_espn", ""), r.get("fora_espn", ""))
+        odds_txt = "\n" + formatar_odds_bookmakers(odds_bk) + "\n" if odds_bk else "\n<i>Odds não disponíveis de momento.</i>\n"
+        return header + odds_txt + "\n<i>⚽ Jogo de seleções — análise por modelo não disponível.</i>"
+
+    vc  = p["vitoria_casa"]
+    emp = p["empate"]
+    vf  = p["vitoria_fora"]
 
     linhas = (
         f"\n<b>Resultado Final</b>\n"
@@ -159,14 +166,18 @@ def formatar_resumo(resultados: list[dict]) -> str:
             hora = r["hora_utc"]
             placar = hora.strftime("%H:%M") if hora else ""
 
-        vc_pct  = f"{p['vitoria_casa']:.0%}"
-        emp_pct = f"{p['empate']:.0%}"
-        vf_pct  = f"{p['vitoria_fora']:.0%}"
+        # For selecoes, p is None
+        if p:
+            vc_pct  = f"{p['vitoria_casa']:.0%}"
+            emp_pct = f"{p['empate']:.0%}"
+            vf_pct  = f"{p['vitoria_fora']:.0%}"
+            prob_str = f"\n  <code>{vc_pct} | {emp_pct} | {vf_pct}</code>"
+        else:
+            prob_str = ""
 
         val = " 🎯" if r["apostas"] else ""
         linhas.append(
-            f"  {placar}  {r['casa_espn']} vs {r['fora_espn']}{val}\n"
-            f"  <code>{vc_pct} | {emp_pct} | {vf_pct}</code>"
+            f"  {placar}  {r['casa_espn']} vs {r['fora_espn']}{val}{prob_str}"
         )
 
     linhas.append("\n\n💡 Usa /prever &lt;casa&gt; &lt;fora&gt; para ver detalhes de um jogo.")

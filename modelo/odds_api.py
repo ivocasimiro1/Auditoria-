@@ -34,6 +34,13 @@ ODDS_API_SLUG: dict[str, str] = {
     "UCL": "soccer_uefa_champs_league",
     "UEL": "soccer_uefa_europa_league",
     "UCO": "soccer_uefa_europa_conference_league",
+    "WCQ": "soccer_fifa_world_cup_qualification_europe",
+    "WCS": "soccer_fifa_world_cup_qualification_south_america",
+    "EUQ": "soccer_uefa_european_championship_qualification",
+    "CAM": "soccer_conmebol_copa_america",
+    "GC":  "soccer_concacaf_gold_cup",
+    "UNL": "soccer_uefa_nations_league",
+    "ACN": "soccer_caf_african_cup_of_nations",
 }
 
 # Casas de apostas a mostrar (por ordem de preferência)
