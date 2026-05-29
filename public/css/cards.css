@@ -1,27 +1,153 @@
-/* Sticker card base */
+/* ── Team color palette ── */
+:root {
+  --c-USA:#B22234; --c-MEX:#006847; --c-CAN:#FF0000; --c-PAN:#005293;
+  --c-ENG:#003090; --c-ARG:#74ACDF; --c-NED:#FF6600; --c-SEN:#00853F;
+  --c-FRA:#002395; --c-BRA:#009C3B; --c-BEL:#000000; --c-MAR:#C1272D;
+  --c-POR:#006600; --c-ESP:#AA151B; --c-GER:#000000; --c-JPN:#BC002D;
+  --c-URU:#5EB6E4; --c-COL:#FCD116; --c-KOR:#003478; --c-CMR:#007A5E;
+  --c-CRO:#FF0000; --c-AUS:#00008B; --c-NGA:#008751; --c-POL:#DC143C;
+  --c-ITA:#003399; --c-SUI:#FF0000; --c-ECU:#FFD100; --c-GHA:#006B3F;
+  --c-DEN:#C60C30; --c-TUN:#E70013; --c-NZL:#00247D; --c-SAU:#006C35;
+  --c-IRN:#239F40; --c-WAL:#00AB39; --c-CRC:#002B7F; --c-SRB:#C6363C;
+  --c-EGY:#CE1126; --c-SCO:#003087; --c-AUT:#ED2939; --c-TUR:#E30A17;
+  --c-QAT:#8D1B3D; --c-HND:#0073CF; --c-SVK:#0B4EA2; --c-CMV:#003893;
+  --c-VEN:#CF142B; --c-MEX2:#006847; --c-MEX3:#006847; --c-CMR2:#007A5E;
+  --c-SPECIAL:#C8A000;
+}
+
+/* ── Base card ── */
 .sticker-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  position: relative;
+  width: 130px;
+  min-height: 190px;
+  border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-  position: relative;
-  aspect-ratio: 2/3;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
   display: flex;
   flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  flex-shrink: 0;
 }
 
 .sticker-card:hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
-  border-color: var(--blue-light);
+  transform: translateY(-5px) scale(1.03);
+  box-shadow: 0 16px 36px rgba(0,0,0,0.55);
+  border-color: rgba(255,255,255,0.3);
+  z-index: 2;
 }
 
-/* Holographic shimmer */
+/* ── Colour header band ── */
+.card-band {
+  height: 6px;
+  width: 100%;
+  background: var(--team-color, var(--blue));
+  flex-shrink: 0;
+}
+
+/* ── Flag / image area ── */
+.sticker-img {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #0d1a2e 0%, #1a2a40 100%);
+  overflow: hidden;
+  position: relative;
+  min-height: 100px;
+}
+
+.sticker-img img {
+  max-width: 88%;
+  max-height: 88%;
+  object-fit: contain;
+  position: relative;
+  z-index: 2;
+  border-radius: 4px;
+}
+
+.sticker-img .card-emoji {
+  font-size: 40px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Subtle glow behind flag */
+.sticker-img::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ── Info strip ── */
+.sticker-info {
+  background: var(--bg-card);
+  padding: 6px 8px 8px;
+  position: relative;
+  z-index: 2;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.sticker-number {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sticker-name {
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+  margin: 2px 0 1px;
+  line-height: 1.2;
+}
+
+.sticker-team {
+  font-size: 9px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Status badge ── */
+.sticker-status-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 5;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+.status-have_to_trade { background: var(--blue); color: #fff; }
+.status-need          { background: var(--red);  color: #fff; }
+.status-have_double   { background: #16a34a;      color: #fff; }
+
+/* ── Rarity indicators ── */
+
+/* HOLOGRAPHIC */
 .sticker-card.rarity-holographic {
   border-color: var(--gold);
 }
+.sticker-card.rarity-holographic .card-band {
+  background: linear-gradient(90deg, #ffd700, #ff6ec7, #6ec6ff, #ffd700);
+  background-size: 200% 100%;
+  animation: band-shift 3s linear infinite;
+}
+@keyframes band-shift { to { background-position: 200% 0; } }
 
 .sticker-card.rarity-holographic::before {
   content: '';
@@ -30,154 +156,131 @@
   background: conic-gradient(
     from 0deg,
     transparent 0deg,
-    rgba(255, 215, 0, 0.15) 60deg,
-    rgba(200, 16, 46, 0.12) 120deg,
-    rgba(0, 61, 165, 0.12) 180deg,
-    rgba(255, 215, 0, 0.15) 240deg,
-    transparent 300deg,
-    transparent 360deg
+    rgba(255,215,0,0.12) 60deg,
+    rgba(200,16,46,0.10) 120deg,
+    rgba(0,61,165,0.10) 180deg,
+    rgba(255,215,0,0.12) 240deg,
+    transparent 300deg
   );
   pointer-events: none;
   z-index: 1;
-  border-radius: var(--radius);
-  animation: shimmer-rotate 4s linear infinite;
+  border-radius: 10px;
+  animation: holo-rotate 5s linear infinite;
+}
+@keyframes holo-rotate { to { filter: hue-rotate(360deg); } }
+
+.rarity-crown {
+  position: absolute;
+  top: 10px;
+  left: 6px;
+  z-index: 5;
+  font-size: 12px;
+  line-height: 1;
+  filter: drop-shadow(0 0 3px rgba(255,215,0,0.8));
 }
 
-@keyframes shimmer-rotate {
-  from { filter: hue-rotate(0deg); opacity: 0.8; }
-  50% { opacity: 1; }
-  to { filter: hue-rotate(360deg); opacity: 0.8; }
-}
-
-/* Foil cards */
+/* FOIL */
 .sticker-card.rarity-foil {
-  border-color: #c0c0c0;
-  background: linear-gradient(135deg, var(--bg-card) 0%, #1a2a3a 100%);
+  border-color: #a8b8c8;
 }
-
+.sticker-card.rarity-foil .card-band {
+  background: linear-gradient(90deg, #c0c0c0, #e8e8e8, #a0a0a0, #e8e8e8);
+  background-size: 200% 100%;
+  animation: band-shift 2s linear infinite;
+}
 .sticker-card.rarity-foil::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(192,192,192,0.08) 0%, transparent 50%, rgba(192,192,192,0.08) 100%);
+  background: linear-gradient(135deg,
+    rgba(192,192,192,0.10) 0%,
+    transparent 50%,
+    rgba(192,192,192,0.10) 100%);
   pointer-events: none;
   z-index: 1;
+  border-radius: 10px;
 }
 
-/* Card image area */
-.sticker-img {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(160deg, var(--blue-dark) 0%, var(--bg-card2) 100%);
-  font-size: 42px;
-  position: relative;
-  overflow: hidden;
+/* ── User photo badge ── */
+.has-user-photo .sticker-img img {
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 8px rgba(255,215,0,0.4);
 }
 
-.sticker-img.team-badge { background: linear-gradient(160deg, #1a1a2e, #162447); }
-.sticker-img.type-stadium { background: linear-gradient(160deg, #0d2137, #1a3a5c); font-size: 36px; }
-.sticker-img.type-special { background: linear-gradient(160deg, #1a0d0d, #3d1a00); }
-
-.sticker-img img {
-  max-width: 80%;
-  max-height: 80%;
-  object-fit: contain;
-  position: relative;
-  z-index: 2;
-}
-
-/* Card info strip */
-.sticker-info {
-  padding: 8px 10px;
-  background: var(--bg-card);
-  position: relative;
-  z-index: 2;
-}
-
-.sticker-number {
-  font-size: 10px;
-  color: var(--text-muted);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-}
-
-.sticker-name {
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 1px 0;
-}
-
-.sticker-team {
-  font-size: 10px;
-  color: var(--text-muted);
-}
-
-/* Status badge on card */
-.sticker-status-badge {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  z-index: 3;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.status-have_to_trade { background: var(--blue); color: var(--white); }
-.status-need { background: var(--red); color: var(--white); }
-.status-have_double { background: var(--success); color: var(--white); }
-
-/* Rarity crown */
-.rarity-crown {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  z-index: 3;
-  font-size: 14px;
-}
-
-/* Grid */
+/* ── Grid ── */
 .sticker-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-@media (max-width: 640px) {
-  .sticker-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
-}
+/* ── Team section ── */
+.team-section { margin-bottom: 36px; }
 
-/* Team section header */
-.team-section { margin-bottom: 32px; }
 .team-header {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
   border-bottom: 2px solid var(--border);
 }
-.team-flag { font-size: 24px; }
-.team-title { font-size: 16px; font-weight: 700; }
-.team-count { font-size: 12px; color: var(--text-muted); margin-left: auto; }
-.team-progress-bar {
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-  margin-top: 4px;
-  overflow: hidden;
+
+.team-flag-img {
+  width: 36px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid rgba(255,255,255,0.15);
 }
-.team-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--blue), var(--gold));
-  border-radius: 2px;
-  transition: width 0.4s ease;
+
+.team-title { font-size: 15px; font-weight: 800; }
+.team-subtitle { font-size: 11px; color: var(--text-muted); }
+.team-count { font-size: 12px; color: var(--text-muted); margin-left: auto; text-align: right; }
+
+.team-progress-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 3px; width: 80px; overflow: hidden; }
+.team-progress-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--gold)); border-radius: 2px; transition: width 0.5s; }
+
+/* ── Listing card (OLX style) ── */
+.listing-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+.listing-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  border-color: var(--blue-light);
+}
+.listing-img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  background: var(--bg-card2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+}
+.listing-img img { width: 100%; height: 100%; object-fit: cover; }
+.listing-info { padding: 10px 12px; }
+.listing-title { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.listing-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+.listing-price { font-size: 15px; font-weight: 800; color: var(--gold); margin-top: 4px; }
+.listing-type-trade { color: #60a5fa; }
+.listing-type-sell  { color: var(--gold); }
+.listing-type-gift  { color: #4ade80; }
+
+.listing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 640px) {
+  .sticker-card { width: 110px; min-height: 165px; }
+  .listing-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
 }

@@ -12,6 +12,8 @@ import shippingRoutes from './routes/shippingRoutes';
 import matchRoutes from './routes/matchRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import profileRoutes from './routes/profileRoutes';
+import listingRoutes from './routes/listingRoutes';
+import statsRoutes from './routes/statsRoutes';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -28,11 +30,14 @@ app.use('/api/trades/:id/shipping', shippingRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', profileRoutes);
+app.use('/api/listings', listingRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
-// SPA fallback
+// Landing page at root for non-logged-in users (served as static)
+// SPA fallback for all other routes
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
@@ -40,7 +45,7 @@ app.get('*', (_req, res) => {
 app.use(errorHandler);
 
 async function start(): Promise<void> {
-  getDb(); // initialise DB + run migrations
+  getDb();
   seedStickers();
   await seedUsers();
 

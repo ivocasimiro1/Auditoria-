@@ -1,12 +1,12 @@
 import { apiFetch } from '../app.js';
 
-const TEAM_FLAGS = {
-  USA:'🇺🇸',MEX:'🇲🇽',CAN:'🇨🇦',PAN:'🇵🇦',ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',ARG:'🇦🇷',NED:'🇳🇱',SEN:'🇸🇳',
-  FRA:'🇫🇷',BRA:'🇧🇷',BEL:'🇧🇪',MAR:'🇲🇦',POR:'🇵🇹',ESP:'🇪🇸',GER:'🇩🇪',JPN:'🇯🇵',
-  URU:'🇺🇾',COL:'🇨🇴',KOR:'🇰🇷',CMR:'🇨🇲',CRO:'🇭🇷',AUS:'🇦🇺',NGA:'🇳🇬',POL:'🇵🇱',
-  ITA:'🇮🇹',SUI:'🇨🇭',ECU:'🇪🇨',GHA:'🇬🇭',DEN:'🇩🇰',TUN:'🇹🇳',NZL:'🇳🇿',SAU:'🇸🇦',
-  IRN:'🇮🇷',WAL:'🏴󠁧󠁢󠁷󠁬󠁳󠁿',CRC:'🇨🇷',SRB:'🇷🇸',EGY:'🇪🇬',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',AUT:'🇦🇹',TUR:'🇹🇷',
-  QAT:'🇶🇦',HND:'🇭🇳',SVK:'🇸🇰',CMV:'🇨🇻',VEN:'🇻🇪',SPECIAL:'🌟',
+const FLAG_CODES = {
+  USA:'us',MEX:'mx',CAN:'ca',PAN:'pa',ENG:'gb-eng',ARG:'ar',NED:'nl',SEN:'sn',
+  FRA:'fr',BRA:'br',BEL:'be',MAR:'ma',POR:'pt',ESP:'es',GER:'de',JPN:'jp',
+  URU:'uy',COL:'co',KOR:'kr',CMR:'cm',CRO:'hr',AUS:'au',NGA:'ng',POL:'pl',
+  ITA:'it',SUI:'ch',ECU:'ec',GHA:'gh',DEN:'dk',TUN:'tn',NZL:'nz',SAU:'sa',
+  IRN:'ir',WAL:'gb-wls',CRC:'cr',SRB:'rs',EGY:'eg',SCO:'gb-sct',AUT:'at',TUR:'tr',
+  QAT:'qa',HND:'hn',SVK:'sk',CMV:'cv',VEN:'ve',MEX2:'mx',MEX3:'mx',CMR2:'cm',
 };
 
 export async function render() {
@@ -73,10 +73,14 @@ export async function render() {
       const trade = team.stickers.filter(s => s.status === 'have_to_trade').length;
       const total = team.stickers.length;
       const pct = Math.round((have / total) * 100);
+      const flagCode = FLAG_CODES[code];
+      const flagHtml = flagCode
+        ? `<img src="https://flagcdn.com/w40/${flagCode}.png" alt="${team.name}" style="width:28px;height:18px;object-fit:cover;border-radius:2px;border:1px solid rgba(255,255,255,0.15);" loading="lazy" onerror="this.outerHTML='🌐'">`
+        : `<span style="font-size:20px;">🌐</span>`;
 
       return `
         <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
-          <span style="font-size:20px;width:28px;text-align:center;">${TEAM_FLAGS[code] || '🏳️'}</span>
+          <span style="width:28px;text-align:center;">${flagHtml}</span>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:600;display:flex;justify-content:space-between;">
               <span>${team.name}</span>

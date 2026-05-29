@@ -38,7 +38,7 @@ router.get('/teams', (_req: Request, res: Response): void => {
 router.get('/collection/me', authenticateToken, (req: Request, res: Response): void => {
   const db = getDb();
   const collection = db.prepare(`
-    SELECT s.*, us.status, us.updated_at as status_updated
+    SELECT s.*, us.status, us.updated_at as status_updated, us.custom_image_url
     FROM stickers s
     LEFT JOIN user_stickers us ON s.id = us.sticker_id AND us.user_id = ?
     ORDER BY s.number ASC

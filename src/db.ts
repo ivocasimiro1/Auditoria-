@@ -88,13 +88,31 @@ CREATE TABLE IF NOT EXISTS ratings (
   UNIQUE(trade_id, rater_id),
   FOREIGN KEY (trade_id) REFERENCES trades(id)
 );
+CREATE TABLE IF NOT EXISTS listings (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  sticker_id TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'trade',
+  price_eur REAL,
+  description TEXT,
+  image_url TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (sticker_id) REFERENCES stickers(id)
+);
 CREATE INDEX IF NOT EXISTS idx_user_stickers_user ON user_stickers(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_stickers_sticker ON user_stickers(sticker_id);
 CREATE INDEX IF NOT EXISTS idx_trades_proposer ON trades(proposer_id);
 CREATE INDEX IF NOT EXISTS idx_trades_receiver ON trades(receiver_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read);
 CREATE INDEX IF NOT EXISTS idx_trade_messages_trade ON trade_messages(trade_id);
+CREATE INDEX IF NOT EXISTS idx_listings_status ON listings(status, created_at);
 `;
+
+const MIGRATIONS = [
+  `ALTER TABLE user_stickers ADD COLUMN custom_image_url TEXT`,
+];
 
 let _db: Database.Database | null = null;
 
@@ -106,8 +124,15 @@ export function getDb(): Database.Database {
     _db.pragma('journal_mode = WAL');
     _db.pragma('foreign_keys = ON');
     _db.exec(SCHEMA);
+    runMigrations(_db);
   }
   return _db;
+}
+
+function runMigrations(db: Database.Database): void {
+  for (const sql of MIGRATIONS) {
+    try { db.exec(sql); } catch { /* column already exists */ }
+  }
 }
 
 export default getDb;
