@@ -181,7 +181,23 @@ CREATE INDEX IF NOT EXISTS idx_trades_proposer ON trades(proposer_id);
 CREATE INDEX IF NOT EXISTS idx_trades_receiver ON trades(receiver_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read);
 CREATE INDEX IF NOT EXISTS idx_trade_messages_trade ON trade_messages(trade_id);
+CREATE TABLE IF NOT EXISTS orders (
+  id TEXT PRIMARY KEY,
+  listing_id TEXT NOT NULL,
+  buyer_id TEXT NOT NULL,
+  seller_id TEXT NOT NULL,
+  amount_eur REAL NOT NULL,
+  commission_eur REAL NOT NULL,
+  stripe_session_id TEXT,
+  tracking_info TEXT,
+  status TEXT NOT NULL DEFAULT 'pending_payment',
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_listings_status ON listings(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_orders_buyer ON orders(buyer_id);
+CREATE INDEX IF NOT EXISTS idx_orders_seller ON orders(seller_id);
 `;
 
 export async function initDb(): Promise<void> {

@@ -98,6 +98,7 @@ const ROUTES = {
   '/trades': () => import('./pages/trades.js').then(m => m.render()),
   '/matches': () => import('./pages/matches.js').then(m => m.render()),
   '/listings': () => import('./pages/listings.js').then(m => m.render()),
+  '/orders': () => import('./pages/orders.js').then(m => m.render()),
   '/notifications': () => import('./pages/notifications.js').then(m => m.render()),
   '/profile': () => import('./pages/profile.js').then(m => m.render()),
   '/login': () => import('./pages/login.js').then(m => m.render()),

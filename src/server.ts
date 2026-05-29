@@ -14,6 +14,7 @@ import notificationRoutes from './routes/notificationRoutes';
 import profileRoutes from './routes/profileRoutes';
 import listingRoutes from './routes/listingRoutes';
 import statsRoutes from './routes/statsRoutes';
+import orderRoutes from './routes/orderRoutes';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -32,6 +33,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', profileRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));

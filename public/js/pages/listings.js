@@ -170,6 +170,11 @@ async function openListingDetail(id, listings) {
       </div>
 
       ${!isOwn ? `
+        ${l.type === 'sell' && l.price_eur ? `
+          <button class="btn btn-gold" style="width:100%;margin-bottom:8px;font-size:16px;font-weight:700;" id="buy-btn">
+            💳 Comprar por €${parseFloat(l.price_eur).toFixed(2)}
+          </button>
+        ` : ''}
         <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" id="contact-btn">
           💬 Contactar Vendedor
         </button>
@@ -184,11 +189,27 @@ async function openListingDetail(id, listings) {
 
   overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
 
+  const buyBtn = document.getElementById('buy-btn');
+  if (buyBtn) {
+    buyBtn.addEventListener('click', async () => {
+      buyBtn.disabled = true;
+      buyBtn.textContent = 'A preparar pagamento...';
+      try {
+        const data = await apiFetch('/orders', { method: 'POST', body: JSON.stringify({ listing_id: l.id }) });
+        if (!data) { buyBtn.disabled = false; buyBtn.textContent = `💳 Comprar por €${parseFloat(l.price_eur).toFixed(2)}`; return; }
+        window.location.href = data.checkout_url;
+      } catch (e) {
+        showToast(e.message, 'error');
+        buyBtn.disabled = false;
+        buyBtn.textContent = `💳 Comprar por €${parseFloat(l.price_eur).toFixed(2)}`;
+      }
+    });
+  }
+
   const contactBtn = document.getElementById('contact-btn');
   if (contactBtn) {
     contactBtn.addEventListener('click', () => {
       overlay.remove();
-      // Navigate to trades page to create a proposal
       window._proposeUserId = l.user_id;
       window.location.hash = '/trades';
       showToast(`Vai para Trocas e propõe uma troca a ${l.username}`, 'info');
