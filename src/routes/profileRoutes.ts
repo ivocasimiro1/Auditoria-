@@ -26,19 +26,36 @@ router.get('/:id', (req: Request, res: Response): void => {
 
   if (!user) { res.status(404).json({ error: 'Utilizador não encontrado' }); return; }
 
-  const tradeCount = (db.prepare(
+  const tradesCompleted = (db.prepare(
     "SELECT COUNT(*) as c FROM trades WHERE (proposer_id = ? OR receiver_id = ?) AND status = 'completed'"
   ).get(req.params.id, req.params.id) as { c: number }).c;
 
-  const recentRatings = db.prepare(
-    'SELECT score, comment, created_at FROM ratings WHERE rated_id = ? ORDER BY created_at DESC LIMIT 5'
-  ).all(req.params.id);
+  const tradesCancelled = (db.prepare(
+    "SELECT COUNT(*) as c FROM trades WHERE (proposer_id = ? OR receiver_id = ?) AND status = 'cancelled'"
+  ).get(req.params.id, req.params.id) as { c: number }).c;
+
+  const reviews = db.prepare(`
+    SELECT tr.stars, tr.comment, tr.reply, u.username as reviewer_username, tr.created_at
+    FROM trade_reviews tr
+    JOIN users u ON tr.reviewer_id = u.id
+    WHERE tr.reviewed_id = ?
+    ORDER BY tr.created_at DESC
+    LIMIT 20
+  `).all(req.params.id) as Array<{ stars: number; comment: string | null; reply: string | null; reviewer_username: string; created_at: number }>;
+
+  const positiveCount = reviews.filter(r => r.stars >= 4).length;
+  const positivePct = reviews.length > 0 ? Math.round((positiveCount / reviews.length) * 100) : null;
 
   res.json({
     ...user,
     rating: user.rating_count > 0 ? user.rating_sum / user.rating_count : null,
-    completed_trades: tradeCount,
-    recent_ratings: recentRatings,
+    completed_trades: tradesCompleted,
+    trades_completed: tradesCompleted,
+    trades_cancelled: tradesCancelled,
+    positive_pct: positivePct,
+    reviews,
+    // keep legacy field for backward compat
+    recent_ratings: reviews.map(r => ({ score: r.stars, comment: r.comment, created_at: r.created_at })),
   });
 });
 

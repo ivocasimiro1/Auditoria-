@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db';
 import { authenticateToken } from '../middleware/auth';
 import { createNotification } from '../services/notificationService';
-import type { Trade, User } from '../types';
+import type { Trade, User, TradeReview } from '../types';
 
 const router = Router();
 
@@ -165,6 +165,80 @@ router.post('/:id/rate', authenticateToken, (req: Request, res: Response): void 
 
   const rater = db.prepare('SELECT username FROM users WHERE id = ?').get(req.userId) as { username: string };
   createNotification(ratedId, 'rating', { tradeId: req.params.id, fromUser: rater.username, score });
+
+  res.json({ success: true });
+});
+
+// Post review for a completed trade (new system with trade_reviews table)
+router.post('/:id/review', authenticateToken, (req: Request, res: Response): void => {
+  const { stars, comment } = req.body;
+  if (!stars || stars < 1 || stars > 5) {
+    res.status(400).json({ error: 'Stars deve estar entre 1 e 5' });
+    return;
+  }
+
+  const db = getDb();
+  const trade = db.prepare('SELECT * FROM trades WHERE id = ? AND status = ?').get(req.params.id, 'completed') as (Trade & { proposer_rated: number; receiver_rated: number }) | undefined;
+  if (!trade) { res.status(404).json({ error: 'Troca concluída não encontrada' }); return; }
+
+  const isProposer = req.userId === trade.proposer_id;
+  const isReceiver = req.userId === trade.receiver_id;
+
+  if (!isProposer && !isReceiver) {
+    res.status(403).json({ error: 'Sem permissão' }); return;
+  }
+
+  // Check if already rated
+  if (isProposer && trade.proposer_rated) {
+    res.status(409).json({ error: 'Já avaliaste esta troca' }); return;
+  }
+  if (isReceiver && trade.receiver_rated) {
+    res.status(409).json({ error: 'Já avaliaste esta troca' }); return;
+  }
+
+  const reviewedId = isProposer ? trade.receiver_id : trade.proposer_id;
+  const reviewId = uuidv4();
+  const now = Date.now();
+
+  db.prepare(`
+    INSERT INTO trade_reviews (id, trade_id, reviewer_id, reviewed_id, stars, comment, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(reviewId, req.params.id, req.userId!, reviewedId, stars, comment || null, now);
+
+  db.prepare('UPDATE users SET rating_sum = rating_sum + ?, rating_count = rating_count + 1 WHERE id = ?').run(stars, reviewedId);
+
+  if (isProposer) {
+    db.prepare('UPDATE trades SET proposer_rated = 1 WHERE id = ?').run(req.params.id);
+  } else {
+    db.prepare('UPDATE trades SET receiver_rated = 1 WHERE id = ?').run(req.params.id);
+  }
+
+  const reviewer = db.prepare('SELECT username FROM users WHERE id = ?').get(req.userId) as { username: string };
+  createNotification(reviewedId, 'rating', { tradeId: req.params.id, fromUser: reviewer.username, score: stars });
+
+  res.json({ success: true });
+});
+
+// Reply to a review (reviewed user replies)
+router.post('/:id/review/reply', authenticateToken, (req: Request, res: Response): void => {
+  const { reply } = req.body;
+  if (!reply || !reply.trim()) {
+    res.status(400).json({ error: 'Resposta não pode estar vazia' });
+    return;
+  }
+
+  const db = getDb();
+  const trade = db.prepare('SELECT * FROM trades WHERE id = ?').get(req.params.id) as Trade | undefined;
+  if (!trade) { res.status(404).json({ error: 'Troca não encontrada' }); return; }
+
+  // The reply is by the reviewed user (the one who received the review)
+  const review = db.prepare(
+    'SELECT * FROM trade_reviews WHERE trade_id = ? AND reviewed_id = ?'
+  ).get(req.params.id, req.userId) as TradeReview | undefined;
+
+  if (!review) { res.status(404).json({ error: 'Avaliação não encontrada' }); return; }
+
+  db.prepare('UPDATE trade_reviews SET reply = ? WHERE id = ?').run(reply.trim(), review.id);
 
   res.json({ success: true });
 });

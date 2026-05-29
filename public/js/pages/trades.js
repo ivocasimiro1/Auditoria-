@@ -173,7 +173,7 @@ async function openTradeDetail(trade) {
       </div>
     </div>
 
-    ${trade.status === 'completed' ? renderRating(trade) : ''}
+    ${trade.status === 'completed' ? renderRating(trade, isProposer) : ''}
   `;
 
   document.getElementById('back-btn').addEventListener('click', () => {
@@ -224,13 +224,15 @@ async function openTradeDetail(trade) {
         s.classList.toggle('filled', i < selectedScore);
       });
     });
-    document.getElementById('submit-rating-btn')?.addEventListener('click', async () => {
+    document.getElementById('submit-review-btn')?.addEventListener('click', async () => {
       if (!selectedScore) { showToast('Escolhe uma pontuação', 'error'); return; }
-      const comment = document.getElementById('rating-comment').value.trim();
+      const comment = document.getElementById('review-comment').value.trim();
       try {
-        await apiFetch(`/trades/${trade.id}/rate`, { method: 'POST', body: JSON.stringify({ score: selectedScore, comment }) });
-        showToast('Avaliação enviada! ⭐', 'success');
-        ratingCard.innerHTML = '<div style="text-align:center;padding:16px;color:var(--success);">⭐ Avaliação submetida, obrigado!</div>';
+        await apiFetch(`/trades/${trade.id}/review`, { method: 'POST', body: JSON.stringify({ stars: selectedScore, comment }) });
+        const ratingForm = document.getElementById('rating-form');
+        if (ratingForm) {
+          ratingForm.innerHTML = '<div style="text-align:center;padding:16px;color:var(--success);font-size:15px;">Avaliação enviada ✅</div>';
+        }
       } catch (e) { showToast(e.message, 'error'); }
     });
   }
@@ -314,15 +316,22 @@ function renderShipping(trade, shipment, isProposer) {
   `;
 }
 
-function renderRating(trade) {
+function renderRating(trade, isProposer) {
+  const alreadyRated = isProposer ? trade.proposer_rated : trade.receiver_rated;
   return `
     <div class="card" id="rating-card">
       <div class="card-title" style="margin-bottom:12px;">⭐ Avaliar Troca</div>
-      <div class="stars" id="rating-stars">
-        ${[1,2,3,4,5].map(n => `<span class="star" data-score="${n}">★</span>`).join('')}
+      <div id="rating-form">
+        ${alreadyRated ? `
+          <div style="text-align:center;padding:16px;color:var(--success);font-size:15px;">Avaliação enviada ✅</div>
+        ` : `
+          <div class="stars" id="rating-stars">
+            ${[1,2,3,4,5].map(n => `<span class="star" data-score="${n}">★</span>`).join('')}
+          </div>
+          <textarea class="form-input" id="review-comment" placeholder="Deixa um comentário (opcional)" style="margin-top:10px;resize:none;height:70px;"></textarea>
+          <button class="btn btn-gold" style="margin-top:10px;width:100%;" id="submit-review-btn">Enviar Avaliação</button>
+        `}
       </div>
-      <textarea class="form-input" id="rating-comment" placeholder="Deixa um comentário (opcional)" style="margin-top:10px;resize:none;height:70px;"></textarea>
-      <button class="btn btn-gold" style="margin-top:10px;width:100%;" id="submit-rating-btn">Enviar Avaliação</button>
     </div>
   `;
 }

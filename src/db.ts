@@ -112,6 +112,19 @@ CREATE INDEX IF NOT EXISTS idx_listings_status ON listings(status, created_at);
 
 const MIGRATIONS = [
   `ALTER TABLE user_stickers ADD COLUMN custom_image_url TEXT`,
+  `ALTER TABLE trades ADD COLUMN proposer_rated INTEGER DEFAULT 0`,
+  `ALTER TABLE trades ADD COLUMN receiver_rated INTEGER DEFAULT 0`,
+  `CREATE TABLE IF NOT EXISTS trade_reviews (
+    id TEXT PRIMARY KEY,
+    trade_id TEXT NOT NULL,
+    reviewer_id TEXT NOT NULL,
+    reviewed_id TEXT NOT NULL,
+    stars INTEGER NOT NULL,
+    comment TEXT,
+    reply TEXT,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (trade_id) REFERENCES trades(id)
+  )`,
 ];
 
 let _db: Database.Database | null = null;

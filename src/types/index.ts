@@ -79,6 +79,17 @@ export interface Rating {
   created_at: number;
 }
 
+export interface TradeReview {
+  id: string;
+  trade_id: string;
+  reviewer_id: string;
+  reviewed_id: string;
+  stars: number;
+  comment?: string;
+  reply?: string;
+  created_at: number;
+}
+
 declare global {
   namespace Express {
     interface Request {

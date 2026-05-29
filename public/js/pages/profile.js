@@ -36,7 +36,7 @@ export async function render() {
           </div>
           ${isOwnProfile ? `<button class="btn btn-ghost btn-sm" id="edit-profile-btn">✏️ Editar</button>` : ''}
         </div>
-        <div style="display:flex;gap:24px;flex-wrap:wrap;">
+        <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px;">
           <div>
             <div style="font-size:24px;font-weight:800;color:var(--gold);">${profile.completed_trades}</div>
             <div style="font-size:12px;color:var(--text-muted);">Trocas Concluídas</div>
@@ -56,18 +56,17 @@ export async function render() {
             <div style="font-size:12px;color:var(--text-muted);">Avaliações</div>
           </div>
         </div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-muted);margin-top:4px;">
+          ✅ ${profile.trades_completed ?? profile.completed_trades} trocas concluídas
+          · ❌ ${profile.trades_cancelled ?? 0} canceladas
+          ${profile.positive_pct !== null && profile.positive_pct !== undefined ? `· ⭐ ${profile.positive_pct}% positivo` : ''}
+        </div>
       </div>
 
-      ${profile.recent_ratings?.length ? `
+      ${profile.reviews?.length ? `
         <div class="card" style="margin-bottom:20px;">
-          <div class="card-title" style="margin-bottom:12px;">⭐ Avaliações Recentes</div>
-          ${profile.recent_ratings.map(r => `
-            <div style="padding:10px 0;border-bottom:1px solid var(--border);">
-              <div>${renderStars(r.score)} <span style="font-size:13px;">${r.score}/5</span></div>
-              ${r.comment ? `<div style="font-size:13px;color:var(--text-muted);margin-top:4px;font-style:italic;">"${r.comment}"</div>` : ''}
-              <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${relativeTime(r.created_at)}</div>
-            </div>
-          `).join('')}
+          <div class="card-title" style="margin-bottom:12px;">⭐ Avaliações (${profile.reviews.length})</div>
+          ${profile.reviews.map(r => renderReviewCard(r)).join('')}
         </div>
       ` : ''}
 
@@ -99,6 +98,40 @@ function renderStars(rating) {
   const half = rating % 1 >= 0.5 ? 1 : 0;
   const empty = 5 - full - half;
   return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
+}
+
+function renderStarsFixed(stars) {
+  const filled = Math.min(5, Math.max(0, Math.round(stars)));
+  const empty = 5 - filled;
+  return `<span style="color:#f5a623;font-size:16px;letter-spacing:1px;">${'★'.repeat(filled)}${'☆'.repeat(empty)}</span>`;
+}
+
+function renderReviewCard(r) {
+  // Use textContent via a temporary element approach is not available here (vanilla template),
+  // so we sanitise by not using innerHTML for user content — we build it as a structure.
+  return `
+    <div style="background:var(--bg-card2);border-radius:10px;padding:14px 16px;margin-bottom:10px;border:1px solid var(--border);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${renderStarsFixed(r.stars)}
+          <span style="font-size:13px;font-weight:600;color:var(--text);">${r.stars}/5</span>
+        </div>
+        <span style="font-size:11px;color:var(--text-muted);">${relativeTime(r.created_at)}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">por <strong>${escapeHtml(r.reviewer_username)}</strong></div>
+      ${r.comment ? `<div style="font-size:13px;color:var(--text);font-style:italic;margin-bottom:6px;">"${escapeHtml(r.comment)}"</div>` : ''}
+      ${r.reply ? `
+        <div style="margin-top:8px;padding:8px 12px;background:var(--bg-card);border-left:3px solid var(--gold);border-radius:4px;font-size:12px;color:var(--text-muted);">
+          <strong>Resposta:</strong> ${escapeHtml(r.reply)}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 async function openEditModal(profile) {
