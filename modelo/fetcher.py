@@ -213,6 +213,12 @@ def fetch_jogos_espn(fd_code: str, data_str: str | None = None) -> list[dict]:
 
 def fetch_todas_ligas(data_str: str | None = None) -> list[dict]:
     """Obtém jogos de todas as ligas configuradas (nacionais + europeias + taças)."""
+    # Sempre passa data explícita para evitar fuso horário ESPN (US Eastern)
+    if data_str is None:
+        data_str = date.today().strftime("%Y%m%d")
+
+    hoje = datetime.strptime(data_str, "%Y%m%d").date()
+
     todos = []
     for fd_code in LIGAS:
         jogos = fetch_jogos_espn(fd_code, data_str)
@@ -221,6 +227,9 @@ def fetch_todas_ligas(data_str: str | None = None) -> list[dict]:
     vistos = set()
     unicos = []
     for j in todos:
+        # Filtrar jogos que não são de hoje (segurança extra)
+        if j.get("hora_utc") and j["hora_utc"].date() != hoje:
+            continue
         chave = (j["casa_espn"], j["fora_espn"], str(j.get("hora_utc", "")))
         if chave not in vistos:
             vistos.add(chave)
