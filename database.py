@@ -152,17 +152,29 @@ PLANOS = {
 
 def ativar_subscricao(tid: int, plano: str, valor: float = 0.0, ref: str = ""):
     dias = PLANOS.get(plano, {}).get("dias", 30)
-    expira = (datetime.utcnow() + timedelta(days=dias)).isoformat()
     with get_db() as db:
-        # Desativa subscrições anteriores
-        db.execute(
-            "UPDATE subscricoes SET ativa=0 WHERE telegram_id=?", (tid,)
-        )
+        # Se já tem subscrição activa, estende a partir da data de expiração (não perde dias)
+        atual = db.execute(
+            """SELECT expira FROM subscricoes
+               WHERE telegram_id=? AND ativa=1 AND expira > datetime('now')
+               ORDER BY expira DESC LIMIT 1""",
+            (tid,)
+        ).fetchone()
+
+        if atual:
+            base = datetime.fromisoformat(atual["expira"])
+        else:
+            base = datetime.utcnow()
+
+        expira = (base + timedelta(days=dias)).isoformat()
+
+        db.execute("UPDATE subscricoes SET ativa=0 WHERE telegram_id=?", (tid,))
         db.execute(
             """INSERT INTO subscricoes (telegram_id, plano, expira, valor_pago, ref_pagamento)
                VALUES (?,?,?,?,?)""",
             (tid, plano, expira, valor, ref)
         )
+    return expira  # devolve data de expiração para confirmar ao admin
 
 
 def tem_subscricao_ativa(tid: int) -> bool:
@@ -192,6 +204,18 @@ def subscricoes_a_expirar(dias: int = 3) -> list:
             """SELECT telegram_id, plano, expira FROM subscricoes
                WHERE ativa=1 AND expira <= ? AND expira > datetime('now')""",
             (limite,)
+        ).fetchall()
+
+
+def subscricoes_expiradas_hoje() -> list:
+    """Subscrições que expiraram nas últimas 24h (para notificar o cliente)."""
+    ontem = (datetime.utcnow() - timedelta(days=1)).isoformat()
+    agora = datetime.utcnow().isoformat()
+    with get_db() as db:
+        return db.execute(
+            """SELECT telegram_id, plano, expira FROM subscricoes
+               WHERE ativa=1 AND expira <= ? AND expira >= ?""",
+            (agora, ontem)
         ).fetchall()
 
 

@@ -61,7 +61,7 @@ from database import (
     registar_utilizador, obter_utilizador, todos_utilizadores_ativos,
     bloquear_utilizador, total_utilizadores, total_subscricoes,
     roi_historico, registar_broadcast, ativar_subscricao,
-    subscricoes_a_expirar, tem_subscricao_ativa,
+    subscricoes_a_expirar, subscricoes_expiradas_hoje, tem_subscricao_ativa,
 )
 from conteudo import (
     BOAS_VINDAS, BOAS_VINDAS_REFERIDO, DICA_TEMPLATE, SEM_JOGOS_HOJE,
@@ -395,14 +395,17 @@ async def cmd_admin(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         except ValueError:
             await update.message.reply_html("ID inválido.")
             return
-        ativar_subscricao(target_id, "mensal", valor=9.99, ref="mbway")
+        expira = ativar_subscricao(target_id, "mensal", valor=9.99, ref="mbway")
+        expira_fmt = expira[:10]  # YYYY-MM-DD
         await _enviar_seguro(ctx.bot, target_id,
             "🎉 O teu acesso <b>EdgeBet Pro</b> foi ativado!\n\n"
+            f"📅 Válido até: <b>{expira_fmt}</b>\n\n"
             "Usa @EdgeBetProBot para aceder a todas as funcionalidades.\n"
             "Boas apostas! 🔥"
         )
         await update.message.reply_html(
-            f"✅ Subscrição <b>mensal (€9.99)</b> ativada para {target_id}."
+            f"✅ Subscrição <b>mensal (€9.99)</b> ativada para {target_id}.\n"
+            f"📅 Expira em: <b>{expira_fmt}</b>"
         )
 
 
@@ -469,13 +472,30 @@ async def job_resumo_noite(ctx: ContextTypes.DEFAULT_TYPE):
 
 
 async def job_alertas_expiracao(ctx: ContextTypes.DEFAULT_TYPE):
-    """Verifica subscrições a expirar e envia alerta."""
+    """Verifica subscrições a expirar (3 dias antes) e já expiradas (hoje)."""
+    # Aviso 3 dias antes
     a_expirar = subscricoes_a_expirar(dias=3)
     for row in a_expirar:
+        expira_fmt = row["expira"][:10]
         await _enviar_seguro(
             ctx.bot, row["telegram_id"],
-            f"⚠️ A tua subscrição EdgeBet <b>{row['plano'].title()}</b> expira em breve!\n\n"
-            "Renova agora para não perderes as dicas: /pro"
+            f"⚠️ <b>A tua subscrição EdgeBet Pro expira a {expira_fmt}!</b>\n\n"
+            "Para renovar, envia <b>€9.99</b> via MBWay para <b>968 200 400</b> "
+            "e envia o comprovativo aqui.\n\n"
+            "Não percas as dicas! 🔥"
+        )
+
+    # Aviso no dia em que expira
+    expiradas = subscricoes_expiradas_hoje()
+    for row in expiradas:
+        await _enviar_seguro(
+            ctx.bot, row["telegram_id"],
+            "😔 <b>A tua subscrição EdgeBet Pro expirou hoje.</b>\n\n"
+            "Para continuar a receber todas as dicas:\n"
+            "1️⃣ Envia <b>€9.99</b> via MBWay → <b>968 200 400</b>\n"
+            "2️⃣ Envia o comprovativo aqui\n"
+            "3️⃣ Acesso renovado em menos de 1h ✅\n\n"
+            "Continuamos a enviar-te dicas gratuitas: /dica"
         )
 
 

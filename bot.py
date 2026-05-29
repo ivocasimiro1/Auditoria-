@@ -204,7 +204,12 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     acesso = tem_subscricao_ativa(user.id) or _e_admin(user.id)
 
     if acesso:
-        expira_str = f"\n📅 Subscrição válida até: <b>{sub['expira'][:10]}</b>" if sub else ""
+        if sub:
+            from datetime import date
+            dias_rest = (datetime.fromisoformat(sub["expira"]) - datetime.utcnow()).days
+            expira_str = f"\n📅 Válido até: <b>{sub['expira'][:10]}</b> ({dias_rest} dias restantes)"
+        else:
+            expira_str = ""
         msg = (
             f"⚽ <b>EdgeBet Pro — Bem-vindo, {user.first_name}!</b>"
             f"{expira_str}\n\n"
@@ -282,8 +287,11 @@ async def cmd_admin_pro(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         except ValueError:
             await update.message.reply_html("ID inválido.")
             return
-        ativar_subscricao(target, "mensal", valor=9.99, ref="admin_pro")
-        await update.message.reply_html(f"✅ Pro mensal (€9.99) ativado para {target}.")
+        expira = ativar_subscricao(target, "mensal", valor=9.99, ref="admin_pro")
+        await update.message.reply_html(
+            f"✅ Pro mensal (€9.99) ativado para {target}.\n"
+            f"📅 Expira em: <b>{expira[:10]}</b>"
+        )
 
 
 async def cmd_hoje(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
