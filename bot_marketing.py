@@ -80,6 +80,7 @@ logging.basicConfig(level=logging.WARNING)
 
 BOT_USERNAME = os.environ.get("MARKETING_BOT_USERNAME", "EdgeBetBot")
 MODELOS: dict = {}
+_live_enviadas: dict = {}  # {data_hoje: set(chave_jogo)} — evita repetir dica live
 
 
 # ---------------------------------------------------------------------------
@@ -728,7 +729,17 @@ async def job_dica_tarde(ctx: ContextTypes.DEFAULT_TYPE):
 
 
 async def job_dica_live(ctx: ContextTypes.DEFAULT_TYPE):
-    """Enviado às 19h30: 1 dica live grátis se houver jogo com valor."""
+    """Verifica jogos live a cada hora (14h-22h UTC). Envia 1 dica por jogo por dia."""
+    hora_utc = datetime.utcnow().hour
+    if hora_utc < 14 or hora_utc >= 22:
+        return
+
+    hoje = datetime.utcnow().strftime("%Y-%m-%d")
+    if hoje not in _live_enviadas:
+        _live_enviadas.clear()
+        _live_enviadas[hoje] = set()
+    ja_enviados = _live_enviadas[hoje]
+
     try:
         resultados = analisar_dia(MODELOS)
         live_valor = [
@@ -738,6 +749,11 @@ async def job_dica_live(ctx: ContextTypes.DEFAULT_TYPE):
         if not live_valor:
             return
         melhor = live_valor[0]
+        chave = f"{melhor['casa_espn']}_{melhor['fora_espn']}"
+        if chave in ja_enviados:
+            return  # já enviámos dica live para este jogo hoje
+        ja_enviados.add(chave)
+
         aposta = melhor["apostas"][0]
         gc, gf = melhor["golos_casa"], melhor["golos_fora"]
         minuto = melhor["minuto"]
@@ -929,7 +945,7 @@ def main():
     if jq is not None:
         jq.run_daily(job_preview_manha,     time=time(9,  0,  tzinfo=timezone.utc), name="preview_manha")
         jq.run_daily(job_dica_tarde,        time=time(13, 0,  tzinfo=timezone.utc), name="dica_tarde")
-        jq.run_daily(job_dica_live,         time=time(19, 30, tzinfo=timezone.utc), name="dica_live")
+        jq.run_repeating(job_dica_live,     interval=3600, first=time(14, 0, tzinfo=timezone.utc), name="dica_live")
         jq.run_daily(job_resumo_noite,      time=time(21, 30, tzinfo=timezone.utc), name="resumo_noite")
         jq.run_daily(job_pedir_resultado,   time=time(22, 0,  tzinfo=timezone.utc), name="pedir_resultado")
         jq.run_daily(job_alertas_expiracao, time=time(10, 0,  tzinfo=timezone.utc), name="alertas_exp")
