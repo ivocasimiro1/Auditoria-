@@ -1,0 +1,183 @@
+/* Sticker card base */
+.sticker-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  position: relative;
+  aspect-ratio: 2/3;
+  display: flex;
+  flex-direction: column;
+}
+
+.sticker-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  border-color: var(--blue-light);
+}
+
+/* Holographic shimmer */
+.sticker-card.rarity-holographic {
+  border-color: var(--gold);
+}
+
+.sticker-card.rarity-holographic::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(255, 215, 0, 0.15) 60deg,
+    rgba(200, 16, 46, 0.12) 120deg,
+    rgba(0, 61, 165, 0.12) 180deg,
+    rgba(255, 215, 0, 0.15) 240deg,
+    transparent 300deg,
+    transparent 360deg
+  );
+  pointer-events: none;
+  z-index: 1;
+  border-radius: var(--radius);
+  animation: shimmer-rotate 4s linear infinite;
+}
+
+@keyframes shimmer-rotate {
+  from { filter: hue-rotate(0deg); opacity: 0.8; }
+  50% { opacity: 1; }
+  to { filter: hue-rotate(360deg); opacity: 0.8; }
+}
+
+/* Foil cards */
+.sticker-card.rarity-foil {
+  border-color: #c0c0c0;
+  background: linear-gradient(135deg, var(--bg-card) 0%, #1a2a3a 100%);
+}
+
+.sticker-card.rarity-foil::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(192,192,192,0.08) 0%, transparent 50%, rgba(192,192,192,0.08) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Card image area */
+.sticker-img {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, var(--blue-dark) 0%, var(--bg-card2) 100%);
+  font-size: 42px;
+  position: relative;
+  overflow: hidden;
+}
+
+.sticker-img.team-badge { background: linear-gradient(160deg, #1a1a2e, #162447); }
+.sticker-img.type-stadium { background: linear-gradient(160deg, #0d2137, #1a3a5c); font-size: 36px; }
+.sticker-img.type-special { background: linear-gradient(160deg, #1a0d0d, #3d1a00); }
+
+.sticker-img img {
+  max-width: 80%;
+  max-height: 80%;
+  object-fit: contain;
+  position: relative;
+  z-index: 2;
+}
+
+/* Card info strip */
+.sticker-info {
+  padding: 8px 10px;
+  background: var(--bg-card);
+  position: relative;
+  z-index: 2;
+}
+
+.sticker-number {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.sticker-name {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 1px 0;
+}
+
+.sticker-team {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* Status badge on card */
+.sticker-status-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 3;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-have_to_trade { background: var(--blue); color: var(--white); }
+.status-need { background: var(--red); color: var(--white); }
+.status-have_double { background: var(--success); color: var(--white); }
+
+/* Rarity crown */
+.rarity-crown {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 3;
+  font-size: 14px;
+}
+
+/* Grid */
+.sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .sticker-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+}
+
+/* Team section header */
+.team-section { margin-bottom: 32px; }
+.team-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+.team-flag { font-size: 24px; }
+.team-title { font-size: 16px; font-weight: 700; }
+.team-count { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+.team-progress-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+.team-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--gold));
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
