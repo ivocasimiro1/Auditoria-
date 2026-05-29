@@ -26,7 +26,7 @@ export function render() {
             </div>
             <button class="btn btn-primary" style="width:100%;" id="login-btn">Entrar</button>
             <p style="font-size:12px;color:var(--text-muted);margin-top:12px;text-align:center;">
-              Demo: joao@demo.pt / demo123
+              Ainda não tens conta? <a href="#" id="go-register" style="color:var(--blue);">Regista-te grátis</a>
             </p>
           </div>
           <div id="register-form" style="display:none;">
@@ -52,6 +52,15 @@ export function render() {
       </div>
     </div>
   `;
+
+  // "Register free" link
+  document.getElementById('go-register')?.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
+    document.querySelector('.tab-btn[data-tab="register"]').classList.add('active');
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('register-form').style.display = 'block';
+  });
 
   // Tab switching
   document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
