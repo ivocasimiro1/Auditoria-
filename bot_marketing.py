@@ -279,6 +279,44 @@ async def cmd_cancelar_info(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_html(FAQ_CANCELAR)
 
 
+async def cmd_paguei(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    tid  = user.id
+    nome = user.first_name or "Cliente"
+    user_tag = f"@{user.username}" if user.username else f"ID {tid}"
+
+    # Confirmação ao cliente
+    await update.message.reply_html(
+        "✅ <b>Recebemos o teu aviso!</b>\n\n"
+        "Vamos verificar o pagamento no MBWay e activar o teu acesso "
+        "em menos de <b>1 hora</b>.\n\n"
+        "Assim que estiver pronto recebes uma mensagem aqui. 🔥"
+    )
+
+    # Notificação ao admin com botão de activar
+    botoes = InlineKeyboardMarkup([[
+        InlineKeyboardButton("✅ Activar agora", callback_data=f"pg_ok_{tid}"),
+        InlineKeyboardButton("❌ Rejeitar",      callback_data=f"pg_no_{tid}"),
+    ]])
+    aviso = (
+        f"💰 <b>PAGAMENTO PENDENTE</b>\n\n"
+        f"👤 Cliente: <b>{nome}</b> ({user_tag})\n"
+        f"🆔 ID Telegram: <code>{tid}</code>\n"
+        f"💶 Valor declarado: <b>€9.99 via MBWay</b>\n\n"
+        f"⚠️ Verifica no MBWay (968 200 400) se o pagamento foi recebido.\n"
+        f"Depois carrega em <b>Activar</b>."
+    )
+    for admin_id in ADMIN_IDS:
+        try:
+            await ctx.bot.send_message(
+                admin_id, aviso,
+                parse_mode=ParseMode.HTML,
+                reply_markup=botoes,
+            )
+        except Exception:
+            pass
+
+
 async def cmd_partilhar(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     tid  = update.effective_user.id
     link = f"https://t.me/{BOT_USERNAME}?start=ref_{tid}"
@@ -298,9 +336,46 @@ async def callback_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     data  = query.data
 
+    # ── Activação de pagamento via botão ──────────────────────────────────
+    if data.startswith("pg_ok_") or data.startswith("pg_no_"):
+        try:
+            cliente_id = int(data.split("_")[-1])
+        except ValueError:
+            return
+
+        if data.startswith("pg_ok_"):
+            expira = ativar_subscricao(cliente_id, "mensal", valor=9.99, ref="mbway_paguei")
+            expira_fmt = expira[:10]
+            # Notifica o cliente
+            await _enviar_seguro(ctx.bot, cliente_id,
+                "🎉 <b>Acesso EdgeBet Pro activado!</b>\n\n"
+                f"📅 Válido até: <b>{expira_fmt}</b>\n\n"
+                "Usa @EdgeBetProBot para todas as dicas e análises live.\n"
+                "Boas apostas! 🔥"
+            )
+            await query.edit_message_text(
+                f"✅ Subscrição activada para {cliente_id}\n📅 Expira: {expira_fmt}",
+                parse_mode=ParseMode.HTML,
+            )
+        else:
+            # Pagamento rejeitado — avisa o cliente
+            await _enviar_seguro(ctx.bot, cliente_id,
+                "⚠️ <b>Não encontrámos o teu pagamento.</b>\n\n"
+                "Por favor confirma:\n"
+                "• Enviaste para o número correcto: <b>968 200 400</b>\n"
+                "• O valor foi <b>€9.99</b>\n\n"
+                "Se já enviaste, envia o comprovativo aqui e resolvemos em minutos. 🙏"
+            )
+            await query.edit_message_text(
+                f"❌ Pagamento rejeitado para {cliente_id}. Cliente foi avisado.",
+                parse_mode=ParseMode.HTML,
+            )
+        return
+
+    # ── Respostas normais de FAQ ──────────────────────────────────────────
     respostas = {
         "ver_pro":           INFO_PRO,
-        "ver_roi":           None,  # tratado abaixo
+        "ver_roi":           None,
         "ver_como_funciona": FAQ_COMO_FUNCIONA,
         "como_subscrever":   FAQ_SUBSCREVER,
         "plano_mensal":      FAQ_SUBSCREVER,
@@ -592,6 +667,7 @@ def main():
     app.add_handler(CommandHandler("comofunciona", cmd_comofunciona))
     app.add_handler(CommandHandler("referido",     cmd_referido))
     app.add_handler(CommandHandler("partilhar",   cmd_partilhar))
+    app.add_handler(CommandHandler("paguei",      cmd_paguei))
     app.add_handler(CommandHandler("suporte",      cmd_suporte))
     app.add_handler(CommandHandler("cancelar",     cmd_cancelar_info))
     app.add_handler(CommandHandler("admin",        cmd_admin))
