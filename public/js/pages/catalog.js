@@ -45,6 +45,13 @@ export async function render() {
   const main = document.getElementById('main-content');
   main.innerHTML = '<div class="loading-center"><div class="spinner"></div></div>';
 
+  // Read URL params: /catalog?team=POR or /catalog?group=K
+  const hash = window.location.hash.slice(1);
+  const qIdx = hash.indexOf('?');
+  const params = qIdx >= 0 ? new URLSearchParams(hash.slice(qIdx + 1)) : new URLSearchParams();
+  const teamParam = params.get('team') || '';
+  const groupParam = params.get('group') || '';
+
   const [stickers, col] = await Promise.all([
     apiFetch('/stickers'),
     apiFetch('/stickers/collection/me'),
@@ -57,21 +64,47 @@ export async function render() {
   });
   isAdmin = getUser()?.is_admin === true;
 
+  // Apply incoming filters from collection page
+  activeFilter = 'all';
+  searchTerm = '';
+  if (teamParam) {
+    searchTerm = ''; // will scroll instead
+    activeGroup = 'all';
+  } else if (groupParam) {
+    activeGroup = groupParam;
+  } else {
+    activeGroup = 'all';
+  }
+
   const groups = [...new Set(allStickers.map(s => s.group_name))].filter(g => g !== 'ESPECIAL').sort();
+
+  // Find team name for breadcrumb
+  const teamName = teamParam
+    ? allStickers.find(s => s.team_code === teamParam)?.team_name || teamParam
+    : '';
 
   main.innerHTML = `
     <div class="page">
       <div class="page-header">
-        <h2>📚 Catálogo de Cromos</h2>
-        <p>Clica num cromo para mudar o estado · Duplo clique para ver detalhe</p>
+        ${teamParam ? `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <button onclick="window.location.hash='/collection'" class="btn btn-ghost btn-sm" style="font-size:12px;padding:4px 10px;">← Colecção</button>
+          </div>
+          <h2>📚 ${teamName}</h2>
+          <p>Clica num cromo para mudar o estado</p>
+        ` : `
+          <h2>📚 Catálogo de Cromos</h2>
+          <p>Clica num cromo para mudar o estado · Duplo clique para ver detalhe</p>
+        `}
       </div>
 
       <div class="filter-bar">
         <input type="text" class="form-input" id="search-input"
-          placeholder="🔍 Pesquisar jogador, equipa..." style="max-width:240px;flex:1;">
+          placeholder="🔍 Pesquisar jogador, equipa..." style="max-width:240px;flex:1;"
+          value="${teamName ? '' : ''}">
         <select class="form-input form-select" id="group-filter" style="max-width:160px;">
           <option value="all">Todos os Grupos</option>
-          ${groups.map(g => `<option value="${g}">Grupo ${g}</option>`).join('')}
+          ${groups.map(g => `<option value="${g}" ${groupParam === g ? 'selected' : ''}>Grupo ${g}</option>`).join('')}
           <option value="ESPECIAL">Especiais</option>
         </select>
       </div>
@@ -97,30 +130,39 @@ export async function render() {
       document.querySelectorAll('.filter-btn[data-f]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       activeFilter = btn.dataset.f;
-      renderStickers();
+      renderStickers(teamParam);
     });
   });
 
   document.getElementById('group-filter').addEventListener('change', e => {
     activeGroup = e.target.value;
-    renderStickers();
+    renderStickers(teamParam);
   });
 
   document.getElementById('search-input').addEventListener('input', e => {
     searchTerm = e.target.value.toLowerCase();
-    renderStickers();
+    renderStickers(teamParam);
   });
 
-  renderStickers();
+  renderStickers(teamParam);
+
+  // Scroll to team section if requested
+  if (teamParam) {
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`.team-section[data-team="${teamParam}"]`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
 }
 
-function renderStickers() {
+function renderStickers(teamFilter = '') {
   let filtered = allStickers.filter(s => {
-    if (activeFilter === 'none') return !collection[s.id];
+    if (activeFilter === 'none') return !collection[s.id] || collection[s.id]?.status === 'need';
     if (activeFilter !== 'all') return collection[s.id]?.status === activeFilter;
     return true;
   });
-  if (activeGroup !== 'all') filtered = filtered.filter(s => s.group_name === activeGroup);
+  if (teamFilter) filtered = filtered.filter(s => s.team_code === teamFilter);
+  else if (activeGroup !== 'all') filtered = filtered.filter(s => s.group_name === activeGroup);
   if (searchTerm) filtered = filtered.filter(s =>
     s.player_name?.toLowerCase().includes(searchTerm) ||
     s.team_name?.toLowerCase().includes(searchTerm) ||
@@ -148,7 +190,7 @@ function renderStickers() {
     const flagSrc = flagCode ? `https://flagcdn.com/w40/${flagCode}.png` : '';
 
     return `
-      <div class="team-section">
+      <div class="team-section" data-team="${code}">
         <div class="team-header">
           ${flagSrc
             ? `<img class="team-flag-img" src="${flagSrc}" alt="${team.name}" loading="lazy" onerror="this.style.display='none'">`

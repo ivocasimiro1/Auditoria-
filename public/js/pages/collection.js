@@ -172,12 +172,14 @@ function renderGroupsView(content, byGroup, collectionMap) {
               : `<span>🌐</span>`;
 
             return `
-              <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+              <div onclick="window.location.hash='/catalog?team=${code}'"
+                style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;border-radius:6px;transition:background 0.15s;"
+                onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background=''">
                 <div style="width:32px;text-align:center;flex-shrink:0;">${flagHtml}</div>
                 <div style="flex:1;min-width:0;">
                   <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
                     <span style="font-size:13px;font-weight:600;">${team.name}</span>
-                    <span style="font-size:11px;color:var(--text-muted);">${have}/${team.stickers.length}</span>
+                    <span style="font-size:11px;color:var(--text-muted);">${have}/${team.stickers.length} →</span>
                   </div>
                   <div style="height:3px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden;">
                     <div style="height:100%;width:${pct}%;background:${pct === 100 ? 'var(--success)' : 'linear-gradient(90deg,var(--blue),var(--purple))'};border-radius:2px;"></div>
