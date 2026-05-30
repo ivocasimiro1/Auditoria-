@@ -133,7 +133,12 @@ async function router() {
     try {
       await fn();
     } catch (e) {
-      main.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Erro ao carregar página</h3><p>${e.message}</p></div>`;
+      if (e.message?.includes('dynamically imported module') || e.message?.includes('Failed to fetch')) {
+        // Module loading failed (network error / deployment) — reload to recover
+        window.location.reload();
+        return;
+      }
+      main.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Erro ao carregar página</h3><p>${e.message}</p><button class="btn btn-primary" style="margin-top:16px" onclick="window.location.reload()">Recarregar</button></div>`;
     }
   } else {
     main.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><h3>Página não encontrada</h3></div>';
