@@ -1,4 +1,4 @@
-import { apiFetch, getUser, showToast, TYPE_LABELS } from '../app.js';
+import { apiFetch, getUser, showToast, TYPE_LABELS, updateCollectionPct } from '../app.js';
 
 // flagcdn.com country codes — free, no API key
 const FLAG_CODES = {
@@ -443,6 +443,7 @@ async function cycleStatus(stickerId) {
       body: JSON.stringify({ status: next || 'none' }),
     });
     refreshCard(stickerId);
+    updateCollectionPct();
   } catch (e) {
     showToast(e.message, 'error');
   }

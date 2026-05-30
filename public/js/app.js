@@ -234,6 +234,18 @@ function setupNav() {
   }
 }
 
+// Collection completion % in sidebar
+async function updateCollectionPct() {
+  try {
+    const stats = await apiFetch('/stickers/collection/stats/me');
+    if (!stats) return;
+    const el = document.getElementById('nav-collection-pct');
+    if (!el) return;
+    el.textContent = `${stats.completion_pct}%`;
+    el.style.opacity = '1';
+  } catch {}
+}
+
 // Poll notification count
 let notifInterval = null;
 async function startNotifPolling() {
@@ -260,8 +272,9 @@ window.addEventListener('DOMContentLoaded', () => {
   } else {
     setupNav();
     startNotifPolling();
+    updateCollectionPct();
     router();
   }
 });
 
-export { apiFetch, getUser, getToken, setAuth, clearAuth, showToast, openModal, closeModal, relativeTime, STATUS_LABELS, STATUS_ICONS, TYPE_LABELS };
+export { apiFetch, getUser, getToken, setAuth, clearAuth, showToast, openModal, closeModal, relativeTime, STATUS_LABELS, STATUS_ICONS, TYPE_LABELS, updateCollectionPct };
