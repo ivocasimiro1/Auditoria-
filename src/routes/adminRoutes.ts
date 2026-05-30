@@ -170,12 +170,15 @@ router.post('/missing-reports/:id/add', authenticateToken, async (req: Request, 
     let cardType: string;
 
     if (team_code === 'SPECIAL') {
-      // Special sticker: generate next SP-xxx ID
       const specials = await query<{ id: string }>(
         `SELECT id FROM stickers WHERE team_code = 'SPECIAL' AND id LIKE 'SP-%' ORDER BY id`
       );
-      const nextSpNum = specials.length + 1;
-      stickerId    = `SP-${String(nextSpNum).padStart(3, '0')}`;
+      let nextSpNum = specials.length + 1;
+      stickerId = `SP-${String(nextSpNum).padStart(3, '0')}`;
+      while (await queryOne(`SELECT 1 FROM stickers WHERE id = $1`, [stickerId])) {
+        nextSpNum++;
+        stickerId = `SP-${String(nextSpNum).padStart(3, '0')}`;
+      }
       finalTeamCode = 'SPECIAL'; finalTeamName = 'Especial'; finalGroup = 'ESPECIAL';
       cardType     = req.body.card_type || 'special';
     } else {
@@ -186,14 +189,19 @@ router.post('/missing-reports/:id/add', authenticateToken, async (req: Request, 
       const existing = await query<{ id: string }>(
         `SELECT id FROM stickers WHERE team_code = $1 AND card_type = 'player' ORDER BY id`, [team_code]
       );
-      stickerId    = `${team_code}-P${String(existing.length + 1).padStart(2, '0')}`;
+      let idx = existing.length + 1;
+      stickerId = `${team_code}-P${String(idx).padStart(2, '0')}`;
+      while (await queryOne(`SELECT 1 FROM stickers WHERE id = $1`, [stickerId])) {
+        idx++;
+        stickerId = `${team_code}-P${String(idx).padStart(2, '0')}`;
+      }
       finalTeamCode = team_code; finalTeamName = team.team_name; finalGroup = team.group_name;
       cardType     = 'player';
     }
 
     await execute(
       `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '') ON CONFLICT (id) DO NOTHING`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '')`,
       [stickerId, num, finalTeamCode, finalTeamName, finalGroup, player_name.trim(), cardType, rarity || 'common']
     );
     await execute('UPDATE missing_reports SET status = $1 WHERE id = $2', ['added', req.params.id]);
