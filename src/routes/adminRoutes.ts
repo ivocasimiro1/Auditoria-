@@ -66,6 +66,72 @@ router.post('/reports/:id/apply', authenticateToken, async (req: Request, res: R
   }
 });
 
+// Activity dashboard — online users + recent activity feed
+router.get('/activity', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!await requireAdmin(req, res)) return;
+
+    const now = Date.now();
+    const onlineThreshold = now - 10 * 60 * 1000;
+    const dayAgo          = now - 24 * 60 * 60 * 1000;
+    const weekAgo         = now - 7  * 24 * 60 * 60 * 1000;
+
+    const [online, feed, topUsers] = await Promise.all([
+      query<{ id: string; username: string; location: string; last_seen: number }>(
+        `SELECT id, username, location, last_seen FROM users WHERE last_seen > $1 ORDER BY last_seen DESC`,
+        [onlineThreshold]
+      ),
+
+      query<{ type: string; actor: string; other: string; ts: number }>(
+        `SELECT 'nova_conta' as type, username as actor, '' as other, created_at as ts
+           FROM users WHERE created_at > $1
+         UNION ALL
+         SELECT 'proposta_troca', p.username, r.username, t.created_at
+           FROM trades t
+           JOIN users p ON p.id = t.proposer_id
+           JOIN users r ON r.id = t.receiver_id
+           WHERE t.created_at > $1
+         UNION ALL
+         SELECT 'troca_concluida', p.username, r.username, t.updated_at
+           FROM trades t
+           JOIN users p ON p.id = t.proposer_id
+           JOIN users r ON r.id = t.receiver_id
+           WHERE t.status = 'completed' AND t.updated_at > $1
+         UNION ALL
+         SELECT 'mensagem', u.username, '', m.created_at
+           FROM trade_messages m
+           JOIN users u ON u.id = m.sender_id
+           WHERE m.created_at > $1
+         UNION ALL
+         SELECT 'report_cromo', u.username, sr.suggested_name, sr.created_at
+           FROM sticker_reports sr
+           JOIN users u ON u.id = sr.reporter_id
+           WHERE sr.created_at > $1
+         ORDER BY ts DESC LIMIT 100`,
+        [dayAgo]
+      ),
+
+      query<{ username: string; location: string; trades: string; messages: string; last_seen: number }>(
+        `SELECT u.username, u.location, u.last_seen,
+           (SELECT COUNT(*) FROM trades WHERE (proposer_id=u.id OR receiver_id=u.id) AND created_at > $1)::text as trades,
+           (SELECT COUNT(*) FROM trade_messages WHERE sender_id=u.id AND created_at > $1)::text as messages
+         FROM users u
+         ORDER BY (
+           (SELECT COUNT(*) FROM trades WHERE (proposer_id=u.id OR receiver_id=u.id) AND created_at > $1) +
+           (SELECT COUNT(*) FROM trade_messages WHERE sender_id=u.id AND created_at > $1)
+         ) DESC
+         LIMIT 12`,
+        [weekAgo]
+      ),
+    ]);
+
+    res.json({ online, feed, topUsers, now });
+  } catch (err) {
+    console.error('Activity error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // Dismiss report (mark as ignored)
 router.post('/reports/:id/dismiss', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
