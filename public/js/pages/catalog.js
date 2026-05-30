@@ -632,6 +632,10 @@ function openReportModal(stickerId, currentName) {
 }
 
 function openMissingModal() {
+  const teamNames = [...new Set(
+    allStickers.filter(s => s.team_code !== 'SPECIAL').map(s => s.team_name)
+  )].sort((a, b) => a.localeCompare(b));
+
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
@@ -645,8 +649,12 @@ function openMissingModal() {
       </p>
       <div class="form-group">
         <label class="form-label">Seleção / Equipa *</label>
-        <input type="text" class="form-input" id="missing-team-input"
-          placeholder="Ex: Suécia, Portugal, Brasil..." autocomplete="off">
+        <div style="position:relative;">
+          <input type="text" class="form-input" id="missing-team-input"
+            placeholder="Escolhe ou escreve a equipa..." autocomplete="off" readonly
+            style="cursor:pointer;caret-color:transparent;">
+          <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted);">▾</span>
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Nome do Jogador *</label>
@@ -665,15 +673,46 @@ function openMissingModal() {
   `;
   document.body.appendChild(overlay);
 
-  overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  // Custom dropdown attached to body (escapes modal stacking context)
+  const dd = document.createElement('div');
+  dd.style.cssText = 'display:none;position:fixed;background:#1a2540;border:1px solid rgba(255,255,255,0.15);border-radius:10px;z-index:99999;overflow-y:auto;max-height:220px;box-shadow:0 12px 40px rgba(0,0,0,0.8);';
+  document.body.appendChild(dd);
 
-  const playerInput = overlay.querySelector('#missing-player-input');
-  setTimeout(() => overlay.querySelector('#missing-team-input').focus(), 50);
+  const teamInput = overlay.querySelector('#missing-team-input');
+  let selectedTeam = '';
+
+  function openDd() {
+    const r = teamInput.getBoundingClientRect();
+    dd.style.top   = `${r.bottom + 4}px`;
+    dd.style.left  = `${r.left}px`;
+    dd.style.width = `${r.width}px`;
+    dd.innerHTML = teamNames.map(name => `
+      <div class="mdd-item" data-name="${name}"
+        style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);color:var(--text);">
+        ${name}
+      </div>`).join('');
+    dd.style.display = 'block';
+    dd.querySelectorAll('.mdd-item').forEach(item => {
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        selectedTeam = item.dataset.name;
+        teamInput.value = selectedTeam;
+        dd.style.display = 'none';
+      });
+      item.addEventListener('mouseover', () => item.style.background = 'rgba(255,255,255,0.08)');
+      item.addEventListener('mouseout',  () => item.style.background = '');
+    });
+  }
+
+  teamInput.addEventListener('click', () => dd.style.display === 'none' ? openDd() : (dd.style.display = 'none'));
+  teamInput.addEventListener('blur',  () => setTimeout(() => { dd.style.display = 'none'; }, 150));
+
+  overlay.querySelector('.modal-close').addEventListener('click', () => { dd.remove(); overlay.remove(); });
+  overlay.addEventListener('click', e => { if (e.target === overlay) { dd.remove(); overlay.remove(); } });
 
   overlay.querySelector('#send-missing-btn').addEventListener('click', async () => {
-    const teamVal   = overlay.querySelector('#missing-team-input').value.trim();
-    const playerVal = playerInput.value.trim();
+    const teamVal   = teamInput.value.trim();
+    const playerVal = overlay.querySelector('#missing-player-input').value.trim();
     const notesVal  = overlay.querySelector('#missing-notes-input').value.trim();
 
     if (!teamVal || !playerVal) {
@@ -687,7 +726,7 @@ function openMissingModal() {
         method: 'POST',
         body: JSON.stringify({ team_name: teamVal, player_name: playerVal, notes: notesVal }),
       });
-      overlay.remove();
+      dd.remove(); overlay.remove();
       showToast('Pedido enviado! Obrigado pela ajuda 🙏', 'success');
     } catch (e) {
       showToast(e.message, 'error');
