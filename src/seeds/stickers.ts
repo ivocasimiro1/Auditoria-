@@ -248,11 +248,19 @@ const SPECIAL_CARDS = [
   { id: 'SP-020', name: 'WC 2026 Countdown', type: 'special' as const, rarity: 'common' as const },
 ];
 
+const SEED_VERSION = 'v2-correct-players';
+
 export async function seedStickers(): Promise<void> {
   const countRow = await queryOne<{ c: string }>('SELECT COUNT(*) as c FROM stickers');
   const count = parseInt(countRow?.c ?? '0', 10);
   const expected = TEAMS.length * 20 + SPECIAL_CARDS.length;
-  if (count === expected) return;
+
+  // Check if current data matches expected version
+  const mexGk = await queryOne<{ player_name: string }>(
+    "SELECT player_name FROM stickers WHERE id = 'MEX-P01'"
+  );
+  const alreadyCurrent = count === expected && mexGk?.player_name === 'Luis Malagón';
+  if (alreadyCurrent) return;
 
   // Re-seed needed
   await execute('DELETE FROM user_stickers');
