@@ -21,9 +21,10 @@
   <link rel="stylesheet" href="/css/components.css">
 </head>
 <body>
-  <div id="sidebar-overlay" class="sidebar-overlay"></div>
-
   <div class="app-wrapper" id="app">
+    <!-- Overlay must be INSIDE app-wrapper so z-index competes in the same stacking context -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
     <!-- Sidebar -->
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-logo">
