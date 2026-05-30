@@ -23,17 +23,17 @@ const TEAMS: TeamDef[] = [
   },
   {
     code: 'CZE', name: 'Chéquia', group: 'A',
-    players: ['Stanek', 'Vaclik', 'Coufal', 'Kaderabek', 'Celustka', 'Kalas', 'Soucek', 'Kral', 'Barak', 'Jankto', 'Schick', 'Hlozek', 'Pesek', 'Kuchta', 'Cerny', 'Provod', 'Lingr', 'Sadílek'],
+    players: ['Jindřich Staněk', 'Matěj Kovář', 'Vladimír Coufal', 'Tomáš Souček', 'Jan Bořil', 'Pavel Kadeřábek', 'Ladislav Krejčí', 'Marek Penc', 'Lukáš Provod', 'Ondřej Lingr', 'Patrik Schick', 'Adam Hložek', 'Jan Kuchta', 'Mojmír Chytil', 'Tomáš Chorý', 'Matěj Jurásek', 'Aleš Mandous', 'David Jurásek'],
   },
 
   // Group B
   {
     code: 'CAN', name: 'Canadá', group: 'B',
-    players: ['Borjan', 'St. Clair', 'Johnston', 'Miller', 'Henry', 'Laryea', 'Eustaquio', 'Hutchinson', 'David', 'Buchanan', 'Larin', 'Davies', 'Osorio', 'Adekugbe', 'Waterman', 'Hoilett', 'Ugbo', 'Cavallini'],
+    players: ['Milan Borjan', 'Maxime Crépeau', 'Kamal Miller', 'Alistair Johnston', 'Derek Cornelius', 'Sam Adekugbe', 'Jonathan Osorio', 'Stephen Eustáquio', 'Mark-Anthony Kaye', 'Richie Laryea', 'Jonathan David', 'Tajon Buchanan', 'Cyle Larin', 'Alphonso Davies', 'Junior Hoilett', 'Liam Millar', 'Jacob Shaffelburg', 'Théo Corbeanu'],
   },
   {
     code: 'BIH', name: 'Bósnia-Herzegovina', group: 'B',
-    players: ['Sehic', 'Piric', 'Hadziahmetovic', 'Kovacevic', 'Civic', 'Kolasinac', 'Pjanic', 'Saric', 'Visca', 'Dzeko', 'Prevljak', 'Krunic', 'Stevanovic', 'Hajradinovic', 'Nanic', 'Tahirovic', 'Gigovic', 'Gazibegovic'],
+    players: ['Nikola Vasilj', 'Kenan Pirić', 'Sanjin Prcić', 'Ermin Bičakčić', 'Anel Ahmedhodžić', 'Sead Kolašinac', 'Miralem Pjanić', 'Elvis Sarić', 'Edin Višća', 'Edin Džeko', 'Ermedin Demirović', 'Amer Gojak', 'Haris Hajradinović', 'Adnan Nanić', 'Benjamin Tahi rovič', 'Anel Džaka', 'Armin Hodžić', 'Lamine Balde'],
   },
   {
     code: 'QAT', name: 'Qatar', group: 'B',
@@ -41,7 +41,7 @@ const TEAMS: TeamDef[] = [
   },
   {
     code: 'SUI', name: 'Suíça', group: 'B',
-    players: ['Sommer', 'Kobel', 'Widmer', 'Akanji', 'Elvedi', 'Rodriguez', 'Freuler', 'Xhaka', 'Shaqiri', 'Seferovic', 'Embolo', 'Zuber', 'Vargas', 'Fabian Rieder', 'Steffen', 'Okafor', 'Ndoye', 'Duah'],
+    players: ['Yann Sommer', 'Gregor Kobel', 'Silvan Widmer', 'Manuel Akanji', 'Nico Elvedi', 'Ricardo Rodríguez', 'Remo Freuler', 'Granit Xhaka', 'Xherdan Shaqiri', 'Haris Seferović', 'Breel Embolo', 'Fabian Rieder', 'Dan Ndoye', 'Noah Okafor', 'Zeki Amdouni', 'Michel Aebischer', 'Vincent Sierro', 'Kwadwo Duah'],
   },
 
   // Group C
@@ -51,7 +51,7 @@ const TEAMS: TeamDef[] = [
   },
   {
     code: 'MAR', name: 'Marrocos', group: 'C',
-    players: ['Bounou', 'Munir', 'Hakimi', 'Saiss', 'Aguerd', 'Mazraoui', 'Amrabat', 'Ounahi', 'Ziyech', 'En-Nesyri', 'Boufal', 'Cheddira', 'El Yamiq', 'Dari', 'Benoun', 'Azzedine Ounahi', 'Sabiri', 'El Khannouss'],
+    players: ['Yassine Bounou', 'Munir Mohamedi', 'Achraf Hakimi', 'Romain Saïss', 'Nayef Aguerd', 'Noussair Mazraoui', 'Sofyan Amrabat', 'Azzedine Ounahi', 'Hakim Ziyech', 'Youssef En-Nesyri', 'Sofiane Boufal', 'Walid Cheddira', 'Yahya Jabrane', 'Selim Amallah', 'Ilias Chair', 'Abdessamad Ezzalzouli', 'Bilal El Khannouss', 'Zakaria Aboukhlal'],
   },
   {
     code: 'HAI', name: 'Haiti', group: 'C',
@@ -59,7 +59,7 @@ const TEAMS: TeamDef[] = [
   },
   {
     code: 'SCO', name: 'Escócia', group: 'C',
-    players: ['Gordon', 'Clark', 'Hickey', 'McKenna', 'Hanley', 'Robertson', 'McGregor', 'Gilmour', 'McGinn', 'Christie', 'Adams', 'Dykes', 'McLean', 'Armstrong', 'Tierney', 'Patterson', 'Forrest', 'Nisbet'],
+    players: ['Craig Gordon', 'Angus Gunn', 'Aaron Hickey', 'Scott McKenna', 'Grant Hanley', 'Andrew Robertson', 'Callum McGregor', 'Billy Gilmour', 'John McGinn', 'Ryan Christie', 'Che Adams', 'Lyndon Dykes', 'Kenny McLean', 'Stuart Armstrong', 'Kieran Tierney', 'Nathan Patterson', 'James Forrest', 'Scott McTominay'],
   },
 
   // Group D
@@ -69,11 +69,11 @@ const TEAMS: TeamDef[] = [
   },
   {
     code: 'PAR', name: 'Paraguai', group: 'D',
-    players: ['Silva', 'Fernandez', 'Alonso', 'Gomez', 'Alderete', 'Balbuena', 'Cubas', 'Villasanti', 'Almada', 'Sanabria', 'Romero', 'Enciso', 'Bogado', 'Gómez M', 'Sosa', 'Gonzalez', 'Rojas', 'Martinez'],
+    players: ['Gastón Fernández', 'Antony Silva', 'Omar Alderete', 'Fabián Balbuena', 'Junior Alonso', 'Matías Rojas', 'Andrés Cubas', 'Mathías Villasanti', 'Tomás Almeida', 'Antonio Sanabria', 'Julio Enciso', 'Miguel Almirón', 'Bernardo Cáceres', 'Éver Banega', 'Ramón Sosa', 'Blas Riveros', 'Alejandro Romero Gamarra', 'Israel Dos Santos'],
   },
   {
     code: 'AUS', name: 'Austrália', group: 'D',
-    players: ['Ryan', 'Redmayne', 'Degenek', 'Rowles', 'Souttar', 'Atkinson', 'Mooy', 'Irvine', 'Leckie', 'McGree', 'Duke', 'Hrustic', 'Devlin', 'Goodwin', 'Nabbout', 'Mabil', 'Najjar', 'Jamieson'],
+    players: ['Mathew Ryan', 'Danny Vukovic', 'Milos Degenek', 'Kye Rowles', 'Harry Souttar', 'Aziz Behich', 'Aaron Mooy', 'Jackson Irvine', 'Mathew Leckie', 'Riley McGree', 'Mitchell Duke', 'Ajdin Hrustić', 'Jordan Bos', 'Cameron Devlin', 'Garang Kuol', 'Brandon Borrello', 'Jason Cummings', 'Marco Tilio'],
   },
   {
     code: 'TUR', name: 'Turquia', group: 'D',
@@ -91,43 +91,43 @@ const TEAMS: TeamDef[] = [
   },
   {
     code: 'CIV', name: 'Costa do Marfim', group: 'E',
-    players: ['Fofana', 'Sangare', 'Badra Sangare', 'Deli', 'Konan', 'Zaha', 'Kessie', 'Seri', 'Pepe N', 'Pépé', 'Haller', 'Cornet', 'Gradel', 'Boly', 'Aurier', 'Fae', 'Diallo', 'Dao'],
+    players: ['Yahia Fofana', 'Badra Ali Sangaré', 'Wilfried Singo', 'Odilon Kossounou', 'Evan Ndicka', 'Ghislain Konan', 'Franck Kessié', 'Jean Michaël Seri', 'Wilfried Zaha', 'Nicolas Pépé', 'Sébastien Haller', 'Maxwel Cornet', 'Max Gradel', 'Willy Boly', 'Simon Adingra', 'Oumar Diakité', 'Steeve Yago', 'Oumar Gonzalez'],
   },
   {
     code: 'ECU', name: 'Equador', group: 'E',
-    players: ['Dominguez', 'Galindez', 'Preciado', 'Torres', 'Hincapie', 'Estupinan', 'Caicedo', 'Gruezo', 'Plata', 'Sarmiento', 'Valencia', 'Mena', 'Yeboah', 'Cifuentes', 'Arboleda', 'Ibarra', 'Minda', 'Mercado'],
+    players: ['Hernán Galíndez', 'Alexander Domínguez', 'Ángelo Preciado', 'Piero Hincapié', 'William Pacho', 'Pervis Estupiñán', 'Moisés Caicedo', 'Carlos Gruezo', 'Jeremy Sarmiento', 'Gonzalo Plata', 'Enner Valencia', 'Romario Ibarra', 'Kevin Rodríguez', 'Alan Minda', 'Jhegson Méndez', 'John Yeboah', 'Kendry Páez', 'Byron Castillo'],
   },
 
   // Group F
   {
     code: 'NED', name: 'Países Baixos', group: 'F',
-    players: ['Flekken', 'Bijlow', 'Dumfries', 'De Vrij', 'Van Dijk', 'Timber', 'De Jong', 'Koopmeiners', 'Frimpong', 'Xavi Simons', 'Depay', 'Gakpo', 'Reijnders', 'Wieffer', 'Veerman', 'Gravenberch', 'Brobbey', 'Weghorst'],
+    players: ['Bart Verbruggen', 'Mark Flekken', 'Denzel Dumfries', 'Stefan de Vrij', 'Virgil van Dijk', 'Nathan Aké', 'Frenkie de Jong', 'Teun Koopmeiners', 'Jeremie Frimpong', 'Xavi Simons', 'Memphis Depay', 'Cody Gakpo', 'Tijjani Reijnders', 'Mats Wieffer', 'Donyell Malen', 'Ryan Gravenberch', 'Brian Brobbey', 'Wout Weghorst'],
   },
   {
     code: 'JPN', name: 'Japão', group: 'F',
-    players: ['Gonda', 'Zion', 'Yamane', 'Itakura', 'Yoshida', 'Nagatomo', 'Endo', 'Morita', 'Kamada', 'Doan', 'Minamino', 'Ueda', 'Kubo', 'Mitoma', 'Tanaka', 'Maeda', 'Furuhashi', 'Asano'],
+    players: ['Shuichi Gonda', 'Zion Suzuki', 'Hiroki Sakai', 'Ko Itakura', 'Maya Yoshida', 'Yuto Nagatomo', 'Wataru Endo', 'Hidemasa Morita', 'Daichi Kamada', 'Ritsu Doan', 'Takumi Minamino', 'Ayase Ueda', 'Takefusa Kubo', 'Kaoru Mitoma', 'Ao Tanaka', 'Daizen Maeda', 'Kyogo Furuhashi', 'Takuma Asano'],
   },
   {
     code: 'SWE', name: 'Suécia', group: 'F',
-    players: ['Olsen', 'Nordfeldt', 'Krafth', 'Lindelof', 'Danielson', 'Augustinsson', 'Olsson', 'Ekdal', 'Forsberg', 'Isak', 'Gyokeres', 'Claesson', 'Svanberg', 'Kulusevski', 'Elanga', 'Dahoud', 'Bengtsson', 'Asoro'],
+    players: ['Robin Olsen', 'Karl-Johan Johnsson', 'Emil Krafth', 'Victor Lindelöf', 'Pontus Jansson', 'Ludwig Augustinsson', 'Mattias Svanberg', 'Albin Ekdal', 'Emil Forsberg', 'Alexander Isak', 'Viktor Gyökeres', 'Dejan Kulusevski', 'Anthony Elanga', 'Jesper Karlsson', 'Samuel Dahl', 'Kristoffer Olsson', 'Oscar Willmar', 'John Guidetti'],
   },
   {
     code: 'TUN', name: 'Tunísia', group: 'F',
-    players: ['Dahmen', 'Jemal', 'Talbi', 'Meriah', 'Bronn', 'Abdi', 'Chaalali', 'Laifaoui', 'Ben Slimane', 'Jebali', 'Jaziri', 'Khazri', 'Sliti', 'Maaloul', 'Ben Romdhane', 'Skhiri', 'Ghandri', 'Mathlouthi'],
+    players: ['Aymen Dahmen', 'Mouez Hassen', 'Montassar Talbi', 'Dylan Bronn', 'Yassine Meriah', 'Ali Maaloul', 'Anis Ben Slimane', 'Hannibal Mejbri', 'Ellyes Skhiri', 'Wahbi Khazri', 'Naïm Sliti', 'Issam Jebali', 'Sayfallah Ltaief', 'Mohamed Drager', 'Ferjani Sassi', 'Taha Yassine Khenissi', 'Maher Hannachi', 'Seifeddine Jaziri'],
   },
 
   // Group G
   {
     code: 'BEL', name: 'Bélgica', group: 'G',
-    players: ['Casteels', 'Mignolet', 'Castagne', 'Vertonghen', 'Alderweireld', 'Theate', 'Witsel', 'Tielemans', 'Mertens', 'De Bruyne', 'Lukaku', 'Doku', 'Onana', 'Mangala', 'De Ketelaere', 'Openda', 'Bakayoko', 'Hazard'],
+    players: ['Koen Casteels', 'Simon Mignolet', 'Timothy Castagne', 'Jan Vertonghen', 'Wout Faes', 'Arthur Theate', 'Axel Witsel', 'Youri Tielemans', 'Kevin De Bruyne', 'Romelu Lukaku', 'Jeremy Doku', 'Amadou Onana', 'Charles De Ketelaere', 'Loïs Openda', 'Johan Bakayoko', 'Leandro Trossard', 'Arthur Vermeeren', 'Thomas Meunier'],
   },
   {
     code: 'EGY', name: 'Egito', group: 'G',
-    players: ['El-Shenawy', 'Gabaski', 'Kahraba', 'Hegazy', 'Ashraf', 'Sayed', 'Elneny', 'Hamed', 'Mohamed', 'Trezeguet', 'Salah', 'Marmoush', 'Hamdi', 'Zizo', 'Mostafa Mohamed', 'Ramadan', 'Soares', 'Hassan'],
+    players: ['Mohamed El-Shenawy', 'Ahmed Gabaski', 'Akram Tawfik', 'Ahmed Hegazy', 'Omar Kamal', 'Ahmed Fatouh', 'Mohamed Elneny', 'Amr El-Sulaya', 'Mahmoud Trezeguet', 'Mohamed Salah', 'Omar Marmoush', 'Mostafa Mohamed', 'Hamdi Fathi', 'Zizo', 'Ahmed Sayed Zizou', 'Taher Mohamed Taher', 'Emam Ashour', 'Ramadan Sobhi'],
   },
   {
     code: 'IRN', name: 'Irão', group: 'G',
-    players: ['Beiranvand', 'Hosseini', 'Mohammadi', 'Pouraliganji', 'Cheshmi', 'Rezaeian', 'Ezatolahi', 'Noorollahi', 'Jahanbakhsh', 'Gholizadeh', 'Taremi', 'Azmoun', 'Jalali', 'Hajisafi', 'Amiri', 'Ansarifard', 'Shojaei', 'Torabi'],
+    players: ['Alireza Beiranvand', 'Hossein Hosseini', 'Milad Mohammadi', 'Morteza Pouraliganji', 'Ehsan Hajsafi', 'Sadegh Moharrami', 'Saeid Ezatolahi', 'Ali Noorollahi', 'Alireza Jahanbakhsh', 'Ahmad Noorollahi', 'Mehdi Taremi', 'Sardar Azmoun', 'Karim Ansarifard', 'Ali Gholizadeh', 'Vahid Amiri', 'Roozbeh Cheshmi', 'Omid Alishah', 'Dariush Hosseini'],
   },
   {
     code: 'NZL', name: 'Nova Zelândia', group: 'G',
@@ -149,7 +149,7 @@ const TEAMS: TeamDef[] = [
   },
   {
     code: 'URU', name: 'Uruguai', group: 'H',
-    players: ['Rochet', 'Muslera', 'Vina', 'Gimenez', 'Godin', 'Olivera', 'Valverde', 'Bentancur', 'De Arrascaeta', 'Cavani', 'Nunez', 'Pellistri', 'Ugarte', 'Facundo Torres', 'Maxi Gomez', 'Forlan R', 'Nandez', 'Vecino'],
+    players: ['Sergio Rochet', 'Fernando Muslera', 'Mathías Olivera', 'José María Giménez', 'Ronald Araújo', 'Nahitan Nández', 'Federico Valverde', 'Rodrigo Bentancur', 'Giorgian De Arrascaeta', 'Edinson Cavani', 'Darwin Núñez', 'Facundo Pellistri', 'Manuel Ugarte', 'Facundo Torres', 'Maximiliano Gómez', 'Matías Vecino', 'Agustín Canobbio', 'Gastón Pereiro'],
   },
 
   // Group I
@@ -159,7 +159,7 @@ const TEAMS: TeamDef[] = [
   },
   {
     code: 'SEN', name: 'Senegal', group: 'I',
-    players: ['Mendy', 'Gomis', 'Sabaly', 'Koulibaly', 'Diallo', 'Jakobs', 'Kouyate', 'Gueye', 'Sarr', 'Mane', 'Diatta', 'Dia', 'Diedhiou', 'Ndiaye', 'Balde', 'Ciss', 'Sow', 'Dieng'],
+    players: ['Édouard Mendy', 'Seny Dieng', 'Bouna Sarr', 'Kalidou Koulibaly', 'Abdou Diallo', 'Fodé Ballo-Touré', 'Idrissa Gueye', 'Cheikhou Kouyaté', 'Ismaïla Sarr', 'Sadio Mané', 'Krepin Diatta', 'Boulaye Dia', 'Famara Diédhiou', 'Pape Matar Sarr', 'Lamine Camara', 'Habib Diallo', 'Nicolas Jackson', 'Iliman Ndiaye'],
   },
   {
     code: 'IRQ', name: 'Iraque', group: 'I',
@@ -177,11 +177,11 @@ const TEAMS: TeamDef[] = [
   },
   {
     code: 'ALG', name: 'Argélia', group: 'J',
-    players: ['Rais M\'Bolhi', 'Mandrea', 'Atal', 'Mandi', 'Benlamri', 'Bensebaini', 'Bennacer', 'Guendouzi A', 'Mahrez', 'Slimani', 'Belaili', 'Brahimi', 'Bounedjah', 'Zerrouki', 'Amoura', 'Belkebla', 'Delort', 'Benrahma'],
+    players: ['Raïs M\'Bolhi', 'Alexandre Oukidja', 'Youcef Atal', 'Aïssa Mandi', 'Djamel Benlamri', 'Ramy Bensebaïni', 'Ismaël Bennacer', 'Mattéo Guendouzi', 'Riyad Mahrez', 'Islam Slimani', 'Yacine Brahimi', 'Baghdad Bounedjah', 'Ramiz Zerrouki', 'Mohamed Amoura', 'Haris Belkebla', 'Andy Delort', 'Saïd Benrahma', 'Houssem Aouar'],
   },
   {
     code: 'AUT', name: 'Áustria', group: 'J',
-    players: ['Pentz', 'Lindner', 'Posch', 'Lienhart', 'Wober', 'Alaba', 'Grillitsch', 'Laimer', 'Sabitzer', 'Baumgartner', 'Arnautovic', 'Gregoritsch', 'Wimmer', 'Danso', 'Schlager X', 'Querfeld', 'Entrup', 'Prass'],
+    players: ['Patrick Pentz', 'Alexander Schlager', 'Stefan Posch', 'Philipp Lienhart', 'Maximilian Wöber', 'David Alaba', 'Florian Grillitsch', 'Konrad Laimer', 'Marcel Sabitzer', 'Christoph Baumgartner', 'Marko Arnautović', 'Michael Gregoritsch', 'Kevin Danso', 'Nicolas Seiwald', 'Xaver Schlager', 'Romano Schmid', 'Florian Kainz', 'Patrick Wimmer'],
   },
   {
     code: 'JOR', name: 'Jordânia', group: 'J',
@@ -203,7 +203,7 @@ const TEAMS: TeamDef[] = [
   },
   {
     code: 'COL', name: 'Colômbia', group: 'K',
-    players: ['Vargas', 'Camilo Vargas', 'Arias', 'Sanchez D', 'Cuesta', 'Mojica', 'Lerma', 'Barrios', 'James Rodriguez', 'Cuadrado', 'Luis Diaz', 'Falcao', 'Carrascal', 'Borja', 'Sinisterra', 'Cordoba', 'Muriel', 'Diaz R'],
+    players: ['Camilo Vargas', 'David Ospina', 'Santiago Arias', 'Dávinson Sánchez', 'Oscar Murillo', 'Johan Mojica', 'Jefferson Lerma', 'Wilmar Barrios', 'James Rodríguez', 'Juan Cuadrado', 'Luis Díaz', 'Rafael Santos Borré', 'Jorge Carrascal', 'Jhon Córdoba', 'Lucho Sinisterra', 'Luis Muriel', 'Jhon Arias', 'Richard Ríos'],
   },
 
   // Group L
@@ -213,15 +213,15 @@ const TEAMS: TeamDef[] = [
   },
   {
     code: 'CRO', name: 'Croácia', group: 'L',
-    players: ['Livakovic', 'Gvardiol', 'Juranovic', 'Lovren', 'Sosa', 'Kovacic', 'Brozovic', 'Modric', 'Vlasic', 'Kramaric', 'Perisic', 'Sucic', 'Sutalo', 'Stanisic', 'Majer', 'Ivanusec', 'Budimir', 'Pasalic'],
+    players: ['Dominik Livaković', 'Ivo Grbić', 'Josip Juranović', 'Dejan Lovren', 'Joško Gvardiol', 'Borna Sosa', 'Mateo Kovačić', 'Marcelo Brozović', 'Luka Modrić', 'Nikola Vlašić', 'Andrej Kramarić', 'Ivan Perišić', 'Luka Sučić', 'Ivo Šutalo', 'Lovro Majer', 'Luka Ivanušec', 'Ante Budimir', 'Mario Pašalić'],
   },
   {
     code: 'GHA', name: 'Gana', group: 'L',
-    players: ['Ati-Zigi', 'Ofori', 'Lamptey', 'Salisu', 'Amartey', 'Mensah', 'Partey', 'Salis', 'Kudus', 'Ayew J', 'Ayew A', 'Williams', 'Sulemana', 'Kyereh', 'Arthur', 'Abdul Samed', 'Osman Bukari', 'Jordan Ayew'],
+    players: ['Lawrence Ati-Zigi', 'Richard Ofori', 'Tariq Lamptey', 'Mohammed Salisu', 'Daniel Amartey', 'Jonathan Mensah', 'Thomas Partey', 'Elisha Owusu', 'Mohammed Kudus', 'Jordan Ayew', 'André Ayew', 'Kamaldeen Sulemana', 'Daniel-Kofi Kyereh', 'Antoine Semenyo', 'Inaki Williams', 'Abdul Samed', 'Osman Bukari', 'Ernest Nuamah'],
   },
   {
     code: 'PAN', name: 'Panamá', group: 'L',
-    players: ['Penedo', 'Mejia', 'Murillo', 'Davis', 'Escobar', 'Walder', 'Parris', 'Quintero', 'Godoy', 'Anderson', 'Fajardo', 'Tejada', 'Brown', 'Carrasquilla', 'Galvan', 'Adames', 'Torres J', 'Rodriguez J'],
+    players: ['Jaime Penedo', 'Orlando Mosquera', 'César Yanis', 'Harold Cummings', 'Erick Davis', 'Fidel Escobar', 'Adalberto Carrasquilla', 'Rolando Blackburn', 'Édgar Bárcenas', 'Ismael Díaz', 'José Fajardo', 'Cecilio Waterman', 'Alfredo Stephens', 'Alberto Quintero', 'Arnaldo Mosquera', 'Éric Davis', 'Andrés Andrade', 'Iván Anderson'],
   },
 ];
 
@@ -248,7 +248,7 @@ const SPECIAL_CARDS = [
   { id: 'SP-020', name: 'WC 2026 Countdown', type: 'special' as const, rarity: 'common' as const },
 ];
 
-const SEED_VERSION = 'v2-correct-players';
+const SEED_VERSION = 'v3-full-names';
 
 export async function seedStickers(): Promise<void> {
   const countRow = await queryOne<{ c: string }>('SELECT COUNT(*) as c FROM stickers');
@@ -259,7 +259,11 @@ export async function seedStickers(): Promise<void> {
   const mexGk = await queryOne<{ player_name: string }>(
     "SELECT player_name FROM stickers WHERE id = 'MEX-P01'"
   );
-  const alreadyCurrent = count === expected && mexGk?.player_name === 'Luis Malagón';
+  // Check a player from the v3 update to detect if reseed is needed
+  const belGk = await queryOne<{ player_name: string }>(
+    "SELECT player_name FROM stickers WHERE id = 'BEL-P01'"
+  );
+  const alreadyCurrent = count === expected && mexGk?.player_name === 'Luis Malagón' && belGk?.player_name === 'Koen Casteels';
   if (alreadyCurrent) return;
 
   // Re-seed needed
