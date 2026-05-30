@@ -202,6 +202,16 @@ CREATE INDEX IF NOT EXISTS idx_orders_seller ON orders(seller_id);
 
 const MIGRATIONS_SQL = `
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
+CREATE TABLE IF NOT EXISTS sticker_reports (
+  id TEXT PRIMARY KEY,
+  sticker_id TEXT NOT NULL,
+  reporter_id TEXT NOT NULL,
+  current_name TEXT,
+  suggested_name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sticker_reports_status ON sticker_reports(status, created_at);
 `;
 
 export async function initDb(): Promise<void> {

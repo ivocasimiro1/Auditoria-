@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
 import { query, queryOne, execute, transaction } from '../db';
 import { authenticateToken } from '../middleware/auth';
 
@@ -152,6 +153,28 @@ router.post('/collection/bulk', authenticateToken, async (req: Request, res: Res
     res.json({ success: true, count: updates.length });
   } catch (err) {
     console.error('Bulk update error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Any user: report wrong player name
+router.post('/:id/report', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  const { suggested_name } = req.body;
+  if (!suggested_name || typeof suggested_name !== 'string' || !suggested_name.trim()) {
+    res.status(400).json({ error: 'Nome sugerido é obrigatório' }); return;
+  }
+  try {
+    const sticker = await queryOne<{ player_name: string }>('SELECT player_name FROM stickers WHERE id = $1', [req.params.id]);
+    if (!sticker) { res.status(404).json({ error: 'Cromo não encontrado' }); return; }
+
+    await execute(
+      `INSERT INTO sticker_reports (id, sticker_id, reporter_id, current_name, suggested_name, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
+      [uuidv4(), req.params.id, req.userId, sticker.player_name || '', suggested_name.trim().slice(0, 100), Date.now()]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Report error:', err);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });

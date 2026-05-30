@@ -134,14 +134,15 @@
   backdrop-filter: blur(4px);
 }
 .sticker-name {
-  font-size: 11px; font-weight: 800;
+  font-size: 13px; font-weight: 800;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  color: var(--text); line-height: 1.3;
+  color: #fff; line-height: 1.3;
+  letter-spacing: -0.2px;
 }
 .sticker-team {
-  font-size: 9px; color: rgba(255,255,255,0.45);
+  font-size: 10px; color: rgba(255,255,255,0.5);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 /* ── STATUS BADGE ── */
