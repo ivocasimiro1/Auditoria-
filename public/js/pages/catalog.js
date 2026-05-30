@@ -100,18 +100,18 @@ export async function render() {
         `}
       </div>
 
-      <div class="filter-bar">
-        <div style="max-width:240px;flex:1;">
-          <input type="text" class="form-input" id="search-input"
-            placeholder="🔍 Pesquisar jogador, equipa..." style="width:100%;"
-            value="${teamName ? '' : ''}" autocomplete="off">
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">
+        <input type="text" class="form-input" id="search-input"
+          placeholder="🔍 Pesquisar jogador, equipa ou código (ex: POR9)…" style="width:100%;"
+          value="" autocomplete="off">
+        <div style="display:flex;gap:8px;">
+          <select class="form-input form-select" id="group-filter" style="flex:1;min-width:0;">
+            <option value="all">Todos os Grupos</option>
+            ${groups.map(g => `<option value="${g}" ${groupParam === g ? 'selected' : ''}>Grupo ${g}</option>`).join('')}
+            <option value="ESPECIAL">Especiais</option>
+          </select>
+          <button class="btn btn-primary btn-sm" id="quick-add-btn" style="white-space:nowrap;flex-shrink:0;">⚡ Rápido</button>
         </div>
-        <select class="form-input form-select" id="group-filter" style="max-width:160px;">
-          <option value="all">Todos os Grupos</option>
-          ${groups.map(g => `<option value="${g}" ${groupParam === g ? 'selected' : ''}>Grupo ${g}</option>`).join('')}
-          <option value="ESPECIAL">Especiais</option>
-        </select>
-        <button class="btn btn-primary btn-sm" id="quick-add-btn" style="white-space:nowrap;flex-shrink:0;">⚡ Rápido</button>
       </div>
 
       <div class="filter-bar" style="margin-top:-8px;">
@@ -174,14 +174,18 @@ export async function render() {
   function positionAc() {
     const r = searchInput.getBoundingClientRect();
     const vv = window.visualViewport;
-    const vtop  = vv ? vv.offsetTop  : 0;
-    const vleft = vv ? vv.offsetLeft : 0;
-    const vheight = vv ? vv.height   : window.innerHeight;
-    ac.style.top   = `${r.bottom + 4 + vtop}px`;
-    ac.style.left  = `${r.left + vleft}px`;
-    ac.style.width = `${r.width}px`;
-    // cap height so it never slides under the keyboard
-    const available = vheight - r.bottom - 8;
+    const vtop    = vv ? vv.offsetTop    : 0;
+    const vleft   = vv ? vv.offsetLeft   : 0;
+    const vheight = vv ? vv.height       : window.innerHeight;
+    const vwidth  = vv ? vv.width        : window.innerWidth;
+    // Width: at least as wide as the input, min 280px, capped to viewport
+    const w = Math.min(vwidth - 16, Math.max(r.width, 280));
+    // Left: align to input but clamp so it doesn't overflow right edge
+    const left = Math.min(r.left + vleft, vwidth - w - 8);
+    ac.style.top       = `${r.bottom + 4 + vtop}px`;
+    ac.style.left      = `${Math.max(8, left)}px`;
+    ac.style.width     = `${w}px`;
+    const available    = vheight - r.bottom - 8;
     ac.style.maxHeight = `${Math.min(260, Math.max(80, available))}px`;
   }
 
