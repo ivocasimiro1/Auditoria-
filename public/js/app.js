@@ -148,11 +148,19 @@ function updateNav(route) {
   });
 }
 
+function closeSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  sidebar?.classList.remove('open');
+  overlay?.classList.remove('open');
+}
+
 // Sidebar nav clicks
 function setupNav() {
   document.querySelectorAll('.nav-item[data-route]').forEach(el => {
     el.addEventListener('click', () => {
       window.location.hash = el.dataset.route;
+      closeSidebar();
     });
   });
 
@@ -163,12 +171,13 @@ function setupNav() {
   if (hamburger && sidebar) {
     hamburger.addEventListener('click', () => {
       sidebar.classList.toggle('open');
-      overlay.classList.toggle('open');
+      if (overlay) overlay.classList.toggle('open');
     });
-    overlay.addEventListener('click', () => {
-      sidebar.classList.remove('open');
-      overlay.classList.remove('open');
-    });
+    if (overlay) {
+      overlay.addEventListener('click', closeSidebar);
+    }
+    const closeBtn = document.getElementById('sidebar-close');
+    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
   }
 
   // Logout

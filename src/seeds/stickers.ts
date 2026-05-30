@@ -11,217 +11,217 @@ const TEAMS: TeamDef[] = [
   // Group A
   {
     code: 'MEX', name: 'México', group: 'A',
-    players: ['Luis Malagón', 'Johan Vásquez', 'Jorge Sánchez', 'César Montes', 'Jesús Gallardo', 'Israel Reyes', 'Diego Lainez', 'Carlos Rodríguez', 'Edson Álvarez', 'Orbelín Pineda', 'Marcel Ruiz', 'Erick Sánchez', 'Hirving Lozano', 'Santiago Giménez', 'Raúl Jiménez', 'Alexis Vega', 'Roberto Alvarado', 'César Huerta'],
+    players: ['Luis Malagón', 'Jesús Gallardo', 'Johan Vásquez', 'César Montes', 'Israel Reyes', 'Jorge Sánchez', 'Orbelín Pineda', 'Diego Lainez', 'Edson Álvarez', 'Érick Sánchez', 'Carlos Rodríguez', 'Marcel Ruiz', 'Raúl Jiménez', 'Santiago Giménez', 'Hirving Lozano', 'Alexis Vega', 'César Huerta', 'Roberto Alvarado'],
   },
   {
     code: 'RSA', name: 'África do Sul', group: 'A',
-    players: ['Ronwen Williams', 'Sipho Chaine', 'Aubrey Modiba', 'Samukele Kabini', 'Mbekezeli Mbokazi', 'Siyabonga Ngezana', 'Khuliso Mudau', 'Nkosinathi Sibisi', 'Teboho Mokoena', 'Themba Zwane', 'Percy Tau', 'Bongokuhle Hlongwane', 'Lyle Foster', 'Evidence Makgopa', 'Elias Mokwana', 'Oswin Appollis', 'Morphing Letsholonyane', 'Khulumani Ndamane'],
+    players: ['Ronwen Williams', 'Sanukele Kabini', 'Sifiso Chaine', 'Siyabonga Ngezana', 'Khuliso Mudau', 'Thalente Mbatha', 'Sipho Mbule', 'Oswin Appollis', 'Mohau Nkota', 'Iqraam Rayners', 'Khulumani Ndamane'],
   },
   {
     code: 'KOR', name: 'Coreia do Sul', group: 'A',
-    players: ['Kim Seung-gyu', 'Jo Hyeon-woo', 'Kim Min-jae', 'Jung Seung-hyun', 'Lee Yong', 'Kim Jin-su', 'Hwang In-beom', 'Son Heung-min', 'Hwang Hee-chan', 'Kwon Chang-hoon', 'Cho Gue-sung', 'Oh Hyeon-gyu', 'Lee Kang-in', 'Jung Woo-young', 'Paik Seung-ho', 'Song Min-kyu', 'Jeong Sang-bin', 'Kim Young-gwon'],
+    players: ['Seungyu Kim', 'Hyeonwoo Jo', 'Myungjae Lee', 'Leeul Kwon', 'Kangin Lee', 'Jens Castrop', 'Seungho Paik', 'Yumin Cho', 'Jaesung Lee', 'Hyeonghu Oh', 'Youngwoo Seol', 'Hanbeom Lee', 'Heechan Hwang'],
   },
   {
     code: 'CZE', name: 'Chéquia', group: 'A',
-    players: ['Jindřich Staněk', 'Matěj Kovář', 'Vladimír Coufal', 'Tomáš Souček', 'Jan Bořil', 'Pavel Kadeřábek', 'Ladislav Krejčí', 'Marek Penc', 'Lukáš Provod', 'Ondřej Lingr', 'Patrik Schick', 'Adam Hložek', 'Jan Kuchta', 'Mojmír Chytil', 'Tomáš Chorý', 'Matěj Jurásek', 'Aleš Mandous', 'David Jurásek'],
+    players: ['Jindřich Staněk', 'Matej Kovář', 'Vladimír Coufal', 'Ladislav Krejčí', 'Tomáš Holeš', 'David Zima', 'Lukáš Provod', 'Lukáš Červ', 'Václav Černý', 'Pavel Šulc', 'Patrik Schick', 'Adam Hložek', 'Tomáš Chorý', 'Matej Vydra', 'Jaroslav Zelený', 'Michal Sadílek'],
   },
 
   // Group B
   {
     code: 'CAN', name: 'Canadá', group: 'B',
-    players: ['Milan Borjan', 'Maxime Crépeau', 'Kamal Miller', 'Alistair Johnston', 'Derek Cornelius', 'Sam Adekugbe', 'Jonathan Osorio', 'Stephen Eustáquio', 'Mark-Anthony Kaye', 'Richie Laryea', 'Jonathan David', 'Tajon Buchanan', 'Cyle Larin', 'Alphonso Davies', 'Junior Hoilett', 'Liam Millar', 'Jacob Shaffelburg', 'Théo Corbeanu'],
+    players: ['Dayne St. Clair', 'Kamal Miller', 'Derek Cornelius', 'Sam Adekugbe', 'Moïse Bombito', 'Jonathan Osorio', 'Ismaël Koné', 'Stephen Eustáquio', 'Jonathan David', 'Tajon Buchanan', 'Cyle Larin', 'Alphonso Davies', 'Liam Millar', 'Mathieu Choinière'],
   },
   {
     code: 'BIH', name: 'Bósnia-Herzegovina', group: 'B',
-    players: ['Nikola Vasilj', 'Kenan Pirić', 'Sanjin Prcić', 'Ermin Bičakčić', 'Anel Ahmedhodžić', 'Sead Kolašinac', 'Miralem Pjanić', 'Elvis Sarić', 'Edin Višća', 'Edin Džeko', 'Ermedin Demirović', 'Amer Gojak', 'Haris Hajradinović', 'Adnan Nanić', 'Benjamin Tahi rovič', 'Anel Džaka', 'Armin Hodžić', 'Lamine Balde'],
+    players: ['Nikola Vasilj', 'Amar Memić', 'Sead Kolašinac', 'Tarik Muharemović', 'Ivan Šunjić', 'Samed Baždar', 'Amir Hadžiahmetović', 'Benjamin Tahirović', 'Nhad Mujasić', 'Edin Džeko', 'Ivan Bašić', 'Haris Tabaković'],
   },
   {
     code: 'QAT', name: 'Qatar', group: 'B',
-    players: ['Al-Sheeb', 'Barsham', 'Pedro Miguel', 'Al-Rawi', 'Salman', 'Khoukhi', 'Hassan', 'Al-Haydos', 'Boudiaf', 'Muneer', 'Afif', 'Ali', 'Almoos', 'Al-Moez', 'Ismail', 'Waad', 'Homam', 'Asad'],
+    players: ['Pedro Miguel', 'Lucas Mendes', 'Boualem Khoukhi', 'Hassan Al-Haydos', 'Karim Boudiaf', 'Assim Madibo', 'Ahmed Al-Ganhi', 'Abdelaziz Hatem', 'Sultan Albraike', 'Tarek Salman', 'Homam Ahmed', 'Mohammed Waad', 'Almoez Ali'],
   },
   {
     code: 'SUI', name: 'Suíça', group: 'B',
-    players: ['Yann Sommer', 'Gregor Kobel', 'Silvan Widmer', 'Manuel Akanji', 'Nico Elvedi', 'Ricardo Rodríguez', 'Remo Freuler', 'Granit Xhaka', 'Xherdan Shaqiri', 'Haris Seferović', 'Breel Embolo', 'Fabian Rieder', 'Dan Ndoye', 'Noah Okafor', 'Zeki Amdouni', 'Michel Aebischer', 'Vincent Sierro', 'Kwadwo Duah'],
+    players: ['Gregor Kobel', 'Manuel Akanji', 'Nico Elvedi', 'Aurèle Amenda', 'Silvan Widmer', 'Ricardo Rodríguez', 'Granit Xhaka', 'Remo Freuler', 'Fabian Rieder', 'Michel Aebischer', 'Denis Zakaria', 'Dan Ndoye', 'Rubén Vargas', 'Johan Manzambi', 'Zeki Amdouni'],
   },
 
   // Group C
   {
     code: 'BRA', name: 'Brasil', group: 'C',
-    players: ['Alisson', 'Bento', 'Marquinhos', 'Éder Militão', 'Gabriel Magalhães', 'Danilo', 'Wesley', 'Lucas Paquetá', 'Casemiro', 'Bruno Guimarães', 'Luiz Henrique', 'Vinicius Júnior', 'Rodrygo', 'João Pedro', 'Matheus Cunha', 'Gabriel Martinelli', 'Raphinha', 'Estêvão'],
+    players: ['Alisson Becker', 'Bento', 'Danilo', 'Marquinhos', 'Éder Militão', 'Gabriel Magalhães', 'Casemiro', 'Bruno Guimarães', 'Lucas Paquetá', 'Wesley', 'Luiz Henrique', 'Vinícius Júnior', 'Rodrygo', 'Raphinha', 'Gabriel Martinelli', 'Matheus Cunha', 'João Pedro', 'Estêvão'],
   },
   {
     code: 'MAR', name: 'Marrocos', group: 'C',
-    players: ['Yassine Bounou', 'Munir Mohamedi', 'Achraf Hakimi', 'Romain Saïss', 'Nayef Aguerd', 'Noussair Mazraoui', 'Sofyan Amrabat', 'Azzedine Ounahi', 'Hakim Ziyech', 'Youssef En-Nesyri', 'Sofiane Boufal', 'Walid Cheddira', 'Yahya Jabrane', 'Selim Amallah', 'Ilias Chair', 'Abdessamad Ezzalzouli', 'Bilal El Khannouss', 'Zakaria Aboukhlal'],
+    players: ['Yassine Bounou', 'Romain Saïss', 'Nayef Aguerd', 'Jawad El Yamiq', 'Adan Masina', 'Sofyan Amrabat', 'Imael Saibari', 'Bilal El Khannouss', 'Brahim Díaz', 'Eliesse Ben Seghir', 'Abe Ezzalzouli', 'Youssef En-Nesyri', 'Ayoub El Kaabi'],
   },
   {
     code: 'HAI', name: 'Haiti', group: 'C',
-    players: ['Voltaire', 'Placide', 'Rosefort', 'Pierre', 'Jean-Baptiste', 'Chery', 'Altidor', 'Thard', 'Herold', 'Jerome', 'Pierre-Louis', 'Antoine', 'Germain', 'Nazon', 'Duplessis', 'Thermitus', 'Casimir', 'Desrosiers'],
+    players: ['Johny Placide', 'Duke Lacroix', 'Leverton Pierre', 'Danley Jean Jacques', 'Hamiès Delcroix', 'Jean-Roser Bellegarde', 'Christopher Attys', 'Martin Expérience', 'Carlens Arcus', 'Jean Kévin Duverné', 'Ricardo Adé', 'Loudius Deedson', 'Josué Casimir', 'Derrick Etienne Jr.', 'Duckens Nazon'],
   },
   {
     code: 'SCO', name: 'Escócia', group: 'C',
-    players: ['Craig Gordon', 'Angus Gunn', 'Aaron Hickey', 'Scott McKenna', 'Grant Hanley', 'Andrew Robertson', 'Callum McGregor', 'Billy Gilmour', 'John McGinn', 'Ryan Christie', 'Che Adams', 'Lyndon Dykes', 'Kenny McLean', 'Stuart Armstrong', 'Kieran Tierney', 'Nathan Patterson', 'James Forrest', 'Scott McTominay'],
+    players: ['Angus Gunn', 'Grant Hanley', 'Scott McKenna', 'John Souttar', 'Jack Hendry', 'Anthony Ralston', 'Scott McTominay', 'Lewis Ferguson', 'Kenny McLean', 'Ryan Christie', 'John McGinn', 'Lyndon Dykes'],
   },
 
   // Group D
   {
     code: 'USA', name: 'Estados Unidos', group: 'D',
-    players: ['Matt Freese', 'Chris Richards', 'Tim Ream', 'Mark McKenzie', 'Alex Freeman', 'Antonee Robinson', 'Tyler Adams', 'Tanner Tessmann', 'Weston McKennie', 'Christian Roldan', 'Timothy Weah', 'Diego Luna', 'Malik Tillman', 'Christian Pulisic', 'Brenden Aaronson', 'Ricardo Pepi', 'Haji Wright', 'Folarin Balogun'],
+    players: ['Matt Freese', 'Chris Richards', 'Mark McKenzie', 'Alex Freeman', 'Antonee Robinson', 'Tyler Adams', 'Tanner Tessmann', 'Weston McKennie', 'Cristian Roldán', 'Timothy Weah', 'Diego Luna', 'Malik Tillman', 'Christian Pulisic', 'Brenden Aaronson', 'Ricardo Pepi', 'Haji Wright', 'Folarin Balogun'],
   },
   {
     code: 'PAR', name: 'Paraguai', group: 'D',
-    players: ['Gastón Fernández', 'Antony Silva', 'Omar Alderete', 'Fabián Balbuena', 'Junior Alonso', 'Matías Rojas', 'Andrés Cubas', 'Mathías Villasanti', 'Tomás Almeida', 'Antonio Sanabria', 'Julio Enciso', 'Miguel Almirón', 'Bernardo Cáceres', 'Éver Banega', 'Ramón Sosa', 'Blas Riveros', 'Alejandro Romero Gamarra', 'Israel Dos Santos'],
+    players: ['Roberto Fernández', 'Fabián Balbuena', 'Omar Alderete', 'Júnior Alonso', 'Juan José Cáceres', 'Gustavo Gómez', 'Andrés Cubas', 'Matías Villasanti', 'Diego Gómez', 'Miguel Almirón', 'Julio Enciso', 'Ángel Romero', 'Ramón Sosa', 'Orlando Gill'],
   },
   {
     code: 'AUS', name: 'Austrália', group: 'D',
-    players: ['Mathew Ryan', 'Danny Vukovic', 'Milos Degenek', 'Kye Rowles', 'Harry Souttar', 'Aziz Behich', 'Aaron Mooy', 'Jackson Irvine', 'Mathew Leckie', 'Riley McGree', 'Mitchell Duke', 'Ajdin Hrustić', 'Jordan Bos', 'Cameron Devlin', 'Garang Kuol', 'Brandon Borrello', 'Jason Cummings', 'Marco Tilio'],
+    players: ['Mathew Ryan', 'Cameron Burgess', 'Milos Degenek', 'Harry Souttar', 'Alessandro Circati', 'Aziz Behich', 'Lewis Miller', 'Jackson Irvine', 'Aiden O\'Neill', 'Craig Goodwin', 'Kusini Yengi', 'Nestory Irankunda', 'Jordan Bos'],
   },
   {
     code: 'TUR', name: 'Turquia', group: 'D',
-    players: ['Mert Gunok', 'Uğurcan Çakır', 'Zeki Çelik', 'Samet Akaydin', 'Merih Demiral', 'Ferdi Kadıoğlu', 'Salih Özcan', 'Hakan Çalhanoğlu', 'Kerem Aktürkoğlu', 'Arda Güler', 'Barış Alper Yılmaz', 'Cenk Tosun', 'Orkun Kökçü', 'Kaan Ayhan', 'Mert Müldür', 'İrfan Can Kahveci', 'Abdülkerim Bardakcı', 'Serdar Dursun'],
+    players: ['Uğurcan Çakır', 'Merih Demiral', 'Abdülkerim Bardakcı', 'Çağlar Söyüncü', 'Ferdi Kadıoğlu', 'Zeki Çelik', 'Mert Müldür', 'Hakan Çalhanoğlu', 'İrfan Can Kahveci', 'Kaan Ayhan', 'Orkun Kökçü', 'Kerem Aktürkoğlu', 'Arda Güler', 'Barış Alper Yılmaz', 'Kenan Yıldız', 'Can Uzun', 'Yunus Akgün', 'İsmail Yüksek'],
   },
 
   // Group E
   {
     code: 'GER', name: 'Alemanha', group: 'E',
-    players: ['Marc-André ter Stegen', 'Jonathan Tah', 'David Raum', 'Nico Schlotterbeck', 'Antonio Rüdiger', 'Waldemar Anton', 'Ridle Baku', 'Maximilian Mittelstädt', 'Joshua Kimmich', 'Florian Wirtz', 'Felix Nmecha', 'Leon Goretzka', 'Jamal Musiala', 'Serge Gnabry', 'Kai Havertz', 'Leroy Sané', 'Karim Adeyemi', 'Nick Woltemade'],
+    players: ['Marc-André Ter Stegen', 'Jonathan Tah', 'Antonio Rüdiger', 'Nico Schlotterbeck', 'Maximilian Mittelstädt', 'Ridle Bakú', 'Joshua Kimmich', 'Leon Goretzka', 'Felix Nmecha', 'Florian Wirtz', 'Jamal Musiala', 'Serge Gnabry', 'Kai Havertz', 'Nick Woltemade'],
   },
   {
     code: 'CUW', name: 'Curaçao', group: 'E',
-    players: ['Eloy Room', 'Cuco Martina', 'Rangelo Janga', 'Gevaro Nepomuceno', 'Gilkeson Leonce', 'Quentin Thurlings', 'Steffan Peeters', 'Nigel Thomas', 'Leandro Bacuna', 'Jurickson Profar', 'Phendependency Korevaar', 'Regilio Doelwijt', 'Gideon van Wyk', 'Brandley Kuwas', 'Darryl Lachman', 'Vurnon Anita', 'Rajiv van La Parra', 'Kelvin Leerdam'],
+    players: ['Eloy Room', 'Armando Obispo', 'Joshua Brenet', 'Jurgen Locadia', 'Roshon Van Elima', 'Jurjen Gaari', 'Shuranov Sambo', 'Juninho Bacuna', 'Jeremy Antonisse', 'Kenji Gorré', 'Jearl Margaritha', 'Sontje Hansen', 'Sherel Floranus', 'Godfried Roemeratoe', 'Gevane Kastaneer'],
   },
   {
     code: 'CIV', name: 'Costa do Marfim', group: 'E',
-    players: ['Yahia Fofana', 'Badra Ali Sangaré', 'Wilfried Singo', 'Odilon Kossounou', 'Evan Ndicka', 'Ghislain Konan', 'Franck Kessié', 'Jean Michaël Seri', 'Wilfried Zaha', 'Nicolas Pépé', 'Sébastien Haller', 'Maxwel Cornet', 'Max Gradel', 'Willy Boly', 'Simon Adingra', 'Oumar Diakité', 'Steeve Yago', 'Oumar Gonzalez'],
+    players: ['Yaha Fofana', 'Odilon Kossounou', 'Evan Ndicka', 'Ousmane Diomande', 'Emmanuel Agbadou', 'Ghislain Konan', 'Wilfried Singo', 'Seko Fofana', 'Yan Diomande', 'Max Alain Gradel', 'Simon Adingra', 'Amad Diallo', 'Sébastien Haller'],
   },
   {
     code: 'ECU', name: 'Equador', group: 'E',
-    players: ['Hernán Galíndez', 'Alexander Domínguez', 'Ángelo Preciado', 'Piero Hincapié', 'William Pacho', 'Pervis Estupiñán', 'Moisés Caicedo', 'Carlos Gruezo', 'Jeremy Sarmiento', 'Gonzalo Plata', 'Enner Valencia', 'Romario Ibarra', 'Kevin Rodríguez', 'Alan Minda', 'Jhegson Méndez', 'John Yeboah', 'Kendry Páez', 'Byron Castillo'],
+    players: ['Hernán Galíndez', 'Piero Hincapié', 'William Pacho', 'Ángelo Preciado', 'Joel Ordóñez', 'Alan Franco', 'Pervis Estupiñán', 'Moisés Caicedo', 'Kendry Páez', 'John Yeboah', 'Gonzalo Valle', 'Nilson Angulo', 'Pedro Vite', 'Gonzalo Plata', 'Leonardo Campana', 'Kevin Rodríguez', 'Alan Minda', 'Enner Valencia'],
   },
 
   // Group F
   {
     code: 'NED', name: 'Países Baixos', group: 'F',
-    players: ['Bart Verbruggen', 'Mark Flekken', 'Denzel Dumfries', 'Stefan de Vrij', 'Virgil van Dijk', 'Nathan Aké', 'Frenkie de Jong', 'Teun Koopmeiners', 'Jeremie Frimpong', 'Xavi Simons', 'Memphis Depay', 'Cody Gakpo', 'Tijjani Reijnders', 'Mats Wieffer', 'Donyell Malen', 'Ryan Gravenberch', 'Brian Brobbey', 'Wout Weghorst'],
+    players: ['Bart Verbruggen', 'Virgil Van Dijk', 'Micky Van De Ven', 'Jan-Paul Van Hecke', 'Nathan Aké', 'Jurriën Timber', 'Denzel Dumfries', 'Jeremie Frimpong', 'Frenkie De Jong', 'Teun Koopmeiners', 'Tijjani Reijnders', 'Ryan Gravenberch', 'Xavi Simons', 'Memphis Depay', 'Justin Kluivert', 'Donyell Malen', 'Cody Gakpo', 'Wout Weghorst'],
   },
   {
     code: 'JPN', name: 'Japão', group: 'F',
-    players: ['Shuichi Gonda', 'Zion Suzuki', 'Hiroki Sakai', 'Ko Itakura', 'Maya Yoshida', 'Yuto Nagatomo', 'Wataru Endo', 'Hidemasa Morita', 'Daichi Kamada', 'Ritsu Doan', 'Takumi Minamino', 'Ayase Ueda', 'Takefusa Kubo', 'Kaoru Mitoma', 'Ao Tanaka', 'Daizen Maeda', 'Kyogo Furuhashi', 'Takuma Asano'],
+    players: ['Junnosuke Suzuki', 'Tsuyoshi Watanabe', 'Shogo Taniguchi', 'Ao Tanaka', 'Daichi Kamada', 'Takumi Minamino', 'Junya Ito', 'Takefusa Kubo', 'Kaoru Mitoma', 'Yuki Soma', 'Kota Ueda', 'Keito Nakamura', 'Shuto Machino'],
   },
   {
     code: 'SWE', name: 'Suécia', group: 'F',
-    players: ['Robin Olsen', 'Karl-Johan Johnsson', 'Emil Krafth', 'Victor Lindelöf', 'Pontus Jansson', 'Ludwig Augustinsson', 'Mattias Svanberg', 'Albin Ekdal', 'Emil Forsberg', 'Alexander Isak', 'Viktor Gyökeres', 'Dejan Kulusevski', 'Anthony Elanga', 'Jesper Karlsson', 'Samuel Dahl', 'Kristoffer Olsson', 'Oscar Willmar', 'John Guidetti'],
+    players: ['Viktor Johansson', 'Victor Nilsson Lindelöf', 'Isak Hien', 'Daniel Svensson', 'Gabriel Gudmundsson', 'Hugo Larsson', 'Jesper Karlström', 'Lucas Bergvall', 'Yasin Ayari', 'Ken Sema', 'Anthony Elanga', 'Roony Bardghji', 'Alexander Isak'],
   },
   {
     code: 'TUN', name: 'Tunísia', group: 'F',
-    players: ['Aymen Dahmen', 'Mouez Hassen', 'Montassar Talbi', 'Dylan Bronn', 'Yassine Meriah', 'Ali Maaloul', 'Anis Ben Slimane', 'Hannibal Mejbri', 'Ellyes Skhiri', 'Wahbi Khazri', 'Naïm Sliti', 'Issam Jebali', 'Sayfallah Ltaief', 'Mohamed Drager', 'Ferjani Sassi', 'Taha Yassine Khenissi', 'Maher Hannachi', 'Seifeddine Jaziri'],
+    players: ['Aymen Dahmen', 'Montassar Talbi', 'Yassine Meriah', 'Van Valery', 'Ali Abdi', 'Ferjani Sassi', 'Ellyes Skhiri', 'Aïssa Laïdouni', 'Hannibal Mejbri', 'Ismaël Gharbi', 'Hazem Mastouri', 'Naïm Sliti', 'Elias Saad', 'Sayfallah Ltaief', 'Elias Achouri'],
   },
 
   // Group G
   {
     code: 'BEL', name: 'Bélgica', group: 'G',
-    players: ['Koen Casteels', 'Simon Mignolet', 'Timothy Castagne', 'Jan Vertonghen', 'Wout Faes', 'Arthur Theate', 'Axel Witsel', 'Youri Tielemans', 'Kevin De Bruyne', 'Romelu Lukaku', 'Jeremy Doku', 'Amadou Onana', 'Charles De Ketelaere', 'Loïs Openda', 'Johan Bakayoko', 'Leandro Trossard', 'Arthur Vermeeren', 'Thomas Meunier'],
+    players: ['Koen Casteels', 'Zeno Debast', 'Brandon Mechele', 'Arthur Theate', 'Maxim De Cuyper', 'Thomas Meunier', 'Timothy Castagne', 'Amadou Onana', 'Youri Tielemans', 'Kevin De Bruyne', 'Nicolas Raskin', 'Hans Vanaken', 'Alexis Saelemaekers', 'Jérémy Doku', 'Loïs Openda', 'Romelu Lukaku'],
   },
   {
     code: 'EGY', name: 'Egito', group: 'G',
-    players: ['Mohamed El-Shenawy', 'Ahmed Gabaski', 'Akram Tawfik', 'Ahmed Hegazy', 'Omar Kamal', 'Ahmed Fatouh', 'Mohamed Elneny', 'Amr El-Sulaya', 'Mahmoud Trezeguet', 'Mohamed Salah', 'Omar Marmoush', 'Mostafa Mohamed', 'Hamdi Fathi', 'Zizo', 'Ahmed Sayed Zizou', 'Taher Mohamed Taher', 'Emam Ashour', 'Ramadan Sobhi'],
+    players: ['Mohamed Elshenawi', 'Ramy Rabia', 'Ahmed Fatouh', 'Khaled Sobhi', 'Mohamed Hamdy', 'Mohammad Abu Hashish', 'Mohanad Lasheen', 'Trezeguet', 'Omar Marmoush', 'Mohamed Salah'],
   },
   {
     code: 'IRN', name: 'Irão', group: 'G',
-    players: ['Alireza Beiranvand', 'Hossein Hosseini', 'Milad Mohammadi', 'Morteza Pouraliganji', 'Ehsan Hajsafi', 'Sadegh Moharrami', 'Saeid Ezatolahi', 'Ali Noorollahi', 'Alireza Jahanbakhsh', 'Ahmad Noorollahi', 'Mehdi Taremi', 'Sardar Azmoun', 'Karim Ansarifard', 'Ali Gholizadeh', 'Vahid Amiri', 'Roozbeh Cheshmi', 'Omid Alishah', 'Dariush Hosseini'],
+    players: ['Alireza Beiranvand', 'Morteza Pouraliganji', 'Milad Mohammadi', 'Shejae Khalilzadeh', 'Hossein Kanaani', 'Omid Noorafkan', 'Saeed Ezatolahi', 'Saman Ghoddos', 'Roozbeh Cheshmi', 'Alireza Jahanbakhsh', 'Saleh Hardani', 'Sardar Azmoun', 'Mehdi Taremi', 'Mohammad Mohebi'],
   },
   {
     code: 'NZL', name: 'Nova Zelândia', group: 'G',
-    players: ['Sail', 'Elliot', 'Thomas', 'Cacace', 'Just', 'Waine', 'McGlinchey', 'Bell', 'Barbarouses', 'Wood', 'Boxall', 'Garbett', 'Coveny', 'Sutton', 'Singh', 'Old', 'Paasi', 'Lea'],
+    players: ['Max Crocombe', 'Alex Paulsen', 'Michael Boxall', 'Liberato Cacace', 'Tim Payne', 'Ryan Thomas', 'Matthew Garbett', 'Joe Bell', 'Callum McCowatt', 'Marko Stamenic', 'Francis De Vries', 'Elijah Barbarouses', 'Chris Wood', 'Finn Surman'],
   },
 
   // Group H
   {
     code: 'ESP', name: 'Espanha', group: 'H',
-    players: ['Unai Simón', 'Robin Le Normand', 'Aymeric Laporte', 'Dean Huijsen', 'Pedro Porro', 'Dani Carvajal', 'Marc Cucurella', 'Martín Zubimendi', 'Rodri', 'Pedri', 'Fabián Ruiz', 'Mikel Merino', 'Lamine Yamal', 'Dani Olmo', 'Nico Williams', 'Ferran Torres', 'Álvaro Morata', 'Mikel Oyarzabal'],
+    players: ['Unai Simón', 'Aymeric Laporte', 'Robin Le Normand', 'Dean Huijsen', 'Dani Carvajal', 'Pedro Porro', 'Marc Cucurella', 'Martín Zubimendi', 'Rodri', 'Pedri', 'Fabián Ruiz', 'Mikel Merino', 'Lamine Yamal', 'Dani Olmo', 'Nico Williams', 'Ferran Torres', 'Álvaro Morata', 'Mikel Oyarzabal'],
   },
   {
     code: 'CMV', name: 'Cabo Verde', group: 'H',
-    players: ['Vozinha', 'Platiny', 'Stopira', 'Rony Lopes', 'Kenny', 'Fali', 'Patrick', 'Liss', 'Garry', 'Ianique', 'Julio', 'Ze Luis', 'Ryan Mendes', 'Bebé', 'Gilson', 'Willy Semedo', 'Jamiro', 'Hélio'],
+    players: ['Vozinha', 'Logan Costa', 'Steven Moreira', 'Diney', 'Wagner Pina', 'Patrick Andrade', 'Pico', 'Gerry Duarte', 'Ryan Mendes', 'Yannick Semedo', 'Dilon Livramento', 'Jovane Cabral', 'Bebé', 'Willy Semedo', 'João Paulo'],
   },
   {
     code: 'SAU', name: 'Arábia Saudita', group: 'H',
-    players: ['Al-Owais', 'Al-Rubaie', 'Al-Shahrani', 'Al-Tambakti', 'Al-Ghannam', 'Al-Burayk', 'Al-Faraj', 'Kanno', 'Al-Dawsari', 'Al-Shehri', 'Al-Buraikan', 'Saleh', 'Abdulhamid', 'Bahebri', 'Al-Malki', 'Al-Amri', 'Al-Nemer', 'Asiri'],
+    players: ['Mohammad Al-Owais', 'Saud Abdulhamid', 'Hassan Altambakti', 'Abdulrahman Alsanbi', 'Saleh Abu Alshamat', 'Abdulrahman Alobud', 'Marwan Alsahafi', 'Musab Aljuwayr', 'Abdullah Alkhaibari', 'Ziad Alkhani', 'Nasser Aldawsari', 'Salem Aldawsari', 'Jehad Thikri', 'Saleh Alshehri'],
   },
   {
     code: 'URU', name: 'Uruguai', group: 'H',
-    players: ['Sergio Rochet', 'Fernando Muslera', 'Mathías Olivera', 'José María Giménez', 'Ronald Araújo', 'Nahitan Nández', 'Federico Valverde', 'Rodrigo Bentancur', 'Giorgian De Arrascaeta', 'Edinson Cavani', 'Darwin Núñez', 'Facundo Pellistri', 'Manuel Ugarte', 'Facundo Torres', 'Maximiliano Gómez', 'Matías Vecino', 'Agustín Canobbio', 'Gastón Pereiro'],
+    players: ['Sergio Rochet', 'José María Giménez', 'Ronald Araújo', 'Sebastián Cáceres', 'Guillermo Varela', 'Mathías Olivera', 'Maxi Araújo', 'Rodrigo Bentancur', 'Federico Valverde', 'Nahitan Nández', 'Manuel Ugarte', 'Facundo Pellistri', 'Santiago Miele', 'Federico Viñas', 'Darwin Núñez'],
   },
 
   // Group I
   {
     code: 'FRA', name: 'França', group: 'I',
-    players: ['Mike Maignan', 'Theo Hernandez', 'William Saliba', 'Jules Koundé', 'Ibrahima Konaté', 'Dayot Upamecano', 'Lucas Digne', 'Aurélien Tchouaméni', 'Eduardo Camavinga', 'Manu Koné', 'Adrien Rabiot', 'Michael Olise', 'Ousmane Dembélé', 'Bradley Barcola', 'Désiré Doué', 'Kingsley Coman', 'Hugo Ekitike', 'Kylian Mbappé'],
+    players: ['Mike Maignan', 'William Saliba', 'Jules Koundé', 'Ibrahima Konaté', 'Dayot Upamecano', 'Théo Hernández', 'Lucas Digne', 'Aurélien Tchouaméni', 'Eduardo Camavinga', 'Manu Koné', 'Adrien Rabiot', 'Michaël Olise', 'Ousmane Dembélé', 'Bradley Barcola', 'Désiré Doué', 'Kingsley Coman', 'Hugo Ekitiké', 'Kylian Mbappé'],
   },
   {
     code: 'SEN', name: 'Senegal', group: 'I',
-    players: ['Édouard Mendy', 'Seny Dieng', 'Bouna Sarr', 'Kalidou Koulibaly', 'Abdou Diallo', 'Fodé Ballo-Touré', 'Idrissa Gueye', 'Cheikhou Kouyaté', 'Ismaïla Sarr', 'Sadio Mané', 'Krepin Diatta', 'Boulaye Dia', 'Famara Diédhiou', 'Pape Matar Sarr', 'Lamine Camara', 'Habib Diallo', 'Nicolas Jackson', 'Iliman Ndiaye'],
+    players: ['Édouard Mendy', 'Kalidou Koulibaly', 'Moussa Niakhaté', 'Abdoulaye Seck', 'Ismaïl Jakobs', 'Idrissa Gana Gueye', 'Lamine Camara', 'Pape Gueve', 'Habib Diarra', 'Ismaïla Sarr', 'Krepin Diatta', 'Pape Matar Sarr', 'Nicolas Jackson', 'Boulaye Dia', 'Liman Ndiaye'],
   },
   {
     code: 'IRQ', name: 'Iraque', group: 'I',
-    players: ['Jalal Hassan', 'Mohammed Hameed', 'Ali Adnan', 'Hussein Ali', 'Saad Abd', 'Rebin Sulaka', 'Osama Rashid', 'Bashar Resan', 'Amjad Kalaf', 'Mohanad Ali', 'Aymen Hussein', 'Ahmed Yasin', 'Dana Abdulrazak', 'Ibrahim Bayesh', 'Noor Sabri', 'Mahdi Kamil', 'Karrar Jassim', 'Hammadi Ahmed'],
+    players: ['Jalal Hassan', 'Rebin Sulaka', 'Hussein Ali', 'Youssef Amyn', 'Akam Hashem', 'Ibrahim Bayesh', 'Osama Rashid', 'Zidane Iqbal', 'Zaid Tahseen', 'Ali Jasim', 'Mohanad Ali', 'Ammar Sheri', 'Ali Al-Hamadi', 'Mekhyas Doski', 'Manaf Younis'],
   },
   {
     code: 'NOR', name: 'Noruega', group: 'I',
-    players: ['Ørjan Nyland', 'Rune Jarstein', 'Julian Ryerson', 'Stefan Strandberg', 'Andreas Hanche-Olsen', 'Birger Meling', 'Patrick Berg', 'Sander Berge', 'Martin Ødegaard', 'Mohamed Elyounoussi', 'Erling Haaland', 'Jørgen Strand Larsen', 'Alexander Sørloth', 'Fredrik Aursnes', 'Morten Thorsby', 'Kristoffer Ajer', 'Ola Solbakken', 'Antonio Nusa'],
+    players: ['Ørjan Nyland', 'Kristoffer Vassbakk Ajer', 'Leo Østigård', 'Sander Berge', 'Morten Thorsby', 'Patrick Berg', 'Torbjørn Heggem', 'Martin Ødegaard', 'David Møller Wolfe', 'Aron Dønnum', 'Oscar Bobb', 'Jørgen Strand Larsen', 'Antonio Nusa', 'Erling Haaland'],
   },
 
   // Group J
   {
     code: 'ARG', name: 'Argentina', group: 'J',
-    players: ['Emiliano Martínez', 'Nahuel Molina', 'Cristian Romero', 'Nicolás Otamendi', 'Nicolás Tagliafico', 'Leonardo Balerdi', 'Enzo Fernández', 'Alexis Mac Allister', 'Rodrigo De Paul', 'Exequiel Palacios', 'Leandro Paredes', 'Nico Paz', 'Franco Mastantuono', 'Nicolás González', 'Lionel Messi', 'Lautaro Martínez', 'Julián Álvarez', 'Giuliano Simeone'],
+    players: ['Emiliano Martínez', 'Nicolás Otamendi', 'Cristian Romero', 'Leonardo Balerdi', 'Nicolás Tagliafico', 'Nahuel Molina', 'Leandro Paredes', 'Rodrigo De Paul', 'Alexis Mac Allister', 'Enzo Fernández', 'Exequiel Palacios', 'Nico Paz', 'Nico González', 'Franco Mastantuono', 'Lionel Messi', 'Julián Álvarez', 'Lautaro Martínez', 'Giuliano Simeone'],
   },
   {
     code: 'ALG', name: 'Argélia', group: 'J',
-    players: ['Raïs M\'Bolhi', 'Alexandre Oukidja', 'Youcef Atal', 'Aïssa Mandi', 'Djamel Benlamri', 'Ramy Bensebaïni', 'Ismaël Bennacer', 'Mattéo Guendouzi', 'Riyad Mahrez', 'Islam Slimani', 'Yacine Brahimi', 'Baghdad Bounedjah', 'Ramiz Zerrouki', 'Mohamed Amoura', 'Haris Belkebla', 'Andy Delort', 'Saïd Benrahma', 'Houssem Aouar'],
+    players: ['Ramy Bensebaini', 'Aïssa Mandi', 'Youcef Atal', 'Rayan Aït-Nouri', 'Ramiz Zerrouki', 'Ismaël Bennacer', 'Hicham Boudaoui', 'Houssem Aouar', 'Farès Chaïbi', 'Alexis Guendouz', 'Anis Hadj Moussa', 'Amine Gouiri', 'Riyad Mahrez', 'Said Benrahma', 'Baghdad Bounedjah'],
   },
   {
     code: 'AUT', name: 'Áustria', group: 'J',
-    players: ['Patrick Pentz', 'Alexander Schlager', 'Stefan Posch', 'Philipp Lienhart', 'Maximilian Wöber', 'David Alaba', 'Florian Grillitsch', 'Konrad Laimer', 'Marcel Sabitzer', 'Christoph Baumgartner', 'Marko Arnautović', 'Michael Gregoritsch', 'Kevin Danso', 'Nicolas Seiwald', 'Xaver Schlager', 'Romano Schmid', 'Florian Kainz', 'Patrick Wimmer'],
+    players: ['Patrick Pentz', 'Alexander Schlager', 'Stefan Posch', 'Philipp Lienhart', 'Kevin Danso', 'Philipp Mwene', 'Alexander Prass', 'David Alaba', 'Konrad Laimer', 'Xaver Schlager', 'Nicolas Seiwald', 'Marcel Sabitzer', 'Romano Schmid', 'Christoph Baumgartner', 'Patrick Wimmer', 'Michael Gregoritsch'],
   },
   {
     code: 'JOR', name: 'Jordânia', group: 'J',
-    players: ['Shafi', 'Hasan', 'Al-Bawab', 'Khrisat', 'Al Rawabdeh', 'Hassan Abdel-Fattah', 'Musa', 'Al-Tamari', 'Baha Faisal', 'Yazan Al-Naimat', 'Ahmad Burhan', 'Ibrahim Saif', 'Sedki', 'Al-Zoubi', 'Al-Dardour', 'Musa Al-Taamari', 'Murad', 'Farwaz'],
+    players: ['Ibrahim Saadeh', 'Bisan Haddad', 'Ibrahim Sabra', 'Mahmoud Al-Mardi', 'Anas Jamous', 'Noor Al-Rawabdeh', 'Ali Olwan', 'Mohammad Abu Zrayq', 'Mohammad Abu Taha', 'Yazan Al-Naimat', 'Yazeed Abulaila', 'Mousa Al-Taamari', 'Salem Obaid', 'Nizar Al-Rashdan', 'Mohammad Abualnadi'],
   },
 
   // Group K
   {
     code: 'POR', name: 'Portugal', group: 'K',
-    players: ['Diogo Costa', 'José Sá', 'Rúben Dias', 'João Cancelo', 'Diogo Dalot', 'Nuno Mendes', 'Gonçalo Inácio', 'Bernardo Silva', 'Bruno Fernandes', 'Rúben Neves', 'Vitinha', 'João Neves', 'Cristiano Ronaldo', 'Francisco Trincão', 'João Félix', 'Gonçalo Ramos', 'Pedro Neto', 'Rafael Leão'],
+    players: ['Diogo Costa', 'José Sá', 'Rúben Dias', 'Gonçalo Inácio', 'Diogo Dalot', 'João Cancelo', 'Nuno Mendes', 'Rúben Neves', 'Bruno Fernandes', 'Vitinha', 'João Neves', 'Bernardo Silva', 'Cristiano Ronaldo', 'Francisco Trincão', 'João Félix', 'Gonçalo Ramos', 'Pedro Neto', 'Rafael Leão'],
   },
   {
     code: 'COD', name: 'Congo DR', group: 'K',
-    players: ['Matampi', 'Kasongo', 'Ngadeu', 'Boyata', 'Nsimba', 'Luyindama', 'Bongonda', 'Mbemba', 'Kakuta', 'Chadrac Akolo', 'Silas', 'Meschak Elia', 'Chancel Mbemba', 'Paul-José Mpoku', 'Maxwel Cornet', 'Dieumerci Mbokani', 'Yannick Bolasie', 'Cedric Bakambu'],
+    players: ['Axel Tuanzebe', 'Chancel Mbemba', 'Arthur Masuaku', 'Joris Kayembe', 'Ngalivel Mukau', 'Charles Pickel', 'Brian Cipenga', 'Edo Kayembi', 'Fiston Mavele', 'Lionel Mpasi', 'Nathanaël Mbuku', 'Meschack Elia', 'Yoane Wissa', 'Aaron Wan-Bissaka', 'Cédric Bakambu'],
   },
   {
     code: 'UZB', name: 'Uzbequistão', group: 'K',
-    players: ['Yusupov', 'Nesterov', 'Ashurmatov', 'Jaloliddin Masharipov', 'Khurshid Makhmudov', 'Jasur Yakhshiboev', 'Odil Ahmedov', 'Otabek Shukurov', 'Eldor Shomurodov', 'Dostonbek Khamdamov', 'Umid Murtazaev', 'Jaloliddin Abduraimov', 'Alisher Dzhalilov', 'Mansur Jalolov', 'Bobur Abdullaev', 'Asilbek Makhkamov', 'Husain Norchaev', 'Jamshid Iskanderov'],
+    players: ['Sherzod Nasrullaev', 'Rustam Ashurmatov', 'Khojanbar Alijonov', 'Umar Eshmurodov', 'Khojamat Erkinov', 'Farrukh Savfiev', 'Igor Sergeev', 'Jamshid Iskanderov', 'Abdobek Fayzullaev', 'Husnidon Alidulov', 'Jalolidon Masharipov', 'Azobek Turgonboev', 'Otabek Shukurov', 'Eldor Shomurodov', 'Oston Urunov'],
   },
   {
     code: 'COL', name: 'Colômbia', group: 'K',
-    players: ['Camilo Vargas', 'David Ospina', 'Santiago Arias', 'Dávinson Sánchez', 'Oscar Murillo', 'Johan Mojica', 'Jefferson Lerma', 'Wilmar Barrios', 'James Rodríguez', 'Juan Cuadrado', 'Luis Díaz', 'Rafael Santos Borré', 'Jorge Carrascal', 'Jhon Córdoba', 'Lucho Sinisterra', 'Luis Muriel', 'Jhon Arias', 'Richard Ríos'],
+    players: ['Camilo Vargas', 'David Ospina', 'Davinson Sánchez', 'Yerry Mina', 'Jhon Lucumí', 'Daniel Muñoz', 'Johan Mojica', 'Santiago Arias', 'Jefferson Lerma', 'Kevin Castaño', 'Richard Ríos', 'Juan Fernando Quintero', 'James Rodríguez', 'Luis Suárez', 'Jorge Carrascal', 'Jhon Arias', 'Jhon Córdoba', 'Luis Díaz'],
   },
 
   // Group L
   {
     code: 'ENG', name: 'Inglaterra', group: 'L',
-    players: ['Jordan Pickford', 'John Stones', 'Marc Guéhi', 'Ezri Konsa', 'Trent Alexander-Arnold', 'Reece James', 'Dan Burn', 'Jordan Henderson', 'Declan Rice', 'Jude Bellingham', 'Cole Palmer', 'Morgan Rogers', 'Anthony Gordon', 'Phil Foden', 'Bukayo Saka', 'Harry Kane', 'Marcus Rashford', 'Ollie Watkins'],
+    players: ['Jordan Pickford', 'John Stones', 'Marc Guéhi', 'Dan Burn', 'Reece James', 'Trent Alexander-Arnold', 'Declan Rice', 'Jordan Henderson', 'Jude Bellingham', 'Cole Palmer', 'Morgan Rogers', 'Anthony Gordon', 'Phil Foden', 'Bukayo Saka', 'Marcus Rashford', 'Harry Kane', 'Ollie Watkins'],
   },
   {
     code: 'CRO', name: 'Croácia', group: 'L',
-    players: ['Dominik Livaković', 'Ivo Grbić', 'Josip Juranović', 'Dejan Lovren', 'Joško Gvardiol', 'Borna Sosa', 'Mateo Kovačić', 'Marcelo Brozović', 'Luka Modrić', 'Nikola Vlašić', 'Andrej Kramarić', 'Ivan Perišić', 'Luka Sučić', 'Ivo Šutalo', 'Lovro Majer', 'Luka Ivanušec', 'Ante Budimir', 'Mario Pašalić'],
+    players: ['Dominik Livaković', 'Duje Ćaleta-Car', 'Joško Gvardiol', 'Luka Vušković', 'Franko Ivanović', 'Kristijan Jakić', 'Luka Modrić', 'Martin Baturina', 'Lovro Majer', 'Mario Pašalić', 'Andrej Kramarić', 'Ivan Perišić'],
   },
   {
     code: 'GHA', name: 'Gana', group: 'L',
-    players: ['Lawrence Ati-Zigi', 'Richard Ofori', 'Tariq Lamptey', 'Mohammed Salisu', 'Daniel Amartey', 'Jonathan Mensah', 'Thomas Partey', 'Elisha Owusu', 'Mohammed Kudus', 'Jordan Ayew', 'André Ayew', 'Kamaldeen Sulemana', 'Daniel-Kofi Kyereh', 'Antoine Semenyo', 'Inaki Williams', 'Abdul Samed', 'Osman Bukari', 'Ernest Nuamah'],
+    players: ['Joseph Wollacott', 'Mohammed Salisu', 'Alexander Djiku', 'Alidu Seidu', 'Tariq Lamptey', 'Caleb Yirenkyi', 'Salis Abdul Samed', 'Thomas Partey', 'Osman Bukari', 'Kamaldeen Sulemana', 'Abdul Issahaku Fatawu', 'Joseph Paintsil', 'Antoine Semenyo', 'Iñaki Williams'],
   },
   {
     code: 'PAN', name: 'Panamá', group: 'L',
-    players: ['Jaime Penedo', 'Orlando Mosquera', 'César Yanis', 'Harold Cummings', 'Erick Davis', 'Fidel Escobar', 'Adalberto Carrasquilla', 'Rolando Blackburn', 'Édgar Bárcenas', 'Ismael Díaz', 'José Fajardo', 'Cecilio Waterman', 'Alfredo Stephens', 'Alberto Quintero', 'Arnaldo Mosquera', 'Éric Davis', 'Andrés Andrade', 'Iván Anderson'],
+    players: ['Luis Mejía', 'Fidel Escobar', 'Eric Davis', 'César Blackman', 'José Luis Rodríguez', 'Michael Amir Murillo', 'Carlos Harvey', 'Aníbal Godoy', 'Adalberto Carrasquilla', 'José Córdoba', 'Edgar Bárcenas', 'Alberto Quintero', 'Cristian Martínez', 'José Fajardo'],
   },
 ];
 
@@ -251,19 +251,14 @@ const SPECIAL_CARDS = [
 const SEED_VERSION = 'v3-full-names';
 
 export async function seedStickers(): Promise<void> {
-  const countRow = await queryOne<{ c: string }>('SELECT COUNT(*) as c FROM stickers');
-  const count = parseInt(countRow?.c ?? '0', 10);
-  const expected = TEAMS.length * 20 + SPECIAL_CARDS.length;
-
-  // Check if current data matches expected version
-  const mexGk = await queryOne<{ player_name: string }>(
-    "SELECT player_name FROM stickers WHERE id = 'MEX-P01'"
+  // Check if current data matches expected version (v4 = PDF names, variable player counts)
+  const qatP01 = await queryOne<{ player_name: string }>(
+    "SELECT player_name FROM stickers WHERE id = 'QAT-P01'"
   );
-  // Check a player from the v3 update to detect if reseed is needed
-  const belGk = await queryOne<{ player_name: string }>(
-    "SELECT player_name FROM stickers WHERE id = 'BEL-P01'"
+  const norLast = await queryOne<{ player_name: string }>(
+    "SELECT player_name FROM stickers WHERE id = 'NOR-P14'"
   );
-  const alreadyCurrent = count === expected && mexGk?.player_name === 'Luis Malagón' && belGk?.player_name === 'Koen Casteels';
+  const alreadyCurrent = qatP01?.player_name === 'Pedro Miguel' && norLast?.player_name === 'Erling Haaland';
   if (alreadyCurrent) return;
 
   // Re-seed needed
