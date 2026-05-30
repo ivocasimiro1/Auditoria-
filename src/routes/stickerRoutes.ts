@@ -218,31 +218,36 @@ router.post('/collection/bulk', authenticateToken, async (req: Request, res: Res
   }
 });
 
-// Bulk mark stickers by sticker number — unknown numbers auto-create missing reports
-router.post('/bulk-by-number', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+// Bulk mark stickers by album code — unknown codes auto-create missing reports
+router.post('/bulk-by-code', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
-    const { numbers, status = 'have_double' } = req.body;
+    const { codes, status = 'have_double' } = req.body;
     const validStatuses = ['have_to_trade', 'need', 'have_double'];
-    if (!Array.isArray(numbers) || numbers.length === 0) {
-      res.status(400).json({ error: 'numbers é obrigatório' }); return;
+    if (!Array.isArray(codes) || codes.length === 0) {
+      res.status(400).json({ error: 'codes é obrigatório' }); return;
     }
     if (!validStatuses.includes(status)) {
       res.status(400).json({ error: 'Status inválido' }); return;
     }
-    const nums = [...new Set(
-      numbers.map((n: any) => parseInt(String(n), 10)).filter(n => !isNaN(n) && n > 0 && n < 100000)
+
+    // Normalize each code: uppercase, remove spaces between letters and digits
+    const normalizedCodes = [...new Set(
+      codes
+        .map((c: any) => String(c).toUpperCase().replace(/\s+/g, ''))
+        .filter(c => /^[A-Z]{2,4}\d{1,2}$/.test(c))
     )];
-    if (nums.length === 0) {
-      res.status(400).json({ error: 'Nenhum número válido' }); return;
+
+    if (normalizedCodes.length === 0) {
+      res.status(400).json({ error: 'Nenhum código válido' }); return;
     }
 
-    const placeholders = nums.map((_, i) => `$${i + 1}`).join(',');
-    const found = await query<{ id: string; number: number; player_name: string; team_name: string }>(
-      `SELECT id, number, player_name, team_name FROM stickers WHERE number IN (${placeholders})`,
-      nums
+    const placeholders = normalizedCodes.map((_, i) => `$${i + 1}`).join(',');
+    const found = await query<{ id: string; player_name: string; team_name: string }>(
+      `SELECT id, player_name, team_name FROM stickers WHERE id = ANY($1)`,
+      [normalizedCodes]
     );
-    const foundNums = new Set(found.map(s => s.number));
-    const notFound = nums.filter(n => !foundNums.has(n));
+    const foundIds = new Set(found.map(s => s.id));
+    const notFoundCodes = normalizedCodes.filter(c => !foundIds.has(c));
     const now = Date.now();
 
     await transaction(async (client) => {
@@ -254,18 +259,18 @@ router.post('/bulk-by-number', authenticateToken, async (req: Request, res: Resp
           [req.userId, sticker.id, status, now]
         );
       }
-      for (const num of notFound) {
+      for (const code of notFoundCodes) {
         await client.query(
           `INSERT INTO missing_reports (id, reporter_id, team_name, player_name, notes, status, created_at)
            VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
-          [uuidv4(), req.userId, 'Desconhecido', `Cromo nº ${num}`, 'Via entrada rápida', now]
+          [uuidv4(), req.userId, 'Desconhecido', `Cromo ${code}`, 'Via entrada rápida', now]
         );
       }
     });
 
-    res.json({ found: found.length, notFound: notFound.length, notFoundNumbers: notFound });
+    res.json({ found: found.length, notFound: notFoundCodes.length, notFoundCodes });
   } catch (err) {
-    console.error('Bulk by number error:', err);
+    console.error('Bulk by code error:', err);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });

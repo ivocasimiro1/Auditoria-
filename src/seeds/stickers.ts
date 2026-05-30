@@ -140,11 +140,11 @@ const TEAMS: TeamDef[] = [
     players: ['Unai Simón', 'Aymeric Laporte', 'Robin Le Normand', 'Dean Huijsen', 'Dani Carvajal', 'Pedro Porro', 'Marc Cucurella', 'Martín Zubimendi', 'Rodri', 'Pedri', 'Fabián Ruiz', 'Mikel Merino', 'Lamine Yamal', 'Dani Olmo', 'Nico Williams', 'Ferran Torres', 'Álvaro Morata', 'Mikel Oyarzabal'],
   },
   {
-    code: 'CMV', name: 'Cabo Verde', group: 'H',
+    code: 'CPV', name: 'Cabo Verde', group: 'H',
     players: ['Vozinha', 'Logan Costa', 'Steven Moreira', 'Diney', 'Wagner Pina', 'Patrick Andrade', 'Pico', 'Gerry Duarte', 'Ryan Mendes', 'Yannick Semedo', 'Dilon Livramento', 'Jovane Cabral', 'Bebé', 'Willy Semedo', 'João Paulo'],
   },
   {
-    code: 'SAU', name: 'Arábia Saudita', group: 'H',
+    code: 'KSA', name: 'Arábia Saudita', group: 'H',
     players: ['Mohammad Al-Owais', 'Saud Abdulhamid', 'Hassan Altambakti', 'Abdulrahman Alsanbi', 'Saleh Abu Alshamat', 'Abdulrahman Alobud', 'Marwan Alsahafi', 'Musab Aljuwayr', 'Abdullah Alkhaibari', 'Ziad Alkhani', 'Nasser Aldawsari', 'Salem Aldawsari', 'Jehad Thikri', 'Saleh Alshehri'],
   },
   {
@@ -225,85 +225,172 @@ const TEAMS: TeamDef[] = [
   },
 ];
 
-const SPECIAL_CARDS = [
-  { id: 'SP-001', name: 'Troféu FIFA World Cup', type: 'special' as const, rarity: 'holographic' as const },
-  { id: 'SP-002', name: 'Mascote Oficial 2026', type: 'special' as const, rarity: 'holographic' as const },
-  { id: 'SP-003', name: 'Logotipo Mundial 2026', type: 'logo' as const, rarity: 'foil' as const },
-  { id: 'SP-004', name: 'Estádio MetLife - EUA', type: 'stadium' as const, rarity: 'common' as const },
-  { id: 'SP-005', name: 'Estádio Azteca - México', type: 'stadium' as const, rarity: 'common' as const },
-  { id: 'SP-006', name: 'Estádio BC Place - Canadá', type: 'stadium' as const, rarity: 'common' as const },
-  { id: 'SP-007', name: 'Best XI Panini', type: 'special' as const, rarity: 'holographic' as const },
-  { id: 'SP-008', name: 'Top Scorer Award', type: 'special' as const, rarity: 'holographic' as const },
-  { id: 'SP-009', name: 'Golden Glove Award', type: 'special' as const, rarity: 'foil' as const },
-  { id: 'SP-010', name: 'Best Young Player', type: 'special' as const, rarity: 'foil' as const },
-  { id: 'SP-011', name: 'Estádio AT&T - Dallas', type: 'stadium' as const, rarity: 'common' as const },
-  { id: 'SP-012', name: 'Estádio SoFi - Los Angeles', type: 'stadium' as const, rarity: 'common' as const },
-  { id: 'SP-013', name: 'Estádio Hard Rock - Miami', type: 'stadium' as const, rarity: 'common' as const },
-  { id: 'SP-014', name: 'Estádio Levi\'s - São Francisco', type: 'stadium' as const, rarity: 'common' as const },
-  { id: 'SP-015', name: 'Best Goal WC 2026', type: 'special' as const, rarity: 'holographic' as const },
-  { id: 'SP-016', name: 'Fair Play Award 2026', type: 'special' as const, rarity: 'foil' as const },
-  { id: 'SP-017', name: 'Opening Ceremony 2026', type: 'special' as const, rarity: 'foil' as const },
-  { id: 'SP-018', name: 'Final WC 2026', type: 'special' as const, rarity: 'holographic' as const },
-  { id: 'SP-019', name: 'Panini Collection Logo', type: 'logo' as const, rarity: 'foil' as const },
-  { id: 'SP-020', name: 'WC 2026 Countdown', type: 'special' as const, rarity: 'common' as const },
+// FWC opening stickers (FWC1–FWC8)
+const FWC_OPENING = [
+  { name: 'FIFA World Cup 2026 – Logotipo Oficial', type: 'special' as const, rarity: 'holographic' as const },
+  { name: 'Troféu FIFA World Cup',                  type: 'special' as const, rarity: 'holographic' as const },
+  { name: 'Mascote Oficial WC 2026',                type: 'special' as const, rarity: 'holographic' as const },
+  { name: 'Anfitrião – EUA',                        type: 'special' as const, rarity: 'foil' as const },
+  { name: 'Anfitrião – México',                     type: 'special' as const, rarity: 'foil' as const },
+  { name: 'Anfitrião – Canadá',                     type: 'special' as const, rarity: 'foil' as const },
+  { name: 'MetLife Stadium – Nova Jersey',          type: 'stadium' as const, rarity: 'common' as const },
+  { name: 'Estádio Azteca – Cidade do México',      type: 'stadium' as const, rarity: 'common' as const },
 ];
 
-const SEED_VERSION = 'v3-full-names';
+// FWC closing stickers (FWC9–FWC19)
+const FWC_CLOSING = [
+  { name: 'AT&T Stadium – Dallas',                  type: 'stadium' as const, rarity: 'common' as const },
+  { name: 'SoFi Stadium – Los Angeles',             type: 'stadium' as const, rarity: 'common' as const },
+  { name: 'Hard Rock Stadium – Miami',              type: 'stadium' as const, rarity: 'common' as const },
+  { name: 'Arrowhead Stadium – Kansas City',        type: 'stadium' as const, rarity: 'common' as const },
+  { name: 'Lincoln Financial Field – Filadélfia',   type: 'stadium' as const, rarity: 'common' as const },
+  { name: 'NRG Stadium – Houston',                  type: 'stadium' as const, rarity: 'common' as const },
+  { name: 'Gillette Stadium – Boston',              type: 'stadium' as const, rarity: 'common' as const },
+  { name: 'Lumen Field – Seattle',                  type: 'stadium' as const, rarity: 'common' as const },
+  { name: 'Q2 Stadium – Austin',                    type: 'stadium' as const, rarity: 'common' as const },
+  { name: 'BMO Field – Toronto',                    type: 'stadium' as const, rarity: 'common' as const },
+  { name: 'FIFA World Cup 2026 – Grande Final',     type: 'special' as const, rarity: 'holographic' as const },
+];
+
+// CC stickers (CC1–CC14)
+const CC_CARDS = [
+  { name: 'Melhor Jogador do Torneio',              type: 'special' as const, rarity: 'holographic' as const },
+  { name: 'Melhor Guarda-Redes – Luva de Ouro',    type: 'special' as const, rarity: 'holographic' as const },
+  { name: 'Chuteira de Ouro',                       type: 'special' as const, rarity: 'holographic' as const },
+  { name: 'Bola de Ouro – FIFA',                    type: 'special' as const, rarity: 'holographic' as const },
+  { name: 'Fair Play Award',                        type: 'special' as const, rarity: 'foil' as const },
+  { name: 'Equipa do Torneio – FIFA',               type: 'special' as const, rarity: 'foil' as const },
+  { name: 'Golo do Torneio',                        type: 'special' as const, rarity: 'foil' as const },
+  { name: 'Revelação do Torneio',                   type: 'special' as const, rarity: 'foil' as const },
+  { name: 'Melhor XI do Mundial',                   type: 'special' as const, rarity: 'foil' as const },
+  { name: 'Top Scorer – Artilheiro',                type: 'special' as const, rarity: 'foil' as const },
+  { name: 'Seleção Campeã Mundial',                 type: 'special' as const, rarity: 'holographic' as const },
+  { name: 'Seleção Vice-Campeã',                    type: 'special' as const, rarity: 'common' as const },
+  { name: 'Seleção 3º Lugar',                       type: 'special' as const, rarity: 'common' as const },
+  { name: 'Bola da Grande Final',                   type: 'special' as const, rarity: 'holographic' as const },
+];
 
 export async function seedStickers(): Promise<void> {
-  // Check if current data matches expected version (v4 = PDF names, variable player counts)
-  const qatP01 = await queryOne<{ player_name: string }>(
-    "SELECT player_name FROM stickers WHERE id = 'QAT-P01'"
-  );
-  const norLast = await queryOne<{ player_name: string }>(
-    "SELECT player_name FROM stickers WHERE id = 'NOR-P14'"
-  );
-  const alreadyCurrent = qatP01?.player_name === 'Pedro Miguel' && norLast?.player_name === 'Erling Haaland';
-  if (alreadyCurrent) return;
+  const alreadyDone = await queryOne<{ id: string }>("SELECT id FROM stickers WHERE id = 'MEX1'");
+  if (alreadyDone) return;
 
-  // Re-seed needed
-  await execute('DELETE FROM user_stickers');
-  await execute('DELETE FROM stickers');
+  // Build idMap: old sticker id → new sticker id
+  const idMap: Record<string, string> = {};
+
+  for (const team of TEAMS) {
+    const oldCode = team.code === 'CPV' ? 'CMV' : team.code === 'KSA' ? 'SAU' : team.code;
+    // Badge
+    idMap[`${oldCode}-BADGE`] = `${team.code}1`;
+    // Logo
+    idMap[`${oldCode}-LOGO`] = `${team.code}2`;
+    // Players
+    for (let i = 0; i < team.players.length; i++) {
+      idMap[`${oldCode}-P${String(i + 1).padStart(2, '0')}`] = `${team.code}${i + 3}`;
+    }
+  }
+
+  // Manually added SWE-P14 (Viktor Gyökeres) → SWE16 (index 13 → 13+3=16)
+  idMap['SWE-P14'] = 'SWE16';
+
+  // Special cards SP-001…SP-019 → FWC1…FWC19, SP-020 → CC1
+  for (let i = 1; i <= 19; i++) {
+    idMap[`SP-${String(i).padStart(3, '0')}`] = `FWC${i}`;
+  }
+  idMap['SP-020'] = 'CC1';
 
   await transaction(async (client) => {
+    // --- 1. Insert all new stickers ---
     let num = 1;
 
+    // FWC opening (FWC1–FWC8)
+    for (let i = 0; i < FWC_OPENING.length; i++) {
+      const fwc = FWC_OPENING[i];
+      const id = `FWC${i + 1}`;
+      await client.query(
+        `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
+        [id, num++, 'SPECIAL', 'Especial', 'ESPECIAL', fwc.name, fwc.type, fwc.rarity, `/img/specials/${id.toLowerCase()}.svg`]
+      );
+    }
+
+    // Team stickers
     for (const team of TEAMS) {
-      // Badge card
+      // Badge (code+1)
       await client.query(
         `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (id) DO NOTHING`,
-        [`${team.code}-BADGE`, num++, team.code, team.name, team.group, null, 'badge', 'foil', `/img/badges/${team.code.toLowerCase()}.svg`]
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
+        [`${team.code}1`, num++, team.code, team.name, team.group, null, 'badge', 'foil', `/img/badges/${team.code.toLowerCase()}.svg`]
       );
 
-      // Team logo
+      // Logo (code+2)
       await client.query(
         `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (id) DO NOTHING`,
-        [`${team.code}-LOGO`, num++, team.code, team.name, team.group, null, 'logo', 'common', `/img/logos/${team.code.toLowerCase()}.svg`]
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
+        [`${team.code}2`, num++, team.code, team.name, team.group, null, 'logo', 'common', `/img/logos/${team.code.toLowerCase()}.svg`]
       );
 
-      // Players
+      // Players (code+3 … code+(players.length+2))
       for (let i = 0; i < team.players.length; i++) {
-        const player = team.players[i];
-        const rarity = i === 0 ? 'foil' : (i === team.players.length - 1 ? 'holographic' : 'common');
+        const stickerNum = i + 3;
         await client.query(
           `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (id) DO NOTHING`,
-          [`${team.code}-P${String(i + 1).padStart(2, '0')}`, num++, team.code, team.name, team.group, player, 'player', rarity, `/img/players/${team.code.toLowerCase()}_${i + 1}.svg`]
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
+          [`${team.code}${stickerNum}`, num++, team.code, team.name, team.group, team.players[i], 'player', 'common', `/img/players/${team.code.toLowerCase()}_${i + 1}.svg`]
+        );
+      }
+
+      // Placeholder slots (code+(players.length+3) … code+20)
+      const firstPlaceholder = team.players.length + 3;
+      for (let stickerNum = firstPlaceholder; stickerNum <= 20; stickerNum++) {
+        await client.query(
+          `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
+          [`${team.code}${stickerNum}`, num++, team.code, team.name, team.group, null, 'player', 'common', null]
         );
       }
     }
 
-    // Special cards
-    for (const sp of SPECIAL_CARDS) {
+    // FWC closing (FWC9–FWC19)
+    for (let i = 0; i < FWC_CLOSING.length; i++) {
+      const fwc = FWC_CLOSING[i];
+      const id = `FWC${i + 9}`;
       await client.query(
         `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (id) DO NOTHING`,
-        [sp.id, num++, 'SPECIAL', 'Especial', 'ESPECIAL', sp.name, sp.type, sp.rarity, `/img/specials/${sp.id.toLowerCase()}.svg`]
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
+        [id, num++, 'SPECIAL', 'Especial', 'ESPECIAL', fwc.name, fwc.type, fwc.rarity, `/img/specials/${id.toLowerCase()}.svg`]
       );
     }
+
+    // CC cards (CC1–CC14)
+    for (let i = 0; i < CC_CARDS.length; i++) {
+      const cc = CC_CARDS[i];
+      const id = `CC${i + 1}`;
+      await client.query(
+        `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
+        [id, num++, 'SPECIAL', 'Especial', 'ESPECIAL', cc.name, cc.type, cc.rarity, `/img/specials/${id.toLowerCase()}.svg`]
+      );
+    }
+
+    // --- 2. Migrate user_stickers ---
+    for (const [oldId, newId] of Object.entries(idMap)) {
+      await client.query(
+        `UPDATE user_stickers SET sticker_id = $1 WHERE sticker_id = $2
+         AND NOT EXISTS (SELECT 1 FROM user_stickers u2 WHERE u2.user_id = user_stickers.user_id AND u2.sticker_id = $1)`,
+        [newId, oldId]
+      );
+    }
+
+    // --- 3. Delete old stickers ---
+    await client.query(
+      `DELETE FROM stickers WHERE id LIKE '%-BADGE' OR id LIKE '%-LOGO' OR id ~ '^[A-Z]+-P[0-9]+$' OR id LIKE 'SP-%'`
+    );
+
+    // --- 4. Clean orphaned user_stickers ---
+    await client.query(
+      `DELETE FROM user_stickers WHERE sticker_id NOT IN (SELECT id FROM stickers)`
+    );
   });
 
-  console.log('Stickers seeded successfully');
+  console.log('Stickers seeded successfully (WC2026 Panini format)');
 }

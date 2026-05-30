@@ -17,7 +17,7 @@ const FLAG_CODES = {
   // Group G
   BEL:'be', EGY:'eg', IRN:'ir', NZL:'nz',
   // Group H
-  ESP:'es', CMV:'cv', SAU:'sa', URU:'uy',
+  ESP:'es', CPV:'cv', KSA:'sa', URU:'uy',
   // Group I
   FRA:'fr', SEN:'sn', IRQ:'iq', NOR:'no',
   // Group J
@@ -636,6 +636,7 @@ function openReportModal(stickerId, currentName) {
 }
 
 function openQuickAddModal() {
+  // queue holds code strings like "MEX5", "POR12"
   const queue = new Set();
   let currentStatus = 'have_double';
 
@@ -648,7 +649,7 @@ function openQuickAddModal() {
         <button class="modal-close" id="qm-close">✕</button>
       </div>
       <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
-        Marca cromos pelo número. Se um número não existir no catálogo, cria automaticamente um report para adicionar.
+        Marca cromos pelo código do álbum. Se um código não existir no catálogo, cria automaticamente um report para adicionar.
       </p>
 
       <div style="display:flex;gap:8px;margin-bottom:16px;">
@@ -657,11 +658,11 @@ function openQuickAddModal() {
       </div>
 
       <div style="display:flex;gap:8px;margin-bottom:6px;">
-        <input type="text" inputmode="numeric" class="form-input" id="qm-num-input"
-          placeholder="ex: 1 5 12 34" style="flex:1;min-width:0;" autocomplete="off">
+        <input type="text" class="form-input" id="qm-num-input"
+          placeholder="ex: MEX5 POR12 ARG1" style="flex:1;min-width:0;" autocomplete="off">
         <button class="btn btn-primary" id="qm-add-btn" style="white-space:nowrap;">Adicionar</button>
       </div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px;">Vários números separados por espaço ou vírgula</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px;">Vários códigos separados por espaço ou vírgula</div>
 
       <input type="file" id="qm-file" accept="image/*" capture="environment" style="display:none;">
       <button id="qm-camera-btn" class="btn" style="width:100%;margin-bottom:16px;border:1px dashed rgba(255,255,255,0.15);font-size:13px;">
@@ -669,11 +670,11 @@ function openQuickAddModal() {
       </button>
       <div id="qm-preview-wrap" style="display:none;margin-bottom:12px;text-align:center;">
         <img id="qm-preview-img" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--border);">
-        <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Confirma o número acima e clica Adicionar</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Confirma o código acima e clica Adicionar</div>
       </div>
 
       <div id="qm-queue" style="display:flex;flex-wrap:wrap;gap:6px;min-height:38px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:16px;align-items:center;">
-        <span id="qm-queue-ph" style="font-size:12px;color:var(--text-muted);">Nenhum número adicionado ainda</span>
+        <span id="qm-queue-ph" style="font-size:12px;color:var(--text-muted);">Nenhum código adicionado ainda</span>
       </div>
 
       <button class="btn btn-gold" id="qm-submit-btn" style="width:100%;display:none;">✅ Guardar cromos</button>
@@ -687,25 +688,32 @@ function openQuickAddModal() {
   const placeholder= overlay.querySelector('#qm-queue-ph');
   const fileInput  = overlay.querySelector('#qm-file');
 
+  const CODE_PATTERN = /^[A-Z]{2,4}\d{1,2}$/;
+
+  function normalizeCode(raw) {
+    // uppercase and remove any spaces between letters and digits
+    return raw.toUpperCase().replace(/\s+/g, '');
+  }
+
   function renderQueue() {
     queueEl.querySelectorAll('.qm-chip').forEach(c => c.remove());
     placeholder.style.display = queue.size === 0 ? 'inline' : 'none';
-    [...queue].sort((a, b) => a - b).forEach(n => {
+    [...queue].sort().forEach(code => {
       const chip = document.createElement('span');
       chip.className = 'qm-chip';
       chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:3px 8px;font-size:13px;font-weight:700;color:var(--blue);';
-      chip.innerHTML = `${n}<button data-n="${n}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0 2px;line-height:1;margin-left:2px;">✕</button>`;
-      chip.querySelector('button').addEventListener('click', () => { queue.delete(n); renderQueue(); });
+      chip.innerHTML = `${code}<button data-code="${code}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0 2px;line-height:1;margin-left:2px;">✕</button>`;
+      chip.querySelector('button').addEventListener('click', () => { queue.delete(code); renderQueue(); });
       queueEl.appendChild(chip);
     });
     submitBtn.style.display = queue.size > 0 ? 'block' : 'none';
     submitBtn.textContent = `✅ Guardar ${queue.size} cromo${queue.size !== 1 ? 's' : ''}`;
   }
 
-  function addNumbers(raw) {
-    const nums = raw.split(/[\s,;]+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n) && n > 0 && n < 100000);
-    if (nums.length === 0) { showToast('Escreve um número válido', 'error'); return; }
-    nums.forEach(n => queue.add(n));
+  function addCodes(raw) {
+    const parts = raw.split(/[\s,;]+/).map(normalizeCode).filter(c => CODE_PATTERN.test(c));
+    if (parts.length === 0) { showToast('Escreve um código válido (ex: MEX5)', 'error'); return; }
+    parts.forEach(c => queue.add(c));
     numInput.value = '';
     renderQueue();
   }
@@ -724,8 +732,8 @@ function openQuickAddModal() {
     overlay.querySelector('#qs-have').classList.remove('active');
   });
 
-  overlay.querySelector('#qm-add-btn').addEventListener('click', () => addNumbers(numInput.value));
-  numInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addNumbers(numInput.value); } });
+  overlay.querySelector('#qm-add-btn').addEventListener('click', () => addCodes(numInput.value));
+  numInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCodes(numInput.value); } });
 
   overlay.querySelector('#qm-camera-btn').addEventListener('click', () => fileInput.click());
 
@@ -744,12 +752,16 @@ function openQuickAddModal() {
         await new Promise(r => { img.onload = r; });
         const detector = new window.TextDetector();
         const blocks = await detector.detect(img);
-        const nums = blocks
-          .flatMap(b => b.rawValue.trim().split(/\D+/))
-          .map(n => parseInt(n, 10))
-          .filter(n => !isNaN(n) && n > 0 && n < 10000)
-          .sort((a, b) => a - b);
-        if (nums.length > 0) { numInput.value = nums[0]; numInput.select(); }
+        // Try to find a code matching the album pattern
+        let detectedCode = null;
+        for (const b of blocks) {
+          const candidate = normalizeCode(b.rawValue.trim());
+          if (CODE_PATTERN.test(candidate)) {
+            detectedCode = candidate;
+            break;
+          }
+        }
+        if (detectedCode) { numInput.value = detectedCode; numInput.select(); }
       } catch {}
     }
   });
@@ -758,9 +770,9 @@ function openQuickAddModal() {
     if (queue.size === 0) return;
     submitBtn.disabled = true; submitBtn.textContent = 'A guardar...';
     try {
-      const result = await apiFetch('/stickers/bulk-by-number', {
+      const result = await apiFetch('/stickers/bulk-by-code', {
         method: 'POST',
-        body: JSON.stringify({ numbers: [...queue], status: currentStatus }),
+        body: JSON.stringify({ codes: [...queue], status: currentStatus }),
       });
       overlay.remove();
       updateCollectionPct();
