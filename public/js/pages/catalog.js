@@ -99,9 +99,12 @@ export async function render() {
       </div>
 
       <div class="filter-bar">
-        <input type="text" class="form-input" id="search-input"
-          placeholder="🔍 Pesquisar jogador, equipa..." style="max-width:240px;flex:1;"
-          value="${teamName ? '' : ''}">
+        <div style="position:relative;max-width:240px;flex:1;">
+          <input type="text" class="form-input" id="search-input"
+            placeholder="🔍 Pesquisar jogador, equipa..." style="width:100%;"
+            value="${teamName ? '' : ''}" autocomplete="off">
+          <div id="search-autocomplete" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;z-index:200;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.4);max-height:260px;overflow-y:auto;"></div>
+        </div>
         <select class="form-input form-select" id="group-filter" style="max-width:160px;">
           <option value="all">Todos os Grupos</option>
           ${groups.map(g => `<option value="${g}" ${groupParam === g ? 'selected' : ''}>Grupo ${g}</option>`).join('')}
@@ -139,10 +142,61 @@ export async function render() {
     renderStickers(teamParam);
   });
 
-  document.getElementById('search-input').addEventListener('input', e => {
+  const searchInput = document.getElementById('search-input');
+  const autocompleteBox = document.getElementById('search-autocomplete');
+
+  function hideAutocomplete() { autocompleteBox.style.display = 'none'; }
+
+  function showAutocomplete(term) {
+    if (!term || term.length < 1) { hideAutocomplete(); return; }
+    const lower = term.toLowerCase();
+    const seen = new Set();
+    const matches = [];
+    for (const s of allStickers) {
+      if (matches.length >= 8) break;
+      const name = s.player_name;
+      if (!name || seen.has(name)) continue;
+      if (name.toLowerCase().includes(lower) || s.team_name.toLowerCase().includes(lower)) {
+        seen.add(name);
+        matches.push(s);
+      }
+    }
+    if (!matches.length) { hideAutocomplete(); return; }
+    autocompleteBox.innerHTML = matches.map((s, i) => {
+      const hl = s.player_name.replace(new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'),
+        '<strong style="color:var(--blue);">$1</strong>');
+      return `<div class="ac-item" data-name="${s.player_name.replace(/"/g,'&quot;')}" data-team="${s.team_name}"
+        style="display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <span style="flex:1;">${hl}</span>
+        <span style="font-size:11px;color:var(--text-muted);flex-shrink:0;">${s.team_name}</span>
+      </div>`;
+    }).join('');
+    autocompleteBox.style.display = 'block';
+
+    autocompleteBox.querySelectorAll('.ac-item').forEach(item => {
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        searchInput.value = item.dataset.name;
+        searchTerm = item.dataset.name.toLowerCase();
+        hideAutocomplete();
+        renderStickers(teamParam);
+      });
+      item.addEventListener('mouseover', () => item.style.background = 'rgba(255,255,255,0.05)');
+      item.addEventListener('mouseout', () => item.style.background = '');
+    });
+  }
+
+  searchInput.addEventListener('input', e => {
     searchTerm = e.target.value.toLowerCase();
+    showAutocomplete(e.target.value);
     renderStickers(teamParam);
   });
+
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Escape') hideAutocomplete();
+  });
+
+  searchInput.addEventListener('blur', () => setTimeout(hideAutocomplete, 150));
 
   renderStickers(teamParam);
 

@@ -65,12 +65,6 @@
           </button>
         </div>
         <div class="nav-section">
-          <div class="nav-section-title">Recursos</div>
-          <button class="nav-item" onclick="(function(){const t=localStorage.getItem('token');if(!t){window.location.hash='/login';return;}const a=document.createElement('a');a.href='/api/album/pdf?token='+encodeURIComponent(t);a.target='_blank';a.rel='noopener noreferrer';document.body.appendChild(a);a.click();document.body.removeChild(a);})()">
-            <span class="nav-icon">📄</span> Álbum PDF
-          </button>
-        </div>
-        <div class="nav-section">
           <div class="nav-section-title">Conta</div>
           <button class="nav-item" data-route="/notifications">
             <span class="nav-icon">🔔</span> Notificações
