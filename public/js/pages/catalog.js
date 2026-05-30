@@ -111,6 +111,7 @@ export async function render() {
           ${groups.map(g => `<option value="${g}" ${groupParam === g ? 'selected' : ''}>Grupo ${g}</option>`).join('')}
           <option value="ESPECIAL">Especiais</option>
         </select>
+        <button class="btn btn-primary btn-sm" id="quick-add-btn" style="white-space:nowrap;flex-shrink:0;">⚡ Rápido</button>
       </div>
 
       <div class="filter-bar" style="margin-top:-8px;">
@@ -153,6 +154,8 @@ export async function render() {
     activeGroup = e.target.value;
     renderStickers(teamParam);
   });
+
+  document.getElementById('quick-add-btn').addEventListener('click', openQuickAddModal);
 
   const searchInput = document.getElementById('search-input');
 
@@ -628,6 +631,146 @@ function openReportModal(stickerId, currentName) {
     } catch (e) {
       showToast(e.message, 'error');
       btn.disabled = false; btn.textContent = '🚩 Enviar Relatório';
+    }
+  });
+}
+
+function openQuickAddModal() {
+  const queue = new Set();
+  let currentStatus = 'have_double';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:420px;max-height:88dvh;overflow-y:auto;">
+      <div class="modal-header">
+        <span class="modal-title">⚡ Entrada Rápida</span>
+        <button class="modal-close" id="qm-close">✕</button>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+        Marca cromos pelo número. Se um número não existir no catálogo, cria automaticamente um report para adicionar.
+      </p>
+
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button class="filter-btn active" id="qs-have" style="flex:1;font-size:13px;">✅ Tenho</button>
+        <button class="filter-btn" id="qs-trade" style="flex:1;font-size:13px;">🔄 Para Trocar</button>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:6px;">
+        <input type="text" inputmode="numeric" class="form-input" id="qm-num-input"
+          placeholder="ex: 1 5 12 34" style="flex:1;min-width:0;" autocomplete="off">
+        <button class="btn btn-primary" id="qm-add-btn" style="white-space:nowrap;">Adicionar</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px;">Vários números separados por espaço ou vírgula</div>
+
+      <input type="file" id="qm-file" accept="image/*" capture="environment" style="display:none;">
+      <button id="qm-camera-btn" class="btn" style="width:100%;margin-bottom:16px;border:1px dashed rgba(255,255,255,0.15);font-size:13px;">
+        📷 Fotografar Cromo (câmara do telemóvel)
+      </button>
+      <div id="qm-preview-wrap" style="display:none;margin-bottom:12px;text-align:center;">
+        <img id="qm-preview-img" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Confirma o número acima e clica Adicionar</div>
+      </div>
+
+      <div id="qm-queue" style="display:flex;flex-wrap:wrap;gap:6px;min-height:38px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:16px;align-items:center;">
+        <span id="qm-queue-ph" style="font-size:12px;color:var(--text-muted);">Nenhum número adicionado ainda</span>
+      </div>
+
+      <button class="btn btn-gold" id="qm-submit-btn" style="width:100%;display:none;">✅ Guardar cromos</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const numInput   = overlay.querySelector('#qm-num-input');
+  const queueEl    = overlay.querySelector('#qm-queue');
+  const submitBtn  = overlay.querySelector('#qm-submit-btn');
+  const placeholder= overlay.querySelector('#qm-queue-ph');
+  const fileInput  = overlay.querySelector('#qm-file');
+
+  function renderQueue() {
+    queueEl.querySelectorAll('.qm-chip').forEach(c => c.remove());
+    placeholder.style.display = queue.size === 0 ? 'inline' : 'none';
+    [...queue].sort((a, b) => a - b).forEach(n => {
+      const chip = document.createElement('span');
+      chip.className = 'qm-chip';
+      chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:3px 8px;font-size:13px;font-weight:700;color:var(--blue);';
+      chip.innerHTML = `${n}<button data-n="${n}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0 2px;line-height:1;margin-left:2px;">✕</button>`;
+      chip.querySelector('button').addEventListener('click', () => { queue.delete(n); renderQueue(); });
+      queueEl.appendChild(chip);
+    });
+    submitBtn.style.display = queue.size > 0 ? 'block' : 'none';
+    submitBtn.textContent = `✅ Guardar ${queue.size} cromo${queue.size !== 1 ? 's' : ''}`;
+  }
+
+  function addNumbers(raw) {
+    const nums = raw.split(/[\s,;]+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n) && n > 0 && n < 100000);
+    if (nums.length === 0) { showToast('Escreve um número válido', 'error'); return; }
+    nums.forEach(n => queue.add(n));
+    numInput.value = '';
+    renderQueue();
+  }
+
+  overlay.querySelector('#qm-close').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  overlay.querySelector('#qs-have').addEventListener('click', function() {
+    currentStatus = 'have_double';
+    this.classList.add('active');
+    overlay.querySelector('#qs-trade').classList.remove('active');
+  });
+  overlay.querySelector('#qs-trade').addEventListener('click', function() {
+    currentStatus = 'have_to_trade';
+    this.classList.add('active');
+    overlay.querySelector('#qs-have').classList.remove('active');
+  });
+
+  overlay.querySelector('#qm-add-btn').addEventListener('click', () => addNumbers(numInput.value));
+  numInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addNumbers(numInput.value); } });
+
+  overlay.querySelector('#qm-camera-btn').addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    overlay.querySelector('#qm-preview-img').src = url;
+    overlay.querySelector('#qm-preview-wrap').style.display = 'block';
+    numInput.focus();
+    // Progressive enhancement: TextDetector API (Chrome/Android, no deps)
+    if ('TextDetector' in window) {
+      try {
+        const img = new Image();
+        img.src = url;
+        await new Promise(r => { img.onload = r; });
+        const detector = new window.TextDetector();
+        const blocks = await detector.detect(img);
+        const nums = blocks
+          .flatMap(b => b.rawValue.trim().split(/\D+/))
+          .map(n => parseInt(n, 10))
+          .filter(n => !isNaN(n) && n > 0 && n < 10000)
+          .sort((a, b) => a - b);
+        if (nums.length > 0) { numInput.value = nums[0]; numInput.select(); }
+      } catch {}
+    }
+  });
+
+  submitBtn.addEventListener('click', async () => {
+    if (queue.size === 0) return;
+    submitBtn.disabled = true; submitBtn.textContent = 'A guardar...';
+    try {
+      const result = await apiFetch('/stickers/bulk-by-number', {
+        method: 'POST',
+        body: JSON.stringify({ numbers: [...queue], status: currentStatus }),
+      });
+      overlay.remove();
+      updateCollectionPct();
+      renderStickers(teamParam);
+      let msg = `${result.found} cromo${result.found !== 1 ? 's' : ''} guardado${result.found !== 1 ? 's' : ''}!`;
+      if (result.notFound > 0) msg += ` | ${result.notFound} não encontrado${result.notFound !== 1 ? 's' : ''} → report criado automaticamente`;
+      showToast(msg, result.notFound > 0 ? 'info' : 'success');
+    } catch (e) {
+      showToast(e.message, 'error');
+      submitBtn.disabled = false; submitBtn.textContent = `✅ Guardar ${queue.size} cromo${queue.size !== 1 ? 's' : ''}`;
     }
   });
 }

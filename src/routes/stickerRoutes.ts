@@ -218,6 +218,58 @@ router.post('/collection/bulk', authenticateToken, async (req: Request, res: Res
   }
 });
 
+// Bulk mark stickers by sticker number — unknown numbers auto-create missing reports
+router.post('/bulk-by-number', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { numbers, status = 'have_double' } = req.body;
+    const validStatuses = ['have_to_trade', 'need', 'have_double'];
+    if (!Array.isArray(numbers) || numbers.length === 0) {
+      res.status(400).json({ error: 'numbers é obrigatório' }); return;
+    }
+    if (!validStatuses.includes(status)) {
+      res.status(400).json({ error: 'Status inválido' }); return;
+    }
+    const nums = [...new Set(
+      numbers.map((n: any) => parseInt(String(n), 10)).filter(n => !isNaN(n) && n > 0 && n < 100000)
+    )];
+    if (nums.length === 0) {
+      res.status(400).json({ error: 'Nenhum número válido' }); return;
+    }
+
+    const placeholders = nums.map((_, i) => `$${i + 1}`).join(',');
+    const found = await query<{ id: string; number: number; player_name: string; team_name: string }>(
+      `SELECT id, number, player_name, team_name FROM stickers WHERE number IN (${placeholders})`,
+      nums
+    );
+    const foundNums = new Set(found.map(s => s.number));
+    const notFound = nums.filter(n => !foundNums.has(n));
+    const now = Date.now();
+
+    await transaction(async (client) => {
+      for (const sticker of found) {
+        await client.query(
+          `INSERT INTO user_stickers (user_id, sticker_id, status, updated_at)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT(user_id, sticker_id) DO UPDATE SET status = EXCLUDED.status, updated_at = EXCLUDED.updated_at`,
+          [req.userId, sticker.id, status, now]
+        );
+      }
+      for (const num of notFound) {
+        await client.query(
+          `INSERT INTO missing_reports (id, reporter_id, team_name, player_name, notes, status, created_at)
+           VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
+          [uuidv4(), req.userId, 'Desconhecido', `Cromo nº ${num}`, 'Via entrada rápida', now]
+        );
+      }
+    });
+
+    res.json({ found: found.length, notFound: notFound.length, notFoundNumbers: notFound });
+  } catch (err) {
+    console.error('Bulk by number error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // Any user: report a missing sticker (player not in the database)
 router.post('/report-missing', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   const { team_name, player_name, notes } = req.body;
