@@ -20,12 +20,18 @@ export async function render() {
 
   const initials = profile.username.slice(0, 2).toUpperCase();
   const rating = profile.rating ? profile.rating.toFixed(1) : null;
+  const avatarHtml = profile.avatar_url
+    ? `<div class="profile-avatar" style="padding:0;overflow:hidden;"><img src="${profile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>`
+    : `<div class="profile-avatar">${initials}</div>`;
 
   main.innerHTML = `
     <div class="page">
       <div class="card" style="margin-bottom:20px;">
         <div class="profile-header">
-          <div class="profile-avatar">${initials}</div>
+          <div style="position:relative;display:inline-block;">
+            ${avatarHtml}
+            ${isOwnProfile ? `<label for="avatar-upload" style="position:absolute;bottom:0;right:0;width:22px;height:22px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;">📷</label><input type="file" id="avatar-upload" accept="image/*" style="display:none;">` : ''}
+          </div>
           <div style="flex:1;">
             <div class="profile-name">${profile.username}</div>
             ${profile.location ? `<div class="profile-location">📍 ${profile.location}</div>` : ''}
@@ -93,6 +99,23 @@ export async function render() {
   if (isOwnProfile) {
     document.getElementById('edit-profile-btn')?.addEventListener('click', () => openEditModal(profile));
     document.getElementById('delete-account-btn')?.addEventListener('click', () => confirmDeleteAccount());
+    document.getElementById('avatar-upload')?.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const token = localStorage.getItem('token');
+      try {
+        const res = await fetch('/api/users/me/avatar', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro ao carregar foto');
+        const stored = JSON.parse(localStorage.getItem('user') || '{}');
+        stored.avatar_url = data.avatar_url;
+        localStorage.setItem('user', JSON.stringify(stored));
+        showToast('Foto de perfil atualizada!', 'success');
+        await render();
+      } catch (err) { showToast(err.message, 'error'); }
+    });
   }
 }
 
@@ -185,8 +208,21 @@ async function openEditModal(profile) {
         <input type="text" class="form-input" id="edit-username" value="${profile.username}">
       </div>
       <div class="form-group">
-        <label class="form-label">Localização</label>
-        <input type="text" class="form-input" id="edit-location" value="${profile.location || ''}">
+        <label class="form-label">Localização <span style="color:var(--text-muted)">(cidade)</span></label>
+        <input type="text" class="form-input" id="edit-location" placeholder="Ex: Lisboa" value="${profile.location || ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Novo Email <span style="color:var(--text-muted)">(deixa em branco para não alterar)</span></label>
+        <input type="email" class="form-input" id="edit-email" placeholder="${profile.email || ''}">
+      </div>
+      <hr style="border-color:var(--border);margin:12px 0;">
+      <div class="form-group">
+        <label class="form-label">Nova Password <span style="color:var(--text-muted)">(deixa em branco para não alterar)</span></label>
+        <input type="password" class="form-input" id="edit-new-password" placeholder="Nova password">
+      </div>
+      <div class="form-group" id="current-pass-group" style="display:none;">
+        <label class="form-label">Password Atual <span style="color:var(--red)">*obrigatório</span></label>
+        <input type="password" class="form-input" id="edit-current-password" placeholder="Password atual">
       </div>
       <button class="btn btn-primary" style="width:100%;" id="save-profile-btn">Guardar</button>
     </div>
@@ -194,15 +230,26 @@ async function openEditModal(profile) {
   document.body.appendChild(overlay);
 
   overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+  document.getElementById('edit-new-password').addEventListener('input', (e) => {
+    document.getElementById('current-pass-group').style.display = e.target.value ? 'block' : 'none';
+  });
+
   overlay.querySelector('#save-profile-btn').addEventListener('click', async () => {
     const username = document.getElementById('edit-username').value.trim();
     const location = document.getElementById('edit-location').value.trim();
+    const email = document.getElementById('edit-email').value.trim();
+    const new_password = document.getElementById('edit-new-password').value;
+    const current_password = document.getElementById('edit-current-password').value;
+    const body = { username, location };
+    if (email) body.email = email;
+    if (new_password) { body.new_password = new_password; body.current_password = current_password; }
     try {
-      await apiFetch('/users/me', { method: 'PUT', body: JSON.stringify({ username, location }) });
+      await apiFetch('/users/me', { method: 'PUT', body: JSON.stringify(body) });
       overlay.remove();
       showToast('Perfil atualizado!', 'success');
       const stored = JSON.parse(localStorage.getItem('user') || '{}');
       stored.username = username; stored.location = location;
+      if (email) stored.email = email;
       localStorage.setItem('user', JSON.stringify(stored));
       document.getElementById('nav-username').textContent = username;
       await render();

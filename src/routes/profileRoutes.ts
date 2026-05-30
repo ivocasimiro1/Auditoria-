@@ -1,8 +1,25 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 import { query, queryOne, execute } from '../db';
 import { authenticateToken } from '../middleware/auth';
 import type { User } from '../types';
+
+const avatarStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const dir = path.join(__dirname, '..', '..', 'public', 'uploads', 'avatars');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    cb(null, `${uuidv4()}${ext}`);
+  },
+});
+const avatarUpload = multer({ storage: avatarStorage, limits: { fileSize: 3 * 1024 * 1024 } });
 
 const router = Router();
 
@@ -114,6 +131,23 @@ router.put('/me', authenticateToken, async (req: Request, res: Response): Promis
   } catch (err) {
     console.error('Update profile error:', err);
     res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+router.post('/me/avatar', authenticateToken, avatarUpload.single('avatar'), async (req: Request, res: Response): Promise<void> => {
+  if (!req.file) { res.status(400).json({ error: 'Imagem obrigatória' }); return; }
+  try {
+    const user = await queryOne<{ avatar_url?: string }>('SELECT avatar_url FROM users WHERE id = $1', [req.userId]);
+    if (user?.avatar_url) {
+      const old = path.join(__dirname, '..', '..', 'public', user.avatar_url);
+      if (fs.existsSync(old)) fs.unlinkSync(old);
+    }
+    const avatar_url = `/uploads/avatars/${req.file.filename}`;
+    await execute('UPDATE users SET avatar_url = $1 WHERE id = $2', [avatar_url, req.userId]);
+    res.json({ avatar_url });
+  } catch (err) {
+    console.error('Avatar upload error:', err);
+    res.status(500).json({ error: 'Erro ao guardar foto' });
   }
 });
 
