@@ -252,6 +252,7 @@ function renderReports(reports, missingReports) {
 }
 
 function openAddStickerModal(reportId, playerName, suggestedTeam) {
+  const isSpecial = suggestedTeam === 'Especial';
   const teamOptions = teamList.map(t =>
     `<option value="${t.team_code}" ${t.team_name === suggestedTeam ? 'selected' : ''}>${t.team_name} (${t.team_code})</option>`
   ).join('');
@@ -261,22 +262,31 @@ function openAddStickerModal(reportId, playerName, suggestedTeam) {
   overlay.innerHTML = `
     <div class="modal" style="max-width:400px;">
       <div class="modal-header">
-        <span class="modal-title">✅ Adicionar Cromo</span>
+        <span class="modal-title">${isSpecial ? '✨ Adicionar Cromo Especial' : '✅ Adicionar Jogador'}</span>
         <button class="modal-close">✕</button>
       </div>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
         O cromo será adicionado imediatamente ao catálogo e todos os utilizadores o verão.
       </p>
       <div class="form-group">
-        <label class="form-label">Nome do Jogador</label>
+        <label class="form-label">${isSpecial ? 'Descrição do Cromo' : 'Nome do Jogador'}</label>
         <input type="text" class="form-input" id="add-player-input" value="${playerName.replace(/"/g,'&quot;')}">
       </div>
+      ${isSpecial ? `
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-input form-select" id="add-cardtype-select">
+          <option value="special">Especial (troféu, mascote...)</option>
+          <option value="stadium">Estádio</option>
+          <option value="logo">Logo</option>
+        </select>
+      </div>` : `
       <div class="form-group">
         <label class="form-label">Seleção</label>
         <select class="form-input form-select" id="add-team-select">
           ${teamOptions}
         </select>
-      </div>
+      </div>`}
       <div class="form-group">
         <label class="form-label">Raridade</label>
         <select class="form-input form-select" id="add-rarity-select">
@@ -294,8 +304,9 @@ function openAddStickerModal(reportId, playerName, suggestedTeam) {
 
   overlay.querySelector('#confirm-add-btn').addEventListener('click', async () => {
     const player_name = overlay.querySelector('#add-player-input').value.trim();
-    const team_code   = overlay.querySelector('#add-team-select').value;
+    const team_code   = isSpecial ? 'SPECIAL' : overlay.querySelector('#add-team-select').value;
     const rarity      = overlay.querySelector('#add-rarity-select').value;
+    const card_type   = isSpecial ? overlay.querySelector('#add-cardtype-select').value : 'player';
     if (!player_name || !team_code) { showToast('Preenche todos os campos', 'error'); return; }
 
     const btn = overlay.querySelector('#confirm-add-btn');
@@ -303,7 +314,7 @@ function openAddStickerModal(reportId, playerName, suggestedTeam) {
     try {
       const result = await apiFetch(`/admin/missing-reports/${reportId}/add`, {
         method: 'POST',
-        body: JSON.stringify({ team_code, player_name, rarity }),
+        body: JSON.stringify({ team_code, player_name, rarity, card_type }),
       });
       overlay.remove();
       document.querySelector(`.missing-row[data-id="${reportId}"]`)?.remove();

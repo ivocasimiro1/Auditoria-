@@ -644,26 +644,48 @@ function openMissingModal() {
         <span class="modal-title">➕ Reportar Cromo em Falta</span>
         <button class="modal-close">✕</button>
       </div>
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
-        Não encontraste um jogador? Preenche abaixo e nós adicionamos o mais rápido possível. Obrigado! 🙏
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.6;">
+        Não encontraste um cromo? Preenche abaixo e nós adicionamos o mais rápido possível. Obrigado! 🙏
       </p>
-      <div class="form-group">
-        <label class="form-label">Seleção / Equipa *</label>
-        <div style="position:relative;">
-          <input type="text" class="form-input" id="missing-team-input"
-            placeholder="Escreve ou escolhe a equipa..." autocomplete="off">
-          <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted);">▾</span>
+
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button class="type-toggle active" data-type="player"
+          style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(99,102,241,0.5);background:rgba(99,102,241,0.15);color:var(--text);font-size:13px;cursor:pointer;">
+          ⚽ Jogador
+        </button>
+        <button class="type-toggle" data-type="special"
+          style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:none;color:var(--text-muted);font-size:13px;cursor:pointer;">
+          ✨ Cromo Especial
+        </button>
+      </div>
+
+      <div id="player-fields">
+        <div class="form-group">
+          <label class="form-label">Seleção / Equipa *</label>
+          <div style="position:relative;">
+            <input type="text" class="form-input" id="missing-team-input"
+              placeholder="Escreve ou escolhe a equipa..." autocomplete="off">
+            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted);">▾</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nome do Jogador *</label>
+          <input type="text" class="form-input" id="missing-player-input" placeholder="Ex: Viktor Gyökeres">
         </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Nome do Jogador *</label>
-        <input type="text" class="form-input" id="missing-player-input"
-          placeholder="Ex: Viktor Gyökeres">
+
+      <div id="special-fields" style="display:none;">
+        <div class="form-group">
+          <label class="form-label">Descrição do Cromo *</label>
+          <input type="text" class="form-input" id="missing-special-input"
+            placeholder="Ex: Estádio Maracanã, Mascote 2026...">
+        </div>
       </div>
+
       <div class="form-group">
         <label class="form-label">Notas (opcional)</label>
         <input type="text" class="form-input" id="missing-notes-input"
-          placeholder="Ex: número do cromo, posição...">
+          placeholder="Ex: número do cromo, onde viste...">
       </div>
       <button class="btn btn-primary" style="width:100%;margin-top:4px;" id="send-missing-btn">
         🚀 Enviar Pedido
@@ -672,7 +694,25 @@ function openMissingModal() {
   `;
   document.body.appendChild(overlay);
 
-  // Custom dropdown attached to body (escapes modal stacking context)
+  // Toggle player / special
+  let reportType = 'player';
+  overlay.querySelectorAll('.type-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      reportType = btn.dataset.type;
+      overlay.querySelectorAll('.type-toggle').forEach(b => {
+        const active = b === btn;
+        b.style.background = active ? 'rgba(99,102,241,0.15)' : 'none';
+        b.style.borderColor = active ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.1)';
+        b.style.color = active ? 'var(--text)' : 'var(--text-muted)';
+        b.classList.toggle('active', active);
+      });
+      overlay.querySelector('#player-fields').style.display  = reportType === 'player'  ? 'block' : 'none';
+      overlay.querySelector('#special-fields').style.display = reportType === 'special' ? 'block' : 'none';
+      dd.style.display = 'none';
+    });
+  });
+
+  // Custom dropdown for team
   const dd = document.createElement('div');
   dd.style.cssText = 'display:none;position:fixed;background:#1a2540;border:1px solid rgba(255,255,255,0.15);border-radius:10px;z-index:99999;overflow-y:auto;max-height:220px;box-shadow:0 12px 40px rgba(0,0,0,0.8);';
   document.body.appendChild(dd);
@@ -713,17 +753,22 @@ function openMissingModal() {
   teamInput.addEventListener('input', () => { selectedTeam = ''; renderDd(teamInput.value); });
   teamInput.addEventListener('blur',  () => setTimeout(() => { dd.style.display = 'none'; }, 150));
 
-  overlay.querySelector('.modal-close').addEventListener('click', () => { dd.remove(); overlay.remove(); });
-  overlay.addEventListener('click', e => { if (e.target === overlay) { dd.remove(); overlay.remove(); } });
+  const close = () => { dd.remove(); overlay.remove(); };
+  overlay.querySelector('.modal-close').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
   overlay.querySelector('#send-missing-btn').addEventListener('click', async () => {
-    const teamVal   = teamInput.value.trim();
-    const playerVal = overlay.querySelector('#missing-player-input').value.trim();
-    const notesVal  = overlay.querySelector('#missing-notes-input').value.trim();
-
-    if (!teamVal || !playerVal) {
-      showToast('Equipa e nome do jogador são obrigatórios', 'error'); return;
+    let teamVal, playerVal;
+    if (reportType === 'special') {
+      teamVal   = 'Especial';
+      playerVal = overlay.querySelector('#missing-special-input').value.trim();
+      if (!playerVal) { showToast('Descrição do cromo é obrigatória', 'error'); return; }
+    } else {
+      teamVal   = teamInput.value.trim();
+      playerVal = overlay.querySelector('#missing-player-input').value.trim();
+      if (!teamVal || !playerVal) { showToast('Equipa e nome do jogador são obrigatórios', 'error'); return; }
     }
+    const notesVal = overlay.querySelector('#missing-notes-input').value.trim();
 
     const btn = overlay.querySelector('#send-missing-btn');
     btn.disabled = true; btn.textContent = 'A enviar...';
@@ -732,7 +777,7 @@ function openMissingModal() {
         method: 'POST',
         body: JSON.stringify({ team_name: teamVal, player_name: playerVal, notes: notesVal }),
       });
-      dd.remove(); overlay.remove();
+      close();
       showToast('Pedido enviado! Obrigado pela ajuda 🙏', 'success');
     } catch (e) {
       showToast(e.message, 'error');
