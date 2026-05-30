@@ -78,15 +78,14 @@ export async function render() {
 
       <div class="filter-bar" style="margin-top:-8px;">
         <button class="filter-btn active" data-f="all">Todos</button>
-        <button class="filter-btn" data-f="need">❤️ Faltam</button>
+        <button class="filter-btn" data-f="have_double">✅ Tenho</button>
         <button class="filter-btn" data-f="have_to_trade">🔄 Para Trocar</button>
-        <button class="filter-btn" data-f="have_double">✌️ Duplos</button>
-        <button class="filter-btn" data-f="none">⬜ Sem Estado</button>
+        <button class="filter-btn" data-f="none">❤️ Em Falta</button>
       </div>
 
       <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
-        💡 <strong>1 clique</strong> = muda estado &nbsp;|&nbsp;
-        <strong>📷</strong> = adicionar foto do cromo real
+        💡 <strong>1 clique</strong>: Em falta → Tenho → Para Trocar &nbsp;|&nbsp;
+        <strong>📷</strong> = foto do cromo real
       </div>
 
       <div id="catalog-content"></div>
