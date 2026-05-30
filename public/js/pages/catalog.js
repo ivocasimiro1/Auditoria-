@@ -181,6 +181,7 @@ function stickerCardHtml(s, teamCode) {
   const flagCode = FLAG_CODES[teamCode] || FLAG_CODES[s.team_code];
   const flagSrc = flagCode ? `https://flagcdn.com/w160/${flagCode}.png` : '';
   const teamColor = `var(--c-${teamCode}, var(--blue))`;
+  const displayStatus = status || 'need'; // default = em falta
   const missingStyle = !status ? 'opacity:0.65;' : '';
 
   // Build card image area
@@ -219,13 +220,13 @@ function stickerCardHtml(s, teamCode) {
          style="--team-color:${teamColor};${missingStyle}">
       <div class="card-band"></div>
       ${s.rarity !== 'common' ? `<div class="rarity-crown">${s.rarity === 'holographic' ? '💎' : '✨'}</div>` : ''}
-      ${status ? `<div class="sticker-status-badge status-${status}">${TYPE_LABEL_SHORT[status] || status}</div>` : ''}
+      <div class="sticker-status-badge status-${displayStatus}">${displayStatus === 'need' ? 'FALTA' : (TYPE_LABEL_SHORT[displayStatus] || displayStatus)}</div>
       ${cardArt}
       <div class="sticker-info">
         <div class="sticker-name">${s.player_name || s.team_name}</div>
         <div class="sticker-team">${s.team_name} · ${s.card_type === 'player' ? 'JOG' : s.card_type.toUpperCase()}</div>
       </div>
-      ${status ? `
+      ${(status && status !== 'need') ? `
         <div style="padding:0 6px 6px;z-index:5;position:relative;">
           <button class="btn btn-ghost btn-sm photo-btn" data-id="${s.id}"
             style="width:100%;font-size:10px;padding:4px;border-color:rgba(255,255,255,0.1);">

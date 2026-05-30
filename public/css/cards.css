@@ -153,7 +153,7 @@
   backdrop-filter: blur(4px);
 }
 .status-have_to_trade { background: rgba(59,130,246,0.85); color: #fff; }
-.status-need          { background: rgba(239,68,68,0.85);  color: #fff; }
+.status-need          { background: rgba(239,68,68,0.55);  color: rgba(255,255,255,0.75); border: 1px solid rgba(239,68,68,0.4); }
 .status-have_double   { background: rgba(16,185,129,0.85); color: #fff; }
 
 /* ── RARITY CROWN ── */
