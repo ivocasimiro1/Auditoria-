@@ -1,11 +1,13 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { initDb } from './db';
 import { seedStickers } from './seeds/stickers';
 import { seedUsers, ensureAdmin } from './seeds/users';
 import { errorHandler } from './middleware/errorHandler';
+import { authenticateToken } from './middleware/auth';
 import authRoutes from './routes/authRoutes';
 import stickerRoutes from './routes/stickerRoutes';
 import tradeRoutes from './routes/tradeRoutes';
@@ -92,6 +94,17 @@ app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
+// Authenticated PDF serving — requires valid login
+app.get('/api/album/pdf', authenticateToken, (_req, res) => {
+  const pdfPath = path.join(__dirname, '..', 'assets', 'Cromos_Mundial_2026.pdf');
+  if (!fs.existsSync(pdfPath)) { res.status(404).json({ error: 'PDF não encontrado' }); return; }
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'inline; filename="Cromos_Mundial_2026.pdf"');
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  fs.createReadStream(pdfPath).pipe(res);
+});
 
 // Landing page at root for non-logged-in users (served as static)
 // SPA fallback for all other routes
