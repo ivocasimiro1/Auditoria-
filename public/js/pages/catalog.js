@@ -34,6 +34,8 @@ const FLAG_CODES = {
 const TYPE_ICONS = { player:'⚽', badge:'🛡️', logo:'🏷️', special:'✨', stadium:'🏟️' };
 const TYPE_LABEL_SHORT = { have_to_trade:'TROCA', need:'FALTA', have_double:'TENHO' };
 
+function norm(s) { return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(); }
+
 let allStickers = [];
 let collection = {}; // stickerId → { status, custom_image_url }
 let activeFilter = 'all';
@@ -98,12 +100,11 @@ export async function render() {
         `}
       </div>
 
-      <div class="filter-bar" style="position:relative;z-index:50;">
-        <div style="position:relative;max-width:240px;flex:1;">
+      <div class="filter-bar">
+        <div style="max-width:240px;flex:1;">
           <input type="text" class="form-input" id="search-input"
             placeholder="🔍 Pesquisar jogador, equipa..." style="width:100%;"
             value="${teamName ? '' : ''}" autocomplete="off">
-          <div id="search-autocomplete" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg-card2,#1a2540);border:1px solid var(--border);border-radius:10px;z-index:500;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,0.6);max-height:280px;overflow-y:auto;"></div>
         </div>
         <select class="form-input form-select" id="group-filter" style="max-width:160px;">
           <option value="all">Todos os Grupos</option>
@@ -143,66 +144,79 @@ export async function render() {
   });
 
   const searchInput = document.getElementById('search-input');
-  const autocompleteBox = document.getElementById('search-autocomplete');
 
-  function hideAutocomplete() { autocompleteBox.style.display = 'none'; }
+  // Dropdown lives at body level → escapes overflow-y:auto clipping
+  let ac = document.getElementById('catalog-ac');
+  if (!ac) { ac = document.createElement('div'); ac.id = 'catalog-ac'; document.body.appendChild(ac); }
+  Object.assign(ac.style, {
+    position:'fixed', display:'none',
+    background:'#141e35', border:'1px solid rgba(255,255,255,0.15)',
+    borderRadius:'10px', zIndex:'9999', overflow:'hidden',
+    boxShadow:'0 12px 40px rgba(0,0,0,0.85)', maxHeight:'280px', overflowY:'auto',
+  });
 
-  function showAutocomplete(term) {
-    if (!term || term.length < 1) { hideAutocomplete(); return; }
-    const lower = term.toLowerCase();
-    const seen = new Set();
-    const matches = [];
+  function hideAc() { ac.style.display = 'none'; }
+
+  function positionAc() {
+    const r = searchInput.getBoundingClientRect();
+    ac.style.top  = `${r.bottom + 4}px`;
+    ac.style.left = `${r.left}px`;
+    ac.style.width= `${r.width}px`;
+  }
+
+  function showAc(raw) {
+    if (!raw) { hideAc(); return; }
+    const q = norm(raw);
+    const seen = new Set(); const hits = [];
     for (const s of allStickers) {
-      if (matches.length >= 8) break;
-      const name = s.player_name;
-      if (!name || seen.has(name)) continue;
-      if (name.toLowerCase().includes(lower) || s.team_name.toLowerCase().includes(lower)) {
-        seen.add(name);
-        matches.push(s);
+      if (hits.length >= 9) break;
+      if (!s.player_name || seen.has(s.player_name)) continue;
+      if (norm(s.player_name).includes(q) || norm(s.team_name).includes(q)) {
+        seen.add(s.player_name); hits.push(s);
       }
     }
-    if (!matches.length) { hideAutocomplete(); return; }
-    autocompleteBox.innerHTML = matches.map((s) => {
-      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-      const hl = s.player_name.replace(new RegExp(`(${escaped})`, 'gi'),
-        '<strong style="color:#60a5fa;font-weight:700;">$1</strong>');
-      const flagCode = FLAG_CODES[s.team_code];
-      const flagHtml = flagCode
-        ? `<img src="https://flagcdn.com/w20/${flagCode}.png" style="width:18px;height:12px;object-fit:cover;border-radius:2px;flex-shrink:0;" loading="lazy">`
-        : '<span style="width:18px;font-size:12px;">🌐</span>';
-      return `<div class="ac-item" data-name="${s.player_name.replace(/"/g,'&quot;')}" data-team="${s.team_name}"
-        style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);transition:background 0.1s;">
-        ${flagHtml}
-        <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${hl}</span>
-        <span style="font-size:11px;color:rgba(255,255,255,0.4);flex-shrink:0;">${s.team_name}</span>
+    if (!hits.length) { hideAc(); return; }
+
+    ac.innerHTML = hits.map(s => {
+      const nname = norm(s.player_name);
+      const idx   = nname.indexOf(q);
+      let hl = s.player_name;
+      if (idx >= 0) hl = s.player_name.slice(0,idx)
+        + `<strong style="color:#60a5fa;">${s.player_name.slice(idx,idx+raw.length)}</strong>`
+        + s.player_name.slice(idx+raw.length);
+      const fc = FLAG_CODES[s.team_code];
+      const flag = fc ? `<img src="https://flagcdn.com/w20/${fc}.png" style="width:18px;height:12px;object-fit:cover;border-radius:2px;flex-shrink:0;" loading="lazy">` : '';
+      return `<div class="ac-item" data-name="${s.player_name.replace(/"/g,'&quot;')}"
+        style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);">
+        ${flag}
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${hl}</span>
+        <span style="font-size:11px;color:rgba(255,255,255,0.38);flex-shrink:0;">${s.team_name}</span>
       </div>`;
     }).join('');
-    autocompleteBox.style.display = 'block';
 
-    autocompleteBox.querySelectorAll('.ac-item').forEach(item => {
+    positionAc();
+    ac.style.display = 'block';
+
+    ac.querySelectorAll('.ac-item').forEach(item => {
       item.addEventListener('mousedown', e => {
         e.preventDefault();
         searchInput.value = item.dataset.name;
-        searchTerm = item.dataset.name.toLowerCase();
-        hideAutocomplete();
+        searchTerm = norm(item.dataset.name);
+        hideAc();
         renderStickers(teamParam);
       });
-      item.addEventListener('mouseover', () => item.style.background = 'rgba(255,255,255,0.05)');
-      item.addEventListener('mouseout', () => item.style.background = '');
+      item.addEventListener('mouseover', () => item.style.background = 'rgba(255,255,255,0.06)');
+      item.addEventListener('mouseout',  () => item.style.background = '');
     });
   }
 
   searchInput.addEventListener('input', e => {
-    searchTerm = e.target.value.toLowerCase();
-    showAutocomplete(e.target.value);
+    searchTerm = norm(e.target.value);
+    showAc(e.target.value);
     renderStickers(teamParam);
   });
-
-  searchInput.addEventListener('keydown', e => {
-    if (e.key === 'Escape') hideAutocomplete();
-  });
-
-  searchInput.addEventListener('blur', () => setTimeout(hideAutocomplete, 150));
+  searchInput.addEventListener('keydown', e => { if (e.key === 'Escape') hideAc(); });
+  searchInput.addEventListener('blur',    () => setTimeout(hideAc, 150));
 
   renderStickers(teamParam);
 
@@ -223,11 +237,14 @@ function renderStickers(teamFilter = '') {
   });
   if (teamFilter) filtered = filtered.filter(s => s.team_code === teamFilter);
   else if (activeGroup !== 'all') filtered = filtered.filter(s => s.group_name === activeGroup);
-  if (searchTerm) filtered = filtered.filter(s =>
-    s.player_name?.toLowerCase().includes(searchTerm) ||
-    s.team_name?.toLowerCase().includes(searchTerm) ||
-    s.id.toLowerCase().includes(searchTerm)
-  );
+  if (searchTerm) {
+    const q = searchTerm; // already norm()'d when set
+    filtered = filtered.filter(s =>
+      norm(s.player_name).includes(q) ||
+      norm(s.team_name).includes(q) ||
+      s.id.toLowerCase().includes(q)
+    );
+  }
 
   const byTeam = {};
   for (const s of filtered) {
