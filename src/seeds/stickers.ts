@@ -109,7 +109,7 @@ const TEAMS: TeamDef[] = [
   },
   {
     code: 'SWE', name: 'Suécia', group: 'F',
-    players: ['Viktor Johansson', 'Victor Nilsson Lindelöf', 'Isak Hien', 'Daniel Svensson', 'Gabriel Gudmundsson', 'Hugo Larsson', 'Jesper Karlström', 'Lucas Bergvall', 'Yasin Ayari', 'Ken Sema', 'Anthony Elanga', 'Roony Bardghji', 'Alexander Isak'],
+    players: ['Viktor Johansson', 'Victor Nilsson Lindelöf', 'Isak Hien', 'Daniel Svensson', 'Gabriel Gudmundsson', 'Hugo Larsson', 'Jesper Karlström', 'Lucas Bergvall', 'Yasin Ayari', 'Ken Sema', 'Anthony Elanga', 'Roony Bardghji', 'Alexander Isak', 'Viktor Gyökeres'],
   },
   {
     code: 'TUN', name: 'Tunísia', group: 'F',
