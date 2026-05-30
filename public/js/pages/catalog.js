@@ -651,8 +651,7 @@ function openMissingModal() {
         <label class="form-label">Seleção / Equipa *</label>
         <div style="position:relative;">
           <input type="text" class="form-input" id="missing-team-input"
-            placeholder="Escolhe ou escreve a equipa..." autocomplete="off" readonly
-            style="cursor:pointer;caret-color:transparent;">
+            placeholder="Escreve ou escolhe a equipa..." autocomplete="off">
           <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted);">▾</span>
         </div>
       </div>
@@ -681,16 +680,22 @@ function openMissingModal() {
   const teamInput = overlay.querySelector('#missing-team-input');
   let selectedTeam = '';
 
-  function openDd() {
+  function renderDd(filter) {
+    const q = norm(filter || '');
+    const filtered = q ? teamNames.filter(n => norm(n).includes(q)) : teamNames;
+    if (!filtered.length) { dd.style.display = 'none'; return; }
     const r = teamInput.getBoundingClientRect();
     dd.style.top   = `${r.bottom + 4}px`;
     dd.style.left  = `${r.left}px`;
     dd.style.width = `${r.width}px`;
-    dd.innerHTML = teamNames.map(name => `
-      <div class="mdd-item" data-name="${name}"
+    dd.innerHTML = filtered.map(name => {
+      const hl = q ? name.replace(new RegExp(`(${filter.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'),
+        '<strong style="color:#60a5fa;">$1</strong>') : name;
+      return `<div class="mdd-item" data-name="${name}"
         style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);color:var(--text);">
-        ${name}
-      </div>`).join('');
+        ${hl}
+      </div>`;
+    }).join('');
     dd.style.display = 'block';
     dd.querySelectorAll('.mdd-item').forEach(item => {
       item.addEventListener('mousedown', e => {
@@ -704,7 +709,8 @@ function openMissingModal() {
     });
   }
 
-  teamInput.addEventListener('click', () => dd.style.display === 'none' ? openDd() : (dd.style.display = 'none'));
+  teamInput.addEventListener('click', () => renderDd(teamInput.value));
+  teamInput.addEventListener('input', () => { selectedTeam = ''; renderDd(teamInput.value); });
   teamInput.addEventListener('blur',  () => setTimeout(() => { dd.style.display = 'none'; }, 150));
 
   overlay.querySelector('.modal-close').addEventListener('click', () => { dd.remove(); overlay.remove(); });
