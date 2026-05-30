@@ -52,10 +52,11 @@ export async function render() {
 }
 
 async function loadAll() {
-  const [activity, users, reports, stats] = await Promise.all([
+  const [activity, users, reports, missingReports, stats] = await Promise.all([
     apiFetch('/admin/activity'),
     apiFetch('/admin/users'),
     apiFetch('/admin/reports'),
+    apiFetch('/admin/missing-reports'),
     apiFetch('/stats'),
   ]);
 
@@ -63,7 +64,7 @@ async function loadAll() {
     `${stats?.users || 0} utilizadores · ${stats?.trades_completed || 0} trocas · ${activity?.online?.length || 0} online agora`;
 
   renderActivity(activity);
-  renderReports(reports);
+  renderReports(reports, missingReports);
   renderUsers(users, stats);
 }
 
@@ -148,37 +149,58 @@ function renderActivity(data) {
 }
 
 // ── REPORTS TAB ───────────────────────────────────────────────────────────────
-function renderReports(reports) {
+function renderReports(reports, missingReports) {
   const el = document.getElementById('tab-reports');
-  if (!reports) { el.innerHTML = ''; return; }
+
+  const nameReportsHtml = !reports?.length
+    ? '<div style="color:var(--text-muted);font-size:13px;">✅ Sem reports pendentes</div>'
+    : `<div id="reports-list">${reports.map(r => `
+        <div class="report-row" data-id="${r.id}" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);flex-wrap:wrap;">
+          <div style="flex:1;min-width:180px;">
+            <div style="font-size:11px;color:var(--text-muted);">#${String(r.number).padStart(3,'0')} · ${r.team_name} · Grupo ${r.group_name}</div>
+            <div style="margin-top:3px;">
+              <span style="color:var(--red);font-size:13px;text-decoration:line-through;">${r.current_name || '(sem nome)'}</span>
+              <span style="color:var(--text-muted);margin:0 6px;">→</span>
+              <span style="color:#22c55e;font-size:13px;font-weight:700;">${r.suggested_name}</span>
+            </div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">por ${r.reporter} · ${new Date(Number(r.created_at)).toLocaleDateString('pt-PT')}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="btn btn-primary btn-sm apply-report" data-id="${r.id}">✅ Aplicar</button>
+            <button class="btn btn-ghost btn-sm dismiss-report" data-id="${r.id}" style="color:var(--text-muted);">✕</button>
+          </div>
+        </div>`).join('')}
+      </div>`;
+
+  const missingHtml = !missingReports?.length
+    ? '<div style="color:var(--text-muted);font-size:13px;">✅ Sem pedidos pendentes</div>'
+    : `<div id="missing-list">${missingReports.map(r => `
+        <div class="missing-row" data-id="${r.id}" style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);flex-wrap:wrap;">
+          <div style="flex:1;min-width:180px;">
+            <div style="font-size:14px;font-weight:700;color:var(--text);">${r.player_name}</div>
+            <div style="font-size:12px;color:var(--blue);margin-top:2px;">${r.team_name}</div>
+            ${r.notes ? `<div style="font-size:11px;color:var(--text-muted);margin-top:3px;font-style:italic;">"${r.notes}"</div>` : ''}
+            <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">por <strong>${r.reporter}</strong> · ${new Date(Number(r.created_at)).toLocaleDateString('pt-PT')}</div>
+          </div>
+          <button class="btn btn-ghost btn-sm dismiss-missing" data-id="${r.id}" style="color:var(--text-muted);flex-shrink:0;">✕ Dispensar</button>
+        </div>`).join('')}
+      </div>`;
 
   el.innerHTML = `
-    <div class="card">
+    <div class="card" style="margin-bottom:16px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
         <span style="font-size:15px;font-weight:800;">🚩 Nomes Reportados</span>
-        ${reports.length ? `<span style="background:var(--red);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;">${reports.length}</span>` : ''}
+        ${reports?.length ? `<span style="background:var(--red);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;">${reports.length}</span>` : ''}
       </div>
-      ${!reports.length ? '<div style="color:var(--text-muted);font-size:13px;">✅ Sem reports pendentes</div>' : `
-        <div id="reports-list">
-          ${reports.map(r => `
-            <div class="report-row" data-id="${r.id}" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);flex-wrap:wrap;">
-              <div style="flex:1;min-width:180px;">
-                <div style="font-size:11px;color:var(--text-muted);">#${String(r.number).padStart(3,'0')} · ${r.team_name} · Grupo ${r.group_name}</div>
-                <div style="margin-top:3px;">
-                  <span style="color:var(--red);font-size:13px;text-decoration:line-through;">${r.current_name || '(sem nome)'}</span>
-                  <span style="color:var(--text-muted);margin:0 6px;">→</span>
-                  <span style="color:#22c55e;font-size:13px;font-weight:700;">${r.suggested_name}</span>
-                </div>
-                <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">por ${r.reporter} · ${new Date(Number(r.created_at)).toLocaleDateString('pt-PT')}</div>
-              </div>
-              <div style="display:flex;gap:6px;flex-shrink:0;">
-                <button class="btn btn-primary btn-sm apply-report" data-id="${r.id}">✅ Aplicar</button>
-                <button class="btn btn-ghost btn-sm dismiss-report" data-id="${r.id}" style="color:var(--text-muted);">✕</button>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `}
+      ${nameReportsHtml}
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <span style="font-size:15px;font-weight:800;">➕ Cromos em Falta</span>
+        ${missingReports?.length ? `<span style="background:var(--blue);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;">${missingReports.length}</span>` : ''}
+        <span style="font-size:11px;color:var(--text-muted);margin-left:auto;">Pedidos dos utilizadores para adicionar novos cromos</span>
+      </div>
+      ${missingHtml}
     </div>
   `;
 
@@ -198,6 +220,16 @@ function renderReports(reports) {
       try {
         await apiFetch(`/admin/reports/${btn.dataset.id}/dismiss`, { method: 'POST' });
         btn.closest('.report-row').remove();
+      } catch { btn.disabled = false; }
+    });
+  });
+  document.querySelectorAll('.dismiss-missing').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      try {
+        await apiFetch(`/admin/missing-reports/${btn.dataset.id}/dismiss`, { method: 'POST' });
+        btn.closest('.missing-row').remove();
+        showToast('Pedido dispensado', 'info');
       } catch { btn.disabled = false; }
     });
   });

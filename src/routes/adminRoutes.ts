@@ -132,6 +132,36 @@ router.get('/activity', authenticateToken, async (req: Request, res: Response): 
   }
 });
 
+// List missing sticker reports
+router.get('/missing-reports', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!await requireAdmin(req, res)) return;
+    const reports = await query(`
+      SELECT mr.id, mr.team_name, mr.player_name, mr.notes, mr.status, mr.created_at,
+             u.username as reporter
+      FROM missing_reports mr
+      JOIN users u ON u.id = mr.reporter_id
+      WHERE mr.status = 'pending'
+      ORDER BY mr.created_at DESC
+    `);
+    res.json(reports);
+  } catch (err) {
+    console.error('Missing reports error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Dismiss missing report
+router.post('/missing-reports/:id/dismiss', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!await requireAdmin(req, res)) return;
+    await execute('UPDATE missing_reports SET status = $1 WHERE id = $2', ['dismissed', req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // Dismiss report (mark as ignored)
 router.post('/reports/:id/dismiss', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {

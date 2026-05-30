@@ -214,6 +214,16 @@ CREATE TABLE IF NOT EXISTS sticker_reports (
 );
 CREATE INDEX IF NOT EXISTS idx_sticker_reports_status ON sticker_reports(status, created_at);
 CREATE INDEX IF NOT EXISTS idx_users_last_seen ON users(last_seen);
+CREATE TABLE IF NOT EXISTS missing_reports (
+  id TEXT PRIMARY KEY,
+  reporter_id TEXT NOT NULL,
+  team_name TEXT NOT NULL,
+  player_name TEXT NOT NULL,
+  notes TEXT,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_missing_reports_status ON missing_reports(status, created_at);
 
 INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
 SELECT 'SWE-P14', COALESCE((SELECT MAX(number) FROM stickers), 0) + 1, 'SWE', 'Suécia', 'F', 'Viktor Gyökeres', 'player', 'common', ''

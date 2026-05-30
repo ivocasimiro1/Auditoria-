@@ -157,6 +157,25 @@ router.post('/collection/bulk', authenticateToken, async (req: Request, res: Res
   }
 });
 
+// Any user: report a missing sticker (player not in the database)
+router.post('/report-missing', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  const { team_name, player_name, notes } = req.body;
+  if (!team_name?.trim() || !player_name?.trim()) {
+    res.status(400).json({ error: 'Equipa e nome do jogador são obrigatórios' }); return;
+  }
+  try {
+    await execute(
+      `INSERT INTO missing_reports (id, reporter_id, team_name, player_name, notes, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
+      [uuidv4(), req.userId, team_name.trim().slice(0, 80), player_name.trim().slice(0, 100), (notes || '').trim().slice(0, 300), Date.now()]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Missing report error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // Any user: report wrong player name
 router.post('/:id/report', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   const { suggested_name } = req.body;

@@ -120,9 +120,20 @@ export async function render() {
         <button class="filter-btn" data-f="none">❤️ Em Falta</button>
       </div>
 
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
         💡 <strong>1 clique</strong>: Em falta → Tenho → Para Trocar &nbsp;|&nbsp;
         <strong>📷</strong> = foto do cromo real
+      </div>
+
+      <div id="missing-appeal" style="background:linear-gradient(135deg,rgba(59,130,246,0.12),rgba(139,92,246,0.10));border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-size:26px;flex-shrink:0;">🔍</span>
+        <div style="flex:1;min-width:180px;">
+          <div style="font-size:14px;font-weight:700;color:var(--text);">Falta algum jogador?</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Se não encontrares um cromo na base de dados, reporta e nós adicionamos o mais rápido possível!</div>
+        </div>
+        <button id="report-missing-btn" class="btn btn-primary btn-sm" style="flex-shrink:0;white-space:nowrap;">
+          ➕ Reportar Cromo em Falta
+        </button>
       </div>
 
       <div id="catalog-content"></div>
@@ -219,6 +230,8 @@ export async function render() {
   searchInput.addEventListener('blur',    () => setTimeout(hideAc, 150));
 
   renderStickers(teamParam);
+
+  document.getElementById('report-missing-btn')?.addEventListener('click', () => openMissingModal());
 
   // Scroll to team section if requested
   if (teamParam) {
@@ -614,6 +627,82 @@ function openReportModal(stickerId, currentName) {
     } catch (e) {
       showToast(e.message, 'error');
       btn.disabled = false; btn.textContent = '🚩 Enviar Relatório';
+    }
+  });
+}
+
+function openMissingModal() {
+  const teams = [...new Map(allStickers.filter(s => s.team_code !== 'SPECIAL').map(s => [s.team_code, s.team_name])).entries()]
+    .sort((a, b) => a[1].localeCompare(b[1]));
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:420px;">
+      <div class="modal-header">
+        <span class="modal-title">➕ Reportar Cromo em Falta</span>
+        <button class="modal-close">✕</button>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
+        Não encontraste um jogador na base de dados? Preenche o formulário abaixo e nós tentamos adicioná-lo o mais rápido possível. Obrigado por ajudares a completar o catálogo! 🙏
+      </p>
+      <div class="form-group">
+        <label class="form-label">Seleção / Equipa *</label>
+        <select class="form-input form-select" id="missing-team-select">
+          <option value="">Escolhe a equipa...</option>
+          ${teams.map(([code, name]) => `<option value="${name}">${name}</option>`).join('')}
+          <option value="Outra">Outra equipa</option>
+        </select>
+      </div>
+      <div class="form-group" id="missing-team-other-group" style="display:none;">
+        <label class="form-label">Nome da equipa</label>
+        <input type="text" class="form-input" id="missing-team-other" placeholder="Ex: Polónia">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nome do Jogador *</label>
+        <input type="text" class="form-input" id="missing-player-input" placeholder="Ex: Viktor Gyökeres">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas (opcional)</label>
+        <input type="text" class="form-input" id="missing-notes-input" placeholder="Ex: número do cromo, posição...">
+      </div>
+      <button class="btn btn-primary" style="width:100%;" id="send-missing-btn">🚀 Enviar Pedido</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const teamSelect = overlay.querySelector('#missing-team-select');
+  const otherGroup = overlay.querySelector('#missing-team-other-group');
+  teamSelect.addEventListener('change', () => {
+    otherGroup.style.display = teamSelect.value === 'Outra' ? 'block' : 'none';
+  });
+
+  overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  overlay.querySelector('#send-missing-btn').addEventListener('click', async () => {
+    const teamVal = teamSelect.value === 'Outra'
+      ? overlay.querySelector('#missing-team-other').value.trim()
+      : teamSelect.value;
+    const playerVal = overlay.querySelector('#missing-player-input').value.trim();
+    const notesVal  = overlay.querySelector('#missing-notes-input').value.trim();
+
+    if (!teamVal || !playerVal) {
+      showToast('Equipa e nome do jogador são obrigatórios', 'error'); return;
+    }
+
+    const btn = overlay.querySelector('#send-missing-btn');
+    btn.disabled = true; btn.textContent = 'A enviar...';
+    try {
+      await apiFetch('/stickers/report-missing', {
+        method: 'POST',
+        body: JSON.stringify({ team_name: teamVal, player_name: playerVal, notes: notesVal }),
+      });
+      overlay.remove();
+      showToast('Pedido enviado! Obrigado pela ajuda 🙏', 'success');
+    } catch (e) {
+      showToast(e.message, 'error');
+      btn.disabled = false; btn.textContent = '🚀 Enviar Pedido';
     }
   });
 }
