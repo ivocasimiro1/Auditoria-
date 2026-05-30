@@ -287,6 +287,11 @@ function setupTradeActions(trade, isProposer) {
       try {
         await apiFetch(`/trades/${trade.id}/status`, { method: 'PATCH', body: JSON.stringify({ action }) });
         showToast('Estado atualizado!', 'success');
+        if (action === 'complete') {
+          const otherUsername = isProposer ? trade.receiver_username : trade.proposer_username;
+          openRatingModal(trade.id, otherUsername);
+          return;
+        }
         const updated = await apiFetch(`/trades/${trade.id}`);
         if (updated) openTradeDetail(updated);
       } catch (e) { showToast(e.message, 'error'); }
@@ -294,6 +299,71 @@ function setupTradeActions(trade, isProposer) {
   });
 
   // shipping is now handled via data-action="ship" — no modal needed
+}
+
+function openRatingModal(tradeId, otherUsername) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">⭐ Avaliar Troca</span>
+        <button class="modal-close">✕</button>
+      </div>
+      <p style="font-size:15px;font-weight:600;margin-bottom:16px;">Como correu a troca com <span style="color:var(--gold);">${otherUsername}</span>?</p>
+      <div class="stars" id="rating-modal-stars" style="font-size:36px;cursor:pointer;display:flex;gap:6px;justify-content:center;margin-bottom:16px;">
+        ${[1,2,3,4,5].map(n => `<span class="star" data-score="${n}" style="color:var(--text-muted);transition:color 0.1s;">★</span>`).join('')}
+      </div>
+      <textarea class="form-input" id="rating-modal-comment" placeholder="Deixa um comentário (opcional)" style="resize:none;height:80px;margin-bottom:12px;"></textarea>
+      <button class="btn btn-gold" style="width:100%;margin-bottom:8px;" id="rating-modal-submit">Enviar Avaliação</button>
+      <div style="text-align:center;">
+        <a href="#" id="rating-modal-skip" style="font-size:13px;color:var(--text-muted);">Saltar</a>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  let selectedScore = 0;
+  const stars = overlay.querySelectorAll('.star');
+
+  function updateStars(count) {
+    stars.forEach((s, i) => {
+      s.style.color = i < count ? 'var(--gold)' : 'var(--text-muted)';
+    });
+  }
+
+  stars.forEach(star => {
+    star.addEventListener('mouseover', () => updateStars(parseInt(star.dataset.score)));
+    star.addEventListener('click', () => {
+      selectedScore = parseInt(star.dataset.score);
+      updateStars(selectedScore);
+    });
+  });
+  overlay.querySelector('#rating-modal-stars').addEventListener('mouseleave', () => updateStars(selectedScore));
+
+  async function finishRating() {
+    overlay.remove();
+    showToast('Troca concluída!', 'success');
+    const updated = await apiFetch(`/trades/${tradeId}`);
+    if (updated) openTradeDetail(updated);
+  }
+
+  overlay.querySelector('.modal-close').addEventListener('click', finishRating);
+  overlay.querySelector('#rating-modal-skip').addEventListener('click', e => { e.preventDefault(); finishRating(); });
+
+  overlay.querySelector('#rating-modal-submit').addEventListener('click', async () => {
+    if (!selectedScore) { showToast('Escolhe uma pontuação', 'error'); return; }
+    const comment = overlay.querySelector('#rating-modal-comment').value.trim();
+    try {
+      await apiFetch(`/trades/${tradeId}/rate`, { method: 'POST', body: JSON.stringify({ score: selectedScore, comment }) });
+      overlay.remove();
+      showToast('Avaliação enviada!', 'success');
+      const updated = await apiFetch(`/trades/${tradeId}`);
+      if (updated) openTradeDetail(updated);
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  });
 }
 
 function renderShipping(trade, shipment, isProposer) {

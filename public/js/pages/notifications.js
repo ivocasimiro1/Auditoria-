@@ -7,6 +7,7 @@ const NOTIF_ICONS = {
   trade_completed: '🎉',
   rating: '⭐',
   match_found: '🎯',
+  novo_match: '🎯',
 };
 
 export async function render() {
@@ -88,6 +89,7 @@ function getNotifText(type, payload) {
     case 'trade_completed': return `Troca com <strong>${payload.fromUser}</strong> concluída!`;
     case 'rating': return `<strong>${payload.fromUser}</strong> avaliou-te com ${payload.score}⭐`;
     case 'match_found': return `Novo match encontrado com <strong>${payload.fromUser}</strong>`;
+    case 'novo_match':  return `<strong>${payload.matchUsername}</strong> tem um cromo que precisas — vê os teus matches!`;
     default: return 'Nova notificação';
   }
 }

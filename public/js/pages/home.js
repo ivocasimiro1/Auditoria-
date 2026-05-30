@@ -1,5 +1,89 @@
 import { apiFetch, getUser, relativeTime } from '../app.js';
 
+function renderOnboardingCard() {
+  return `
+    <div id="onboarding-card" style="
+      margin-bottom: 24px;
+      border-radius: 16px;
+      padding: 2px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      box-shadow: 0 4px 24px rgba(102,126,234,0.3);
+    ">
+      <div style="
+        background: var(--bg-card, #1a1a2e);
+        border-radius: 14px;
+        padding: 24px;
+      ">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:20px;font-weight:800;color:var(--text);">🏆 Bem-vindo à caderneta do Mundial 2026!</div>
+          <button id="onboarding-close-btn" style="
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: var(--text-muted);
+            padding: 4px 8px;
+            border-radius: 6px;
+            line-height: 1;
+          " title="Fechar">✕ fechar</button>
+        </div>
+        <div style="font-size:14px;color:var(--text-muted);margin-bottom:20px;">Começa agora em 3 passos simples:</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;">
+          <div style="
+            flex:1;min-width:120px;
+            background: linear-gradient(135deg, rgba(102,126,234,0.15), rgba(102,126,234,0.05));
+            border: 1px solid rgba(102,126,234,0.4);
+            border-radius: 12px;
+            padding: 16px 12px;
+            text-align: center;
+          ">
+            <div style="font-size:28px;margin-bottom:8px;">📚</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">1. Vai ao Catálogo</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Explora todos os cromos disponíveis</div>
+          </div>
+          <div style="
+            flex:1;min-width:120px;
+            background: linear-gradient(135deg, rgba(118,75,162,0.15), rgba(118,75,162,0.05));
+            border: 1px solid rgba(118,75,162,0.4);
+            border-radius: 12px;
+            padding: 16px 12px;
+            text-align: center;
+          ">
+            <div style="font-size:28px;margin-bottom:8px;">✅</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">2. Marca os teus cromos</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Indica o que tens e o que precisas</div>
+          </div>
+          <div style="
+            flex:1;min-width:120px;
+            background: linear-gradient(135deg, rgba(240,147,251,0.15), rgba(240,147,251,0.05));
+            border: 1px solid rgba(240,147,251,0.4);
+            border-radius: 12px;
+            padding: 16px 12px;
+            text-align: center;
+          ">
+            <div style="font-size:28px;margin-bottom:8px;">🎯</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">3. Encontra Matches e troca!</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Liga-te a outros colecionadores</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button id="onboarding-start-btn" style="
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 2px 12px rgba(102,126,234,0.4);
+          ">Vamos lá! →</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 export async function render() {
   const main = document.getElementById('main-content');
   const user = getUser();
@@ -10,12 +94,16 @@ export async function render() {
     apiFetch('/matches?limit=3'),
   ]);
 
+  const showOnboarding = (stats?.collected === 0) && !localStorage.getItem('onboarding_dismissed');
+
   main.innerHTML = `
     <div class="page">
       <div class="page-header">
         <h2>Olá, ${user?.username || 'Colecionador'} 👋</h2>
         <p>Bem-vindo à tua caderneta digital do Mundial 2026</p>
       </div>
+
+      ${showOnboarding ? renderOnboardingCard() : ''}
 
       <div class="stats-row">
         <div class="stat-card">
@@ -102,4 +190,15 @@ export async function render() {
       `}
     </div>
   `;
+
+  if (showOnboarding) {
+    document.getElementById('onboarding-start-btn')?.addEventListener('click', () => {
+      window.location.hash = '/catalog';
+    });
+    document.getElementById('onboarding-close-btn')?.addEventListener('click', () => {
+      localStorage.setItem('onboarding_dismissed', '1');
+      const card = document.getElementById('onboarding-card');
+      if (card) card.remove();
+    });
+  }
 }

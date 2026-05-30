@@ -65,6 +65,13 @@ export async function render() {
             <div style="font-size:12px;color:var(--text-muted);">Avaliações</div>
           </div>
         </div>
+        ${isOwnProfile ? `
+          <div style="margin-top:8px;">
+            <button class="btn btn-ghost btn-sm" id="share-needs-btn" style="border:1px solid var(--border);">
+              📋 Partilhar Lista de Faltas
+            </button>
+          </div>
+        ` : ''}
         <div style="font-size:14px;font-weight:600;color:var(--text-muted);margin-top:4px;">
           ✅ ${profile.trades_completed ?? profile.completed_trades} trocas concluídas
           · ❌ ${profile.trades_cancelled ?? 0} canceladas
@@ -99,6 +106,7 @@ export async function render() {
   if (isOwnProfile) {
     document.getElementById('edit-profile-btn')?.addEventListener('click', () => openEditModal(profile));
     document.getElementById('delete-account-btn')?.addEventListener('click', () => confirmDeleteAccount());
+    document.getElementById('share-needs-btn')?.addEventListener('click', () => shareNeedsList(profile.username));
     document.getElementById('avatar-upload')?.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -117,6 +125,129 @@ export async function render() {
       } catch (err) { showToast(err.message, 'error'); }
     });
   }
+}
+
+async function shareNeedsList(username) {
+  const btn = document.getElementById('share-needs-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ A carregar...'; }
+
+  try {
+    const [collection, allStickers] = await Promise.all([
+      apiFetch('/stickers/collection/me'),
+      apiFetch('/stickers'),
+    ]);
+
+    // Build a map of sticker id -> sticker details
+    const stickerMap = {};
+    if (Array.isArray(allStickers)) {
+      for (const s of allStickers) {
+        stickerMap[s.id] = s;
+      }
+    }
+
+    // Determine needed stickers: those not owned (status 'need' or absent from collection)
+    // collection entries have: sticker_id, status ('have', 'need', 'have_extra'), etc.
+    const collectionMap = {};
+    if (Array.isArray(collection)) {
+      for (const c of collection) {
+        collectionMap[c.sticker_id] = c.status;
+      }
+    }
+
+    // A sticker is "needed" if status is 'need', or if it has no entry (not marked at all)
+    // Only include explicitly marked as 'need' to avoid listing everything for empty collections
+    const neededStickers = [];
+    for (const s of (Array.isArray(allStickers) ? allStickers : [])) {
+      if (collectionMap[s.id] === 'need') {
+        neededStickers.push(s);
+      }
+    }
+
+    if (neededStickers.length === 0) {
+      showToast('Não tens cromos marcados como em falta!', 'error');
+      return;
+    }
+
+    // Group by team
+    const byTeam = {};
+    for (const s of neededStickers) {
+      const team = s.team || s.category || 'Outros';
+      if (!byTeam[team]) byTeam[team] = [];
+      byTeam[team].push(s);
+    }
+
+    const sortedTeams = Object.keys(byTeam).sort((a, b) => a.localeCompare(b));
+
+    let text = `🏆 Cromos em falta - ${username} - Mundial 2026\n\n`;
+    for (const team of sortedTeams) {
+      text += `${team}:\n`;
+      const teamStickers = byTeam[team].sort((a, b) => (a.number || 0) - (b.number || 0));
+      for (const s of teamStickers) {
+        const num = s.number ? ` (#${s.number})` : '';
+        text += `  - ${s.name || s.player_name || 'Cromo'}${num}\n`;
+      }
+      text += '\n';
+    }
+    text += `Total: ${neededStickers.length} cromo(s) em falta\n`;
+    text += `Partilhado via Panini WC2026 🔗`;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Lista copiada! Cola no WhatsApp 📲', 'success');
+    } catch (clipErr) {
+      // Clipboard not available — show a modal with a textarea
+      showShareModal(text);
+    }
+  } catch (err) {
+    showToast(err.message || 'Erro ao carregar lista', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📋 Partilhar Lista de Faltas'; }
+  }
+}
+
+function showShareModal(text) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-header">
+        <span class="modal-title">📋 Lista de Faltas</span>
+        <button class="modal-close">✕</button>
+      </div>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">Copia o texto abaixo e partilha onde quiseres:</p>
+      <textarea id="share-needs-textarea" style="
+        width:100%;
+        height:260px;
+        background:var(--bg-card2,#111);
+        color:var(--text);
+        border:1px solid var(--border);
+        border-radius:8px;
+        padding:12px;
+        font-family:monospace;
+        font-size:12px;
+        resize:vertical;
+        box-sizing:border-box;
+      " readonly>${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px;" id="copy-share-btn">📋 Copiar Tudo</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+  // Set real textarea value (not HTML-escaped) for copying
+  const ta = overlay.querySelector('#share-needs-textarea');
+  ta.value = text;
+  ta.addEventListener('focus', () => ta.select());
+  overlay.querySelector('#copy-share-btn').addEventListener('click', async () => {
+    ta.select();
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Lista copiada! Cola no WhatsApp 📲', 'success');
+    } catch (e) {
+      document.execCommand('copy');
+      showToast('Lista copiada!', 'success');
+    }
+    overlay.remove();
+  });
 }
 
 async function confirmDeleteAccount() {

@@ -113,6 +113,67 @@ router.put('/collection/:stickerId', authenticateToken, async (req: Request, res
     }
 
     res.json({ success: true, stickerId, status });
+
+    // Fire-and-forget match notifications
+    if (status === 'have_to_trade' || status === 'need') {
+      (async () => {
+        try {
+          const currentUser = await queryOne<{ username: string }>('SELECT username FROM users WHERE id = $1', [req.userId]);
+          if (!currentUser) return;
+
+          let matchUsers: Array<{ user_id: string }>;
+
+          if (status === 'have_to_trade') {
+            // Notify users who need this sticker AND who have at least one sticker the current user needs
+            matchUsers = await query<{ user_id: string }>(`
+              SELECT DISTINCT us.user_id
+              FROM user_stickers us
+              WHERE us.sticker_id = $1
+                AND us.status = 'need'
+                AND us.user_id != $2
+                AND EXISTS (
+                  SELECT 1 FROM user_stickers my_needs
+                  JOIN user_stickers their_haves ON my_needs.sticker_id = their_haves.sticker_id
+                  WHERE my_needs.user_id = $2
+                    AND my_needs.status = 'need'
+                    AND their_haves.user_id = us.user_id
+                    AND their_haves.status = 'have_to_trade'
+                )
+              LIMIT 20
+            `, [stickerId, req.userId]);
+          } else {
+            // status === 'need'
+            // Notify users who have this sticker as have_to_trade AND who need at least one sticker the current user has have_to_trade
+            matchUsers = await query<{ user_id: string }>(`
+              SELECT DISTINCT us.user_id
+              FROM user_stickers us
+              WHERE us.sticker_id = $1
+                AND us.status = 'have_to_trade'
+                AND us.user_id != $2
+                AND EXISTS (
+                  SELECT 1 FROM user_stickers my_haves
+                  JOIN user_stickers their_needs ON my_haves.sticker_id = their_needs.sticker_id
+                  WHERE my_haves.user_id = $2
+                    AND my_haves.status = 'have_to_trade'
+                    AND their_needs.user_id = us.user_id
+                    AND their_needs.status = 'need'
+                )
+              LIMIT 20
+            `, [stickerId, req.userId]);
+          }
+
+          const now = Date.now();
+          for (const { user_id: targetUserId } of matchUsers) {
+            execute(
+              `INSERT INTO notifications (id, user_id, type, payload, read, created_at) VALUES ($1, $2, 'novo_match', $3, 0, $4)`,
+              [uuidv4(), targetUserId, JSON.stringify({ matchUserId: req.userId, matchUsername: currentUser.username, stickerId }), now]
+            ).catch(() => {});
+          }
+        } catch {
+          // fire-and-forget — ignore errors
+        }
+      })();
+    }
   } catch (err) {
     console.error('Update sticker status error:', err);
     res.status(500).json({ error: 'Erro interno do servidor' });
