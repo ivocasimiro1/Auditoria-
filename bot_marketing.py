@@ -119,25 +119,55 @@ def _e_admin(tid: int) -> bool:
 
 
 def _dica_do_dia() -> dict | None:
-    """Gera a melhor dica gratuita do dia a partir do modelo."""
+    """Gera a melhor dica gratuita do dia a partir do modelo.
+    Se não houver valor positivo, devolve o melhor jogo para acompanhar."""
     try:
         resultados = analisar_dia(MODELOS, limiar_ev=0.06)
         com_valor  = [r for r in resultados if r["apostas"] and r["estado"] == "pre" and r["previsao"] is not None]
-        if not com_valor:
+        if com_valor:
+            melhor = com_valor[0]
+            aposta = melhor["apostas"][0]
+            return {
+                "fd_code":    melhor["fd_code"],
+                "liga":       melhor["liga"],
+                "emoji":      melhor["emoji"],
+                "casa":       melhor["casa_espn"],
+                "fora":       melhor["fora_espn"],
+                "mercado":    aposta.mercado,
+                "odd":        aposta.odd,
+                "prob":       aposta.prob_modelo,
+                "stake":      1.0,
+                "total_hoje": len(com_valor),
+                "tem_valor":  True,
+            }
+        # Sem valor positivo — devolve melhor jogo para acompanhar
+        todos_pre = [r for r in analisar_dia(MODELOS, limiar_ev=0.0)
+                     if r["estado"] == "pre" and r["previsao"] is not None]
+        if not todos_pre:
             return None
-        melhor = com_valor[0]
-        aposta = melhor["apostas"][0]
+        # Ordena pelo maior EV disponível (pode ser negativo)
+        def _melhor_ev(r):
+            if not r["apostas"]:
+                return -99
+            return max((a.valor_esperado for a in r["apostas"]), default=-99)
+        melhor = max(todos_pre, key=_melhor_ev)
+        prev   = melhor["previsao"]
+        # Aposta com maior probabilidade do modelo (mesmo sem EV positivo)
+        mercado = "Vitória Casa" if prev["vitoria_casa"] > prev["vitoria_fora"] else "Vitória Fora"
+        prob    = max(prev["vitoria_casa"], prev["vitoria_fora"])
+        odd_est = round(1 / prob, 2) if prob > 0 else 2.0
         return {
-            "fd_code":  melhor["fd_code"],
-            "liga":     melhor["liga"],
-            "emoji":    melhor["emoji"],
-            "casa":     melhor["casa_espn"],
-            "fora":     melhor["fora_espn"],
-            "mercado":  aposta.mercado,
-            "odd":      aposta.odd,
-            "prob":     aposta.prob_modelo,
-            "stake":    1.0,
-            "total_hoje": len(com_valor),
+            "fd_code":    melhor["fd_code"],
+            "liga":       melhor["liga"],
+            "emoji":      melhor["emoji"],
+            "casa":       melhor["casa_espn"],
+            "fora":       melhor["fora_espn"],
+            "mercado":    mercado,
+            "odd":        odd_est,
+            "prob":       prob,
+            "stake":      0.5,
+            "total_hoje": len(todos_pre),
+            "tem_valor":  False,
         }
     except Exception:
         return None
@@ -670,7 +700,8 @@ async def cmd_admin(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             odds_casas=odds_bloco,
             rodape=f"💡 Dicas gratuitas todos os dias → @{BOT_USERNAME}"
         )
-        await update.message.reply_html(f"📤 Dica gerada:\n\n{msg}")
+        tipo = "🎯 DICA DE VALOR" if dica.get("tem_valor") else "👁 JOGO A ACOMPANHAR"
+        await update.message.reply_html(f"📤 {tipo} gerado:\n\n{msg}")
         ok = await _publicar_canal(ctx.bot, msg_canal)
         await update.message.reply_html(
             f"{'✅ Publicado no canal ' + CHANNEL_ID if ok else '❌ Canal falhou — verifica se o bot é admin do canal e CHANNEL_ID está definido.'}"
@@ -773,18 +804,26 @@ async def job_dica_tarde(ctx: ContextTypes.DEFAULT_TYPE):
     odds_bk   = fetch_odds_jogo(dica["fd_code"], dica["casa"], dica["fora"])
     odds_str  = formatar_odds_bookmakers(odds_bk)
     odds_bloco = f"\n{odds_str}\n" if odds_str else ""
-    msg = DICA_TEMPLATE.format(
-        **dica,
-        odds_casas=odds_bloco,
-        rodape="💡 Quer <b>todas as dicas</b> de hoje? → /pro"
+    if dica.get("tem_valor"):
+        titulo    = "🎯 <b>DICA DO DIA — EdgeBet</b>"
+        aviso     = ""
+    else:
+        titulo    = "👁 <b>JOGO A ACOMPANHAR — EdgeBet</b>"
+        aviso     = "\n⚠️ <i>Hoje sem aposta de valor confirmado — partilhamos o jogo mais interessante.</i>\n"
+    msg = (
+        f"{titulo}\n\n"
+        f"{dica['emoji']} <b>{dica['liga']}</b>\n"
+        f"🏠 {dica['casa']} vs {dica['fora']} 🆚\n\n"
+        f"📌 Mercado: <b>{dica['mercado']}</b>\n"
+        f"💰 Odd estimada: <b>{dica['odd']}</b>\n"
+        f"📊 Prob. modelo: <b>{dica['prob']:.0%}</b>\n"
+        f"🔢 Stake sugerida: <b>{dica['stake']}u</b>\n"
+        f"{aviso}{odds_bloco}\n"
+        f"<i>Esta é 1 de {dica['total_hoje']} dicas de hoje. Pro para todas: /pro</i>\n\n"
+        f"💡 Quer <b>todas as dicas</b>? → /pro"
     )
     await _broadcast_todos(ctx.bot, msg, "dica_tarde")
-    # Publicar no canal (captação orgânica)
-    msg_canal = DICA_TEMPLATE.format(
-        **dica,
-        odds_casas=odds_bloco,
-        rodape=f"💡 Dicas gratuitas todos os dias → @{BOT_USERNAME}"
-    )
+    msg_canal = msg.replace("→ /pro", f"→ @{BOT_USERNAME}")
     await _publicar_canal(ctx.bot, msg_canal)
     # Guardar dica para registo de resultado às 23h
     guardar_dica_do_dia(
