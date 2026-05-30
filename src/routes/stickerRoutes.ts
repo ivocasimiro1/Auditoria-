@@ -1,0 +1,373 @@
+import { Router, Request, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import { query, queryOne, execute, transaction } from '../db';
+import { authenticateToken } from '../middleware/auth';
+
+const VALID_STATUSES = ['have_to_trade', 'need', 'have_double', 'none'];
+
+const router = Router();
+
+router.get('/', async (req: Request, res: Response): Promise<void> => {
+  const { team, type, group, search } = req.query;
+
+  let sql = 'SELECT * FROM stickers WHERE 1=1';
+  const params: any[] = [];
+  let idx = 1;
+
+  if (team) { sql += ` AND team_code = $${idx++}`; params.push(team as string); }
+  if (type) { sql += ` AND card_type = $${idx++}`; params.push(type as string); }
+  if (group) { sql += ` AND group_name = $${idx++}`; params.push(group as string); }
+  if (search) {
+    sql += ` AND (player_name ILIKE $${idx} OR team_name ILIKE $${idx + 1})`;
+    params.push(`%${search}%`, `%${search}%`);
+    idx += 2;
+  }
+
+  sql += ' ORDER BY number ASC';
+
+  try {
+    const stickers = await query(sql, params);
+    res.json(stickers);
+  } catch (err) {
+    console.error('Get stickers error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+router.get('/teams', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const teams = await query(`
+      SELECT DISTINCT team_code, team_name, group_name
+      FROM stickers
+      WHERE team_code != 'SPECIAL'
+      ORDER BY group_name, team_name
+    `);
+    res.json(teams);
+  } catch (err) {
+    console.error('Get teams error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Get user's collection status for all stickers
+router.get('/collection/me', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const collection = await query(`
+      SELECT s.*, us.status, us.updated_at as status_updated, us.custom_image_url
+      FROM stickers s
+      LEFT JOIN user_stickers us ON s.id = us.sticker_id AND us.user_id = $1
+      ORDER BY s.number ASC
+    `, [req.userId]);
+    res.json(collection);
+  } catch (err) {
+    console.error('Get collection error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Collection stats
+router.get('/collection/stats/me', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const totalRow = await queryOne<{ c: string }>('SELECT COUNT(*) as c FROM stickers');
+    const total = parseInt(totalRow?.c ?? '0', 10);
+
+    const stats = await query<{ status: string; count: string }>(
+      'SELECT status, COUNT(*) as count FROM user_stickers WHERE user_id = $1 GROUP BY status',
+      [req.userId]
+    );
+
+    const result: Record<string, number> = { total, have_to_trade: 0, need: 0, have_double: 0 };
+    for (const s of stats) result[s.status] = parseInt(s.count, 10);
+    result.collected = result.have_to_trade + result.have_double;
+    result.completion_pct = Math.round((result.collected / total) * 100);
+
+    res.json(result);
+  } catch (err) {
+    console.error('Get stats error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Update status for a sticker
+router.put('/collection/:stickerId', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  const { stickerId } = req.params;
+  const { status } = req.body;
+
+  if (!VALID_STATUSES.includes(status)) {
+    res.status(400).json({ error: 'Status inválido' });
+    return;
+  }
+
+  try {
+    const sticker = await queryOne('SELECT id FROM stickers WHERE id = $1', [stickerId]);
+    if (!sticker) { res.status(404).json({ error: 'Cromo não encontrado' }); return; }
+
+    if (status === 'none') {
+      await execute('DELETE FROM user_stickers WHERE user_id = $1 AND sticker_id = $2', [req.userId, stickerId]);
+    } else {
+      await execute(`
+        INSERT INTO user_stickers (user_id, sticker_id, status, updated_at)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT(user_id, sticker_id) DO UPDATE SET status = EXCLUDED.status, updated_at = EXCLUDED.updated_at
+      `, [req.userId, stickerId, status, Date.now()]);
+    }
+
+    res.json({ success: true, stickerId, status });
+
+    // Fire-and-forget match notifications
+    if (status === 'have_to_trade' || status === 'need') {
+      (async () => {
+        try {
+          const currentUser = await queryOne<{ username: string }>('SELECT username FROM users WHERE id = $1', [req.userId]);
+          if (!currentUser) return;
+
+          let matchUsers: Array<{ user_id: string }>;
+
+          if (status === 'have_to_trade') {
+            // Notify users who need this sticker AND who have at least one sticker the current user needs
+            matchUsers = await query<{ user_id: string }>(`
+              SELECT DISTINCT us.user_id
+              FROM user_stickers us
+              WHERE us.sticker_id = $1
+                AND us.status = 'need'
+                AND us.user_id != $2
+                AND EXISTS (
+                  SELECT 1 FROM user_stickers my_needs
+                  JOIN user_stickers their_haves ON my_needs.sticker_id = their_haves.sticker_id
+                  WHERE my_needs.user_id = $2
+                    AND my_needs.status = 'need'
+                    AND their_haves.user_id = us.user_id
+                    AND their_haves.status = 'have_to_trade'
+                )
+              LIMIT 20
+            `, [stickerId, req.userId]);
+          } else {
+            // status === 'need'
+            // Notify users who have this sticker as have_to_trade AND who need at least one sticker the current user has have_to_trade
+            matchUsers = await query<{ user_id: string }>(`
+              SELECT DISTINCT us.user_id
+              FROM user_stickers us
+              WHERE us.sticker_id = $1
+                AND us.status = 'have_to_trade'
+                AND us.user_id != $2
+                AND EXISTS (
+                  SELECT 1 FROM user_stickers my_haves
+                  JOIN user_stickers their_needs ON my_haves.sticker_id = their_needs.sticker_id
+                  WHERE my_haves.user_id = $2
+                    AND my_haves.status = 'have_to_trade'
+                    AND their_needs.user_id = us.user_id
+                    AND their_needs.status = 'need'
+                )
+              LIMIT 20
+            `, [stickerId, req.userId]);
+          }
+
+          const now = Date.now();
+          for (const { user_id: targetUserId } of matchUsers) {
+            execute(
+              `INSERT INTO notifications (id, user_id, type, payload, read, created_at) VALUES ($1, $2, 'novo_match', $3, 0, $4)`,
+              [uuidv4(), targetUserId, JSON.stringify({ matchUserId: req.userId, matchUsername: currentUser.username, stickerId }), now]
+            ).catch(() => {});
+          }
+        } catch {
+          // fire-and-forget — ignore errors
+        }
+      })();
+    }
+  } catch (err) {
+    console.error('Update sticker status error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Bulk update sticker statuses
+router.post('/collection/bulk', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  const { updates } = req.body as { updates: Array<{ stickerId: string; status: string }> };
+  if (!Array.isArray(updates)) { res.status(400).json({ error: 'updates deve ser um array' }); return; }
+
+  for (const { stickerId, status } of updates) {
+    if (!VALID_STATUSES.includes(status)) {
+      res.status(400).json({ error: `Status inválido: ${status}` }); return;
+    }
+    if (!stickerId || typeof stickerId !== 'string') {
+      res.status(400).json({ error: 'stickerId inválido' }); return;
+    }
+  }
+
+  const now = Date.now();
+
+  try {
+    await transaction(async (client) => {
+      for (const { stickerId, status } of updates) {
+        if (status === 'none') {
+          await client.query('DELETE FROM user_stickers WHERE user_id = $1 AND sticker_id = $2', [req.userId, stickerId]);
+        } else {
+          await client.query(`
+            INSERT INTO user_stickers (user_id, sticker_id, status, updated_at)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT(user_id, sticker_id) DO UPDATE SET status = EXCLUDED.status, updated_at = EXCLUDED.updated_at
+          `, [req.userId, stickerId, status, now]);
+        }
+      }
+    });
+
+    res.json({ success: true, count: updates.length });
+  } catch (err) {
+    console.error('Bulk update error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Bulk mark stickers by album code — unknown codes auto-create missing reports
+router.post('/bulk-by-code', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { codes, status = 'have_double' } = req.body;
+    const validStatuses = ['have_to_trade', 'need', 'have_double'];
+    if (!Array.isArray(codes) || codes.length === 0) {
+      res.status(400).json({ error: 'codes é obrigatório' }); return;
+    }
+    if (!validStatuses.includes(status)) {
+      res.status(400).json({ error: 'Status inválido' }); return;
+    }
+
+    // Normalize each code: uppercase, remove spaces between letters and digits
+    const normalizedCodes = [...new Set(
+      codes
+        .map((c: any) => String(c).toUpperCase().replace(/\s+/g, ''))
+        .filter(c => /^[A-Z]{2,4}\d{1,2}$/.test(c))
+    )];
+
+    if (normalizedCodes.length === 0) {
+      res.status(400).json({ error: 'Nenhum código válido' }); return;
+    }
+
+    const placeholders = normalizedCodes.map((_, i) => `$${i + 1}`).join(',');
+    const found = await query<{ id: string; player_name: string; team_name: string }>(
+      `SELECT id, player_name, team_name FROM stickers WHERE id = ANY($1)`,
+      [normalizedCodes]
+    );
+    const foundIds = new Set(found.map(s => s.id));
+    const notFoundCodes = normalizedCodes.filter(c => !foundIds.has(c));
+    const now = Date.now();
+
+    await transaction(async (client) => {
+      for (const sticker of found) {
+        await client.query(
+          `INSERT INTO user_stickers (user_id, sticker_id, status, updated_at)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT(user_id, sticker_id) DO UPDATE SET status = EXCLUDED.status, updated_at = EXCLUDED.updated_at`,
+          [req.userId, sticker.id, status, now]
+        );
+      }
+      for (const code of notFoundCodes) {
+        await client.query(
+          `INSERT INTO missing_reports (id, reporter_id, team_name, player_name, notes, status, created_at)
+           VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
+          [uuidv4(), req.userId, 'Desconhecido', `Cromo ${code}`, 'Via entrada rápida', now]
+        );
+      }
+    });
+
+    res.json({ found: found.length, notFound: notFoundCodes.length, notFoundCodes });
+  } catch (err) {
+    console.error('Bulk by code error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Any user: report a missing sticker (player not in the database)
+router.post('/report-missing', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  const { team_name, player_name, notes } = req.body;
+  if (!team_name?.trim() || !player_name?.trim()) {
+    res.status(400).json({ error: 'Equipa e nome do jogador são obrigatórios' }); return;
+  }
+  try {
+    await execute(
+      `INSERT INTO missing_reports (id, reporter_id, team_name, player_name, notes, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
+      [uuidv4(), req.userId, team_name.trim().slice(0, 80), player_name.trim().slice(0, 100), (notes || '').trim().slice(0, 300), Date.now()]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Missing report error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Any user: report wrong player name
+router.post('/:id/report', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  const { suggested_name } = req.body;
+  if (!suggested_name || typeof suggested_name !== 'string' || !suggested_name.trim()) {
+    res.status(400).json({ error: 'Nome sugerido é obrigatório' }); return;
+  }
+  try {
+    const sticker = await queryOne<{ player_name: string }>('SELECT player_name FROM stickers WHERE id = $1', [req.params.id]);
+    if (!sticker) { res.status(404).json({ error: 'Cromo não encontrado' }); return; }
+
+    await execute(
+      `INSERT INTO sticker_reports (id, sticker_id, reporter_id, current_name, suggested_name, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
+      [uuidv4(), req.params.id, req.userId, sticker.player_name || '', suggested_name.trim().slice(0, 100), Date.now()]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Report error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Admin: update sticker player_name
+router.put('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = await queryOne<{ is_admin: boolean }>('SELECT is_admin FROM users WHERE id = $1', [req.userId]);
+    if (!user?.is_admin) { res.status(403).json({ error: 'Sem permissão' }); return; }
+
+    const { player_name } = req.body;
+    if (!player_name || typeof player_name !== 'string' || !player_name.trim()) {
+      res.status(400).json({ error: 'Nome inválido' }); return;
+    }
+
+    const updated = await queryOne(
+      'UPDATE stickers SET player_name = $1 WHERE id = $2 RETURNING *',
+      [player_name.trim(), req.params.id]
+    );
+    if (!updated) { res.status(404).json({ error: 'Cromo não encontrado' }); return; }
+    res.json(updated);
+  } catch (err) {
+    console.error('Update sticker error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Batch name lookup — ?ids=POR-P01,BRA-P03,... (used by trade/match pages)
+router.get('/batch', async (req: Request, res: Response): Promise<void> => {
+  const idsParam = typeof req.query.ids === 'string' ? req.query.ids : '';
+  if (!idsParam) { res.json([]); return; }
+  const ids = idsParam.split(',').filter(s => /^[A-Z0-9\-]{3,15}$/.test(s)).slice(0, 80);
+  if (!ids.length) { res.json([]); return; }
+  try {
+    const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
+    const stickers = await query(
+      `SELECT id, player_name, team_name, team_code, number FROM stickers WHERE id IN (${placeholders})`,
+      ids
+    );
+    res.json(stickers);
+  } catch (err) {
+    console.error('Batch sticker error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Single sticker by ID — must be last to avoid shadowing /collection/* routes
+router.get('/:id', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const sticker = await queryOne('SELECT * FROM stickers WHERE id = $1', [req.params.id]);
+    if (!sticker) { res.status(404).json({ error: 'Cromo não encontrado' }); return; }
+    res.json(sticker);
+  } catch (err) {
+    console.error('Get sticker error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+export default router;
