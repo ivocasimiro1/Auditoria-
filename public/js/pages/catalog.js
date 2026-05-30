@@ -173,9 +173,21 @@ export async function render() {
 
   function positionAc() {
     const r = searchInput.getBoundingClientRect();
-    ac.style.top  = `${r.bottom + 4}px`;
-    ac.style.left = `${r.left}px`;
-    ac.style.width= `${r.width}px`;
+    const vv = window.visualViewport;
+    const vtop  = vv ? vv.offsetTop  : 0;
+    const vleft = vv ? vv.offsetLeft : 0;
+    const vheight = vv ? vv.height   : window.innerHeight;
+    ac.style.top   = `${r.bottom + 4 + vtop}px`;
+    ac.style.left  = `${r.left + vleft}px`;
+    ac.style.width = `${r.width}px`;
+    // cap height so it never slides under the keyboard
+    const available = vheight - r.bottom - 8;
+    ac.style.maxHeight = `${Math.min(260, Math.max(80, available))}px`;
+  }
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => { if (ac.style.display !== 'none') positionAc(); });
+    window.visualViewport.addEventListener('scroll', () => { if (ac.style.display !== 'none') positionAc(); });
   }
 
   function showAc(raw) {
