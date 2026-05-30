@@ -639,6 +639,43 @@ async def cmd_admin(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 "Confirma que o bot é administrador do canal."
             )
 
+    elif sub == "teste":
+        await update.message.reply_html("⏳ A forçar envio de teste...")
+        # Força a dica do dia agora (ignora hora)
+        dica = _dica_do_dia()
+        if not dica:
+            roi = roi_historico()
+            msg_canal = SEM_DICAS_CANAL.format(
+                roi=roi.get("roi", 0.0),
+                taxa=roi.get("taxa_acerto", 0.0),
+                total=roi.get("total_dicas", 0),
+                bot=BOT_USERNAME,
+            )
+            await update.message.reply_html("⚠️ Sem dicas de valor hoje. A publicar mensagem informativa no canal...")
+            ok = await _publicar_canal(ctx.bot, msg_canal)
+            await update.message.reply_html(
+                f"{'✅ Canal actualizado.' if ok else '❌ Canal falhou — verifica se o bot é admin do canal.'}"
+            )
+            return
+        odds_bk = fetch_odds_jogo(dica["fd_code"], dica["casa"], dica["fora"])
+        odds_str = formatar_odds_bookmakers(odds_bk)
+        odds_bloco = f"\n{odds_str}\n" if odds_str else ""
+        msg = DICA_TEMPLATE.format(
+            **dica,
+            odds_casas=odds_bloco,
+            rodape="💡 Quer <b>todas as dicas</b> de hoje? → /pro"
+        )
+        msg_canal = DICA_TEMPLATE.format(
+            **dica,
+            odds_casas=odds_bloco,
+            rodape=f"💡 Dicas gratuitas todos os dias → @{BOT_USERNAME}"
+        )
+        await update.message.reply_html(f"📤 Dica gerada:\n\n{msg}")
+        ok = await _publicar_canal(ctx.bot, msg_canal)
+        await update.message.reply_html(
+            f"{'✅ Publicado no canal ' + CHANNEL_ID if ok else '❌ Canal falhou — verifica se o bot é admin do canal e CHANNEL_ID está definido.'}"
+        )
+
     elif sub == "ativar":
         if len(args) < 2:
             await update.message.reply_html(
