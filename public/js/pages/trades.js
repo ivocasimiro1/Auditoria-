@@ -1,4 +1,5 @@
 import { apiFetch, getUser, showToast, relativeTime, STATUS_LABELS, STATUS_ICONS } from '../app.js';
+import { fetchStickerMap, stickerChip } from '../stickers.js';
 
 let activeTradeId = null;
 let chatInterval = null;
@@ -126,44 +127,48 @@ async function openTradeDetail(trade) {
   const propStickers = JSON.parse(trade.proposer_stickers || '[]');
   const recvStickers = JSON.parse(trade.receiver_stickers || '[]');
 
-  const shipment = ['accepted','in_transit','completed'].includes(trade.status)
-    ? await apiFetch(`/trades/${trade.id}/shipping`).catch(() => null)
-    : null;
+  // Load sticker names for display
+  const stickerMap = await fetchStickerMap(apiFetch, [...propStickers, ...recvStickers]);
+
+  const propChips = propStickers.map(id => stickerChip(id, stickerMap)).join('');
+  const recvChips = recvStickers.map(id => stickerChip(id, stickerMap)).join('');
 
   detail.innerHTML = `
     <button class="btn btn-ghost btn-sm" id="back-btn" style="margin-bottom:16px;">← Voltar</button>
 
     <div class="card" style="margin-bottom:16px;">
-      <div class="card-header">
-        <span class="card-title">${STATUS_ICONS[trade.status]} Troca com ${otherUser}</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div style="font-size:16px;font-weight:800;">${STATUS_ICONS[trade.status]} Troca com <span style="color:var(--blue);">${otherUser}</span></div>
         <span class="badge ${statusBadgeClass(trade.status)}">${STATUS_LABELS[trade.status]}</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;">
-        <div>
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">${isProposer ? 'Ofereces' : `${trade.proposer_username} oferece`}</div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px;">
-            ${propStickers.map(id => `<span class="match-sticker-chip">📌 ${id}</span>`).join('')}
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);border-radius:8px;padding:10px;">
+          <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:6px;">
+            ${isProposer ? '📤 TU DÁS' : `📤 ${trade.proposer_username} dá`}
           </div>
+          <div class="sticker-chips-list">${propChips}</div>
         </div>
-        <div>
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">${isProposer ? `${trade.receiver_username} oferece` : 'Ofereces'}</div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px;">
-            ${recvStickers.map(id => `<span class="match-sticker-chip">📌 ${id}</span>`).join('')}
+        <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.15);border-radius:8px;padding:10px;">
+          <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:6px;">
+            ${isProposer ? `📥 ${trade.receiver_username} dá` : '📥 TU DÁS'}
           </div>
+          <div class="sticker-chips-list">${recvChips}</div>
         </div>
       </div>
-      ${trade.message ? `<div style="margin-top:12px;padding:10px;background:var(--bg-card2);border-radius:8px;font-size:13px;font-style:italic;" id="trade-msg-display"></div>` : ''}
-      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;" id="trade-actions">
+
+      ${trade.message ? `<div style="padding:10px;background:var(--bg-card2);border-radius:8px;font-size:13px;font-style:italic;margin-bottom:12px;" id="trade-msg-display"></div>` : ''}
+      <div style="display:flex;flex-wrap:wrap;gap:8px;" id="trade-actions">
         ${renderTradeActions(trade, isProposer)}
       </div>
     </div>
 
-    ${renderShipping(trade, shipment, isProposer)}
-
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px;">💬 Chat</div>
+      <div style="font-size:15px;font-weight:800;margin-bottom:12px;">💬 Chat com ${otherUser}</div>
       <div class="chat-container">
-        <div class="chat-messages" id="chat-messages"><div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px;">Sem mensagens ainda</div></div>
+        <div class="chat-messages" id="chat-messages">
+          <div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px;">Sem mensagens ainda — diz olá! 👋</div>
+        </div>
         ${['cancelled','completed'].includes(trade.status) ? '' : `
           <div class="chat-input-row">
             <input type="text" class="form-input" id="chat-input" placeholder="Escreve uma mensagem..." maxlength="500">
@@ -254,18 +259,31 @@ async function openTradeDetail(trade) {
 function renderTradeActions(trade, isProposer) {
   if (trade.status === 'pending' && !isProposer) {
     return `
-      <button class="btn btn-success" data-action="accept">✅ Aceitar</button>
+      <button class="btn btn-success" data-action="accept" style="flex:1;">✅ Aceitar Troca</button>
       <button class="btn btn-danger" data-action="reject">❌ Recusar</button>
     `;
   }
   if (trade.status === 'pending' && isProposer) {
-    return `<button class="btn btn-ghost" data-action="cancel">Cancelar Proposta</button>`;
+    return `
+      <div style="font-size:13px;color:var(--text-muted);padding:6px 0;">⏳ Aguarda que o outro utilizador aceite...</div>
+      <button class="btn btn-ghost btn-sm" data-action="cancel">Cancelar Proposta</button>
+    `;
   }
   if (trade.status === 'accepted') {
-    return `<button class="btn btn-primary" id="setup-shipping-btn">📦 Configurar Envio</button>`;
+    return `
+      <div style="width:100%;padding:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;font-size:13px;margin-bottom:6px;">
+        ✅ Troca aceite! Combinem no chat como vão trocar os cromos.
+      </div>
+      <button class="btn btn-primary" data-action="ship" style="flex:1;">📬 Já Enviei os Cromos</button>
+    `;
   }
-  if (trade.status === 'in_transit' ) {
-    return `<button class="btn btn-success" data-action="complete">✅ Marcar Recebido</button>`;
+  if (trade.status === 'in_transit') {
+    return `
+      <div style="width:100%;padding:8px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:8px;font-size:13px;margin-bottom:6px;">
+        📬 Cromos enviados! Quando chegarem, clica em "Recebi".
+      </div>
+      <button class="btn btn-success" data-action="complete" style="flex:1;">📬 Recebi os Cromos!</button>
+    `;
   }
   return '';
 }
@@ -283,8 +301,7 @@ function setupTradeActions(trade, isProposer) {
     });
   });
 
-  const shippingBtn = document.getElementById('setup-shipping-btn');
-  if (shippingBtn) shippingBtn.addEventListener('click', () => openShippingModal(trade));
+  // shipping is now handled via data-action="ship" — no modal needed
 }
 
 function renderShipping(trade, shipment, isProposer) {

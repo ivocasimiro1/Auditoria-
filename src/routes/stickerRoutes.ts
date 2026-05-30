@@ -202,6 +202,25 @@ router.put('/:id', authenticateToken, async (req: Request, res: Response): Promi
   }
 });
 
+// Batch name lookup — ?ids=POR-P01,BRA-P03,... (used by trade/match pages)
+router.get('/batch', async (req: Request, res: Response): Promise<void> => {
+  const idsParam = typeof req.query.ids === 'string' ? req.query.ids : '';
+  if (!idsParam) { res.json([]); return; }
+  const ids = idsParam.split(',').filter(s => /^[A-Z0-9\-]{3,15}$/.test(s)).slice(0, 80);
+  if (!ids.length) { res.json([]); return; }
+  try {
+    const placeholders = ids.map((_, i) => `$${i + 1}`).join(',');
+    const stickers = await query(
+      `SELECT id, player_name, team_name, team_code, number FROM stickers WHERE id IN (${placeholders})`,
+      ids
+    );
+    res.json(stickers);
+  } catch (err) {
+    console.error('Batch sticker error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // Single sticker by ID — must be last to avoid shadowing /collection/* routes
 router.get('/:id', async (req: Request, res: Response): Promise<void> => {
   try {

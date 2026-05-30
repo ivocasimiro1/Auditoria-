@@ -387,3 +387,32 @@
 .listing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
 
 @media (max-width: 640px) { .listing-grid { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; } }
+
+/* ── Sticker name chips (trade/match pages) ── */
+.sticker-name-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  max-width: 180px;
+}
+.chip-name {
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 600;
+}
+.chip-num {
+  font-size: 10px; color: var(--text3); flex-shrink: 0;
+}
+.sticker-chip-simple {
+  display: inline-block;
+  background: rgba(255,255,255,0.06);
+  border-radius: 5px; padding: 3px 7px;
+  font-size: 11px; font-family: monospace;
+  color: var(--text2);
+}
+.sticker-chips-list {
+  display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px;
+}
