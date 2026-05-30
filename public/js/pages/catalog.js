@@ -347,7 +347,7 @@ function stickerCardHtml(s, teamCode) {
         <div class="card-art-flag-bg"></div>
         <div class="card-art-flag-overlay" style="background:linear-gradient(180deg,transparent 20%,rgba(0,0,0,0.7) 100%)"></div>
         <div class="card-art-position">⚽</div>
-        <div class="card-art-num">#${String(s.number).padStart(3,'0')}</div>
+        <div class="card-art-num">${s.id}</div>
       </div>`;
   } else if (s.card_type === 'badge' && flagSrc) {
     cardArt = `
