@@ -632,8 +632,9 @@ function openReportModal(stickerId, currentName) {
 }
 
 function openMissingModal() {
-  const teams = [...new Map(allStickers.filter(s => s.team_code !== 'SPECIAL').map(s => [s.team_code, s.team_name])).entries()]
-    .sort((a, b) => a[1].localeCompare(b[1]));
+  const teamNames = [...new Set(
+    allStickers.filter(s => s.team_code !== 'SPECIAL').map(s => s.team_name)
+  )].sort((a, b) => a.localeCompare(b));
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -644,47 +645,42 @@ function openMissingModal() {
         <button class="modal-close">✕</button>
       </div>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
-        Não encontraste um jogador na base de dados? Preenche o formulário abaixo e nós tentamos adicioná-lo o mais rápido possível. Obrigado por ajudares a completar o catálogo! 🙏
+        Não encontraste um jogador? Preenche abaixo e nós adicionamos o mais rápido possível. Obrigado! 🙏
       </p>
+      <datalist id="team-suggestions">
+        ${teamNames.map(n => `<option value="${n}">`).join('')}
+      </datalist>
       <div class="form-group">
         <label class="form-label">Seleção / Equipa *</label>
-        <select class="form-input form-select" id="missing-team-select">
-          <option value="">Escolhe a equipa...</option>
-          ${teams.map(([code, name]) => `<option value="${name}">${name}</option>`).join('')}
-          <option value="Outra">Outra equipa</option>
-        </select>
-      </div>
-      <div class="form-group" id="missing-team-other-group" style="display:none;">
-        <label class="form-label">Nome da equipa</label>
-        <input type="text" class="form-input" id="missing-team-other" placeholder="Ex: Polónia">
+        <input type="text" class="form-input" id="missing-team-input"
+          list="team-suggestions" placeholder="Ex: Suécia" autocomplete="off">
       </div>
       <div class="form-group">
         <label class="form-label">Nome do Jogador *</label>
-        <input type="text" class="form-input" id="missing-player-input" placeholder="Ex: Viktor Gyökeres">
+        <input type="text" class="form-input" id="missing-player-input"
+          placeholder="Ex: Viktor Gyökeres">
       </div>
       <div class="form-group">
         <label class="form-label">Notas (opcional)</label>
-        <input type="text" class="form-input" id="missing-notes-input" placeholder="Ex: número do cromo, posição...">
+        <input type="text" class="form-input" id="missing-notes-input"
+          placeholder="Ex: número do cromo, posição...">
       </div>
-      <button class="btn btn-primary" style="width:100%;" id="send-missing-btn">🚀 Enviar Pedido</button>
+      <button class="btn btn-primary" style="width:100%;margin-top:4px;" id="send-missing-btn">
+        🚀 Enviar Pedido
+      </button>
     </div>
   `;
   document.body.appendChild(overlay);
 
-  const teamSelect = overlay.querySelector('#missing-team-select');
-  const otherGroup = overlay.querySelector('#missing-team-other-group');
-  teamSelect.addEventListener('change', () => {
-    otherGroup.style.display = teamSelect.value === 'Outra' ? 'block' : 'none';
-  });
-
   overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 
+  const playerInput = overlay.querySelector('#missing-player-input');
+  setTimeout(() => overlay.querySelector('#missing-team-input').focus(), 50);
+
   overlay.querySelector('#send-missing-btn').addEventListener('click', async () => {
-    const teamVal = teamSelect.value === 'Outra'
-      ? overlay.querySelector('#missing-team-other').value.trim()
-      : teamSelect.value;
-    const playerVal = overlay.querySelector('#missing-player-input').value.trim();
+    const teamVal   = overlay.querySelector('#missing-team-input').value.trim();
+    const playerVal = playerInput.value.trim();
     const notesVal  = overlay.querySelector('#missing-notes-input').value.trim();
 
     if (!teamVal || !playerVal) {
