@@ -652,9 +652,10 @@ function openReportModal(stickerId, currentName) {
 }
 
 function openQuickAddModal() {
-  // queue holds code strings like "MEX5", "POR12"
-  const queue = new Set();
+  // queue: Map<code, sticker|null>  (null = not found in catalogue)
+  const queue = new Map();
   let currentStatus = 'have_double';
+  const CODE_RE = /^[A-Z]{2,4}\d{1,2}$/;
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -664,141 +665,119 @@ function openQuickAddModal() {
         <span class="modal-title">⚡ Entrada Rápida</span>
         <button class="modal-close" id="qm-close">✕</button>
       </div>
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
-        Marca cromos pelo código do álbum. Se um código não existir no catálogo, cria automaticamente um report para adicionar.
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+        Escreve o código do cromo (ex: <strong>POR9</strong>, <strong>MEX5</strong>). O nome aparece para confirmares. Se não existir, é enviado um report ao administrador.
       </p>
 
-      <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
         <button class="filter-btn active" id="qs-have" style="flex:1;font-size:13px;">✅ Tenho</button>
         <button class="filter-btn" id="qs-trade" style="flex:1;font-size:13px;">🔄 Para Trocar</button>
       </div>
 
-      <div style="display:flex;gap:8px;margin-bottom:6px;">
-        <input type="text" class="form-input" id="qm-num-input"
-          placeholder="ex: MEX5 POR12 ARG1" style="flex:1;min-width:0;" autocomplete="off">
+      <div style="display:flex;gap:8px;margin-bottom:4px;">
+        <input type="text" inputmode="text" class="form-input" id="qm-code-input"
+          placeholder="ex: POR9" style="flex:1;min-width:0;text-transform:uppercase;" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
         <button class="btn btn-primary" id="qm-add-btn" style="white-space:nowrap;">Adicionar</button>
       </div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px;">Vários códigos separados por espaço ou vírgula</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px;">Podes pôr vários separados por espaço: POR9 MEX5 ARG15</div>
 
-      <input type="file" id="qm-file" accept="image/*" capture="environment" style="display:none;">
-      <button id="qm-camera-btn" class="btn" style="width:100%;margin-bottom:16px;border:1px dashed rgba(255,255,255,0.15);font-size:13px;">
-        📷 Fotografar Cromo (câmara do telemóvel)
-      </button>
-      <div id="qm-preview-wrap" style="display:none;margin-bottom:12px;text-align:center;">
-        <img id="qm-preview-img" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--border);">
-        <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Confirma o código acima e clica Adicionar</div>
-      </div>
+      <div id="qm-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;"></div>
 
-      <div id="qm-queue" style="display:flex;flex-wrap:wrap;gap:6px;min-height:38px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:16px;align-items:center;">
-        <span id="qm-queue-ph" style="font-size:12px;color:var(--text-muted);">Nenhum código adicionado ainda</span>
-      </div>
-
-      <button class="btn btn-gold" id="qm-submit-btn" style="width:100%;display:none;">✅ Guardar cromos</button>
+      <button class="btn btn-gold" id="qm-submit-btn" style="width:100%;display:none;"></button>
     </div>
   `;
   document.body.appendChild(overlay);
 
-  const numInput   = overlay.querySelector('#qm-num-input');
-  const queueEl    = overlay.querySelector('#qm-queue');
-  const submitBtn  = overlay.querySelector('#qm-submit-btn');
-  const placeholder= overlay.querySelector('#qm-queue-ph');
-  const fileInput  = overlay.querySelector('#qm-file');
+  const codeInput = overlay.querySelector('#qm-code-input');
+  const listEl    = overlay.querySelector('#qm-list');
+  const submitBtn = overlay.querySelector('#qm-submit-btn');
 
-  const CODE_PATTERN = /^[A-Z]{2,4}\d{1,2}$/;
-
-  function normalizeCode(raw) {
-    // uppercase and remove any spaces between letters and digits
-    return raw.toUpperCase().replace(/\s+/g, '');
+  function renderList() {
+    listEl.innerHTML = '';
+    if (queue.size === 0) {
+      listEl.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:10px 0;">Nenhum cromo adicionado ainda</div>';
+    }
+    [...queue.entries()].forEach(([code, sticker]) => {
+      const found = sticker !== null;
+      const row = document.createElement('div');
+      row.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid ${found ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)'};background:${found ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)'};`;
+      row.innerHTML = `
+        <span style="font-size:18px;">${found ? '✅' : '⚠️'}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:800;color:${found ? '#4ade80' : '#f87171'};">${code}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            ${found ? (sticker.player_name || sticker.team_name || '—') + ' · ' + (sticker.team_name || '') : 'Não encontrado — será enviado report ao admin'}
+          </div>
+        </div>
+        <button data-code="${code}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:4px;line-height:1;flex-shrink:0;">✕</button>
+      `;
+      row.querySelector('button').addEventListener('click', () => { queue.delete(code); renderList(); updateSubmit(); });
+      listEl.appendChild(row);
+    });
+    updateSubmit();
   }
 
-  function renderQueue() {
-    queueEl.querySelectorAll('.qm-chip').forEach(c => c.remove());
-    placeholder.style.display = queue.size === 0 ? 'inline' : 'none';
-    [...queue].sort().forEach(code => {
-      const chip = document.createElement('span');
-      chip.className = 'qm-chip';
-      chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:3px 8px;font-size:13px;font-weight:700;color:var(--blue);';
-      chip.innerHTML = `${code}<button data-code="${code}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0 2px;line-height:1;margin-left:2px;">✕</button>`;
-      chip.querySelector('button').addEventListener('click', () => { queue.delete(code); renderQueue(); });
-      queueEl.appendChild(chip);
-    });
-    submitBtn.style.display = queue.size > 0 ? 'block' : 'none';
-    submitBtn.textContent = `✅ Guardar ${queue.size} cromo${queue.size !== 1 ? 's' : ''}`;
+  function updateSubmit() {
+    if (queue.size === 0) { submitBtn.style.display = 'none'; return; }
+    const found    = [...queue.values()].filter(s => s !== null).length;
+    const notFound = queue.size - found;
+    submitBtn.style.display = 'block';
+    let label = found > 0 ? `✅ Guardar ${found} cromo${found !== 1 ? 's' : ''}` : '';
+    if (notFound > 0) label += `${found > 0 ? '  +  ' : ''}📋 Reportar ${notFound} não encontrado${notFound !== 1 ? 's' : ''}`;
+    submitBtn.textContent = label;
   }
 
   function addCodes(raw) {
-    const parts = raw.split(/[\s,;]+/).map(normalizeCode).filter(c => CODE_PATTERN.test(c));
-    if (parts.length === 0) { showToast('Escreve um código válido (ex: MEX5)', 'error'); return; }
-    parts.forEach(c => queue.add(c));
-    numInput.value = '';
-    renderQueue();
+    const parts = raw.toUpperCase().replace(/\s+/g, ' ').trim().split(/[\s,;]+/)
+      .map(c => c.replace(/\s/g, ''))
+      .filter(c => CODE_RE.test(c));
+    if (parts.length === 0) { showToast('Código inválido — usa o formato POR9 ou MEX15', 'error'); return; }
+    parts.forEach(code => {
+      if (!queue.has(code)) {
+        const sticker = allStickers.find(s => s.id === code) || null;
+        queue.set(code, sticker);
+      }
+    });
+    codeInput.value = '';
+    renderList();
   }
 
   overlay.querySelector('#qm-close').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 
   overlay.querySelector('#qs-have').addEventListener('click', function() {
-    currentStatus = 'have_double';
-    this.classList.add('active');
+    currentStatus = 'have_double'; this.classList.add('active');
     overlay.querySelector('#qs-trade').classList.remove('active');
   });
   overlay.querySelector('#qs-trade').addEventListener('click', function() {
-    currentStatus = 'have_to_trade';
-    this.classList.add('active');
+    currentStatus = 'have_to_trade'; this.classList.add('active');
     overlay.querySelector('#qs-have').classList.remove('active');
   });
 
-  overlay.querySelector('#qm-add-btn').addEventListener('click', () => addCodes(numInput.value));
-  numInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCodes(numInput.value); } });
+  overlay.querySelector('#qm-add-btn').addEventListener('click', () => addCodes(codeInput.value));
+  codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCodes(codeInput.value); } });
 
-  overlay.querySelector('#qm-camera-btn').addEventListener('click', () => fileInput.click());
-
-  fileInput.addEventListener('change', async () => {
-    const file = fileInput.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    overlay.querySelector('#qm-preview-img').src = url;
-    overlay.querySelector('#qm-preview-wrap').style.display = 'block';
-    numInput.focus();
-    // Progressive enhancement: TextDetector API (Chrome/Android, no deps)
-    if ('TextDetector' in window) {
-      try {
-        const img = new Image();
-        img.src = url;
-        await new Promise(r => { img.onload = r; });
-        const detector = new window.TextDetector();
-        const blocks = await detector.detect(img);
-        // Try to find a code matching the album pattern
-        let detectedCode = null;
-        for (const b of blocks) {
-          const candidate = normalizeCode(b.rawValue.trim());
-          if (CODE_PATTERN.test(candidate)) {
-            detectedCode = candidate;
-            break;
-          }
-        }
-        if (detectedCode) { numInput.value = detectedCode; numInput.select(); }
-      } catch {}
-    }
-  });
+  // Show placeholder on load
+  renderList();
 
   submitBtn.addEventListener('click', async () => {
     if (queue.size === 0) return;
     submitBtn.disabled = true; submitBtn.textContent = 'A guardar...';
     try {
+      const codes = [...queue.keys()];
       const result = await apiFetch('/stickers/bulk-by-code', {
         method: 'POST',
-        body: JSON.stringify({ codes: [...queue], status: currentStatus }),
+        body: JSON.stringify({ codes, status: currentStatus }),
       });
       overlay.remove();
       updateCollectionPct();
       renderStickers(teamParam);
-      let msg = `${result.found} cromo${result.found !== 1 ? 's' : ''} guardado${result.found !== 1 ? 's' : ''}!`;
-      if (result.notFound > 0) msg += ` | ${result.notFound} não encontrado${result.notFound !== 1 ? 's' : ''} → report criado automaticamente`;
-      showToast(msg, result.notFound > 0 ? 'info' : 'success');
+      let msg = result.found > 0 ? `${result.found} cromo${result.found !== 1 ? 's' : ''} guardado${result.found !== 1 ? 's' : ''}!` : '';
+      if (result.notFound > 0) msg += `${msg ? ' · ' : ''}${result.notFound} report${result.notFound !== 1 ? 's' : ''} enviado${result.notFound !== 1 ? 's' : ''} ao admin`;
+      showToast(msg || 'Feito!', result.notFound > 0 ? 'info' : 'success');
     } catch (e) {
       showToast(e.message, 'error');
-      submitBtn.disabled = false; submitBtn.textContent = `✅ Guardar ${queue.size} cromo${queue.size !== 1 ? 's' : ''}`;
+      submitBtn.disabled = false; updateSubmit();
     }
   });
 }
