@@ -151,6 +151,9 @@ function updateNav(route) {
   document.querySelectorAll('.nav-item[data-route]').forEach(el => {
     el.classList.toggle('active', el.dataset.route === route);
   });
+  document.querySelectorAll('.bottom-tab[data-route]').forEach(el => {
+    el.classList.toggle('active', el.dataset.route === route);
+  });
 }
 
 function closeSidebar() {
@@ -184,6 +187,14 @@ function setupNav() {
     const closeBtn = document.getElementById('sidebar-close');
     if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
   }
+
+  // Bottom tab bar
+  document.querySelectorAll('.bottom-tab[data-route]').forEach(el => {
+    el.addEventListener('click', () => {
+      window.location.hash = el.dataset.route;
+      closeSidebar();
+    });
+  });
 
   // Logout
   const logoutBtn = document.getElementById('logout-btn');

@@ -5,13 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Panini WC2026 — Troca de Cromos</title>
   <meta name="description" content="Plataforma de troca de cromos da caderneta Panini do Mundial 2026">
-  <meta name="theme-color" content="#f5a623">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
-  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0b1120">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Panini 2026">
-  <link rel="apple-touch-icon" href="/img/icon.svg">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/img/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="preconnect" href="https://flagcdn.com">
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/layout.css">
   <link rel="stylesheet" href="/css/cards.css">
@@ -113,6 +116,30 @@
       </div>
     </div>
   </div>
+
+  <!-- Bottom tab bar (mobile) -->
+  <nav class="bottom-tabs" id="bottom-tabs" aria-label="Navegação principal">
+    <button class="bottom-tab" data-route="/" aria-label="Início">
+      <span class="tab-icon">🏠</span>
+      <span class="tab-label">Início</span>
+    </button>
+    <button class="bottom-tab" data-route="/catalog" aria-label="Catálogo">
+      <span class="tab-icon">📚</span>
+      <span class="tab-label">Catálogo</span>
+    </button>
+    <button class="bottom-tab" data-route="/matches" aria-label="Matches">
+      <span class="tab-icon">🎯</span>
+      <span class="tab-label">Matches</span>
+    </button>
+    <button class="bottom-tab" data-route="/trades" aria-label="Trocas">
+      <span class="tab-icon">🔄</span>
+      <span class="tab-label">Trocas</span>
+    </button>
+    <button class="bottom-tab" data-route="/profile" aria-label="Perfil">
+      <span class="tab-icon">👤</span>
+      <span class="tab-label">Perfil</span>
+    </button>
+  </nav>
 
   <div id="toast-container" class="toast-container"></div>
 
