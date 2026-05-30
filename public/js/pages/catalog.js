@@ -98,12 +98,12 @@ export async function render() {
         `}
       </div>
 
-      <div class="filter-bar">
+      <div class="filter-bar" style="position:relative;z-index:50;">
         <div style="position:relative;max-width:240px;flex:1;">
           <input type="text" class="form-input" id="search-input"
             placeholder="🔍 Pesquisar jogador, equipa..." style="width:100%;"
             value="${teamName ? '' : ''}" autocomplete="off">
-          <div id="search-autocomplete" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;z-index:200;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.4);max-height:260px;overflow-y:auto;"></div>
+          <div id="search-autocomplete" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg-card2,#1a2540);border:1px solid var(--border);border-radius:10px;z-index:500;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,0.6);max-height:280px;overflow-y:auto;"></div>
         </div>
         <select class="form-input form-select" id="group-filter" style="max-width:160px;">
           <option value="all">Todos os Grupos</option>
@@ -162,13 +162,19 @@ export async function render() {
       }
     }
     if (!matches.length) { hideAutocomplete(); return; }
-    autocompleteBox.innerHTML = matches.map((s, i) => {
-      const hl = s.player_name.replace(new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'),
-        '<strong style="color:var(--blue);">$1</strong>');
+    autocompleteBox.innerHTML = matches.map((s) => {
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      const hl = s.player_name.replace(new RegExp(`(${escaped})`, 'gi'),
+        '<strong style="color:#60a5fa;font-weight:700;">$1</strong>');
+      const flagCode = FLAG_CODES[s.team_code];
+      const flagHtml = flagCode
+        ? `<img src="https://flagcdn.com/w20/${flagCode}.png" style="width:18px;height:12px;object-fit:cover;border-radius:2px;flex-shrink:0;" loading="lazy">`
+        : '<span style="width:18px;font-size:12px;">🌐</span>';
       return `<div class="ac-item" data-name="${s.player_name.replace(/"/g,'&quot;')}" data-team="${s.team_name}"
-        style="display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.04);">
-        <span style="flex:1;">${hl}</span>
-        <span style="font-size:11px;color:var(--text-muted);flex-shrink:0;">${s.team_name}</span>
+        style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);transition:background 0.1s;">
+        ${flagHtml}
+        <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${hl}</span>
+        <span style="font-size:11px;color:rgba(255,255,255,0.4);flex-shrink:0;">${s.team_name}</span>
       </div>`;
     }).join('');
     autocompleteBox.style.display = 'block';
