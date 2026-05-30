@@ -117,18 +117,18 @@ router.patch('/:id/status', authenticateToken, async (req: Request, res: Respons
       res.status(403).json({ error: 'Sem permissão' }); return;
     }
 
-    const transitions: Record<string, { fromStatus: string; newStatus: string; allowedBy: 'receiver' | 'proposer' | 'both' }> = {
-      accept:   { fromStatus: 'pending',    newStatus: 'accepted',   allowedBy: 'receiver' },
-      reject:   { fromStatus: 'pending',    newStatus: 'cancelled',  allowedBy: 'receiver' },
-      cancel:   { fromStatus: 'pending',    newStatus: 'cancelled',  allowedBy: 'proposer' },
-      ship:     { fromStatus: 'accepted',   newStatus: 'in_transit', allowedBy: 'both' },
-      complete: { fromStatus: 'in_transit', newStatus: 'completed',  allowedBy: 'both' },
+    // Trades are arranged directly between users (no shipping carriers)
+    const transitions: Record<string, { fromStatuses: string[]; newStatus: string; allowedBy: 'receiver' | 'proposer' | 'both' }> = {
+      accept:   { fromStatuses: ['pending'],               newStatus: 'accepted',   allowedBy: 'receiver' },
+      reject:   { fromStatuses: ['pending'],               newStatus: 'cancelled',  allowedBy: 'receiver' },
+      cancel:   { fromStatuses: ['pending'],               newStatus: 'cancelled',  allowedBy: 'proposer' },
+      complete: { fromStatuses: ['accepted','in_transit'], newStatus: 'completed',  allowedBy: 'both' },
     };
 
     const transition = transitions[action];
     if (!transition) { res.status(400).json({ error: 'Ação inválida' }); return; }
 
-    if (trade.status !== transition.fromStatus) {
+    if (!transition.fromStatuses.includes(trade.status)) {
       res.status(409).json({ error: `Transição inválida: a troca está '${trade.status}'` }); return;
     }
 

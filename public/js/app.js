@@ -84,10 +84,10 @@ function relativeTime(ts) {
 
 // Status labels
 const STATUS_LABELS = {
-  pending: 'Pendente', accepted: 'Aceite', in_transit: 'Em Trânsito',
+  pending: 'Pendente', accepted: 'Aceite', in_transit: 'Aceite',
   completed: 'Concluída', cancelled: 'Cancelada',
 };
-const STATUS_ICONS = { pending: '⏳', accepted: '✅', in_transit: '📦', completed: '🎉', cancelled: '❌' };
+const STATUS_ICONS = { pending: '⏳', accepted: '🤝', in_transit: '🤝', completed: '🎉', cancelled: '❌' };
 const TYPE_LABELS = { have_to_trade: 'Para Trocar', need: 'Preciso', have_double: 'Duplo' };
 
 // Routes

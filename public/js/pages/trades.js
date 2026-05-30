@@ -271,18 +271,10 @@ function renderTradeActions(trade, isProposer) {
   }
   if (trade.status === 'accepted') {
     return `
-      <div style="width:100%;padding:8px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;font-size:13px;margin-bottom:6px;">
-        ✅ Troca aceite! Combinem no chat como vão trocar os cromos.
+      <div style="width:100%;padding:10px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;font-size:13px;margin-bottom:8px;">
+        🤝 Troca aceite! Combinam os detalhes no chat em baixo e quando trocarem os cromos clicam em "Fizemos a Troca".
       </div>
-      <button class="btn btn-primary" data-action="ship" style="flex:1;">📬 Já Enviei os Cromos</button>
-    `;
-  }
-  if (trade.status === 'in_transit') {
-    return `
-      <div style="width:100%;padding:8px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:8px;font-size:13px;margin-bottom:6px;">
-        📬 Cromos enviados! Quando chegarem, clica em "Recebi".
-      </div>
-      <button class="btn btn-success" data-action="complete" style="flex:1;">📬 Recebi os Cromos!</button>
+      <button class="btn btn-success" data-action="complete" style="flex:1;font-size:15px;padding:12px 20px;">✅ Fizemos a Troca!</button>
     `;
   }
   return '';
