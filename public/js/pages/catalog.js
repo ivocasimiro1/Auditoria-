@@ -632,10 +632,6 @@ function openReportModal(stickerId, currentName) {
 }
 
 function openMissingModal() {
-  const teamNames = [...new Set(
-    allStickers.filter(s => s.team_code !== 'SPECIAL').map(s => s.team_name)
-  )].sort((a, b) => a.localeCompare(b));
-
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
@@ -647,13 +643,10 @@ function openMissingModal() {
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
         Não encontraste um jogador? Preenche abaixo e nós adicionamos o mais rápido possível. Obrigado! 🙏
       </p>
-      <datalist id="team-suggestions">
-        ${teamNames.map(n => `<option value="${n}">`).join('')}
-      </datalist>
       <div class="form-group">
         <label class="form-label">Seleção / Equipa *</label>
         <input type="text" class="form-input" id="missing-team-input"
-          list="team-suggestions" placeholder="Ex: Suécia" autocomplete="off">
+          placeholder="Ex: Suécia, Portugal, Brasil..." autocomplete="off">
       </div>
       <div class="form-group">
         <label class="form-label">Nome do Jogador *</label>
