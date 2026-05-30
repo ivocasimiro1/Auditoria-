@@ -1,4 +1,4 @@
-import { apiFetch, showToast, TYPE_LABELS } from '../app.js';
+import { apiFetch, getUser, showToast, TYPE_LABELS } from '../app.js';
 
 // flagcdn.com country codes — free, no API key
 const FLAG_CODES = {
@@ -32,13 +32,14 @@ const FLAG_CODES = {
 };
 
 const TYPE_ICONS = { player:'⚽', badge:'🛡️', logo:'🏷️', special:'✨', stadium:'🏟️' };
-const TYPE_LABEL_SHORT = { have_to_trade:'TROCA', need:'FALTA', have_double:'DUPLO' };
+const TYPE_LABEL_SHORT = { have_to_trade:'TROCA', need:'FALTA', have_double:'TENHO' };
 
 let allStickers = [];
 let collection = {}; // stickerId → { status, custom_image_url }
 let activeFilter = 'all';
 let activeGroup = 'all';
 let searchTerm = '';
+let isAdmin = false;
 
 export async function render() {
   const main = document.getElementById('main-content');
@@ -54,6 +55,7 @@ export async function render() {
   if (col) col.forEach(s => {
     if (s.status) collection[s.id] = { status: s.status, custom_image_url: s.custom_image_url };
   });
+  isAdmin = getUser()?.is_admin === true;
 
   const groups = [...new Set(allStickers.map(s => s.group_name))].filter(g => g !== 'ESPECIAL').sort();
 
@@ -192,10 +194,12 @@ function stickerCardHtml(s, teamCode) {
 
   const teamColor = `var(--c-${teamCode}, var(--blue))`;
 
+  const missingStyle = !status ? 'opacity:0.7;border-color:rgba(239,68,68,0.25);' : '';
+
   return `
-    <div class="sticker-card rarity-${s.rarity} ${customImg ? 'has-user-photo' : ''}"
+    <div class="sticker-card rarity-${s.rarity} ${customImg ? 'has-user-photo' : ''} ${!status ? 'sticker-missing' : ''}"
          data-id="${s.id}" data-team="${teamCode}"
-         style="--team-color:${teamColor};">
+         style="--team-color:${teamColor};${missingStyle}">
       <div class="card-band"></div>
       ${s.rarity !== 'common' ? `<div class="rarity-crown">${s.rarity === 'holographic' ? '💎' : '✨'}</div>` : ''}
       ${status ? `<div class="sticker-status-badge status-${status}">${TYPE_LABEL_SHORT[status] || status}</div>` : ''}
@@ -207,7 +211,7 @@ function stickerCardHtml(s, teamCode) {
         <div class="sticker-name">${s.player_name || s.team_name}</div>
         <div class="sticker-team">${s.team_name}</div>
       </div>
-      ${status && status !== 'need' ? `
+      ${status ? `
         <div style="padding:0 6px 6px;z-index:5;position:relative;">
           <button class="btn btn-ghost btn-sm photo-btn" data-id="${s.id}"
             style="width:100%;font-size:10px;padding:4px;border-color:rgba(255,255,255,0.1);">
@@ -215,6 +219,20 @@ function stickerCardHtml(s, teamCode) {
           </button>
         </div>
       ` : ''}
+      ${isAdmin ? `
+        <div style="padding:0 6px 6px;z-index:5;position:relative;">
+          <button class="btn btn-ghost btn-sm edit-name-btn" data-id="${s.id}" data-name="${(s.player_name || '').replace(/"/g, '&quot;')}"
+            style="width:100%;font-size:10px;padding:4px;border-color:rgba(255,165,0,0.3);color:var(--gold);">
+            ✏️ Editar Nome
+          </button>
+        </div>
+      ` : ''}
+      <div style="padding:0 6px 6px;z-index:5;position:relative;">
+        <button class="btn btn-ghost btn-sm report-btn" data-id="${s.id}" data-name="${(s.player_name || '').replace(/"/g, '&quot;')}"
+          style="width:100%;font-size:9px;padding:3px;border-color:rgba(255,255,255,0.06);color:rgba(255,255,255,0.3);">
+          🚩 Reportar Nome
+        </button>
+      </div>
     </div>
   `;
 }
@@ -224,7 +242,7 @@ function attachListeners(container) {
     let clicks = 0;
     let timer;
     card.addEventListener('click', e => {
-      if (e.target.closest('.photo-btn')) return;
+      if (e.target.closest('.photo-btn') || e.target.closest('.edit-name-btn') || e.target.closest('.report-btn')) return;
       clicks++;
       if (clicks === 1) {
         timer = setTimeout(() => {
@@ -246,12 +264,26 @@ function attachListeners(container) {
       openPhotoModal(btn.dataset.id);
     });
   });
+
+  container.querySelectorAll('.edit-name-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      openEditNameModal(btn.dataset.id, btn.dataset.name);
+    });
+  });
+
+  container.querySelectorAll('.report-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      openReportModal(btn.dataset.id, btn.dataset.name);
+    });
+  });
 }
 
 async function cycleStatus(stickerId) {
   const entry = collection[stickerId];
   const current = entry?.status;
-  const cycle = [undefined, 'need', 'have_to_trade', 'have_double'];
+  const cycle = [undefined, 'have_double', 'have_to_trade'];
   const idx = cycle.indexOf(current);
   const next = cycle[(idx + 1) % cycle.length];
 
@@ -280,14 +312,60 @@ function refreshCard(stickerId) {
   if (newCard) {
     let clicks = 0, timer;
     newCard.addEventListener('click', e => {
-      if (e.target.closest('.photo-btn')) return;
+      if (e.target.closest('.photo-btn') || e.target.closest('.edit-name-btn') || e.target.closest('.report-btn')) return;
       clicks++;
       if (clicks === 1) { timer = setTimeout(() => { clicks = 0; cycleStatus(stickerId); }, 250); }
       else { clearTimeout(timer); clicks = 0; cycleStatus(stickerId); }
     });
     const photoBtn = newCard.querySelector('.photo-btn');
     if (photoBtn) photoBtn.addEventListener('click', e => { e.stopPropagation(); openPhotoModal(stickerId); });
+    const editBtn = newCard.querySelector('.edit-name-btn');
+    if (editBtn) editBtn.addEventListener('click', e => { e.stopPropagation(); openEditNameModal(editBtn.dataset.id, editBtn.dataset.name); });
+    const reportBtn = newCard.querySelector('.report-btn');
+    if (reportBtn) reportBtn.addEventListener('click', e => { e.stopPropagation(); openReportModal(reportBtn.dataset.id, reportBtn.dataset.name); });
   }
+}
+
+function openEditNameModal(stickerId, currentName) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:380px;">
+      <div class="modal-header">
+        <span class="modal-title">✏️ Corrigir Nome do Jogador</span>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nome do Jogador</label>
+        <input type="text" class="form-input" id="edit-name-input" value="${currentName}" placeholder="Nome completo">
+      </div>
+      <button class="btn btn-gold" style="width:100%;" id="save-name-btn">💾 Guardar</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const input = overlay.querySelector('#edit-name-input');
+  input.focus(); input.select();
+  overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#save-name-btn').addEventListener('click', async () => {
+    const newName = input.value.trim();
+    if (!newName) { showToast('Nome não pode estar vazio', 'error'); return; }
+    const btn = overlay.querySelector('#save-name-btn');
+    btn.disabled = true; btn.textContent = 'A guardar...';
+    try {
+      const updated = await apiFetch(`/stickers/${stickerId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ player_name: newName }),
+      });
+      const idx = allStickers.findIndex(s => s.id === stickerId);
+      if (idx !== -1) allStickers[idx] = { ...allStickers[idx], player_name: newName };
+      overlay.remove();
+      showToast('Nome atualizado!', 'success');
+      refreshCard(stickerId);
+    } catch (e) {
+      showToast(e.message, 'error');
+      btn.disabled = false; btn.textContent = '💾 Guardar';
+    }
+  });
 }
 
 function openPhotoModal(stickerId) {
@@ -360,6 +438,48 @@ function openPhotoModal(stickerId) {
     } catch (e) {
       showToast(e.message, 'error');
       btn.disabled = false; btn.textContent = '✅ Guardar Foto';
+    }
+  });
+}
+
+function openReportModal(stickerId, currentName) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:380px;">
+      <div class="modal-header">
+        <span class="modal-title">🚩 Reportar Nome Incorreto</span>
+        <button class="modal-close">✕</button>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+        Nome atual: <strong>${currentName || '(sem nome)'}</strong>
+      </p>
+      <div class="form-group">
+        <label class="form-label">Nome correto sugerido</label>
+        <input type="text" class="form-input" id="report-name-input" placeholder="Nome correto do jogador">
+      </div>
+      <button class="btn btn-gold" style="width:100%;" id="send-report-btn">🚩 Enviar Relatório</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const input = overlay.querySelector('#report-name-input');
+  input.focus();
+  overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#send-report-btn').addEventListener('click', async () => {
+    const suggested_name = input.value.trim();
+    if (!suggested_name) { showToast('Insere o nome correto', 'error'); return; }
+    const btn = overlay.querySelector('#send-report-btn');
+    btn.disabled = true; btn.textContent = 'A enviar...';
+    try {
+      await apiFetch(`/stickers/${stickerId}/report`, {
+        method: 'POST',
+        body: JSON.stringify({ suggested_name }),
+      });
+      overlay.remove();
+      showToast('Relatório enviado! Obrigado.', 'success');
+    } catch (e) {
+      showToast(e.message, 'error');
+      btn.disabled = false; btn.textContent = '🚩 Enviar Relatório';
     }
   });
 }

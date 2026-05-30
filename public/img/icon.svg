@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="40" fill="#0a0e1a"/>
+  <text x="96" y="130" font-size="100" text-anchor="middle" font-family="serif">⚽</text>
+  <rect x="16" y="148" width="160" height="28" rx="8" fill="#f5a623"/>
+  <text x="96" y="168" font-size="16" text-anchor="middle" fill="#0a0e1a" font-weight="bold" font-family="sans-serif">WC2026</text>
+</svg>

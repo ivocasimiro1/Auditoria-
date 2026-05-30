@@ -8,6 +8,7 @@ export interface User {
   rating_sum: number;
   rating_count: number;
   created_at: number;
+  is_admin?: boolean;
 }
 
 export interface Sticker {

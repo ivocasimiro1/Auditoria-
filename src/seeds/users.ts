@@ -67,3 +67,12 @@ export async function seedUsers(): Promise<void> {
 
   console.log('Demo users seeded successfully');
 }
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'ivo@despomar.com';
+
+export async function ensureAdmin(): Promise<void> {
+  await queryOne(
+    'UPDATE users SET is_admin = TRUE WHERE email = $1',
+    [ADMIN_EMAIL]
+  );
+}

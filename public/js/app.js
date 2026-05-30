@@ -101,6 +101,7 @@ const ROUTES = {
   '/orders': () => import('./pages/orders.js').then(m => m.render()),
   '/notifications': () => import('./pages/notifications.js').then(m => m.render()),
   '/profile': () => import('./pages/profile.js').then(m => m.render()),
+  '/admin': () => import('./pages/admin.js').then(m => m.render()),
   '/login': () => import('./pages/login.js').then(m => m.render()),
 };
 
@@ -188,6 +189,23 @@ function setupNav() {
     if (nameEl) nameEl.textContent = user.username;
     if (locEl) locEl.textContent = user.location || '';
     if (avatarEl) avatarEl.textContent = (user.username || 'U')[0].toUpperCase();
+
+    // Add admin nav link if user is admin
+    if (user.is_admin) {
+      const existingAdmin = document.querySelector('.nav-item[data-route="/admin"]');
+      if (!existingAdmin) {
+        const navSections = document.querySelectorAll('.nav-section');
+        const lastSection = navSections[navSections.length - 1];
+        if (lastSection) {
+          const adminBtn = document.createElement('button');
+          adminBtn.className = 'nav-item';
+          adminBtn.dataset.route = '/admin';
+          adminBtn.innerHTML = '<span class="nav-icon">🛡️</span> Admin';
+          adminBtn.addEventListener('click', () => { window.location.hash = '/admin'; });
+          lastSection.appendChild(adminBtn);
+        }
+      }
+    }
   }
 }
 

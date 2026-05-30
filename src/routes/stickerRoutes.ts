@@ -156,6 +156,29 @@ router.post('/collection/bulk', authenticateToken, async (req: Request, res: Res
   }
 });
 
+// Admin: update sticker player_name
+router.put('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = await queryOne<{ is_admin: boolean }>('SELECT is_admin FROM users WHERE id = $1', [req.userId]);
+    if (!user?.is_admin) { res.status(403).json({ error: 'Sem permissão' }); return; }
+
+    const { player_name } = req.body;
+    if (!player_name || typeof player_name !== 'string' || !player_name.trim()) {
+      res.status(400).json({ error: 'Nome inválido' }); return;
+    }
+
+    const updated = await queryOne(
+      'UPDATE stickers SET player_name = $1 WHERE id = $2 RETURNING *',
+      [player_name.trim(), req.params.id]
+    );
+    if (!updated) { res.status(404).json({ error: 'Cromo não encontrado' }); return; }
+    res.json(updated);
+  } catch (err) {
+    console.error('Update sticker error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // Single sticker by ID — must be last to avoid shadowing /collection/* routes
 router.get('/:id', async (req: Request, res: Response): Promise<void> => {
   try {

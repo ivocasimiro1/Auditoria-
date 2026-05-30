@@ -200,9 +200,14 @@ CREATE INDEX IF NOT EXISTS idx_orders_buyer ON orders(buyer_id);
 CREATE INDEX IF NOT EXISTS idx_orders_seller ON orders(seller_id);
 `;
 
+const MIGRATIONS_SQL = `
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
+`;
+
 export async function initDb(): Promise<void> {
   const pool = getDb();
   await pool.query(SCHEMA_SQL);
+  await pool.query(MIGRATIONS_SQL);
   console.log('Database schema initialized');
 }
 

@@ -1,0 +1,14 @@
+{
+  "name": "Panini WC2026 - Troca de Cromos",
+  "short_name": "Panini 2026",
+  "description": "A maior plataforma de troca de cromos do Mundial 2026",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#f5a623",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

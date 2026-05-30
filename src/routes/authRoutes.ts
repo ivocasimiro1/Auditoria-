@@ -76,6 +76,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
         email: user.email,
         location: user.location,
         avatar_url: user.avatar_url,
+        is_admin: user.is_admin || false,
         rating: user.rating_count > 0 ? user.rating_sum / user.rating_count : null,
       },
     });
