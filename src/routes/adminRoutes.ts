@@ -26,6 +26,22 @@ router.get('/users', authenticateToken, async (req: Request, res: Response): Pro
   }
 });
 
+// Pending reports count (for sidebar badge)
+router.get('/pending-count', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!await requireAdmin(req, res)) return;
+    const row = await queryOne<{ total: string }>(`
+      SELECT (
+        (SELECT COUNT(*) FROM sticker_reports  WHERE status = 'pending') +
+        (SELECT COUNT(*) FROM missing_reports  WHERE status = 'pending')
+      ) AS total
+    `);
+    res.json({ count: parseInt(row?.total ?? '0', 10) });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // List pending reports
 router.get('/reports', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {

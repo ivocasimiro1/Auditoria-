@@ -225,7 +225,7 @@ function setupNav() {
           const adminBtn = document.createElement('button');
           adminBtn.className = 'nav-item';
           adminBtn.dataset.route = '/admin';
-          adminBtn.innerHTML = '<span class="nav-icon">🛡️</span> Admin';
+          adminBtn.innerHTML = '<span class="nav-icon">🛡️</span> Admin<span class="nav-badge" id="admin-report-count"></span>';
           adminBtn.addEventListener('click', () => { window.location.hash = '/admin'; });
           lastSection.appendChild(adminBtn);
         }
@@ -263,6 +263,24 @@ async function startNotifPolling() {
   notifInterval = setInterval(poll, 15000);
 }
 
+// Poll admin pending-reports count (admin only)
+async function startAdminBadgePolling() {
+  const user = getUser();
+  if (!user?.is_admin) return;
+  async function poll() {
+    try {
+      const data = await apiFetch('/admin/pending-count');
+      if (!data) return;
+      const badge = document.getElementById('admin-report-count');
+      if (!badge) return;
+      badge.textContent = data.count;
+      badge.classList.toggle('visible', data.count > 0);
+    } catch {}
+  }
+  poll();
+  setInterval(poll, 30000);
+}
+
 // Init
 window.addEventListener('hashchange', router);
 window.addEventListener('DOMContentLoaded', () => {
@@ -272,6 +290,7 @@ window.addEventListener('DOMContentLoaded', () => {
   } else {
     setupNav();
     startNotifPolling();
+    startAdminBadgePolling();
     updateCollectionPct();
     router();
   }
