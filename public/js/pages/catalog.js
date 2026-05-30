@@ -3,7 +3,7 @@ import { apiFetch, showToast, TYPE_LABELS } from '../app.js';
 // flagcdn.com country codes — free, no API key
 const FLAG_CODES = {
   // Group A
-  MEX:'mx', ZAF:'za', KOR:'kr', CZE:'cz',
+  MEX:'mx', ZAF:'za', RSA:'za', KOR:'kr', CZE:'cz',
   // Group B
   CAN:'ca', BIH:'ba', QAT:'qa', SUI:'ch',
   // Group C

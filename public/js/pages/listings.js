@@ -6,7 +6,7 @@ const FLAG_CODES = {
   URU:'uy',COL:'co',KOR:'kr',CMR:'cm',CRO:'hr',AUS:'au',NGA:'ng',POL:'pl',
   ITA:'it',SUI:'ch',ECU:'ec',GHA:'gh',DEN:'dk',TUN:'tn',NZL:'nz',SAU:'sa',
   IRN:'ir',WAL:'gb-wls',CRC:'cr',SRB:'rs',EGY:'eg',SCO:'gb-sct',AUT:'at',
-  TUR:'tr',QAT:'qa',HND:'hn',SVK:'sk',CMV:'cv',VEN:'ve',MEX2:'mx',MEX3:'mx',CMR2:'cm',
+  TUR:'tr',QAT:'qa',HND:'hn',SVK:'sk',CMV:'cv',VEN:'ve',MEX2:'mx',MEX3:'mx',CMR2:'cm',RSA:'za',
 };
 
 const TYPE_LABEL = { trade:'🔄 Troca', sell:'💶 Venda', gift:'🎁 Oferta' };

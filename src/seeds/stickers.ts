@@ -11,11 +11,11 @@ const TEAMS: TeamDef[] = [
   // Group A
   {
     code: 'MEX', name: 'México', group: 'A',
-    players: ['Ochoa', 'Talavera', 'Araujo', 'Moreno', 'Montes', 'Gallardo', 'Herrera', 'Guardado', 'Lozano', 'Vega', 'Martin', 'Jimenez', 'Antuna', 'Pineda', 'Rodriguez', 'Alvarado', 'Gutierrez', 'Sanchez'],
+    players: ['Luis Malagón', 'Johan Vásquez', 'Jorge Sánchez', 'César Montes', 'Jesús Gallardo', 'Israel Reyes', 'Diego Lainez', 'Carlos Rodríguez', 'Edson Álvarez', 'Orbelín Pineda', 'Marcel Ruiz', 'Erick Sánchez', 'Hirving Lozano', 'Santiago Giménez', 'Raúl Jiménez', 'Alexis Vega', 'Roberto Alvarado', 'César Huerta'],
   },
   {
-    code: 'ZAF', name: 'África do Sul', group: 'A',
-    players: ['Williams', 'Petersen', 'Tau', 'Dolly', 'Mkhize', 'Zungu', 'Hlanti', 'Broos', 'Maja', 'Foster', 'Mothiba', 'Phiri', 'Kekana', 'Mobbie', 'Lakay', 'Maart', 'Adams', 'Mswati'],
+    code: 'RSA', name: 'África do Sul', group: 'A',
+    players: ['Ronwen Williams', 'Sipho Chaine', 'Aubrey Modiba', 'Samukele Kabini', 'Mbekezeli Mbokazi', 'Siyabonga Ngezana', 'Khuliso Mudau', 'Nkosinathi Sibisi', 'Teboho Mokoena', 'Themba Zwane', 'Percy Tau', 'Bongokuhle Hlongwane', 'Lyle Foster', 'Evidence Makgopa', 'Elias Mokwana', 'Oswin Appollis', 'Morphing Letsholonyane', 'Khulumani Ndamane'],
   },
   {
     code: 'KOR', name: 'Coreia do Sul', group: 'A',
@@ -47,7 +47,7 @@ const TEAMS: TeamDef[] = [
   // Group C
   {
     code: 'BRA', name: 'Brasil', group: 'C',
-    players: ['Alisson', 'Ederson', 'Danilo', 'Marquinhos', 'Militao', 'Arana', 'Casemiro', 'Lucas Paquetá', 'Raphinha', 'Vinicius Jr', 'Rodrygo', 'Endrick', 'Gabriel Martinelli', 'Bruno Guimarães', 'Gerson', 'Savinho', 'Igor Jesus', 'Matheus Cunha'],
+    players: ['Alisson', 'Bento', 'Marquinhos', 'Éder Militão', 'Gabriel Magalhães', 'Danilo', 'Wesley', 'Lucas Paquetá', 'Casemiro', 'Bruno Guimarães', 'Luiz Henrique', 'Vinicius Júnior', 'Rodrygo', 'João Pedro', 'Matheus Cunha', 'Gabriel Martinelli', 'Raphinha', 'Estêvão'],
   },
   {
     code: 'MAR', name: 'Marrocos', group: 'C',
@@ -65,7 +65,7 @@ const TEAMS: TeamDef[] = [
   // Group D
   {
     code: 'USA', name: 'Estados Unidos', group: 'D',
-    players: ['Turner', 'Horvath', 'Dest', 'Richards', 'Long', 'Robinson', 'McKennie', 'Adams', 'Musah', 'Pulisic', 'Weah', 'Balogun', 'Reyna', 'Acosta', 'Scally', 'Busio', 'Wright', 'Tillman'],
+    players: ['Matt Freese', 'Chris Richards', 'Tim Ream', 'Mark McKenzie', 'Alex Freeman', 'Antonee Robinson', 'Tyler Adams', 'Tanner Tessmann', 'Weston McKennie', 'Christian Roldan', 'Timothy Weah', 'Diego Luna', 'Malik Tillman', 'Christian Pulisic', 'Brenden Aaronson', 'Ricardo Pepi', 'Haji Wright', 'Folarin Balogun'],
   },
   {
     code: 'PAR', name: 'Paraguai', group: 'D',
@@ -83,7 +83,7 @@ const TEAMS: TeamDef[] = [
   // Group E
   {
     code: 'GER', name: 'Alemanha', group: 'E',
-    players: ['Neuer', 'ter Stegen', 'Kimmich', 'Rudiger', 'Schlotterbeck', 'Raum', 'Goretzka', 'Kroos', 'Musiala', 'Sane', 'Havertz', 'Gnabry', 'Wirtz', 'Brandt', 'Gundogan', 'Mittelstadt', 'Fullkrug', 'Kleindienst'],
+    players: ['Marc-André ter Stegen', 'Jonathan Tah', 'David Raum', 'Nico Schlotterbeck', 'Antonio Rüdiger', 'Waldemar Anton', 'Ridle Baku', 'Maximilian Mittelstädt', 'Joshua Kimmich', 'Florian Wirtz', 'Felix Nmecha', 'Leon Goretzka', 'Jamal Musiala', 'Serge Gnabry', 'Kai Havertz', 'Leroy Sané', 'Karim Adeyemi', 'Nick Woltemade'],
   },
   {
     code: 'CUW', name: 'Curaçao', group: 'E',
@@ -137,7 +137,7 @@ const TEAMS: TeamDef[] = [
   // Group H
   {
     code: 'ESP', name: 'Espanha', group: 'H',
-    players: ['Unai Simon', 'Raya', 'Carvajal', 'Laporte', 'Le Normand', 'Grimaldo', 'Pedri', 'Gavi', 'Rodri', 'Yamal', 'Morata', 'Oyarzabal', 'Fabián Ruiz', 'Dani Olmo', 'Joselu', 'Ferran Torres', 'Williams N', 'Carvajal D'],
+    players: ['Unai Simón', 'Robin Le Normand', 'Aymeric Laporte', 'Dean Huijsen', 'Pedro Porro', 'Dani Carvajal', 'Marc Cucurella', 'Martín Zubimendi', 'Rodri', 'Pedri', 'Fabián Ruiz', 'Mikel Merino', 'Lamine Yamal', 'Dani Olmo', 'Nico Williams', 'Ferran Torres', 'Álvaro Morata', 'Mikel Oyarzabal'],
   },
   {
     code: 'CMV', name: 'Cabo Verde', group: 'H',
@@ -155,7 +155,7 @@ const TEAMS: TeamDef[] = [
   // Group I
   {
     code: 'FRA', name: 'França', group: 'I',
-    players: ['Maignan', 'Areola', 'Pavard', 'Upamecano', 'Konate', 'Hernandez', 'Camavinga', 'Tchouameni', 'Griezmann', 'Dembele', 'Thuram', 'Mbappé', 'Giroud', 'Rabiot', 'Clauss', 'Zaire-Emery', 'Guendouzi', 'Nkunku'],
+    players: ['Mike Maignan', 'Theo Hernandez', 'William Saliba', 'Jules Koundé', 'Ibrahima Konaté', 'Dayot Upamecano', 'Lucas Digne', 'Aurélien Tchouaméni', 'Eduardo Camavinga', 'Manu Koné', 'Adrien Rabiot', 'Michael Olise', 'Ousmane Dembélé', 'Bradley Barcola', 'Désiré Doué', 'Kingsley Coman', 'Hugo Ekitike', 'Kylian Mbappé'],
   },
   {
     code: 'SEN', name: 'Senegal', group: 'I',
@@ -173,7 +173,7 @@ const TEAMS: TeamDef[] = [
   // Group J
   {
     code: 'ARG', name: 'Argentina', group: 'J',
-    players: ['Emiliano Martinez', 'Rulli', 'Molina', 'Romero', 'Otamendi', 'Acuna', 'De Paul', 'Mac Allister', 'Enzo Fernandez', 'Dybala', 'Di Maria', 'Messi', 'Alvarez J', 'Thiago Almada', 'Tagliafico', 'Lo Celso', 'Palacios', 'Guido Rodriguez'],
+    players: ['Emiliano Martínez', 'Nahuel Molina', 'Cristian Romero', 'Nicolás Otamendi', 'Nicolás Tagliafico', 'Leonardo Balerdi', 'Enzo Fernández', 'Alexis Mac Allister', 'Rodrigo De Paul', 'Exequiel Palacios', 'Leandro Paredes', 'Nico Paz', 'Franco Mastantuono', 'Nicolás González', 'Lionel Messi', 'Lautaro Martínez', 'Julián Álvarez', 'Giuliano Simeone'],
   },
   {
     code: 'ALG', name: 'Argélia', group: 'J',
@@ -191,7 +191,7 @@ const TEAMS: TeamDef[] = [
   // Group K
   {
     code: 'POR', name: 'Portugal', group: 'K',
-    players: ['Diogo Costa', 'José Sá', 'Gonçalo Inácio', 'Rúben Dias', 'Nuno Mendes', 'João Cancelo', 'Diogo Dalot', 'Bruno Fernandes', 'Rúben Neves', 'João Neves', 'Bernardo Silva', 'Vitinha', 'Rafael Leão', 'João Félix', 'Gonçalo Ramos', 'Francisco Trincão', 'Pedro Neto', 'Cristiano Ronaldo'],
+    players: ['Diogo Costa', 'José Sá', 'Rúben Dias', 'João Cancelo', 'Diogo Dalot', 'Nuno Mendes', 'Gonçalo Inácio', 'Bernardo Silva', 'Bruno Fernandes', 'Rúben Neves', 'Vitinha', 'João Neves', 'Cristiano Ronaldo', 'Francisco Trincão', 'João Félix', 'Gonçalo Ramos', 'Pedro Neto', 'Rafael Leão'],
   },
   {
     code: 'COD', name: 'Congo DR', group: 'K',
@@ -209,7 +209,7 @@ const TEAMS: TeamDef[] = [
   // Group L
   {
     code: 'ENG', name: 'Inglaterra', group: 'L',
-    players: ['Pickford', 'Ramsdale', 'Alexander-Arnold', 'Maguire', 'Stones', 'Shaw', 'Rice', 'Bellingham', 'Saka', 'Foden', 'Kane', 'Rashford', 'Grealish', 'Mount', 'Gallagher', 'Palmer', 'Gordon', 'Trent'],
+    players: ['Jordan Pickford', 'John Stones', 'Marc Guéhi', 'Ezri Konsa', 'Trent Alexander-Arnold', 'Reece James', 'Dan Burn', 'Jordan Henderson', 'Declan Rice', 'Jude Bellingham', 'Cole Palmer', 'Morgan Rogers', 'Anthony Gordon', 'Phil Foden', 'Bukayo Saka', 'Harry Kane', 'Marcus Rashford', 'Ollie Watkins'],
   },
   {
     code: 'CRO', name: 'Croácia', group: 'L',
