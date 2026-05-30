@@ -540,7 +540,7 @@ async def cmd_admin(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         linhas = [f"📅 <b>Hoje — {datetime.now().strftime('%d/%m/%Y')}</b>\n"]
         dicas_valor = 0
         for r in resultados:
-            hora = r["hora_utc"].strftime("%H:%M") if r.get("hora_utc") else "--:--"
+            hora = _hora_portugal(r.get("hora_utc")) or "--:--"
             estado = "🔴 LIVE" if r["estado"] == "in" else f"🕐 {hora}"
             tem_valor = " 🎯" if r["apostas"] else ""
             prob_str = ""
@@ -677,25 +677,46 @@ async def _broadcast_todos(bot, texto: str, tipo: str):
             enviados += 1
         await asyncio.sleep(0.04)
     registar_broadcast(tipo, texto, enviados)
+    # Admin recebe sempre cópia de tudo
+    for admin_id in ADMIN_IDS:
+        try:
+            await bot.send_message(
+                admin_id,
+                f"📤 <b>[{tipo}]</b> Enviado a {enviados} utilizadores:\n\n{texto}",
+                parse_mode=ParseMode.HTML,
+                disable_web_page_preview=True,
+            )
+        except Exception:
+            pass
     return enviados
 
 
+def _hora_portugal(hora_utc) -> str:
+    """Converte hora UTC para hora Portugal (UTC+1 no verão)."""
+    if not hora_utc:
+        return ""
+    from datetime import timedelta
+    hora_pt = hora_utc + timedelta(hours=1)
+    return hora_pt.strftime("%H:%M")
+
+
 async def job_preview_manha(ctx: ContextTypes.DEFAULT_TYPE):
-    """Enviado às 9h: jogos do dia."""
+    """Enviado às 9h UTC (10h Portugal): jogos do dia."""
     try:
         resultados = analisar_dia(MODELOS)
         jogos = [{
             "emoji": r["emoji"],
-            "hora":  r["hora_utc"].strftime("%H:%M") if r.get("hora_utc") else "",
+            "hora":  _hora_portugal(r.get("hora_utc")),
             "casa":  r["casa_espn"], "fora": r["fora_espn"]
         } for r in resultados]
         data_str = datetime.now().strftime("%d/%m/%Y")
         lista    = formatar_lista_jogos(jogos)
         msg      = PREVIEW_MANHA.format(data=data_str, lista_jogos=lista)
     except Exception:
-        msg = "⚽ Bom dia! A dica do dia chega às 13h. /dica"
+        msg = "⚽ Bom dia! A dica do dia chega às 14h. /dica"
 
     await _broadcast_todos(ctx.bot, msg, "preview_manha")
+    await _publicar_canal(ctx.bot, msg)
 
 
 async def job_dica_tarde(ctx: ContextTypes.DEFAULT_TYPE):
@@ -952,12 +973,14 @@ def main():
     # Jobs diários automáticos (requer python-telegram-bot[job-queue])
     jq = app.job_queue
     if jq is not None:
+        # Horários em UTC (Portugal = UTC+1 no verão)
+        # 09h UTC = 10h Portugal | 13h UTC = 14h Portugal | 22h UTC = 23h Portugal
         jq.run_daily(job_preview_manha,     time=time(9,  0,  tzinfo=timezone.utc), name="preview_manha")
         jq.run_daily(job_dica_tarde,        time=time(13, 0,  tzinfo=timezone.utc), name="dica_tarde")
         jq.run_repeating(job_dica_live,     interval=3600, first=time(14, 0, tzinfo=timezone.utc), name="dica_live")
         jq.run_daily(job_resumo_noite,      time=time(21, 30, tzinfo=timezone.utc), name="resumo_noite")
         jq.run_daily(job_pedir_resultado,   time=time(22, 0,  tzinfo=timezone.utc), name="pedir_resultado")
-        jq.run_daily(job_alertas_expiracao, time=time(10, 0,  tzinfo=timezone.utc), name="alertas_exp")
+        jq.run_daily(job_alertas_expiracao, time=time(9,  0,  tzinfo=timezone.utc), name="alertas_exp")
         print("⏰  Envios automáticos diários activados.")
     else:
         print("⚠️  Envios automáticos desactivados.")

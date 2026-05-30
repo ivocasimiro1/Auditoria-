@@ -17,7 +17,7 @@ import os
 import sys
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 try:
     from dotenv import load_dotenv
@@ -97,7 +97,7 @@ def formatar_previsao(r: dict, bankroll: float = 1000.0) -> str:
         header += f"🔴 <b>LIVE {minuto}'</b>  {r['casa_espn']} <b>{gc}–{gf}</b> {r['fora_espn']}\n"
     else:
         hora = r["hora_utc"]
-        hora_str = hora.strftime("%H:%M UTC") if hora else ""
+        hora_str = (hora + timedelta(hours=1)).strftime("%H:%M") if hora else ""
         header += f"🕐 {hora_str}  {r['casa_espn']} vs {r['fora_espn']}\n"
 
     # Jogos de seleções: sem modelo Dixon-Coles, só info + odds
@@ -164,7 +164,8 @@ def formatar_resumo(resultados: list[dict]) -> str:
             placar = f"🔴 {gc}–{gf} ({r['minuto']}')"
         else:
             hora = r["hora_utc"]
-            placar = hora.strftime("%H:%M") if hora else ""
+            # Mostrar hora Portugal (UTC+1)
+            placar = (hora + timedelta(hours=1)).strftime("%H:%M") if hora else ""
 
         # For selecoes, p is None
         if p:
@@ -305,6 +306,19 @@ async def cmd_admin_pro(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         )
 
 
+async def _notificar_admin(bot, titulo: str, msg: str):
+    for admin_id in ADMIN_IDS:
+        try:
+            await bot.send_message(
+                admin_id,
+                f"📤 <b>[Pro — {titulo}]</b>\n\n{msg}",
+                parse_mode=ParseMode.HTML,
+                disable_web_page_preview=True,
+            )
+        except Exception:
+            pass
+
+
 async def cmd_hoje(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if not await _verificar_acesso(update):
         return
@@ -312,6 +326,13 @@ async def cmd_hoje(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     resultados = analisar_dia(MODELOS)
     msg = formatar_resumo(resultados)
     await update.message.reply_html(msg)
+    # Admin recebe cópia
+    user = update.effective_user
+    await _notificar_admin(
+        ctx.bot,
+        f"/hoje pedido por {user.first_name}",
+        msg,
+    )
 
 
 async def cmd_live(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -324,7 +345,9 @@ async def cmd_live(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_html("Nenhum jogo em directo de momento.")
         return
     for r in live:
-        await update.message.reply_html(formatar_previsao(r), disable_web_page_preview=True)
+        msg = formatar_previsao(r)
+        await update.message.reply_html(msg, disable_web_page_preview=True)
+        await _notificar_admin(ctx.bot, f"live {r['casa_espn']} vs {r['fora_espn']}", msg)
 
 
 async def cmd_prever(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
