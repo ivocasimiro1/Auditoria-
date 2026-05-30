@@ -3,11 +3,11 @@ import path from 'path';
 import fs from 'fs';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import jwt from 'jsonwebtoken';
 import { initDb } from './db';
 import { seedStickers } from './seeds/stickers';
 import { seedUsers, ensureAdmin } from './seeds/users';
 import { errorHandler } from './middleware/errorHandler';
-import { authenticateToken } from './middleware/auth';
 import authRoutes from './routes/authRoutes';
 import stickerRoutes from './routes/stickerRoutes';
 import tradeRoutes from './routes/tradeRoutes';
@@ -95,8 +95,13 @@ app.use('/api/admin', adminRoutes);
 // Health check
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
-// Authenticated PDF serving — requires valid login
-app.get('/api/album/pdf', authenticateToken, (_req, res) => {
+// Authenticated PDF serving — accepts Bearer header or ?token= query param
+const PDF_JWT_SECRET = process.env.JWT_SECRET || 'panini_wc2026_secret_key_change_in_production';
+app.get('/api/album/pdf', (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = (authHeader && authHeader.split(' ')[1]) || (req.query.token as string | undefined);
+  if (!token) { res.status(401).json({ error: 'Token de autenticação necessário' }); return; }
+  try { jwt.verify(token, PDF_JWT_SECRET); } catch { res.status(403).json({ error: 'Token inválido ou expirado' }); return; }
   const pdfPath = path.join(__dirname, '..', 'assets', 'Cromos_Mundial_2026.pdf');
   if (!fs.existsSync(pdfPath)) { res.status(404).json({ error: 'PDF não encontrado' }); return; }
   res.setHeader('Content-Type', 'application/pdf');

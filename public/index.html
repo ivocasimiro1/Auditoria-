@@ -62,9 +62,9 @@
         </div>
         <div class="nav-section">
           <div class="nav-section-title">Recursos</div>
-          <a class="nav-item" href="/api/album/pdf" target="_blank" rel="noopener" style="text-decoration:none;">
+          <button class="nav-item" onclick="(function(){const t=localStorage.getItem('token');if(!t){window.location.hash='/login';return;}window.open('/api/album/pdf?token='+encodeURIComponent(t),'_blank','noopener');})()">
             <span class="nav-icon">📄</span> Álbum PDF
-          </a>
+          </button>
         </div>
         <div class="nav-section">
           <div class="nav-section-title">Conta</div>
