@@ -8,10 +8,24 @@ import type { User } from '../types';
 const router = Router();
 
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
-  const { username, email, password, location } = req.body;
+  const raw = req.body;
+  const username = typeof raw.username === 'string' ? raw.username.trim().slice(0, 30) : '';
+  const email    = typeof raw.email    === 'string' ? raw.email.trim().toLowerCase().slice(0, 254) : '';
+  const password = typeof raw.password === 'string' ? raw.password.slice(0, 128) : '';
+  const location = typeof raw.location === 'string' ? raw.location.trim().slice(0, 100) : '';
 
   if (!username || !email || !password) {
     res.status(400).json({ error: 'Username, email e password são obrigatórios' });
+    return;
+  }
+
+  if (!/^[a-zA-Z0-9_.\-]+$/.test(username)) {
+    res.status(400).json({ error: 'Username só pode conter letras, números, _ . -' });
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    res.status(400).json({ error: 'Email inválido' });
     return;
   }
 
@@ -46,7 +60,8 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 });
 
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
+  const email    = typeof req.body.email    === 'string' ? req.body.email.trim().toLowerCase().slice(0, 254) : '';
+  const password = typeof req.body.password === 'string' ? req.body.password.slice(0, 128) : '';
 
   if (!email || !password) {
     res.status(400).json({ error: 'Email e password são obrigatórios' });

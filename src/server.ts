@@ -1,5 +1,7 @@
 import express from 'express';
 import path from 'path';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { initDb } from './db';
 import { seedStickers } from './seeds/stickers';
 import { seedUsers, ensureAdmin } from './seeds/users';
@@ -20,7 +22,58 @@ import adminRoutes from './routes/adminRoutes';
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
-app.use(express.json());
+// ── Security headers ──────────────────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https://flagcdn.com', 'https://*.railway.app'],
+      connectSrc: ["'self'", 'https://*.railway.app'],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+// General API limit: 120 requests / minute per IP
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados pedidos. Tenta novamente dentro de um minuto.' },
+});
+
+// Auth endpoints: 10 attempts / 15 minutes per IP (brute-force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiadas tentativas de login. Tenta novamente em 15 minutos.' },
+  skipSuccessfulRequests: true,
+});
+
+// Admin endpoints: 30 req / minute
+const adminLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Limite de pedidos admin atingido.' },
+});
+
+app.use('/api', generalLimiter);
+app.use('/api/auth', authLimiter);
+app.use('/api/admin', adminLimiter);
+
+// ── Body parsing (with size limit) ───────────────────────────────────────────
+app.use(express.json({ limit: '512kb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // API routes
