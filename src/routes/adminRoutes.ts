@@ -151,6 +151,45 @@ router.get('/missing-reports', authenticateToken, async (req: Request, res: Resp
   }
 });
 
+// Add missing sticker directly from the admin panel
+router.post('/missing-reports/:id/add', authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!await requireAdmin(req, res)) return;
+    const { team_code, player_name, rarity } = req.body;
+    if (!team_code?.trim() || !player_name?.trim()) {
+      res.status(400).json({ error: 'team_code e player_name são obrigatórios' }); return;
+    }
+
+    const team = await queryOne<{ team_name: string; group_name: string }>(
+      `SELECT team_name, group_name FROM stickers WHERE team_code = $1 LIMIT 1`, [team_code]
+    );
+    if (!team) { res.status(404).json({ error: 'Equipa não encontrada' }); return; }
+
+    // Next player index for this team
+    const existing = await query<{ id: string }>(
+      `SELECT id FROM stickers WHERE team_code = $1 AND card_type = 'player' ORDER BY id`, [team_code]
+    );
+    const nextIdx = existing.length + 1;
+    const stickerId = `${team_code}-P${String(nextIdx).padStart(2, '0')}`;
+
+    // Next global number
+    const maxNum = await queryOne<{ max: number }>('SELECT COALESCE(MAX(number), 0) AS max FROM stickers');
+    const num = (maxNum?.max || 0) + 1;
+
+    await execute(
+      `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
+       VALUES ($1, $2, $3, $4, $5, $6, 'player', $7, '') ON CONFLICT (id) DO NOTHING`,
+      [stickerId, num, team_code, team.team_name, team.group_name, player_name.trim(), rarity || 'common']
+    );
+    await execute('UPDATE missing_reports SET status = $1 WHERE id = $2', ['added', req.params.id]);
+
+    res.json({ success: true, sticker_id: stickerId });
+  } catch (err) {
+    console.error('Add missing sticker error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // Dismiss missing report
 router.post('/missing-reports/:id/dismiss', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {

@@ -51,14 +51,18 @@ export async function render() {
   refreshTimer = setInterval(loadAll, 30_000);
 }
 
+let teamList = [];
+
 async function loadAll() {
-  const [activity, users, reports, missingReports, stats] = await Promise.all([
+  const [activity, users, reports, missingReports, stats, teams] = await Promise.all([
     apiFetch('/admin/activity'),
     apiFetch('/admin/users'),
     apiFetch('/admin/reports'),
     apiFetch('/admin/missing-reports'),
     apiFetch('/stats'),
+    apiFetch('/stickers/teams'),
   ]);
+  if (teams) teamList = teams;
 
   document.getElementById('admin-subtitle').textContent =
     `${stats?.users || 0} utilizadores · ${stats?.trades_completed || 0} trocas · ${activity?.online?.length || 0} online agora`;
@@ -182,7 +186,15 @@ function renderReports(reports, missingReports) {
             ${r.notes ? `<div style="font-size:11px;color:var(--text-muted);margin-top:3px;font-style:italic;">"${r.notes}"</div>` : ''}
             <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">por <strong>${r.reporter}</strong> · ${new Date(Number(r.created_at)).toLocaleDateString('pt-PT')}</div>
           </div>
-          <button class="btn btn-ghost btn-sm dismiss-missing" data-id="${r.id}" style="color:var(--text-muted);flex-shrink:0;">✕ Dispensar</button>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="btn btn-primary btn-sm add-missing"
+              data-id="${r.id}"
+              data-player="${r.player_name.replace(/"/g,'&quot;')}"
+              data-team="${r.team_name.replace(/"/g,'&quot;')}">
+              ✅ Adicionar
+            </button>
+            <button class="btn btn-ghost btn-sm dismiss-missing" data-id="${r.id}" style="color:var(--text-muted);">✕</button>
+          </div>
         </div>`).join('')}
       </div>`;
 
@@ -232,6 +244,74 @@ function renderReports(reports, missingReports) {
         showToast('Pedido dispensado', 'info');
       } catch { btn.disabled = false; }
     });
+  });
+
+  document.querySelectorAll('.add-missing').forEach(btn => {
+    btn.addEventListener('click', () => openAddStickerModal(btn.dataset.id, btn.dataset.player, btn.dataset.team));
+  });
+}
+
+function openAddStickerModal(reportId, playerName, suggestedTeam) {
+  const teamOptions = teamList.map(t =>
+    `<option value="${t.team_code}" ${t.team_name === suggestedTeam ? 'selected' : ''}>${t.team_name} (${t.team_code})</option>`
+  ).join('');
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-header">
+        <span class="modal-title">✅ Adicionar Cromo</span>
+        <button class="modal-close">✕</button>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+        O cromo será adicionado imediatamente ao catálogo e todos os utilizadores o verão.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Nome do Jogador</label>
+        <input type="text" class="form-input" id="add-player-input" value="${playerName.replace(/"/g,'&quot;')}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Seleção</label>
+        <select class="form-input form-select" id="add-team-select">
+          ${teamOptions}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Raridade</label>
+        <select class="form-input form-select" id="add-rarity-select">
+          <option value="common" selected>Common</option>
+          <option value="foil">Foil ✨</option>
+          <option value="holographic">Holográfico 💎</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:4px;" id="confirm-add-btn">✅ Adicionar ao Catálogo</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  overlay.querySelector('#confirm-add-btn').addEventListener('click', async () => {
+    const player_name = overlay.querySelector('#add-player-input').value.trim();
+    const team_code   = overlay.querySelector('#add-team-select').value;
+    const rarity      = overlay.querySelector('#add-rarity-select').value;
+    if (!player_name || !team_code) { showToast('Preenche todos os campos', 'error'); return; }
+
+    const btn = overlay.querySelector('#confirm-add-btn');
+    btn.disabled = true; btn.textContent = 'A adicionar...';
+    try {
+      const result = await apiFetch(`/admin/missing-reports/${reportId}/add`, {
+        method: 'POST',
+        body: JSON.stringify({ team_code, player_name, rarity }),
+      });
+      overlay.remove();
+      document.querySelector(`.missing-row[data-id="${reportId}"]`)?.remove();
+      showToast(`Cromo ${result.sticker_id} adicionado! 🎉`, 'success');
+    } catch (e) {
+      showToast(e.message, 'error');
+      btn.disabled = false; btn.textContent = '✅ Adicionar ao Catálogo';
+    }
   });
 }
 
