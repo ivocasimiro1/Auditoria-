@@ -172,9 +172,9 @@ function renderGroupsView(content, byGroup, collectionMap) {
               : `<span>🌐</span>`;
 
             return `
-              <div onclick="window.location.hash='/catalog?team=${code}'"
-                style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;border-radius:6px;transition:background 0.15s;"
-                onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background=''">
+              <button onclick="window.location.hash='/catalog?team=${code}'"
+                style="width:100%;display:flex;align-items:center;gap:12px;padding:12px 8px;border:none;border-bottom:1px solid rgba(255,255,255,0.04);background:none;color:inherit;cursor:pointer;border-radius:6px;transition:background 0.15s;text-align:left;-webkit-tap-highlight-color:rgba(255,255,255,0.08);"
+                onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background=''">
                 <div style="width:32px;text-align:center;flex-shrink:0;">${flagHtml}</div>
                 <div style="flex:1;min-width:0;">
                   <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
@@ -190,7 +190,7 @@ function renderGroupsView(content, byGroup, collectionMap) {
                     ${pct === 100 ? `<span style="color:var(--success);">✅ Completo!</span>` : ''}
                   </div>
                 </div>
-              </div>
+              </button>
             `;
           }).join('')}
         </div>
