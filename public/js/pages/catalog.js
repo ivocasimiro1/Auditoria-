@@ -179,21 +179,39 @@ function stickerCardHtml(s, teamCode) {
   const status = entry?.status;
   const customImg = entry?.custom_image_url;
   const flagCode = FLAG_CODES[teamCode] || FLAG_CODES[s.team_code];
-  const flagSrc = flagCode ? `https://flagcdn.com/w80/${flagCode}.png` : '';
+  const flagSrc = flagCode ? `https://flagcdn.com/w160/${flagCode}.png` : '';
+  const teamColor = `var(--c-${teamCode}, var(--blue))`;
+  const missingStyle = !status ? 'opacity:0.65;' : '';
 
-  let imgContent;
+  // Build card image area
+  let cardArt;
   if (customImg) {
-    imgContent = `<img src="${customImg}" alt="${s.player_name || s.team_name}" loading="lazy" onerror="this.src='${flagSrc}'">`;
+    // User uploaded their real sticker photo — show it full-bleed
+    cardArt = `
+      <div class="card-art card-art-photo">
+        <img src="${customImg}" alt="${s.player_name || s.team_name}" loading="lazy"
+          onerror="this.parentNode.innerHTML='<span class=\\'card-art-fallback\\'>📷</span>'">
+      </div>`;
   } else if (s.card_type === 'player' && flagSrc) {
-    imgContent = `<img src="${flagSrc}" alt="${s.team_name}" loading="lazy" onerror="this.style.display='none'"><span class="card-emoji" style="position:absolute;bottom:6px;right:6px;font-size:20px;z-index:3;">⚽</span>`;
+    // Panini-style: flag fills the card art area with team colour gradient
+    cardArt = `
+      <div class="card-art card-art-flag" style="--flag-url:url('${flagSrc}')">
+        <div class="card-art-flag-bg"></div>
+        <div class="card-art-flag-overlay" style="background:linear-gradient(180deg,transparent 20%,rgba(0,0,0,0.7) 100%)"></div>
+        <div class="card-art-position">⚽</div>
+        <div class="card-art-num">#${String(s.number).padStart(3,'0')}</div>
+      </div>`;
+  } else if (s.card_type === 'badge' && flagSrc) {
+    cardArt = `
+      <div class="card-art card-art-badge" style="--flag-url:url('${flagSrc}')">
+        <div class="card-art-flag-bg"></div>
+        <div class="card-art-flag-overlay" style="background:rgba(0,0,0,0.4)"></div>
+        <div class="card-art-position">🛡️</div>
+      </div>`;
   } else {
     const icons = { badge:'🛡️', logo:'🏷️', special:'✨', stadium:'🏟️', player:'⚽' };
-    imgContent = `<span class="card-emoji">${icons[s.card_type] || '📄'}</span>`;
+    cardArt = `<div class="card-art card-art-plain"><span class="card-art-icon">${icons[s.card_type] || '📄'}</span></div>`;
   }
-
-  const teamColor = `var(--c-${teamCode}, var(--blue))`;
-
-  const missingStyle = !status ? 'opacity:0.7;border-color:rgba(239,68,68,0.25);' : '';
 
   return `
     <div class="sticker-card rarity-${s.rarity} ${customImg ? 'has-user-photo' : ''} ${!status ? 'sticker-missing' : ''}"
@@ -202,19 +220,16 @@ function stickerCardHtml(s, teamCode) {
       <div class="card-band"></div>
       ${s.rarity !== 'common' ? `<div class="rarity-crown">${s.rarity === 'holographic' ? '💎' : '✨'}</div>` : ''}
       ${status ? `<div class="sticker-status-badge status-${status}">${TYPE_LABEL_SHORT[status] || status}</div>` : ''}
-      <div class="sticker-img" style="position:relative;">
-        ${imgContent}
-      </div>
+      ${cardArt}
       <div class="sticker-info">
-        <div class="sticker-number">#${String(s.number).padStart(3,'0')} · ${s.card_type.toUpperCase()}</div>
         <div class="sticker-name">${s.player_name || s.team_name}</div>
-        <div class="sticker-team">${s.team_name}</div>
+        <div class="sticker-team">${s.team_name} · ${s.card_type === 'player' ? 'JOG' : s.card_type.toUpperCase()}</div>
       </div>
       ${status ? `
         <div style="padding:0 6px 6px;z-index:5;position:relative;">
           <button class="btn btn-ghost btn-sm photo-btn" data-id="${s.id}"
             style="width:100%;font-size:10px;padding:4px;border-color:rgba(255,255,255,0.1);">
-            📷 Foto Real
+            📷 ${customImg ? 'Alterar Foto' : 'Foto Real'}
           </button>
         </div>
       ` : ''}
