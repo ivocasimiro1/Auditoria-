@@ -20,7 +20,7 @@
     body{font-family:'Inter',sans-serif;background:var(--navy);color:var(--white);overflow-x:hidden}
 
     /* CONDITIONS BAR */
-    .cb{background:rgba(6,13,27,0.92);border-bottom:1px solid rgba(201,168,76,0.15);padding:.4rem 5%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;font-size:.75rem;color:var(--gray);position:sticky;top:0;z-index:200;backdrop-filter:blur(16px)}
+    .cb{background:rgba(6,13,27,0.92);border-bottom:1px solid rgba(201,168,76,0.15);padding:.4rem 5%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;font-size:.75rem;color:var(--gray);position:fixed;top:0;left:0;right:0;z-index:200;backdrop-filter:blur(16px)}
     .ci{display:flex;align-items:center;gap:.35rem}
     .cv{color:var(--white);font-weight:600}
     .cg{color:var(--green)}
@@ -29,7 +29,7 @@
     .lb.active,.lb:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.08)}
 
     /* NAV */
-    nav{position:sticky;top:33px;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:.9rem 5%;backdrop-filter:blur(24px);background:rgba(6,13,27,0.9);border-bottom:1px solid var(--border)}
+    nav{position:fixed;top:33px;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:.9rem 5%;backdrop-filter:blur(24px);background:rgba(6,13,27,0.9);border-bottom:1px solid var(--border)}
     .logo{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;letter-spacing:.02em}
     .logo span{color:var(--gold)}
     nav ul{display:flex;gap:1.8rem;list-style:none}
