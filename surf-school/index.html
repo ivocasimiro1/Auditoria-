@@ -8,866 +8,614 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --navy: #050D1A;
-      --ocean: #0A2540;
-      --blue: #0070F3;
-      --cyan: #00CFFD;
-      --teal: #00A896;
-      --sand: #F5E6C8;
-      --gold: #FFB347;
-      --white: #FFFFFF;
-      --gray: #8B9AB0;
-      --card: rgba(255,255,255,0.05);
-      --border: rgba(255,255,255,0.1);
+      --navy: #050D1A; --ocean: #0A2540; --blue: #0070F3; --cyan: #00CFFD;
+      --teal: #00A896; --sand: #F5E6C8; --gold: #FFB347; --white: #FFFFFF;
+      --gray: #8B9AB0; --card: rgba(255,255,255,0.05); --border: rgba(255,255,255,0.1);
+      --green: #22c55e; --red: #ef4444; --orange: #f97316;
     }
-
     html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background: var(--navy); color: var(--white); overflow-x: hidden; }
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--navy);
-      color: var(--white);
-      overflow-x: hidden;
+    /* ── CONDITIONS BAR ── */
+    .conditions-bar {
+      background: rgba(0,112,243,0.15);
+      border-bottom: 1px solid rgba(0,207,253,0.2);
+      padding: .45rem 5%;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem;
+      font-size: .78rem; color: var(--gray);
     }
+    .cond-item { display: flex; align-items: center; gap: .4rem; }
+    .cond-val { color: var(--white); font-weight: 600; }
+    .cond-good { color: var(--green); }
+    .cond-sep { color: var(--border); }
+    .lang-switcher { display: flex; gap: .4rem; margin-left: auto; }
+    .lang-btn {
+      padding: .25rem .6rem; border-radius: 6px; border: 1px solid var(--border);
+      background: transparent; color: var(--gray); font-size: .72rem; font-weight: 600;
+      cursor: pointer; transition: all .2s; font-family: 'Inter', sans-serif;
+    }
+    .lang-btn.active, .lang-btn:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,207,253,.08); }
 
     /* ── NAV ── */
     nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      position: sticky; top: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 1.2rem 5%;
+      padding: 1rem 5%;
       backdrop-filter: blur(20px);
-      background: rgba(5,13,26,0.7);
+      background: rgba(5,13,26,0.85);
       border-bottom: 1px solid var(--border);
-      transition: all .3s;
     }
-    .logo {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.4rem;
-      color: var(--white);
-      letter-spacing: .02em;
-    }
+    .logo { font-family: 'Playfair Display', serif; font-size: 1.3rem; }
     .logo span { color: var(--cyan); }
-    nav ul { display: flex; gap: 2rem; list-style: none; }
-    nav a { color: var(--gray); text-decoration: none; font-size: .9rem; font-weight: 500; transition: color .2s; }
+    nav ul { display: flex; gap: 1.8rem; list-style: none; }
+    nav a { color: var(--gray); text-decoration: none; font-size: .88rem; font-weight: 500; transition: color .2s; }
     nav a:hover { color: var(--white); }
     .nav-cta {
       background: linear-gradient(135deg, var(--blue), var(--cyan));
-      color: var(--white) !important;
-      padding: .5rem 1.2rem;
-      border-radius: 50px;
-      font-weight: 600 !important;
+      color: var(--white) !important; padding: .45rem 1.2rem;
+      border-radius: 50px; font-weight: 600 !important;
     }
     .hamburger { display: none; cursor: pointer; flex-direction: column; gap: 5px; }
     .hamburger span { display: block; width: 24px; height: 2px; background: var(--white); border-radius: 2px; }
 
     /* ── HERO ── */
     .hero {
-      min-height: 100vh;
-      display: flex; align-items: center; justify-content: center;
-      position: relative;
-      overflow: hidden;
+      min-height: 96vh; display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
       background: radial-gradient(ellipse at 30% 50%, #0A3055 0%, var(--navy) 60%);
     }
     .hero-bg {
       position: absolute; inset: 0;
-      background:
-        radial-gradient(ellipse 80% 60% at 70% 40%, rgba(0,207,253,0.08) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 80% at 10% 80%, rgba(0,112,243,0.1) 0%, transparent 60%);
+      background: radial-gradient(ellipse 80% 60% at 70% 40%, rgba(0,207,253,0.07) 0%, transparent 60%),
+                  radial-gradient(ellipse 50% 80% at 10% 80%, rgba(0,112,243,0.09) 0%, transparent 60%);
     }
-    .wave-container {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      height: 180px; overflow: hidden;
-    }
+    .wave-container { position: absolute; bottom: 0; left: 0; right: 0; height: 160px; overflow: hidden; }
     .wave {
-      position: absolute; bottom: 0;
-      width: 200%; height: 100%;
+      position: absolute; bottom: 0; width: 200%; height: 100%;
       background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 120'%3E%3Cpath fill='%23050D1A' fill-opacity='1' d='M0,64L48,69.3C96,75,192,85,288,80C384,75,480,53,576,48C672,43,768,53,864,64C960,75,1056,85,1152,80C1248,75,1344,53,1392,42.7L1440,32L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z'/%3E%3C/svg%3E") repeat-x bottom;
       background-size: 1440px 120px;
-      animation: wave1 8s linear infinite;
-      opacity: .7;
+      animation: wave1 8s linear infinite; opacity: .7;
     }
-    .wave2 {
-      animation: wave1 12s linear infinite reverse;
-      opacity: .4;
-    }
-    @keyframes wave1 { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .wave2 { animation: wave1 13s linear infinite reverse; opacity: .35; }
+    @keyframes wave1 { from{transform:translateX(0)} to{transform:translateX(-50%)} }
 
-    .hero-content {
-      position: relative; z-index: 2;
-      text-align: center;
-      max-width: 800px;
-      padding: 0 2rem;
-    }
+    .hero-content { position: relative; z-index: 2; text-align: center; max-width: 820px; padding: 0 2rem; }
     .hero-badge {
       display: inline-flex; align-items: center; gap: .5rem;
-      background: rgba(0,207,253,.1);
-      border: 1px solid rgba(0,207,253,.3);
-      padding: .4rem 1rem;
-      border-radius: 50px;
-      font-size: .8rem;
-      color: var(--cyan);
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      margin-bottom: 1.5rem;
+      background: rgba(0,207,253,.1); border: 1px solid rgba(0,207,253,.3);
+      padding: .4rem 1rem; border-radius: 50px; font-size: .78rem;
+      color: var(--cyan); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1.5rem;
     }
     .hero h1 {
       font-family: 'Playfair Display', serif;
-      font-size: clamp(3rem, 8vw, 6rem);
-      line-height: 1.05;
-      margin-bottom: 1.5rem;
+      font-size: clamp(3rem, 8vw, 6rem); line-height: 1.05; margin-bottom: 1.5rem;
       background: linear-gradient(135deg, #fff 30%, var(--cyan) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
-    .hero p {
-      font-size: 1.15rem;
-      color: var(--gray);
-      line-height: 1.7;
-      max-width: 520px;
-      margin: 0 auto 2.5rem;
-    }
+    .hero p { font-size: 1.1rem; color: var(--gray); line-height: 1.7; max-width: 520px; margin: 0 auto 2.5rem; }
     .hero-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
     .btn-primary {
-      padding: .9rem 2rem;
-      background: linear-gradient(135deg, var(--blue), var(--cyan));
-      color: white;
-      border: none;
-      border-radius: 50px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      transition: transform .2s, box-shadow .2s;
-      box-shadow: 0 4px 24px rgba(0,112,243,.4);
+      padding: .9rem 2rem; background: linear-gradient(135deg, var(--blue), var(--cyan));
+      color: white; border: none; border-radius: 50px; font-size: 1rem; font-weight: 600;
+      cursor: pointer; text-decoration: none; transition: transform .2s, box-shadow .2s;
+      box-shadow: 0 4px 24px rgba(0,112,243,.4); font-family: 'Inter', sans-serif;
     }
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,112,243,.5); }
     .btn-outline {
-      padding: .9rem 2rem;
-      background: transparent;
-      color: white;
-      border: 1px solid var(--border);
-      border-radius: 50px;
-      font-size: 1rem;
-      font-weight: 500;
-      cursor: pointer;
-      text-decoration: none;
-      transition: background .2s, border-color .2s;
+      padding: .9rem 2rem; background: transparent; color: white;
+      border: 1px solid var(--border); border-radius: 50px; font-size: 1rem; font-weight: 500;
+      cursor: pointer; text-decoration: none; transition: background .2s, border-color .2s;
     }
     .btn-outline:hover { background: var(--card); border-color: rgba(255,255,255,.3); }
-
-    .hero-stats {
-      display: flex; gap: 3rem; justify-content: center;
-      margin-top: 4rem;
-      flex-wrap: wrap;
-    }
+    .hero-stats { display: flex; gap: 3rem; justify-content: center; margin-top: 3.5rem; flex-wrap: wrap; }
     .stat { text-align: center; }
-    .stat-num {
-      font-family: 'Playfair Display', serif;
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--cyan);
-    }
-    .stat-label { font-size: .8rem; color: var(--gray); text-transform: uppercase; letter-spacing: .1em; }
+    .stat-num { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: var(--cyan); }
+    .stat-label { font-size: .78rem; color: var(--gray); text-transform: uppercase; letter-spacing: .1em; }
 
     /* ── SECTIONS ── */
-    section { padding: 6rem 5%; }
-    .section-tag {
-      display: inline-block;
-      font-size: .75rem;
-      font-weight: 600;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      color: var(--cyan);
-      margin-bottom: .8rem;
-    }
-    .section-title {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(2rem, 4vw, 3rem);
-      line-height: 1.15;
-      margin-bottom: 1rem;
-    }
-    .section-sub { color: var(--gray); font-size: 1.05rem; line-height: 1.7; max-width: 560px; }
+    section { padding: 5.5rem 5%; }
+    .section-tag { display: inline-block; font-size: .73rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--cyan); margin-bottom: .7rem; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: clamp(1.9rem, 4vw, 2.8rem); line-height: 1.15; margin-bottom: .9rem; }
+    .section-sub { color: var(--gray); font-size: 1rem; line-height: 1.7; max-width: 560px; }
+    .section-center { text-align: center; }
+    .section-center .section-sub { margin: 0 auto 3rem; }
 
     /* ── ABOUT ── */
-    .about-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 5rem;
-      align-items: center;
-      max-width: 1100px;
-      margin: 4rem auto 0;
-    }
-    .about-visual {
-      position: relative;
-      height: 420px;
-    }
-    .about-card {
-      position: absolute;
-      background: linear-gradient(135deg, rgba(0,112,243,.2), rgba(0,207,253,.1));
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      backdrop-filter: blur(10px);
-    }
-    .about-card.main {
-      width: 100%; height: 100%;
-      display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, rgba(0,168,150,.15), rgba(0,112,243,.1));
-    }
-    .ocean-icon { font-size: 8rem; }
-    .about-badge {
-      position: absolute;
-      bottom: -20px; right: -20px;
-      padding: 1.2rem 1.5rem;
-      text-align: center;
-      border-radius: 16px;
-      background: linear-gradient(135deg, var(--teal), var(--blue));
-      box-shadow: 0 8px 32px rgba(0,168,150,.4);
-    }
-    .about-badge strong { display: block; font-size: 1.8rem; font-weight: 700; }
-    .about-badge span { font-size: .8rem; opacity: .85; }
+    .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center; max-width: 1100px; margin: 3.5rem auto 0; }
+    .about-visual { position: relative; height: 400px; }
+    .about-card { position: absolute; border-radius: 20px; border: 1px solid var(--border); backdrop-filter: blur(10px); }
+    .about-card.main { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg,rgba(0,168,150,.15),rgba(0,112,243,.1)); font-size: 7rem; }
+    .about-badge { position: absolute; bottom:-18px; right:-18px; padding:1rem 1.3rem; text-align:center; border-radius:14px; background:linear-gradient(135deg,var(--teal),var(--blue)); box-shadow:0 8px 28px rgba(0,168,150,.4); }
+    .about-badge strong { display:block; font-size:1.6rem; font-weight:700; }
+    .about-badge span { font-size:.75rem; opacity:.85; }
+    .features { margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; }
+    .feature { display:flex; align-items:flex-start; gap:1rem; padding:1.1rem; background:var(--card); border:1px solid var(--border); border-radius:13px; transition:border-color .2s; }
+    .feature:hover { border-color:rgba(0,207,253,.3); }
+    .feature-icon { width:42px; height:42px; background:linear-gradient(135deg,rgba(0,207,253,.2),rgba(0,112,243,.2)); border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
+    .feature h4 { font-size:.9rem; font-weight:600; margin-bottom:.25rem; }
+    .feature p { font-size:.82rem; color:var(--gray); line-height:1.5; }
 
-    .features { margin-top: 2rem; display: flex; flex-direction: column; gap: 1.2rem; }
-    .feature {
-      display: flex; align-items: flex-start; gap: 1rem;
-      padding: 1.2rem;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      transition: border-color .2s;
+    /* ── BEACHES ── */
+    .beaches { background: linear-gradient(180deg, var(--navy) 0%, rgba(10,37,64,0.5) 100%); }
+    .beaches-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1.3rem; max-width:1100px; margin:3rem auto 0; }
+    .beach-card {
+      background:var(--card); border:1px solid var(--border); border-radius:20px;
+      overflow:hidden; transition:transform .3s, border-color .3s;
+      cursor:pointer;
     }
-    .feature:hover { border-color: rgba(0,207,253,.3); }
-    .feature-icon {
-      width: 44px; height: 44px;
-      background: linear-gradient(135deg, rgba(0,207,253,.2), rgba(0,112,243,.2));
-      border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.3rem; flex-shrink: 0;
+    .beach-card:hover { transform:translateY(-5px); border-color:rgba(0,207,253,.35); }
+    .beach-img { height:140px; display:flex; align-items:center; justify-content:center; font-size:4rem; position:relative; overflow:hidden; }
+    .beach-img.arrifana { background:linear-gradient(135deg,#0A3055,#00A896); }
+    .beach-img.monte { background:linear-gradient(135deg,#1a3a1a,#0070F3); }
+    .beach-img.amoreira { background:linear-gradient(135deg,#2a1a0a,#00CFFD); }
+    .beach-img.amado { background:linear-gradient(135deg,#1a0a2a,#FFB347); }
+    .beach-tag {
+      position:absolute; top:.7rem; right:.7rem;
+      font-size:.65rem; font-weight:700; padding:.2rem .6rem; border-radius:50px;
+      text-transform:uppercase; letter-spacing:.06em;
     }
-    .feature h4 { font-size: .95rem; font-weight: 600; margin-bottom: .3rem; }
-    .feature p { font-size: .85rem; color: var(--gray); line-height: 1.5; }
+    .tag-beginner { background:rgba(34,197,94,.2); color:var(--green); border:1px solid rgba(34,197,94,.3); }
+    .tag-inter { background:rgba(0,207,253,.2); color:var(--cyan); border:1px solid rgba(0,207,253,.3); }
+    .tag-adv { background:rgba(239,68,68,.2); color:var(--red); border:1px solid rgba(239,68,68,.3); }
+    .tag-all { background:rgba(255,179,71,.2); color:var(--gold); border:1px solid rgba(255,179,71,.3); }
+    .beach-body { padding:1.3rem; }
+    .beach-body h3 { font-size:1rem; font-weight:700; margin-bottom:.4rem; }
+    .beach-body p { font-size:.8rem; color:var(--gray); line-height:1.55; margin-bottom:.9rem; }
+    .beach-meta { display:flex; gap:.6rem; flex-wrap:wrap; }
+    .bmeta { font-size:.72rem; color:var(--gray); background:rgba(255,255,255,.05); padding:.2rem .6rem; border-radius:50px; }
+
+    /* ── TIDES ── */
+    .tides { background: linear-gradient(180deg, rgba(10,37,64,0.5) 0%, var(--navy) 100%); }
+    .tide-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:.8rem; max-width:1100px; margin:3rem auto 0; }
+    .tide-day {
+      background:var(--card); border:1px solid var(--border); border-radius:16px;
+      padding:1.1rem .9rem; text-align:center;
+      transition:transform .2s, border-color .2s;
+    }
+    .tide-day:hover { transform:translateY(-3px); border-color:rgba(0,207,253,.3); }
+    .tide-day.today { border-color:rgba(0,207,253,.5); background:rgba(0,207,253,.07); }
+    .tide-day-name { font-size:.68rem; text-transform:uppercase; letter-spacing:.1em; color:var(--gray); margin-bottom:.3rem; }
+    .tide-day-date { font-size:1.1rem; font-weight:700; margin-bottom:.8rem; }
+    .tide-entry { display:flex; align-items:center; justify-content:space-between; gap:.4rem; margin:.3rem 0; font-size:.78rem; }
+    .tide-time { color:var(--white); font-weight:600; }
+    .tide-height { font-weight:700; }
+    .tide-high { color:var(--cyan); }
+    .tide-low { color:var(--gray); }
+    .tide-arrow-up { color:var(--cyan); }
+    .tide-arrow-down { color:var(--gray); }
+    .surf-score { margin-top:.8rem; padding-top:.7rem; border-top:1px solid var(--border); }
+    .surf-dots { display:flex; justify-content:center; gap:3px; margin-bottom:.3rem; }
+    .surf-dot { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.15); }
+    .surf-dot.on { background:var(--green); box-shadow:0 0 4px var(--green); }
+    .surf-dot.mid { background:var(--gold); box-shadow:0 0 4px var(--gold); }
+    .surf-dot.off { background:var(--red); }
+    .surf-label { font-size:.65rem; color:var(--gray); }
 
     /* ── LESSONS ── */
-    .lessons { background: linear-gradient(180deg, var(--navy) 0%, var(--ocean) 50%, var(--navy) 100%); }
-    .lessons-header { text-align: center; max-width: 600px; margin: 0 auto 4rem; }
-    .lessons-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
+    .lessons { background:linear-gradient(180deg,var(--navy) 0%,var(--ocean) 50%,var(--navy) 100%); }
+    .lessons-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1.3rem; max-width:1100px; margin:3rem auto 0; }
     .lesson-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 2rem;
-      position: relative;
-      overflow: hidden;
-      transition: transform .3s, border-color .3s, box-shadow .3s;
-      cursor: pointer;
+      background:var(--card); border:1px solid var(--border); border-radius:20px; padding:1.8rem;
+      position:relative; overflow:hidden; transition:transform .3s,border-color .3s,box-shadow .3s;
     }
-    .lesson-card::before {
-      content: '';
-      position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, var(--blue), var(--cyan));
-      transform: scaleX(0); transition: transform .3s;
-    }
-    .lesson-card:hover { transform: translateY(-6px); border-color: rgba(0,207,253,.3); box-shadow: 0 20px 60px rgba(0,112,243,.2); }
-    .lesson-card:hover::before { transform: scaleX(1); }
-    .lesson-card.featured {
-      background: linear-gradient(135deg, rgba(0,112,243,.15), rgba(0,207,253,.08));
-      border-color: rgba(0,207,253,.4);
-    }
-    .lesson-card.featured::before { transform: scaleX(1); }
-    .badge-popular {
-      position: absolute; top: 1.2rem; right: 1.2rem;
-      background: linear-gradient(135deg, var(--gold), #FF8C00);
-      color: #000;
-      font-size: .7rem; font-weight: 700;
-      padding: .25rem .7rem;
-      border-radius: 50px;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-    }
-    .lesson-emoji { font-size: 2.5rem; margin-bottom: 1rem; display: block; }
-    .lesson-card h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: .5rem; }
-    .lesson-card p { font-size: .85rem; color: var(--gray); line-height: 1.6; margin-bottom: 1.5rem; }
-    .lesson-meta { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
-    .meta-tag {
-      display: flex; align-items: center; gap: .3rem;
-      font-size: .78rem;
-      color: var(--cyan);
-      background: rgba(0,207,253,.1);
-      padding: .3rem .7rem;
-      border-radius: 50px;
-    }
-    .lesson-price {
-      display: flex; align-items: baseline; gap: .4rem;
-    }
-    .price-val { font-size: 1.8rem; font-weight: 700; color: var(--white); }
-    .price-unit { font-size: .85rem; color: var(--gray); }
+    .lesson-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--blue),var(--cyan)); transform:scaleX(0); transition:transform .3s; }
+    .lesson-card:hover { transform:translateY(-6px); border-color:rgba(0,207,253,.3); box-shadow:0 20px 60px rgba(0,112,243,.2); }
+    .lesson-card:hover::before { transform:scaleX(1); }
+    .lesson-card.featured { background:linear-gradient(135deg,rgba(0,112,243,.15),rgba(0,207,253,.08)); border-color:rgba(0,207,253,.4); }
+    .lesson-card.featured::before { transform:scaleX(1); }
+    .badge-popular { position:absolute; top:1rem; right:1rem; background:linear-gradient(135deg,var(--gold),#FF8C00); color:#000; font-size:.65rem; font-weight:700; padding:.2rem .6rem; border-radius:50px; text-transform:uppercase; letter-spacing:.06em; }
+    .lesson-emoji { font-size:2.3rem; margin-bottom:.9rem; display:block; }
+    .lesson-card h3 { font-size:1.1rem; font-weight:700; margin-bottom:.4rem; }
+    .lesson-card p { font-size:.82rem; color:var(--gray); line-height:1.6; margin-bottom:1.3rem; }
+    .lesson-meta { display:flex; gap:.7rem; flex-wrap:wrap; margin-bottom:1.3rem; }
+    .meta-tag { display:flex; align-items:center; gap:.25rem; font-size:.75rem; color:var(--cyan); background:rgba(0,207,253,.1); padding:.25rem .65rem; border-radius:50px; }
+    .lesson-price { display:flex; align-items:baseline; gap:.35rem; }
+    .price-val { font-size:1.7rem; font-weight:700; }
+    .price-unit { font-size:.82rem; color:var(--gray); }
+    .includes { margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border); }
+    .includes-title { font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--gray); margin-bottom:.5rem; }
+    .include-item { font-size:.78rem; color:var(--gray); display:flex; align-items:center; gap:.4rem; margin:.2rem 0; }
+    .include-item::before { content:'✓'; color:var(--green); font-weight:700; }
 
     /* ── BOOKING ── */
-    .booking-wrapper {
-      max-width: 900px;
-      margin: 4rem auto 0;
-      background: rgba(255,255,255,.03);
-      border: 1px solid var(--border);
-      border-radius: 28px;
-      overflow: hidden;
-    }
-    .booking-steps {
-      display: flex;
-      background: rgba(0,0,0,.2);
-      border-bottom: 1px solid var(--border);
-    }
-    .step-tab {
-      flex: 1;
-      padding: 1.2rem;
-      text-align: center;
-      font-size: .8rem;
-      font-weight: 600;
-      color: var(--gray);
-      position: relative;
-      transition: color .2s;
-    }
-    .step-tab.active { color: var(--cyan); }
-    .step-tab.done { color: var(--teal); }
-    .step-tab::after {
-      content: '';
-      position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
-      background: var(--cyan);
-      transform: scaleX(0);
-      transition: transform .3s;
-    }
-    .step-tab.active::after, .step-tab.done::after { transform: scaleX(1); }
-    .step-num {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 24px; height: 24px;
-      border-radius: 50%;
-      font-size: .75rem;
-      font-weight: 700;
-      background: rgba(255,255,255,.1);
-      margin-right: .5rem;
-      transition: background .2s;
-    }
-    .step-tab.active .step-num { background: var(--cyan); color: var(--navy); }
-    .step-tab.done .step-num { background: var(--teal); color: white; }
+    .booking-wrapper { max-width:940px; margin:3rem auto 0; background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:28px; overflow:hidden; }
+    .booking-steps { display:flex; background:rgba(0,0,0,.2); border-bottom:1px solid var(--border); }
+    .step-tab { flex:1; padding:1.1rem .5rem; text-align:center; font-size:.78rem; font-weight:600; color:var(--gray); position:relative; transition:color .2s; cursor:default; }
+    .step-tab.active { color:var(--cyan); }
+    .step-tab.done { color:var(--teal); }
+    .step-tab::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background:var(--cyan); transform:scaleX(0); transition:transform .3s; }
+    .step-tab.active::after,.step-tab.done::after { transform:scaleX(1); }
+    .step-num { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; font-size:.72rem; font-weight:700; background:rgba(255,255,255,.1); margin-right:.4rem; transition:background .2s; }
+    .step-tab.active .step-num { background:var(--cyan); color:var(--navy); }
+    .step-tab.done .step-num { background:var(--teal); color:white; }
+    .booking-body { padding:2.3rem; }
+    .step-panel { display:none; }
+    .step-panel.active { display:block; animation:fadeIn .3s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .step-title { font-size:1.25rem; font-weight:700; margin-bottom:.4rem; }
+    .step-desc { font-size:.88rem; color:var(--gray); margin-bottom:1.8rem; }
 
-    .booking-body { padding: 2.5rem; }
+    /* Lesson options */
+    .lesson-options { display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:.9rem; }
+    .lesson-option { padding:1.2rem; background:var(--card); border:2px solid var(--border); border-radius:15px; cursor:pointer; transition:all .2s; text-align:center; }
+    .lesson-option:hover { border-color:rgba(0,207,253,.4); background:rgba(0,207,253,.06); }
+    .lesson-option.selected { border-color:var(--cyan); background:rgba(0,207,253,.1); }
+    .lesson-option .opt-icon { font-size:1.9rem; margin-bottom:.5rem; display:block; }
+    .lesson-option .opt-name { font-weight:600; font-size:.9rem; margin-bottom:.2rem; }
+    .lesson-option .opt-price { font-size:.78rem; color:var(--cyan); }
 
-    .step-panel { display: none; }
-    .step-panel.active { display: block; animation: fadeIn .3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* Calendar */
+    .calendar-wrap { max-width:600px; }
+    .cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.2rem; }
+    .cal-title { font-size:1.05rem; font-weight:700; }
+    .cal-nav { width:36px; height:36px; border-radius:50%; border:1px solid var(--border); background:transparent; color:var(--white); font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+    .cal-nav:hover { border-color:var(--cyan); color:var(--cyan); }
+    .cal-days-header { display:grid; grid-template-columns:repeat(7,1fr); gap:.3rem; margin-bottom:.4rem; }
+    .cal-dh { text-align:center; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; color:var(--gray); padding:.3rem 0; }
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:.3rem; }
+    .cal-cell { aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:10px; font-size:.85rem; font-weight:500; cursor:pointer; transition:all .2s; position:relative; border:1px solid transparent; }
+    .cal-cell.empty { cursor:default; }
+    .cal-cell.past { color:rgba(255,255,255,.2); cursor:not-allowed; }
+    .cal-cell.available { color:var(--white); }
+    .cal-cell.available:hover { background:rgba(0,207,253,.15); border-color:rgba(0,207,253,.4); }
+    .cal-cell.selected { background:var(--cyan); color:var(--navy); font-weight:700; border-color:var(--cyan); }
+    .cal-cell.today { border-color:rgba(0,207,253,.5); }
+    .cal-cell .avail-dot { position:absolute; bottom:3px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:var(--green); }
+    .cal-cell.full-day .avail-dot { background:var(--red); }
 
-    .step-title { font-size: 1.3rem; font-weight: 700; margin-bottom: .5rem; }
-    .step-desc { font-size: .9rem; color: var(--gray); margin-bottom: 2rem; }
+    /* Slots */
+    .slots-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.9rem; }
+    .slot-card { padding:1.1rem; background:var(--card); border:1px solid var(--border); border-radius:13px; cursor:pointer; transition:all .2s; position:relative; }
+    .slot-card.available:hover { border-color:rgba(0,207,253,.4); background:rgba(0,207,253,.06); }
+    .slot-card.selected { border-color:var(--cyan); background:rgba(0,207,253,.1); }
+    .slot-card.full { opacity:.4; cursor:not-allowed; }
+    .slot-time { font-size:1.15rem; font-weight:700; margin-bottom:.4rem; }
+    .slot-status { font-size:.76rem; color:var(--gray); display:flex; align-items:center; gap:.35rem; }
+    .avail-dot-inline { width:7px; height:7px; border-radius:50%; display:inline-block; flex-shrink:0; }
+    .available .avail-dot-inline { background:var(--green); box-shadow:0 0 5px var(--green); }
+    .full .avail-dot-inline { background:var(--red); }
+    .slot-badge-full { position:absolute; top:.6rem; right:.6rem; font-size:.6rem; font-weight:700; padding:.15rem .45rem; border-radius:50px; background:rgba(239,68,68,.15); color:var(--red); text-transform:uppercase; }
+    .slot-vagas { font-size:.72rem; color:var(--gray); margin-top:.3rem; }
 
-    /* Step 1 — Lesson type */
-    .lesson-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
-    .lesson-option {
-      padding: 1.3rem;
-      background: var(--card);
-      border: 2px solid var(--border);
-      border-radius: 16px;
-      cursor: pointer;
-      transition: all .2s;
-      text-align: center;
-    }
-    .lesson-option:hover { border-color: rgba(0,207,253,.4); background: rgba(0,207,253,.06); }
-    .lesson-option.selected { border-color: var(--cyan); background: rgba(0,207,253,.1); }
-    .lesson-option .opt-icon { font-size: 2rem; margin-bottom: .6rem; display: block; }
-    .lesson-option .opt-name { font-weight: 600; font-size: .95rem; margin-bottom: .3rem; }
-    .lesson-option .opt-price { font-size: .8rem; color: var(--cyan); }
-
-    /* Step 2 — Date */
-    .date-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: .5rem; }
-    .date-btn {
-      padding: .8rem .3rem;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      cursor: pointer;
-      text-align: center;
-      transition: all .2s;
-    }
-    .date-btn:hover { border-color: rgba(0,207,253,.4); }
-    .date-btn.selected { border-color: var(--cyan); background: rgba(0,207,253,.1); }
-    .date-btn .day-name { font-size: .68rem; color: var(--gray); text-transform: uppercase; letter-spacing: .05em; display: block; }
-    .date-btn .day-num { font-size: 1.2rem; font-weight: 700; display: block; }
-    .date-btn .day-month { font-size: .7rem; color: var(--gray); display: block; }
-
-    /* Step 3 — Time slots */
-    .slots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
-    .slot-card {
-      padding: 1.2rem;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      cursor: pointer;
-      transition: all .2s;
-      position: relative;
-    }
-    .slot-card.available:hover { border-color: rgba(0,207,253,.4); background: rgba(0,207,253,.06); }
-    .slot-card.selected { border-color: var(--cyan); background: rgba(0,207,253,.1); }
-    .slot-card.full { opacity: .45; cursor: not-allowed; }
-    .slot-time { font-size: 1.2rem; font-weight: 700; margin-bottom: .5rem; }
-    .slot-info { font-size: .78rem; color: var(--gray); display: flex; align-items: center; gap: .4rem; }
-    .availability-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      display: inline-block;
-    }
-    .available .availability-dot { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
-    .full .availability-dot { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
-    .slot-vagas { font-size: .78rem; color: var(--gray); margin-top: .4rem; }
-    .slot-full-text { color: #ef4444; font-weight: 600; }
-    .slot-badge-full {
-      position: absolute; top: .7rem; right: .7rem;
-      font-size: .65rem; font-weight: 700;
-      padding: .2rem .5rem;
-      border-radius: 50px;
-      background: rgba(239,68,68,.15);
-      color: #ef4444;
-      text-transform: uppercase;
-    }
-
-    /* Step 4 — Form */
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
-    .form-group { display: flex; flex-direction: column; gap: .5rem; }
-    .form-group.full { grid-column: 1 / -1; }
-    label { font-size: .85rem; font-weight: 500; color: var(--gray); }
-    input, select, textarea {
-      background: rgba(255,255,255,.07);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: .85rem 1rem;
-      color: var(--white);
-      font-family: 'Inter', sans-serif;
-      font-size: .95rem;
-      transition: border-color .2s;
-      outline: none;
-    }
-    input::placeholder, textarea::placeholder { color: #5a6b80; }
-    input:focus, select:focus, textarea:focus { border-color: var(--cyan); }
-    select option { background: var(--ocean); }
-    textarea { resize: vertical; min-height: 80px; }
-
-    .booking-summary {
-      background: rgba(0,207,253,.06);
-      border: 1px solid rgba(0,207,253,.2);
-      border-radius: 16px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-    .summary-title { font-size: .8rem; color: var(--cyan); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 1rem; font-weight: 600; }
-    .summary-items { display: flex; flex-direction: column; gap: .6rem; }
-    .summary-item { display: flex; justify-content: space-between; font-size: .9rem; }
-    .summary-item span { color: var(--gray); }
-    .summary-item strong { color: var(--white); }
-    .summary-total {
-      display: flex; justify-content: space-between;
-      margin-top: .8rem;
-      padding-top: .8rem;
-      border-top: 1px solid var(--border);
-      font-size: 1rem; font-weight: 700;
-    }
-    .total-price { color: var(--cyan); font-size: 1.2rem; }
-
-    .btn-whatsapp {
-      width: 100%;
-      padding: 1.1rem;
-      background: #25D366;
-      color: white;
-      border: none;
-      border-radius: 14px;
-      font-size: 1.05rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: .7rem;
-      transition: transform .2s, box-shadow .2s;
-      box-shadow: 0 4px 24px rgba(37,211,102,.3);
-      font-family: 'Inter', sans-serif;
-    }
-    .btn-whatsapp:hover { transform: translateY(-2px); box-shadow: 0 8px 36px rgba(37,211,102,.4); }
-    .wa-icon { font-size: 1.3rem; }
-
-    .nav-btns { display: flex; justify-content: space-between; margin-top: 2rem; gap: 1rem; }
-    .btn-back {
-      padding: .85rem 1.8rem;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      color: var(--gray);
-      font-size: .95rem;
-      cursor: pointer;
-      font-family: 'Inter', sans-serif;
-      transition: all .2s;
-    }
-    .btn-back:hover { border-color: rgba(255,255,255,.3); color: var(--white); }
-    .btn-next {
-      flex: 1;
-      padding: .85rem 1.8rem;
-      background: linear-gradient(135deg, var(--blue), var(--cyan));
-      border: none;
-      border-radius: 12px;
-      color: white;
-      font-size: .95rem;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: 'Inter', sans-serif;
-      transition: transform .2s, box-shadow .2s;
-      box-shadow: 0 4px 20px rgba(0,112,243,.35);
-    }
-    .btn-next:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(0,112,243,.5); }
-    .btn-next:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+    /* Form */
+    .booking-summary { background:rgba(0,207,253,.06); border:1px solid rgba(0,207,253,.2); border-radius:15px; padding:1.3rem; margin-bottom:1.4rem; }
+    .summary-title { font-size:.75rem; color:var(--cyan); text-transform:uppercase; letter-spacing:.08em; margin-bottom:.9rem; font-weight:600; }
+    .summary-items { display:flex; flex-direction:column; gap:.5rem; }
+    .summary-item { display:flex; justify-content:space-between; font-size:.87rem; }
+    .summary-item span { color:var(--gray); }
+    .summary-item strong { color:var(--white); }
+    .summary-total { display:flex; justify-content:space-between; margin-top:.7rem; padding-top:.7rem; border-top:1px solid var(--border); font-size:.95rem; font-weight:700; }
+    .total-price { color:var(--cyan); font-size:1.15rem; }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.1rem; margin-bottom:1.5rem; }
+    .form-group { display:flex; flex-direction:column; gap:.4rem; }
+    .form-group.full { grid-column:1/-1; }
+    label { font-size:.82rem; font-weight:500; color:var(--gray); }
+    input,select,textarea { background:rgba(255,255,255,.07); border:1px solid var(--border); border-radius:11px; padding:.8rem .95rem; color:var(--white); font-family:'Inter',sans-serif; font-size:.92rem; transition:border-color .2s; outline:none; }
+    input::placeholder,textarea::placeholder { color:#4a5a6e; }
+    input:focus,select:focus,textarea:focus { border-color:var(--cyan); }
+    select option { background:var(--ocean); }
+    textarea { resize:vertical; min-height:75px; }
+    .btn-whatsapp { width:100%; padding:1.05rem; background:#25D366; color:white; border:none; border-radius:13px; font-size:1rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:.65rem; transition:transform .2s,box-shadow .2s; box-shadow:0 4px 20px rgba(37,211,102,.3); font-family:'Inter',sans-serif; }
+    .btn-whatsapp:hover { transform:translateY(-2px); box-shadow:0 8px 32px rgba(37,211,102,.4); }
+    .nav-btns { display:flex; justify-content:space-between; margin-top:1.8rem; gap:1rem; }
+    .btn-back { padding:.8rem 1.6rem; background:transparent; border:1px solid var(--border); border-radius:11px; color:var(--gray); font-size:.9rem; cursor:pointer; font-family:'Inter',sans-serif; transition:all .2s; }
+    .btn-back:hover { border-color:rgba(255,255,255,.3); color:var(--white); }
+    .btn-next { flex:1; padding:.8rem 1.6rem; background:linear-gradient(135deg,var(--blue),var(--cyan)); border:none; border-radius:11px; color:white; font-size:.9rem; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; transition:transform .2s,box-shadow .2s; box-shadow:0 4px 18px rgba(0,112,243,.3); }
+    .btn-next:hover { transform:translateY(-1px); box-shadow:0 6px 24px rgba(0,112,243,.45); }
+    .btn-next:disabled { opacity:.35; cursor:not-allowed; transform:none; }
 
     /* ── INSTRUCTORS ── */
-    .instructors-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1.5rem;
-      max-width: 900px;
-      margin: 4rem auto 0;
-    }
-    .instructor-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 2rem;
-      text-align: center;
-      transition: transform .3s, border-color .3s;
-    }
-    .instructor-card:hover { transform: translateY(-4px); border-color: rgba(0,207,253,.3); }
-    .instructor-avatar {
-      width: 90px; height: 90px;
-      border-radius: 50%;
-      margin: 0 auto 1.2rem;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2.8rem;
-    }
-    .avatar-blue { background: linear-gradient(135deg, rgba(0,112,243,.3), rgba(0,207,253,.2)); }
-    .avatar-teal { background: linear-gradient(135deg, rgba(0,168,150,.3), rgba(0,112,243,.2)); }
-    .instructor-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: .3rem; }
-    .instructor-role { font-size: .82rem; color: var(--cyan); margin-bottom: .8rem; }
-    .instructor-card p { font-size: .85rem; color: var(--gray); line-height: 1.6; margin-bottom: 1rem; }
-    .instructor-tags { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; }
-    .itag {
-      font-size: .72rem;
-      background: rgba(0,207,253,.08);
-      border: 1px solid rgba(0,207,253,.2);
-      color: var(--cyan);
-      padding: .25rem .7rem;
-      border-radius: 50px;
-    }
+    .instructors-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1.3rem; max-width:900px; margin:3rem auto 0; }
+    .instructor-card { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:1.8rem; text-align:center; transition:transform .3s,border-color .3s; }
+    .instructor-card:hover { transform:translateY(-4px); border-color:rgba(0,207,253,.3); }
+    .instructor-avatar { width:84px; height:84px; border-radius:50%; margin:0 auto 1rem; display:flex; align-items:center; justify-content:center; font-size:2.5rem; }
+    .avatar-blue { background:linear-gradient(135deg,rgba(0,112,243,.3),rgba(0,207,253,.2)); }
+    .avatar-teal { background:linear-gradient(135deg,rgba(0,168,150,.3),rgba(0,112,243,.2)); }
+    .instructor-card h3 { font-size:1.05rem; font-weight:700; margin-bottom:.25rem; }
+    .instructor-role { font-size:.79rem; color:var(--cyan); margin-bottom:.7rem; }
+    .instructor-card p { font-size:.82rem; color:var(--gray); line-height:1.6; margin-bottom:.9rem; }
+    .instructor-tags { display:flex; gap:.4rem; justify-content:center; flex-wrap:wrap; }
+    .itag { font-size:.7rem; background:rgba(0,207,253,.08); border:1px solid rgba(0,207,253,.2); color:var(--cyan); padding:.2rem .6rem; border-radius:50px; }
 
     /* ── FOOTER ── */
-    footer {
-      background: rgba(0,0,0,.3);
-      border-top: 1px solid var(--border);
-      padding: 3rem 5%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 1.5rem;
-    }
-    .footer-logo {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.2rem;
-    }
-    .footer-logo span { color: var(--cyan); }
-    footer p { font-size: .85rem; color: var(--gray); }
-    .footer-links { display: flex; gap: 1.5rem; }
-    .footer-links a { color: var(--gray); text-decoration: none; font-size: .85rem; transition: color .2s; }
-    .footer-links a:hover { color: var(--white); }
+    footer { background:rgba(0,0,0,.3); border-top:1px solid var(--border); padding:2.5rem 5%; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1.3rem; }
+    .footer-logo { font-family:'Playfair Display',serif; font-size:1.15rem; }
+    .footer-logo span { color:var(--cyan); }
+    footer p { font-size:.82rem; color:var(--gray); }
+    .footer-links { display:flex; gap:1.3rem; }
+    .footer-links a { color:var(--gray); text-decoration:none; font-size:.82rem; transition:color .2s; }
+    .footer-links a:hover { color:var(--white); }
 
     /* ── RESPONSIVE ── */
-    @media (max-width: 768px) {
-      nav ul { display: none; }
-      .hamburger { display: flex; }
-      .about-grid { grid-template-columns: 1fr; gap: 3rem; }
-      .about-visual { height: 250px; }
-      .date-grid { grid-template-columns: repeat(4, 1fr); }
-      .form-grid { grid-template-columns: 1fr; }
-      .form-group.full { grid-column: 1; }
-      .booking-steps { flex-direction: column; }
-      .step-tab { padding: .8rem; font-size: .75rem; }
-      footer { flex-direction: column; text-align: center; }
-    }
-    @media (max-width: 480px) {
-      .date-grid { grid-template-columns: repeat(3, 1fr); }
-      .hero-stats { gap: 1.5rem; }
+    @media(max-width:768px) {
+      nav ul { display:none; }
+      .hamburger { display:flex; }
+      .about-grid { grid-template-columns:1fr; gap:3rem; }
+      .about-visual { height:220px; }
+      .form-grid { grid-template-columns:1fr; }
+      .form-group.full { grid-column:1; }
+      .booking-steps { flex-wrap:wrap; }
+      .step-tab { padding:.7rem .3rem; font-size:.7rem; flex:1 1 25%; }
+      footer { flex-direction:column; text-align:center; }
+      .conditions-bar { justify-content:center; }
     }
   </style>
 </head>
 <body>
 
+<!-- CONDITIONS BAR -->
+<div class="conditions-bar">
+  <div style="display:flex;gap:1.2rem;flex-wrap:wrap;align-items:center">
+    <div class="cond-item">🌊 <span data-t="cond_wave"></span>: <span class="cond-val cond-good">1.2m</span></div>
+    <span class="cond-sep">·</span>
+    <div class="cond-item">💨 <span data-t="cond_wind"></span>: <span class="cond-val">NO 14km/h</span></div>
+    <span class="cond-sep">·</span>
+    <div class="cond-item">🌡 <span data-t="cond_water"></span>: <span class="cond-val">18°C</span></div>
+    <span class="cond-sep">·</span>
+    <div class="cond-item" id="next-tide-bar">⬆ <span data-t="cond_tide"></span>: <span class="cond-val" id="next-tide-val">—</span></div>
+    <span class="cond-sep">·</span>
+    <div class="cond-item">🕐 <span data-t="cond_pt"></span>: <span class="cond-val" id="pt-time">—</span></div>
+  </div>
+  <div class="lang-switcher">
+    <button class="lang-btn active" onclick="setLang('pt')">PT</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" onclick="setLang('fr')">FR</button>
+    <button class="lang-btn" onclick="setLang('de')">DE</button>
+  </div>
+</div>
+
 <!-- NAV -->
 <nav id="navbar">
   <div class="logo">Arrifana <span>Surf</span> Academy</div>
   <ul>
-    <li><a href="#sobre">Sobre</a></li>
-    <li><a href="#aulas">Aulas</a></li>
-    <li><a href="#instrutores">Instrutores</a></li>
-    <li><a href="#reservar" class="nav-cta">Reservar</a></li>
+    <li><a href="#sobre" data-t="nav_sobre"></a></li>
+    <li><a href="#praias" data-t="nav_praias"></a></li>
+    <li><a href="#mares" data-t="nav_mares"></a></li>
+    <li><a href="#aulas" data-t="nav_aulas"></a></li>
+    <li><a href="#reservar" class="nav-cta" data-t="nav_reservar"></a></li>
   </ul>
-  <div class="hamburger" onclick="toggleMenu()">
-    <span></span><span></span><span></span>
-  </div>
+  <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
 </nav>
 
 <!-- HERO -->
 <section class="hero" id="home">
   <div class="hero-bg"></div>
   <div class="hero-content">
-    <div class="hero-badge">🌊 Praia da Arrifana · Aljezur · Algarve</div>
-    <h1>Aprende a<br>Surfar com<br>Paixão</h1>
-    <p>Na Costa Vicentina, onde as ondas são perfeitas e a natureza é intocada. Aulas para todos os níveis, instrutores certificados ISA.</p>
+    <div class="hero-badge">🌊 Praia da Arrifana · Aljezur · Costa Vicentina</div>
+    <h1 data-t="hero_title"></h1>
+    <p data-t="hero_sub"></p>
     <div class="hero-btns">
-      <a href="#reservar" class="btn-primary">Reservar Aula</a>
-      <a href="#aulas" class="btn-outline">Ver Aulas</a>
+      <a href="#reservar" class="btn-primary" data-t="hero_cta1"></a>
+      <a href="#aulas" class="btn-outline" data-t="hero_cta2"></a>
     </div>
     <div class="hero-stats">
-      <div class="stat"><div class="stat-num">500+</div><div class="stat-label">Alunos / ano</div></div>
-      <div class="stat"><div class="stat-num">12</div><div class="stat-label">Anos de experiência</div></div>
-      <div class="stat"><div class="stat-num">98%</div><div class="stat-label">Satisfação</div></div>
-      <div class="stat"><div class="stat-num">ISA</div><div class="stat-label">Certificados</div></div>
+      <div class="stat"><div class="stat-num">500+</div><div class="stat-label" data-t="stat_alunos"></div></div>
+      <div class="stat"><div class="stat-num">12</div><div class="stat-label" data-t="stat_anos"></div></div>
+      <div class="stat"><div class="stat-num">98%</div><div class="stat-label" data-t="stat_sat"></div></div>
+      <div class="stat"><div class="stat-num">ISA</div><div class="stat-label" data-t="stat_cert"></div></div>
     </div>
   </div>
-  <div class="wave-container">
-    <div class="wave"></div>
-    <div class="wave wave2"></div>
-  </div>
+  <div class="wave-container"><div class="wave"></div><div class="wave wave2"></div></div>
 </section>
 
 <!-- ABOUT -->
 <section id="sobre">
   <div class="about-grid">
     <div class="about-visual">
-      <div class="about-card main">
-        <span class="ocean-icon">🏄</span>
-      </div>
-      <div class="about-badge">
-        <strong>⭐ 4.9</strong>
-        <span>+320 avaliações</span>
-      </div>
+      <div class="about-card main">🏄</div>
+      <div class="about-badge"><strong>⭐ 4.9</strong><span data-t="about_reviews"></span></div>
     </div>
     <div>
-      <span class="section-tag">Sobre nós</span>
-      <h2 class="section-title">A melhor escola de<br>surf do Algarve</h2>
-      <p class="section-sub">Fundada em 2013 na Praia da Arrifana, somos apaixonados pelo surf e pela natureza da Costa Vicentina. O nosso método garante que qualquer pessoa — de qualquer idade ou condição física — aprende a surfar em segurança e se diverte.</p>
+      <span class="section-tag" data-t="about_tag"></span>
+      <h2 class="section-title" data-t="about_title"></h2>
+      <p class="section-sub" data-t="about_sub"></p>
       <div class="features">
-        <div class="feature">
-          <div class="feature-icon">🎓</div>
-          <div>
-            <h4>Instrutores ISA Certificados</h4>
-            <p>Todos os nossos instrutores possuem certificação internacional e formação em primeiros socorros.</p>
-          </div>
+        <div class="feature"><div class="feature-icon">🎓</div><div><h4 data-t="feat1_title"></h4><p data-t="feat1_sub"></p></div></div>
+        <div class="feature"><div class="feature-icon">🏄‍♂️</div><div><h4 data-t="feat2_title"></h4><p data-t="feat2_sub"></p></div></div>
+        <div class="feature"><div class="feature-icon">📍</div><div><h4 data-t="feat3_title"></h4><p data-t="feat3_sub"></p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BEACHES -->
+<section class="beaches" id="praias">
+  <div class="section-center">
+    <span class="section-tag" data-t="beaches_tag"></span>
+    <h2 class="section-title" data-t="beaches_title"></h2>
+    <p class="section-sub" data-t="beaches_sub"></p>
+  </div>
+  <div class="beaches-grid">
+    <div class="beach-card">
+      <div class="beach-img arrifana">🏄<span class="beach-tag tag-all" data-t="level_all"></span></div>
+      <div class="beach-body">
+        <h3>Praia da Arrifana</h3>
+        <p data-t="beach1_desc"></p>
+        <div class="beach-meta">
+          <span class="bmeta" data-t="beach_wave_type"></span>
+          <span class="bmeta">↗ 1-3m</span>
+          <span class="bmeta" data-t="beach1_wind"></span>
         </div>
-        <div class="feature">
-          <div class="feature-icon">🏄‍♂️</div>
-          <div>
-            <h4>Material de Qualidade</h4>
-            <p>Fatos de neoprene, pranchas softop e leashes incluídos em todas as aulas.</p>
-          </div>
+      </div>
+    </div>
+    <div class="beach-card">
+      <div class="beach-img monte">🌿<span class="beach-tag tag-beginner" data-t="level_beg"></span></div>
+      <div class="beach-body">
+        <h3>Praia de Monte Clérigo</h3>
+        <p data-t="beach2_desc"></p>
+        <div class="beach-meta">
+          <span class="bmeta" data-t="beach_sandy"></span>
+          <span class="bmeta">↗ 0.5-1.5m</span>
+          <span class="bmeta" data-t="beach2_wind"></span>
         </div>
-        <div class="feature">
-          <div class="feature-icon">📍</div>
-          <div>
-            <h4>Localização Privilegiada</h4>
-            <p>Arrifana tem ondas perfeitas para iniciantes e desafios para avançados. Dentro do Parque Natural do Sudoeste Alentejano.</p>
-          </div>
+      </div>
+    </div>
+    <div class="beach-card">
+      <div class="beach-img amoreira">🌊<span class="beach-tag tag-beginner" data-t="level_beg"></span></div>
+      <div class="beach-body">
+        <h3>Praia da Amoreira</h3>
+        <p data-t="beach3_desc"></p>
+        <div class="beach-meta">
+          <span class="bmeta" data-t="beach_river"></span>
+          <span class="bmeta">↗ 0.5-1m</span>
+          <span class="bmeta" data-t="beach3_wind"></span>
+        </div>
+      </div>
+    </div>
+    <div class="beach-card">
+      <div class="beach-img amado">🔥<span class="beach-tag tag-adv" data-t="level_adv"></span></div>
+      <div class="beach-body">
+        <h3>Praia do Amado</h3>
+        <p data-t="beach4_desc"></p>
+        <div class="beach-meta">
+          <span class="bmeta" data-t="beach_reef"></span>
+          <span class="bmeta">↗ 1-4m</span>
+          <span class="bmeta" data-t="beach4_wind"></span>
         </div>
       </div>
     </div>
   </div>
 </section>
 
+<!-- TIDES -->
+<section class="tides" id="mares">
+  <div class="section-center">
+    <span class="section-tag" data-t="tides_tag"></span>
+    <h2 class="section-title" data-t="tides_title"></h2>
+    <p class="section-sub" data-t="tides_sub"></p>
+  </div>
+  <div class="tide-grid" id="tide-grid"></div>
+</section>
+
 <!-- LESSONS -->
 <section class="lessons" id="aulas">
-  <div class="lessons-header">
-    <span class="section-tag">Modalidades</span>
-    <h2 class="section-title">Escolhe a tua aula</h2>
-    <p class="section-sub">Do primeiro contacto com o oceano até às manobras avançadas — temos a aula certa para ti.</p>
+  <div class="section-center">
+    <span class="section-tag" data-t="lessons_tag"></span>
+    <h2 class="section-title" data-t="lessons_title"></h2>
+    <p class="section-sub" data-t="lessons_sub"></p>
   </div>
   <div class="lessons-grid">
     <div class="lesson-card">
       <span class="lesson-emoji">🌊</span>
-      <h3>Iniciante</h3>
-      <p>Nunca surfaste? Começa aqui. Teoria, segurança, remada e primeiras ondas em pé — tudo em 2 horas.</p>
-      <div class="lesson-meta">
-        <span class="meta-tag">⏱ 2 horas</span>
-        <span class="meta-tag">👥 Máx. 6</span>
-      </div>
-      <div class="lesson-price">
-        <span class="price-val">€35</span>
-        <span class="price-unit">/ pessoa</span>
+      <h3 data-t="l1_name"></h3><p data-t="l1_desc"></p>
+      <div class="lesson-meta"><span class="meta-tag">⏱ 2h</span><span class="meta-tag">👥 <span data-t="max"></span> 6</span></div>
+      <div class="lesson-price"><span class="price-val">€35</span><span class="price-unit" data-t="per_person"></span></div>
+      <div class="includes"><div class="includes-title" data-t="includes"></div>
+        <div class="include-item" data-t="inc_wetsuit"></div>
+        <div class="include-item" data-t="inc_board"></div>
+        <div class="include-item" data-t="inc_insurance"></div>
       </div>
     </div>
     <div class="lesson-card featured">
-      <div class="badge-popular">Popular</div>
+      <div class="badge-popular" data-t="popular"></div>
       <span class="lesson-emoji">🏄</span>
-      <h3>Intermédio</h3>
-      <p>Já tens as bases? Aprende a ler as ondas, escolher a posição certa e encadear manobras.</p>
-      <div class="lesson-meta">
-        <span class="meta-tag">⏱ 2 horas</span>
-        <span class="meta-tag">👥 Máx. 4</span>
-      </div>
-      <div class="lesson-price">
-        <span class="price-val">€35</span>
-        <span class="price-unit">/ pessoa</span>
+      <h3 data-t="l2_name"></h3><p data-t="l2_desc"></p>
+      <div class="lesson-meta"><span class="meta-tag">⏱ 2h</span><span class="meta-tag">👥 <span data-t="max"></span> 4</span></div>
+      <div class="lesson-price"><span class="price-val">€35</span><span class="price-unit" data-t="per_person"></span></div>
+      <div class="includes"><div class="includes-title" data-t="includes"></div>
+        <div class="include-item" data-t="inc_wetsuit"></div>
+        <div class="include-item" data-t="inc_board"></div>
+        <div class="include-item" data-t="inc_insurance"></div>
       </div>
     </div>
     <div class="lesson-card">
       <span class="lesson-emoji">⭐</span>
-      <h3>Aula Privada</h3>
-      <p>Atenção 100% personalizada. Ideal para progressão rápida ou necessidades específicas.</p>
-      <div class="lesson-meta">
-        <span class="meta-tag">⏱ 1h30</span>
-        <span class="meta-tag">👤 Individual</span>
-      </div>
-      <div class="lesson-price">
-        <span class="price-val">€65</span>
-        <span class="price-unit">/ sessão</span>
+      <h3 data-t="l3_name"></h3><p data-t="l3_desc"></p>
+      <div class="lesson-meta"><span class="meta-tag">⏱ 1h30</span><span class="meta-tag">👤 1</span></div>
+      <div class="lesson-price"><span class="price-val">€65</span><span class="price-unit" data-t="per_session"></span></div>
+      <div class="includes"><div class="includes-title" data-t="includes"></div>
+        <div class="include-item" data-t="inc_wetsuit"></div>
+        <div class="include-item" data-t="inc_board"></div>
+        <div class="include-item" data-t="inc_video"></div>
       </div>
     </div>
     <div class="lesson-card">
       <span class="lesson-emoji">🌀</span>
-      <h3>Bodyboard</h3>
-      <p>Diversão garantida! Aprende a deslizar nas ondas com bodyboard — ótimo para todas as idades.</p>
-      <div class="lesson-meta">
-        <span class="meta-tag">⏱ 2 horas</span>
-        <span class="meta-tag">👥 Máx. 6</span>
-      </div>
-      <div class="lesson-price">
-        <span class="price-val">€30</span>
-        <span class="price-unit">/ pessoa</span>
+      <h3 data-t="l4_name"></h3><p data-t="l4_desc"></p>
+      <div class="lesson-meta"><span class="meta-tag">⏱ 2h</span><span class="meta-tag">👥 <span data-t="max"></span> 6</span></div>
+      <div class="lesson-price"><span class="price-val">€30</span><span class="price-unit" data-t="per_person"></span></div>
+      <div class="includes"><div class="includes-title" data-t="includes"></div>
+        <div class="include-item" data-t="inc_wetsuit"></div>
+        <div class="include-item" data-t="inc_bodyboard"></div>
+        <div class="include-item" data-t="inc_insurance"></div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- BOOKING -->
-<section id="reservar">
-  <div style="text-align:center; max-width:600px; margin:0 auto 1rem;">
-    <span class="section-tag">Marcações</span>
-    <h2 class="section-title">Reserva a tua aula</h2>
-    <p class="section-sub">Escolhe a modalidade, o dia e o horário — confirmamos via WhatsApp em minutos.</p>
+<section id="reservar" style="background:linear-gradient(180deg,var(--navy) 0%,var(--ocean) 100%)">
+  <div class="section-center">
+    <span class="section-tag" data-t="book_tag"></span>
+    <h2 class="section-title" data-t="book_title"></h2>
+    <p class="section-sub" data-t="book_sub"></p>
   </div>
-
   <div class="booking-wrapper">
     <div class="booking-steps">
-      <div class="step-tab active" id="tab-1"><span class="step-num">1</span>Modalidade</div>
-      <div class="step-tab" id="tab-2"><span class="step-num">2</span>Data</div>
-      <div class="step-tab" id="tab-3"><span class="step-num">3</span>Horário</div>
-      <div class="step-tab" id="tab-4"><span class="step-num">4</span>Dados</div>
+      <div class="step-tab active" id="tab-1"><span class="step-num">1</span><span data-t="step1_label"></span></div>
+      <div class="step-tab" id="tab-2"><span class="step-num">2</span><span data-t="step2_label"></span></div>
+      <div class="step-tab" id="tab-3"><span class="step-num">3</span><span data-t="step3_label"></span></div>
+      <div class="step-tab" id="tab-4"><span class="step-num">4</span><span data-t="step4_label"></span></div>
     </div>
-
     <div class="booking-body">
 
       <!-- STEP 1 -->
       <div class="step-panel active" id="step-1">
-        <h3 class="step-title">Que tipo de aula preferes?</h3>
-        <p class="step-desc">Seleciona a modalidade mais adequada ao teu nível.</p>
+        <h3 class="step-title" data-t="s1_title"></h3>
+        <p class="step-desc" data-t="s1_desc"></p>
         <div class="lesson-options">
-          <div class="lesson-option" onclick="selectLesson(this,'Iniciante','€35','€35')">
-            <span class="opt-icon">🌊</span>
-            <div class="opt-name">Iniciante</div>
-            <div class="opt-price">€35 / pessoa</div>
-          </div>
-          <div class="lesson-option" onclick="selectLesson(this,'Intermédio','€35','€35')">
-            <span class="opt-icon">🏄</span>
-            <div class="opt-name">Intermédio</div>
-            <div class="opt-price">€35 / pessoa</div>
-          </div>
-          <div class="lesson-option" onclick="selectLesson(this,'Privada','€65','€65')">
-            <span class="opt-icon">⭐</span>
-            <div class="opt-name">Privada</div>
-            <div class="opt-price">€65 / sessão</div>
-          </div>
-          <div class="lesson-option" onclick="selectLesson(this,'Bodyboard','€30','€30')">
-            <span class="opt-icon">🌀</span>
-            <div class="opt-name">Bodyboard</div>
-            <div class="opt-price">€30 / pessoa</div>
-          </div>
+          <div class="lesson-option" onclick="selectLesson(this,'l1_name',35,35)"><span class="opt-icon">🌊</span><div class="opt-name" data-t="l1_name"></div><div class="opt-price">€35/<span data-t="pp"></span></div></div>
+          <div class="lesson-option" onclick="selectLesson(this,'l2_name',35,35)"><span class="opt-icon">🏄</span><div class="opt-name" data-t="l2_name"></div><div class="opt-price">€35/<span data-t="pp"></span></div></div>
+          <div class="lesson-option" onclick="selectLesson(this,'l3_name',65,65)"><span class="opt-icon">⭐</span><div class="opt-name" data-t="l3_name"></div><div class="opt-price">€65/<span data-t="ps"></span></div></div>
+          <div class="lesson-option" onclick="selectLesson(this,'l4_name',30,30)"><span class="opt-icon">🌀</span><div class="opt-name" data-t="l4_name"></div><div class="opt-price">€30/<span data-t="pp"></span></div></div>
         </div>
-        <div class="nav-btns">
-          <div></div>
-          <button class="btn-next" id="next-1" onclick="goToStep(2)" disabled>Próximo →</button>
-        </div>
+        <div class="nav-btns"><div></div><button class="btn-next" id="next-1" onclick="goToStep(2)" disabled data-t="btn_next"></button></div>
       </div>
 
       <!-- STEP 2 -->
       <div class="step-panel" id="step-2">
-        <h3 class="step-title">Escolhe o dia</h3>
-        <p class="step-desc">Próximos 7 dias disponíveis.</p>
-        <div class="date-grid" id="date-grid"></div>
-        <div class="nav-btns">
-          <button class="btn-back" onclick="goToStep(1)">← Voltar</button>
-          <button class="btn-next" id="next-2" onclick="goToStep(3)" disabled>Próximo →</button>
+        <h3 class="step-title" data-t="s2_title"></h3>
+        <p class="step-desc" data-t="s2_desc"></p>
+        <div class="calendar-wrap">
+          <div class="cal-header">
+            <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+            <span class="cal-title" id="cal-month-title"></span>
+            <button class="cal-nav" onclick="changeMonth(1)">›</button>
+          </div>
+          <div class="cal-days-header" id="cal-days-header"></div>
+          <div class="cal-grid" id="cal-grid"></div>
         </div>
+        <div class="nav-btns"><button class="btn-back" onclick="goToStep(1)" data-t="btn_back"></button><button class="btn-next" id="next-2" onclick="goToStep(3)" disabled data-t="btn_next"></button></div>
       </div>
 
       <!-- STEP 3 -->
       <div class="step-panel" id="step-3">
-        <h3 class="step-title">Escolhe o horário</h3>
-        <p class="step-desc">Vagas disponíveis para o dia selecionado.</p>
+        <h3 class="step-title" data-t="s3_title"></h3>
+        <p class="step-desc" data-t="s3_desc"></p>
         <div class="slots-grid" id="slots-grid"></div>
-        <div class="nav-btns">
-          <button class="btn-back" onclick="goToStep(2)">← Voltar</button>
-          <button class="btn-next" id="next-3" onclick="goToStep(4)" disabled>Próximo →</button>
-        </div>
+        <div class="nav-btns"><button class="btn-back" onclick="goToStep(2)" data-t="btn_back"></button><button class="btn-next" id="next-3" onclick="goToStep(4)" disabled data-t="btn_next"></button></div>
       </div>
 
       <!-- STEP 4 -->
       <div class="step-panel" id="step-4">
-        <h3 class="step-title">Os teus dados</h3>
-        <p class="step-desc">Preenche para confirmarmos a reserva via WhatsApp.</p>
-
+        <h3 class="step-title" data-t="s4_title"></h3>
+        <p class="step-desc" data-t="s4_desc"></p>
         <div class="booking-summary" id="booking-summary"></div>
-
         <div class="form-grid">
-          <div class="form-group">
-            <label for="fname">Nome completo *</label>
-            <input type="text" id="fname" placeholder="Ex: João Silva" />
-          </div>
-          <div class="form-group">
-            <label for="fphone">Telemóvel *</label>
-            <input type="tel" id="fphone" placeholder="+351 9XX XXX XXX" />
-          </div>
-          <div class="form-group">
-            <label for="femail">Email</label>
-            <input type="email" id="femail" placeholder="joao@email.com" />
-          </div>
-          <div class="form-group">
-            <label for="fpessoas">Nº de pessoas</label>
+          <div class="form-group"><label data-t="f_name"></label><input type="text" id="fname" data-placeholder="f_name_ph" /></div>
+          <div class="form-group"><label data-t="f_phone"></label><input type="tel" id="fphone" placeholder="+351 9XX XXX XXX" /></div>
+          <div class="form-group"><label data-t="f_email"></label><input type="email" id="femail" data-placeholder="f_email_ph" /></div>
+          <div class="form-group"><label data-t="f_pessoas"></label>
             <select id="fpessoas">
-              <option value="1">1 pessoa</option>
-              <option value="2">2 pessoas</option>
-              <option value="3">3 pessoas</option>
-              <option value="4">4 pessoas</option>
-              <option value="5">5 pessoas</option>
-              <option value="6">6 pessoas</option>
+              <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+              <option value="4">4</option><option value="5">5</option><option value="6">6</option>
             </select>
           </div>
-          <div class="form-group full">
-            <label for="fnota">Nota (opcional)</label>
-            <textarea id="fnota" placeholder="Alergias, necessidades especiais, idades do grupo..."></textarea>
-          </div>
+          <div class="form-group full"><label data-t="f_nota"></label><textarea id="fnota" data-placeholder="f_nota_ph"></textarea></div>
         </div>
-
-        <button class="btn-whatsapp" onclick="reservarWhatsApp()">
-          <span class="wa-icon">📱</span> Confirmar via WhatsApp
-        </button>
-
-        <div class="nav-btns" style="margin-top:1rem;">
-          <button class="btn-back" onclick="goToStep(3)">← Voltar</button>
-          <div></div>
-        </div>
+        <button class="btn-whatsapp" onclick="reservarWhatsApp()">📱 <span data-t="btn_whatsapp"></span></button>
+        <div class="nav-btns" style="margin-top:1rem"><button class="btn-back" onclick="goToStep(3)" data-t="btn_back"></button><div></div></div>
       </div>
 
     </div>
@@ -875,45 +623,30 @@
 </section>
 
 <!-- INSTRUCTORS -->
-<section id="instrutores" style="background: linear-gradient(180deg, var(--navy) 0%, var(--ocean) 100%);">
-  <div style="text-align:center; max-width:600px; margin:0 auto;">
-    <span class="section-tag">Equipa</span>
-    <h2 class="section-title">Os nossos instrutores</h2>
-    <p class="section-sub">Profissionais apaixonados pelo surf e pelo ensino.</p>
+<section id="instrutores" style="background:linear-gradient(180deg,var(--ocean) 0%,var(--navy) 100%)">
+  <div class="section-center">
+    <span class="section-tag" data-t="team_tag"></span>
+    <h2 class="section-title" data-t="team_title"></h2>
+    <p class="section-sub" data-t="team_sub"></p>
   </div>
   <div class="instructors-grid">
     <div class="instructor-card">
       <div class="instructor-avatar avatar-blue">🏄‍♂️</div>
-      <h3>João Costa</h3>
-      <div class="instructor-role">Head Instructor · ISA Level 2</div>
-      <p>12 anos de experiência a ensinar surf na Arrifana. Campeão regional de longboard em 2016 e 2019.</p>
-      <div class="instructor-tags">
-        <span class="itag">Longboard</span>
-        <span class="itag">Iniciantes</span>
-        <span class="itag">Kids</span>
-      </div>
+      <h3>João Costa</h3><div class="instructor-role">Head Instructor · ISA Level 2</div>
+      <p data-t="inst1_desc"></p>
+      <div class="instructor-tags"><span class="itag">Longboard</span><span class="itag" data-t="l1_name"></span><span class="itag">Kids</span></div>
     </div>
     <div class="instructor-card">
       <div class="instructor-avatar avatar-teal">🏄‍♀️</div>
-      <h3>Maria Ferreira</h3>
-      <div class="instructor-role">Instrutora · ISA Level 1</div>
-      <p>Surfista desde os 8 anos. Campeã Nacional Júnior em 2018. Especialista em surf feminino e bodyboard.</p>
-      <div class="instructor-tags">
-        <span class="itag">Feminino</span>
-        <span class="itag">Bodyboard</span>
-        <span class="itag">Intermédio</span>
-      </div>
+      <h3>Maria Ferreira</h3><div class="instructor-role">Instrutora · ISA Level 1</div>
+      <p data-t="inst2_desc"></p>
+      <div class="instructor-tags"><span class="itag" data-t="inst2_t1"></span><span class="itag">Bodyboard</span><span class="itag" data-t="l2_name"></span></div>
     </div>
     <div class="instructor-card">
       <div class="instructor-avatar avatar-blue">🤙</div>
-      <h3>Diogo Martins</h3>
-      <div class="instructor-role">Instrutor · ISA Level 1</div>
-      <p>Nasceu em Aljezur, cresceu nas ondas da Arrifana. Especialista em aulas privadas e progressão avançada.</p>
-      <div class="instructor-tags">
-        <span class="itag">Privadas</span>
-        <span class="itag">Avançado</span>
-        <span class="itag">Shortboard</span>
-      </div>
+      <h3>Diogo Martins</h3><div class="instructor-role">Instrutor · ISA Level 1</div>
+      <p data-t="inst3_desc"></p>
+      <div class="instructor-tags"><span class="itag" data-t="l3_name"></span><span class="itag" data-t="inst3_t1"></span><span class="itag">Shortboard</span></div>
     </div>
   </div>
 </section>
@@ -922,193 +655,553 @@
 <footer>
   <div>
     <div class="footer-logo">Arrifana <span>Surf</span> Academy</div>
-    <p style="margin-top:.5rem;">Praia da Arrifana, 8670-111 Aljezur · Algarve, Portugal</p>
+    <p style="margin-top:.4rem">Praia da Arrifana, 8670-111 Aljezur · Algarve, Portugal</p>
   </div>
   <div class="footer-links">
-    <a href="#sobre">Sobre</a>
-    <a href="#aulas">Aulas</a>
-    <a href="#reservar">Reservar</a>
+    <a href="#sobre" data-t="nav_sobre"></a>
+    <a href="#praias" data-t="nav_praias"></a>
+    <a href="#mares" data-t="nav_mares"></a>
+    <a href="#reservar" data-t="nav_reservar"></a>
     <a href="https://wa.me/351912345678" target="_blank">WhatsApp</a>
   </div>
   <p>© 2025 Arrifana Surf Academy</p>
 </footer>
 
 <script>
-  const WHATSAPP_NUMBER = '351912345678';
+// ── TRANSLATIONS ──────────────────────────────────────────────────────────────
+const LANGS = {
+  pt: {
+    nav_sobre:'Sobre', nav_praias:'Praias', nav_mares:'Marés', nav_aulas:'Aulas', nav_reservar:'Reservar',
+    hero_title:'Aprende a\nSurfar com\nPaixão',
+    hero_sub:'Na Costa Vicentina, onde as ondas são perfeitas e a natureza é intocada. Aulas para todos os níveis, instrutores certificados ISA.',
+    hero_cta1:'Reservar Aula', hero_cta2:'Ver Aulas',
+    stat_alunos:'Alunos / ano', stat_anos:'Anos de experiência', stat_sat:'Satisfação', stat_cert:'Certificados',
+    about_tag:'Sobre nós', about_title:'A melhor escola de\nsurf do Algarve',
+    about_sub:'Fundada em 2013 na Praia da Arrifana, somos apaixonados pelo surf e pela natureza da Costa Vicentina. O nosso método garante que qualquer pessoa aprende a surfar em segurança.',
+    about_reviews:'+320 avaliações',
+    feat1_title:'Instrutores ISA Certificados', feat1_sub:'Todos os instrutores têm certificação internacional e formação em primeiros socorros.',
+    feat2_title:'Material de Qualidade', feat2_sub:'Fatos de neoprene, pranchas softop e leashes incluídos em todas as aulas.',
+    feat3_title:'Localização Privilegiada', feat3_sub:'Arrifana tem ondas perfeitas para todos os níveis, no coração do Parque Natural.',
+    beaches_tag:'Costa Vicentina', beaches_title:'As nossas praias', beaches_sub:'Conhece as melhores praias da zona de Aljezur e escolhe onde queres aprender a surfar.',
+    level_all:'Todos os níveis', level_beg:'Iniciante', level_adv:'Avançado',
+    beach1_desc:'A nossa praia principal. Falésia imponente, ondas consistentes durante todo o ano. Perfeita para todos os níveis com diferentes picos.',
+    beach2_desc:'Praia mais protegida do vento norte. Ideal para iniciantes e famílias. Pequena e acolhedora com ondas suaves.',
+    beach3_desc:'Embocadura de rio com barra de areia em constante mudança. Muito calma, ideal para crianças e primeiras experiências.',
+    beach4_desc:'A mais exposta da zona. Ondas poderosas e tubulares. Favorita dos surfistas experientes e palco de campeonatos.',
+    beach_wave_type:'Fundo rochoso', beach_sandy:'Fundo arenoso', beach_river:'Barra de rio', beach_reef:'Fundo misto',
+    beach1_wind:'Vento N ideal', beach2_wind:'Protegida N/NO', beach3_wind:'Vento N ideal', beach4_wind:'Vento N ideal',
+    tides_tag:'Tabela de Marés', tides_title:'Marés · Aljezur', tides_sub:'Condições em tempo real para planeares a tua aula. Melhor surf: 2h antes e depois da preia-mar.',
+    tide_high:'Preia-mar', tide_low:'Baixa-mar', tide_surf:'Condições',
+    lessons_tag:'Modalidades', lessons_title:'Escolhe a tua aula', lessons_sub:'Do primeiro contacto com o oceano até às manobras avançadas.',
+    l1_name:'Iniciante', l1_desc:'Nunca surfaste? Começa aqui. Teoria, segurança, remada e primeiras ondas em pé — tudo em 2 horas.',
+    l2_name:'Intermédio', l2_desc:'Já tens as bases? Aprende a ler as ondas, escolher a posição certa e encadear manobras.',
+    l3_name:'Aula Privada', l3_desc:'Atenção 100% personalizada. Ideal para progressão rápida ou necessidades específicas.',
+    l4_name:'Bodyboard', l4_desc:'Diversão garantida para todas as idades. Aprende a deslizar nas ondas com bodyboard.',
+    max:'Máx.', per_person:'/ pessoa', per_session:'/ sessão', popular:'Popular',
+    includes:'Incluído', inc_wetsuit:'Fato de neoprene', inc_board:'Prancha softop', inc_insurance:'Seguro de acidentes',
+    inc_video:'Análise de vídeo', inc_bodyboard:'Bodyboard + barbatanas',
+    book_tag:'Marcações', book_title:'Reserva a tua aula', book_sub:'Escolhe a modalidade, o dia e o horário — confirmamos via WhatsApp em minutos.',
+    step1_label:'Modalidade', step2_label:'Data', step3_label:'Horário', step4_label:'Dados',
+    s1_title:'Que tipo de aula queres?', s1_desc:'Seleciona a modalidade mais adequada ao teu nível.',
+    s2_title:'Escolhe o dia', s2_desc:'Seleciona uma data disponível no calendário.',
+    s3_title:'Escolhe o horário', s3_desc:'Vagas disponíveis para o dia selecionado.',
+    s4_title:'Os teus dados', s4_desc:'Preenche para confirmarmos a reserva via WhatsApp.',
+    f_name:'Nome completo *', f_name_ph:'Ex: João Silva', f_phone:'Telemóvel *',
+    f_email:'Email', f_email_ph:'joao@email.com', f_pessoas:'Nº de pessoas',
+    f_nota:'Nota (opcional)', f_nota_ph:'Alergias, idades do grupo, nível de experiência...',
+    btn_next:'Próximo →', btn_back:'← Voltar', btn_whatsapp:'Confirmar via WhatsApp',
+    pp:'pessoa', ps:'sessão',
+    slot_available:'vagas disponíveis', slot_full:'Sem vagas', slot_spots:'lugares no total',
+    summary_title:'Resumo da reserva', summary_lesson:'Modalidade', summary_date:'Data',
+    summary_time:'Horário', summary_unit:'Preço unitário', summary_total:'Total estimado',
+    wa_header:'Nova Reserva — Arrifana Surf Academy',
+    wa_name:'Nome', wa_phone:'Telemóvel', wa_email:'Email', wa_lesson:'Aula',
+    wa_date:'Data', wa_time:'Horário', wa_people:'Pessoas', wa_total:'Total estimado', wa_note:'Nota',
+    wa_closing:'Aguardo confirmação! 🤙',
+    cond_wave:'Ondas', cond_wind:'Vento', cond_water:'Água', cond_tide:'Próxima maré', cond_pt:'Hora PT',
+    team_tag:'Equipa', team_title:'Os nossos instrutores', team_sub:'Profissionais apaixonados pelo surf e pelo ensino.',
+    inst1_desc:'12 anos a ensinar na Arrifana. Campeão regional de longboard 2016 e 2019.',
+    inst2_desc:'Surfista desde os 8 anos. Campeã Nacional Júnior 2018. Especialista surf feminino.',
+    inst2_t1:'Surf feminino', inst3_t1:'Avançado',
+    inst3_desc:'Nasceu em Aljezur, cresceu nas ondas da Arrifana. Especialista em aulas privadas.',
+    cal_days:['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],
+    cal_months:['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],
+    tide_days:['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],
+    surf_labels:['Fraco','Razoável','Bom','Muito bom','Excelente'],
+  },
+  en: {
+    nav_sobre:'About', nav_praias:'Beaches', nav_mares:'Tides', nav_aulas:'Lessons', nav_reservar:'Book Now',
+    hero_title:'Learn to\nSurf with\nPassion',
+    hero_sub:'On the Vicentina Coast, where waves are perfect and nature is untouched. Lessons for all levels, ISA-certified instructors.',
+    hero_cta1:'Book a Lesson', hero_cta2:'See Lessons',
+    stat_alunos:'Students / year', stat_anos:'Years experience', stat_sat:'Satisfaction', stat_cert:'Certified',
+    about_tag:'About us', about_title:'The best surf school\nin the Algarve',
+    about_sub:'Founded in 2013 at Praia da Arrifana, we are passionate about surf and the Vicentina Coast. Our method ensures everyone learns to surf safely and has fun.',
+    about_reviews:'+320 reviews',
+    feat1_title:'ISA Certified Instructors', feat1_sub:'All instructors hold international certification and first-aid training.',
+    feat2_title:'Quality Equipment', feat2_sub:'Wetsuits, softop boards and leashes included in all lessons.',
+    feat3_title:'Prime Location', feat3_sub:'Arrifana has perfect waves for all levels, in the heart of the Natural Park.',
+    beaches_tag:'Vicentina Coast', beaches_title:'Our beaches', beaches_sub:'Discover the best beaches near Aljezur and choose where you want to learn to surf.',
+    level_all:'All levels', level_beg:'Beginner', level_adv:'Advanced',
+    beach1_desc:'Our main beach. Dramatic cliffs, consistent waves year-round. Perfect for all levels with different peaks.',
+    beach2_desc:'More protected from north wind. Ideal for beginners and families. Small and welcoming with gentle waves.',
+    beach3_desc:'River mouth with constantly shifting sandbar. Very calm, ideal for children and first experiences.',
+    beach4_desc:'The most exposed in the area. Powerful, hollow waves. Favourite of experienced surfers, competition venue.',
+    beach_wave_type:'Rocky bottom', beach_sandy:'Sandy bottom', beach_river:'River mouth', beach_reef:'Mixed bottom',
+    beach1_wind:'N wind ideal', beach2_wind:'Protected N/NW', beach3_wind:'N wind ideal', beach4_wind:'N wind ideal',
+    tides_tag:'Tide Table', tides_title:'Tides · Aljezur', tides_sub:'Real-time conditions to plan your lesson. Best surf: 2h before and after high tide.',
+    tide_high:'High tide', tide_low:'Low tide', tide_surf:'Conditions',
+    lessons_tag:'Activities', lessons_title:'Choose your lesson', lessons_sub:'From first contact with the ocean to advanced manoeuvres.',
+    l1_name:'Beginner', l1_desc:"Never surfed? Start here. Theory, safety, paddling and first waves standing up — all in 2 hours.",
+    l2_name:'Intermediate', l2_desc:'Already have the basics? Learn to read waves, choose the right position and chain manoeuvres.',
+    l3_name:'Private Lesson', l3_desc:'100% personalised attention. Ideal for rapid progression or specific needs.',
+    l4_name:'Bodyboard', l4_desc:'Fun guaranteed for all ages. Learn to ride waves with a bodyboard.',
+    max:'Max.', per_person:'/ person', per_session:'/ session', popular:'Popular',
+    includes:'Included', inc_wetsuit:'Wetsuit', inc_board:'Softop board', inc_insurance:'Accident insurance',
+    inc_video:'Video analysis', inc_bodyboard:'Bodyboard + fins',
+    book_tag:'Bookings', book_title:'Book your lesson', book_sub:'Choose the activity, day and time — we confirm via WhatsApp in minutes.',
+    step1_label:'Activity', step2_label:'Date', step3_label:'Time', step4_label:'Details',
+    s1_title:'What type of lesson?', s1_desc:'Select the most suitable activity for your level.',
+    s2_title:'Choose a day', s2_desc:'Select an available date on the calendar.',
+    s3_title:'Choose a time', s3_desc:'Available slots for the selected day.',
+    s4_title:'Your details', s4_desc:'Fill in to confirm your booking via WhatsApp.',
+    f_name:'Full name *', f_name_ph:'Ex: John Smith', f_phone:'Mobile *',
+    f_email:'Email', f_email_ph:'john@email.com', f_pessoas:'Number of people',
+    f_nota:'Note (optional)', f_nota_ph:'Allergies, group ages, experience level...',
+    btn_next:'Next →', btn_back:'← Back', btn_whatsapp:'Confirm via WhatsApp',
+    pp:'person', ps:'session',
+    slot_available:'spots available', slot_full:'No spots', slot_spots:'total spots',
+    summary_title:'Booking summary', summary_lesson:'Activity', summary_date:'Date',
+    summary_time:'Time', summary_unit:'Unit price', summary_total:'Estimated total',
+    wa_header:'New Booking — Arrifana Surf Academy',
+    wa_name:'Name', wa_phone:'Mobile', wa_email:'Email', wa_lesson:'Lesson',
+    wa_date:'Date', wa_time:'Time', wa_people:'People', wa_total:'Estimated total', wa_note:'Note',
+    wa_closing:'Awaiting confirmation! 🤙',
+    cond_wave:'Waves', cond_wind:'Wind', cond_water:'Water', cond_tide:'Next tide', cond_pt:'PT Time',
+    team_tag:'Team', team_title:'Our instructors', team_sub:'Professionals passionate about surf and teaching.',
+    inst1_desc:'12 years teaching at Arrifana. Regional longboard champion 2016 and 2019.',
+    inst2_desc:'Surfing since age 8. National Junior Champion 2018. Women\'s surf specialist.',
+    inst2_t1:'Women\'s surf', inst3_t1:'Advanced',
+    inst3_desc:'Born in Aljezur, grew up on Arrifana\'s waves. Private lesson specialist.',
+    cal_days:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+    cal_months:['January','February','March','April','May','June','July','August','September','October','November','December'],
+    tide_days:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+    surf_labels:['Poor','Fair','Good','Very good','Excellent'],
+  },
+  fr: {
+    nav_sobre:'À propos', nav_praias:'Plages', nav_mares:'Marées', nav_aulas:'Cours', nav_reservar:'Réserver',
+    hero_title:'Apprends à\nSurfer avec\nPassion',
+    hero_sub:'Sur la Costa Vicentina, où les vagues sont parfaites et la nature est préservée. Cours pour tous les niveaux, instructeurs certifiés ISA.',
+    hero_cta1:'Réserver un cours', hero_cta2:'Voir les cours',
+    stat_alunos:'Élèves / an', stat_anos:'Ans d\'expérience', stat_sat:'Satisfaction', stat_cert:'Certifiés',
+    about_tag:'À propos', about_title:'La meilleure école de\nsurf de l\'Algarve',
+    about_sub:'Fondée en 2013 à Praia da Arrifana, nous sommes passionnés par le surf et la Costa Vicentina. Notre méthode garantit que tout le monde apprend à surfer en toute sécurité.',
+    about_reviews:'+320 avis',
+    feat1_title:'Instructeurs certifiés ISA', feat1_sub:'Tous nos instructeurs ont une certification internationale et une formation aux premiers secours.',
+    feat2_title:'Matériel de qualité', feat2_sub:'Combinaisons, planches softop et leashes inclus dans tous les cours.',
+    feat3_title:'Emplacement privilégié', feat3_sub:'Arrifana a des vagues parfaites pour tous les niveaux, au cœur du Parc Naturel.',
+    beaches_tag:'Costa Vicentina', beaches_title:'Nos plages', beaches_sub:'Découvrez les meilleures plages de la région d\'Aljezur et choisissez où vous voulez apprendre.',
+    level_all:'Tous niveaux', level_beg:'Débutant', level_adv:'Avancé',
+    beach1_desc:'Notre plage principale. Falaises imposantes, vagues régulières toute l\'année. Parfaite pour tous les niveaux.',
+    beach2_desc:'Plus protégée du vent du nord. Idéale pour débutants et familles. Petite et accueillante avec des vagues douces.',
+    beach3_desc:'Embouchure de rivière avec barre de sable changeante. Très calme, idéale pour les enfants et premières expériences.',
+    beach4_desc:'La plus exposée de la zone. Vagues puissantes et creuses. Préférée des surfeurs expérimentés.',
+    beach_wave_type:'Fond rocheux', beach_sandy:'Fond sablonneux', beach_river:'Embouchure', beach_reef:'Fond mixte',
+    beach1_wind:'Vent N idéal', beach2_wind:'Protégée N/NO', beach3_wind:'Vent N idéal', beach4_wind:'Vent N idéal',
+    tides_tag:'Table des marées', tides_title:'Marées · Aljezur', tides_sub:'Conditions en temps réel pour planifier votre cours. Meilleur surf : 2h avant et après la marée haute.',
+    tide_high:'Marée haute', tide_low:'Marée basse', tide_surf:'Conditions',
+    lessons_tag:'Activités', lessons_title:'Choisissez votre cours', lessons_sub:'Du premier contact avec l\'océan aux manœuvres avancées.',
+    l1_name:'Débutant', l1_desc:'Jamais surfé ? Commencez ici. Théorie, sécurité, rame et premières vagues debout — tout en 2 heures.',
+    l2_name:'Intermédiaire', l2_desc:'Vous avez les bases ? Apprenez à lire les vagues et à enchaîner les manœuvres.',
+    l3_name:'Cours Privé', l3_desc:'Attention 100% personnalisée. Idéal pour une progression rapide.',
+    l4_name:'Bodyboard', l4_desc:'Amusement garanti pour tous les âges. Apprenez à glisser sur les vagues.',
+    max:'Max.', per_person:'/ pers.', per_session:'/ séance', popular:'Populaire',
+    includes:'Inclus', inc_wetsuit:'Combinaison', inc_board:'Planche softop', inc_insurance:'Assurance accidents',
+    inc_video:'Analyse vidéo', inc_bodyboard:'Bodyboard + palmes',
+    book_tag:'Réservations', book_title:'Réservez votre cours', book_sub:'Choisissez l\'activité, le jour et l\'horaire — confirmation via WhatsApp en quelques minutes.',
+    step1_label:'Activité', step2_label:'Date', step3_label:'Horaire', step4_label:'Données',
+    s1_title:'Quel type de cours ?', s1_desc:'Sélectionnez l\'activité la plus adaptée à votre niveau.',
+    s2_title:'Choisissez un jour', s2_desc:'Sélectionnez une date disponible dans le calendrier.',
+    s3_title:'Choisissez un horaire', s3_desc:'Créneaux disponibles pour le jour sélectionné.',
+    s4_title:'Vos coordonnées', s4_desc:'Remplissez pour confirmer votre réservation via WhatsApp.',
+    f_name:'Nom complet *', f_name_ph:'Ex: Jean Dupont', f_phone:'Téléphone *',
+    f_email:'Email', f_email_ph:'jean@email.com', f_pessoas:'Nombre de personnes',
+    f_nota:'Note (optionnel)', f_nota_ph:'Allergies, âges du groupe, niveau...',
+    btn_next:'Suivant →', btn_back:'← Retour', btn_whatsapp:'Confirmer via WhatsApp',
+    pp:'pers.', ps:'séance',
+    slot_available:'places disponibles', slot_full:'Complet', slot_spots:'places au total',
+    summary_title:'Récapitulatif', summary_lesson:'Activité', summary_date:'Date',
+    summary_time:'Horaire', summary_unit:'Prix unitaire', summary_total:'Total estimé',
+    wa_header:'Nouvelle Réservation — Arrifana Surf Academy',
+    wa_name:'Nom', wa_phone:'Téléphone', wa_email:'Email', wa_lesson:'Cours',
+    wa_date:'Date', wa_time:'Horaire', wa_people:'Personnes', wa_total:'Total estimé', wa_note:'Note',
+    wa_closing:'En attente de confirmation ! 🤙',
+    cond_wave:'Vagues', cond_wind:'Vent', cond_water:'Eau', cond_tide:'Prochaine marée', cond_pt:'Heure PT',
+    team_tag:'Équipe', team_title:'Nos instructeurs', team_sub:'Des professionnels passionnés par le surf et l\'enseignement.',
+    inst1_desc:'12 ans à enseigner à Arrifana. Champion régional de longboard 2016 et 2019.',
+    inst2_desc:'Surfeuse depuis l\'âge de 8 ans. Championne nationale junior 2018. Spécialiste surf féminin.',
+    inst2_t1:'Surf féminin', inst3_t1:'Avancé',
+    inst3_desc:'Né à Aljezur, a grandi sur les vagues d\'Arrifana. Spécialiste cours privés.',
+    cal_days:['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'],
+    cal_months:['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'],
+    tide_days:['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'],
+    surf_labels:['Faible','Correct','Bon','Très bon','Excellent'],
+  },
+  de: {
+    nav_sobre:'Über uns', nav_praias:'Strände', nav_mares:'Gezeiten', nav_aulas:'Kurse', nav_reservar:'Buchen',
+    hero_title:'Surfen lernen\nmit\nLeidenschaft',
+    hero_sub:'An der Costa Vicentina, wo die Wellen perfekt und die Natur unberührt ist. Kurse für alle Levels, ISA-zertifizierte Instruktoren.',
+    hero_cta1:'Kurs buchen', hero_cta2:'Kurse ansehen',
+    stat_alunos:'Schüler / Jahr', stat_anos:'Jahre Erfahrung', stat_sat:'Zufriedenheit', stat_cert:'Zertifiziert',
+    about_tag:'Über uns', about_title:'Die beste Surfschule\nim Algarve',
+    about_sub:'2013 am Praia da Arrifana gegründet, sind wir leidenschaftliche Surfer und lieben die Costa Vicentina. Unsere Methode stellt sicher, dass jeder sicher surfen lernt.',
+    about_reviews:'+320 Bewertungen',
+    feat1_title:'ISA-zertifizierte Instruktoren', feat1_sub:'Alle Instruktoren haben internationale Zertifizierung und Erste-Hilfe-Ausbildung.',
+    feat2_title:'Hochwertiges Equipment', feat2_sub:'Neoprenanzüge, Softboards und Leashes in allen Kursen inklusive.',
+    feat3_title:'Erstklassige Lage', feat3_sub:'Arrifana hat perfekte Wellen für alle Levels, im Herzen des Naturparks.',
+    beaches_tag:'Costa Vicentina', beaches_title:'Unsere Strände', beaches_sub:'Entdecke die besten Strände rund um Aljezur und wähle, wo du surfen lernen möchtest.',
+    level_all:'Alle Levels', level_beg:'Anfänger', level_adv:'Fortgeschritten',
+    beach1_desc:'Unser Hauptstrand. Imposante Klippen, ganzjährig gleichmäßige Wellen. Perfekt für alle Levels.',
+    beach2_desc:'Mehr vom Nordwind geschützt. Ideal für Anfänger und Familien. Klein und gemütlich mit sanften Wellen.',
+    beach3_desc:'Flussmündung mit ständig wechselnder Sandbank. Sehr ruhig, ideal für Kinder und erste Erfahrungen.',
+    beach4_desc:'Der exponierteste Strand der Region. Kraftvolle, hohle Wellen. Liebling erfahrener Surfer.',
+    beach_wave_type:'Felsuntergrund', beach_sandy:'Sanduntergrund', beach_river:'Flussmündung', beach_reef:'Gemischter Grund',
+    beach1_wind:'N-Wind ideal', beach2_wind:'Geschützt N/NW', beach3_wind:'N-Wind ideal', beach4_wind:'N-Wind ideal',
+    tides_tag:'Gezeitentabelle', tides_title:'Gezeiten · Aljezur', tides_sub:'Echtzeit-Bedingungen zur Kursplanung. Bestes Surfen: 2h vor und nach Hochwasser.',
+    tide_high:'Hochwasser', tide_low:'Niedrigwasser', tide_surf:'Bedingungen',
+    lessons_tag:'Aktivitäten', lessons_title:'Wähle deinen Kurs', lessons_sub:'Vom ersten Kontakt mit dem Ozean bis zu fortgeschrittenen Manövern.',
+    l1_name:'Anfänger', l1_desc:'Noch nie gesurft? Fang hier an. Theorie, Sicherheit, Paddeln und erste Wellen stehend — alles in 2 Stunden.',
+    l2_name:'Fortgeschrittene', l2_desc:'Hast du die Grundlagen? Lerne Wellen zu lesen und Manöver zu verbinden.',
+    l3_name:'Privatstunde', l3_desc:'100% persönliche Betreuung. Ideal für schnellen Fortschritt.',
+    l4_name:'Bodyboard', l4_desc:'Spaß garantiert für alle Altersgruppen. Lerne auf Wellen zu gleiten.',
+    max:'Max.', per_person:'/ Person', per_session:'/ Einheit', popular:'Beliebt',
+    includes:'Inklusive', inc_wetsuit:'Neoprenanzug', inc_board:'Softboard', inc_insurance:'Unfallversicherung',
+    inc_video:'Videoanalyse', inc_bodyboard:'Bodyboard + Flossen',
+    book_tag:'Buchungen', book_title:'Kurs buchen', book_sub:'Wähle Aktivität, Tag und Uhrzeit — Bestätigung per WhatsApp in wenigen Minuten.',
+    step1_label:'Aktivität', step2_label:'Datum', step3_label:'Uhrzeit', step4_label:'Daten',
+    s1_title:'Welche Art von Kurs?', s1_desc:'Wähle die für dein Level geeignetste Aktivität.',
+    s2_title:'Wähle einen Tag', s2_desc:'Wähle ein verfügbares Datum im Kalender.',
+    s3_title:'Wähle eine Uhrzeit', s3_desc:'Verfügbare Plätze für den ausgewählten Tag.',
+    s4_title:'Deine Daten', s4_desc:'Ausfüllen zur Buchungsbestätigung per WhatsApp.',
+    f_name:'Vollständiger Name *', f_name_ph:'z.B. Hans Müller', f_phone:'Handy *',
+    f_email:'E-Mail', f_email_ph:'hans@email.com', f_pessoas:'Personenanzahl',
+    f_nota:'Notiz (optional)', f_nota_ph:'Allergien, Gruppenalter, Erfahrungslevel...',
+    btn_next:'Weiter →', btn_back:'← Zurück', btn_whatsapp:'Per WhatsApp bestätigen',
+    pp:'Pers.', ps:'Einheit',
+    slot_available:'Plätze verfügbar', slot_full:'Ausgebucht', slot_spots:'Plätze gesamt',
+    summary_title:'Buchungsübersicht', summary_lesson:'Aktivität', summary_date:'Datum',
+    summary_time:'Uhrzeit', summary_unit:'Stückpreis', summary_total:'Geschätzter Gesamtpreis',
+    wa_header:'Neue Buchung — Arrifana Surf Academy',
+    wa_name:'Name', wa_phone:'Handy', wa_email:'E-Mail', wa_lesson:'Kurs',
+    wa_date:'Datum', wa_time:'Uhrzeit', wa_people:'Personen', wa_total:'Geschätzte Gesamtsumme', wa_note:'Notiz',
+    wa_closing:'Warte auf Bestätigung! 🤙',
+    cond_wave:'Wellen', cond_wind:'Wind', cond_water:'Wasser', cond_tide:'Nächste Tide', cond_pt:'PT Zeit',
+    team_tag:'Team', team_title:'Unsere Instruktoren', team_sub:'Leidenschaftliche Profis für Surf und Unterricht.',
+    inst1_desc:'12 Jahre Unterricht in Arrifana. Regionaler Longboard-Meister 2016 und 2019.',
+    inst2_desc:'Surft seit dem 8. Lebensjahr. Nationaler Juniorenmeister 2018. Spezialistin für Frauensurfen.',
+    inst2_t1:'Frauensurfen', inst3_t1:'Fortgeschritten',
+    inst3_desc:'In Aljezur geboren, auf Arrifanas Wellen aufgewachsen. Spezialist für Privatstunden.',
+    cal_days:['So','Mo','Di','Mi','Do','Fr','Sa'],
+    cal_months:['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
+    tide_days:['So','Mo','Di','Mi','Do','Fr','Sa'],
+    surf_labels:['Schwach','Mäßig','Gut','Sehr gut','Ausgezeichnet'],
+  }
+};
 
-  const booking = { lesson: null, lessonPrice: null, date: null, dateStr: null, time: null, vagas: null };
+let currentLang = 'pt';
 
-  // Slots mock data — simulate some full, some available
-  const slotData = {
-    0: [ {t:'08:00',v:4,max:6}, {t:'10:30',v:0,max:6}, {t:'14:00',v:2,max:6}, {t:'16:30',v:6,max:6} ],
-    1: [ {t:'08:00',v:5,max:6}, {t:'10:30',v:3,max:6}, {t:'14:00',v:0,max:6}, {t:'16:30',v:2,max:6} ],
-    2: [ {t:'08:00',v:6,max:6}, {t:'10:30',v:1,max:6}, {t:'14:00',v:4,max:6}, {t:'16:30',v:0,max:6} ],
-    3: [ {t:'08:00',v:2,max:6}, {t:'10:30',v:6,max:6}, {t:'14:00',v:5,max:6}, {t:'16:30',v:3,max:6} ],
-    4: [ {t:'08:00',v:0,max:6}, {t:'10:30',v:4,max:6}, {t:'14:00',v:6,max:6}, {t:'16:30',v:1,max:6} ],
-    5: [ {t:'08:00',v:3,max:6}, {t:'10:30',v:2,max:6}, {t:'14:00',v:0,max:6}, {t:'16:30',v:5,max:6} ],
-    6: [ {t:'08:00',v:1,max:6}, {t:'10:30',v:6,max:6}, {t:'14:00',v:3,max:6}, {t:'16:30',v:0,max:6} ],
-  };
+function T(key) { return LANGS[currentLang][key] || LANGS['pt'][key] || key; }
 
-  const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-
-  function buildDateGrid() {
-    const grid = document.getElementById('date-grid');
-    grid.innerHTML = '';
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today); d.setDate(today.getDate() + i);
-      const btn = document.createElement('div');
-      btn.className = 'date-btn';
-      btn.dataset.index = i;
-      btn.innerHTML = `<span class="day-name">${days[d.getDay()]}</span><span class="day-num">${d.getDate()}</span><span class="day-month">${months[d.getMonth()]}</span>`;
-      btn.onclick = () => selectDate(btn, d, i);
-      grid.appendChild(btn);
+function setLang(lang) {
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === lang.toUpperCase()));
+  document.querySelectorAll('[data-t]').forEach(el => {
+    const key = el.dataset.t;
+    const val = T(key);
+    if (val.includes('\n')) {
+      el.innerHTML = val.split('\n').map(l => `<span style="display:block">${l}</span>`).join('');
+    } else {
+      el.textContent = val;
     }
-  }
-
-  function selectDate(el, dateObj, idx) {
-    document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('selected'));
-    el.classList.add('selected');
-    booking.date = dateObj;
-    booking.dateStr = `${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
-    booking.dateIdx = idx;
-    booking.time = null;
-    document.getElementById('next-2').disabled = false;
-    buildSlots(idx);
-  }
-
-  function buildSlots(idx) {
-    const grid = document.getElementById('slots-grid');
-    grid.innerHTML = '';
-    const slots = slotData[idx] || slotData[0];
-    slots.forEach(s => {
-      const free = s.max - s.v;
-      const full = free === 0;
-      const card = document.createElement('div');
-      card.className = `slot-card ${full ? 'full' : 'available'}`;
-      card.innerHTML = `
-        ${full ? '<div class="slot-badge-full">Esgotado</div>' : ''}
-        <div class="slot-time">${s.t}</div>
-        <div class="slot-info">
-          <span class="availability-dot"></span>
-          ${full ? '<span class="slot-full-text">Sem vagas</span>' : `${free} vaga${free !== 1 ? 's' : ''} disponív${free !== 1 ? 'eis' : 'el'}`}
-        </div>
-        <div class="slot-vagas">${s.max} lugares no total</div>`;
-      if (!full) {
-        card.onclick = () => selectSlot(card, s.t, free);
-      }
-      grid.appendChild(card);
-    });
-  }
-
-  function selectSlot(el, time, vagas) {
-    document.querySelectorAll('.slot-card').forEach(c => c.classList.remove('selected'));
-    el.classList.add('selected');
-    booking.time = time;
-    booking.vagas = vagas;
-    document.getElementById('next-3').disabled = false;
-  }
-
-  function selectLesson(el, name, price, raw) {
-    document.querySelectorAll('.lesson-option').forEach(o => o.classList.remove('selected'));
-    el.classList.add('selected');
-    booking.lesson = name;
-    booking.lessonPrice = price;
-    booking.lessonPriceRaw = raw;
-    document.getElementById('next-1').disabled = false;
-  }
-
-  function goToStep(n) {
-    for (let i = 1; i <= 4; i++) {
-      document.getElementById(`step-${i}`).classList.remove('active');
-      const tab = document.getElementById(`tab-${i}`);
-      tab.classList.remove('active', 'done');
-      if (i < n) tab.classList.add('done');
-      else if (i === n) tab.classList.add('active');
-    }
-    document.getElementById(`step-${n}`).classList.add('active');
-    if (n === 4) buildSummary();
-    document.querySelector('.booking-wrapper').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function buildSummary() {
-    const p = parseInt(document.getElementById('fpessoas')?.value || '1');
-    const priceNum = parseInt(booking.lessonPriceRaw?.replace('€','') || 0);
-    const total = booking.lesson === 'Privada' ? priceNum : priceNum * p;
-    document.getElementById('booking-summary').innerHTML = `
-      <div class="summary-title">Resumo da reserva</div>
-      <div class="summary-items">
-        <div class="summary-item"><span>Modalidade</span><strong>${booking.lesson}</strong></div>
-        <div class="summary-item"><span>Data</span><strong>${booking.dateStr}</strong></div>
-        <div class="summary-item"><span>Horário</span><strong>${booking.time}</strong></div>
-        <div class="summary-item"><span>Preço unitário</span><strong>${booking.lessonPrice}</strong></div>
-      </div>`;
-  }
-
-  function reservarWhatsApp() {
-    const nome = document.getElementById('fname').value.trim();
-    const tel = document.getElementById('fphone').value.trim();
-    const email = document.getElementById('femail').value.trim();
-    const pessoas = document.getElementById('fpessoas').value;
-    const nota = document.getElementById('fnota').value.trim();
-
-    if (!nome || !tel) {
-      alert('Por favor preenche o nome e o telemóvel.');
-      return;
-    }
-
-    const priceNum = parseInt(booking.lessonPriceRaw?.replace('€','') || 0);
-    const p = parseInt(pessoas);
-    const total = booking.lesson === 'Privada' ? priceNum : priceNum * p;
-
-    let msg = `🏄 *Nova Reserva — Arrifana Surf Academy*\n\n`;
-    msg += `👤 *Nome:* ${nome}\n`;
-    msg += `📞 *Telemóvel:* ${tel}\n`;
-    if (email) msg += `📧 *Email:* ${email}\n`;
-    msg += `\n🌊 *Aula:* ${booking.lesson}\n`;
-    msg += `📅 *Data:* ${booking.dateStr}\n`;
-    msg += `⏰ *Horário:* ${booking.time}\n`;
-    msg += `👥 *Pessoas:* ${pessoas}\n`;
-    msg += `💰 *Total estimado:* €${total}\n`;
-    if (nota) msg += `\n📝 *Nota:* ${nota}\n`;
-    msg += `\nAguardo confirmação! 🤙`;
-
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
-  }
-
-  function toggleMenu() {
-    const ul = document.querySelector('nav ul');
-    ul.style.display = ul.style.display === 'flex' ? 'none' : 'flex';
-    ul.style.flexDirection = 'column';
-    ul.style.position = 'absolute';
-    ul.style.top = '70px';
-    ul.style.left = '0';
-    ul.style.right = '0';
-    ul.style.background = 'rgba(5,13,26,0.97)';
-    ul.style.padding = '1.5rem 5%';
-    ul.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
-  }
-
-  // Scroll animation
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.style.opacity = '1';
-        e.target.style.transform = 'translateY(0)';
-      }
-    });
-  }, { threshold: 0.1 });
-
-  document.querySelectorAll('.lesson-card, .feature, .instructor-card').forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(30px)';
-    el.style.transition = 'opacity .5s ease, transform .5s ease';
-    observer.observe(el);
   });
+  document.querySelectorAll('[data-placeholder]').forEach(el => {
+    el.placeholder = T(el.dataset.placeholder);
+  });
+  buildCalendar();
+  buildTideGrid();
+  if (booking.selectedDateKey) buildSlots(booking.selectedDateKey);
+  if (document.getElementById('step-4').classList.contains('active')) buildSummary();
+}
 
-  buildDateGrid();
+// ── TIDE DATA (realistic semi-diurnal pattern for SW Portugal) ────────────────
+function generateTides(startDate, days) {
+  const tides = [];
+  // Base: high tide at 06:15 on day 0, period ~12h25m
+  let baseHigh = 6 * 60 + 15; // minutes from midnight
+  const period = 12 * 60 + 25;
+  // Heights vary over spring/neap cycle (~14.7 days)
+  for (let d = 0; d < days; d++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + d);
+    const springFactor = 0.5 + 0.5 * Math.cos((2 * Math.PI * d) / 14.7);
+    const highH = +(2.4 + 0.9 * springFactor).toFixed(2);
+    const lowH  = +(0.4 - 0.2 * springFactor + 0.05).toFixed(2);
+
+    const h1 = Math.round(baseHigh + d * 25) % (24 * 60);
+    const l1 = Math.round(h1 + period / 2) % (24 * 60);
+    const h2 = Math.round(h1 + period) % (24 * 60);
+    const l2 = Math.round(l1 + period) % (24 * 60);
+
+    const fmt = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+
+    // Surf score: best near mid-tide (2h after low), worse near very high or very low
+    const score = Math.min(5, Math.round(2 + springFactor * 3));
+
+    tides.push({ date, h1:fmt(h1), h1v:highH, l1:fmt(l1), l1v:lowH, h2:fmt(h2), h2v:highH, l2:fmt(l2), l2v:lowH, score });
+  }
+  return tides;
+}
+
+const TODAY = new Date();
+TODAY.setHours(0,0,0,0);
+const TIDE_DATA = generateTides(TODAY, 14);
+
+function buildTideGrid() {
+  const grid = document.getElementById('tide-grid');
+  grid.innerHTML = '';
+  const tDays = T('tide_days');
+  TIDE_DATA.slice(0,7).forEach((t,i) => {
+    const isToday = i === 0;
+    const dayName = tDays[t.date.getDay()];
+    const scoreLabels = T('surf_labels');
+    const scoreIdx = Math.min(t.score - 1, scoreLabels.length - 1);
+    const dots = Array.from({length:5},(_,j) => {
+      const cls = j < t.score ? (t.score >= 4 ? 'on' : t.score >= 3 ? 'mid' : 'off') : '';
+      return `<span class="surf-dot ${cls}"></span>`;
+    }).join('');
+    grid.innerHTML += `
+      <div class="tide-day${isToday?' today':''}">
+        <div class="tide-day-name">${isToday?'<span style="color:var(--cyan)">★</span> ':''} ${dayName}</div>
+        <div class="tide-day-date">${t.date.getDate()}/${t.date.getMonth()+1}</div>
+        <div class="tide-entry"><span class="tide-arrow-up">↑</span><span class="tide-time">${t.h1}</span><span class="tide-height tide-high">${t.h1v}m</span></div>
+        <div class="tide-entry"><span class="tide-arrow-down">↓</span><span class="tide-time">${t.l1}</span><span class="tide-height tide-low">${t.l1v}m</span></div>
+        <div class="tide-entry"><span class="tide-arrow-up">↑</span><span class="tide-time">${t.h2}</span><span class="tide-height tide-high">${t.h2v}m</span></div>
+        <div class="tide-entry"><span class="tide-arrow-down">↓</span><span class="tide-time">${t.l2}</span><span class="tide-height tide-low">${t.l2v}m</span></div>
+        <div class="surf-score"><div class="surf-dots">${dots}</div><div class="surf-label">${scoreLabels[scoreIdx]}</div></div>
+      </div>`;
+  });
+}
+
+function updateNextTide() {
+  const now = new Date();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  const t = TIDE_DATA[0];
+  const times = [
+    {label:'↑', t:t.h1, type:'high'},{label:'↓', t:t.l1, type:'low'},
+    {label:'↑', t:t.h2, type:'high'},{label:'↓', t:t.l2, type:'low'}
+  ];
+  const nextTide = times.find(x => { const [h,m]=x.t.split(':').map(Number); return h*60+m > nowMin; });
+  if (nextTide) document.getElementById('next-tide-val').textContent = `${nextTide.label} ${nextTide.t}`;
+}
+
+// ── CLOCK (Portugal time — Europe/Lisbon) ────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const pt = now.toLocaleTimeString('pt-PT', { timeZone: 'Europe/Lisbon', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  document.getElementById('pt-time').textContent = pt;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── BOOKING STATE ─────────────────────────────────────────────────────────────
+const booking = { lessonKey:null, lessonPrice:0, lessonPrivate:false, selectedDateKey:null, selectedDateStr:null, time:null };
+
+// slot availability mock (dateKey → slots)
+const SLOT_AVAIL = {};
+function getSlots(dateKey) {
+  if (!SLOT_AVAIL[dateKey]) {
+    const base = [
+      {t:'08:00', used:Math.floor(Math.random()*7)},
+      {t:'10:30', used:Math.floor(Math.random()*7)},
+      {t:'14:00', used:Math.floor(Math.random()*7)},
+      {t:'16:30', used:Math.floor(Math.random()*7)},
+    ];
+    SLOT_AVAIL[dateKey] = base;
+  }
+  return SLOT_AVAIL[dateKey];
+}
+
+// ── CALENDAR ──────────────────────────────────────────────────────────────────
+let calYear = TODAY.getFullYear();
+let calMonth = TODAY.getMonth();
+
+function buildCalendar() {
+  const months = T('cal_months');
+  const daysH = T('cal_days');
+  document.getElementById('cal-month-title').textContent = `${months[calMonth]} ${calYear}`;
+  const hdr = document.getElementById('cal-days-header');
+  hdr.innerHTML = daysH.map(d=>`<div class="cal-dh">${d}</div>`).join('');
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  const first = new Date(calYear, calMonth, 1).getDay();
+  const total = new Date(calYear, calMonth+1, 0).getDate();
+
+  for (let i=0; i<first; i++) grid.innerHTML += `<div class="cal-cell empty"></div>`;
+
+  for (let d=1; d<=total; d++) {
+    const date = new Date(calYear, calMonth, d);
+    date.setHours(0,0,0,0);
+    const isPast = date < TODAY;
+    const isToday = date.getTime() === TODAY.getTime();
+    const key = `${calYear}-${calMonth}-${d}`;
+    const slots = getSlots(key);
+    const anyFree = slots.some(s=>s.used<6);
+    const allFull = !anyFree;
+    const isSelected = booking.selectedDateKey === key;
+
+    let cls = 'cal-cell';
+    if (isPast) cls += ' past';
+    else if (isSelected) cls += ' selected';
+    else cls += ' available' + (allFull?' full-day':'');
+    if (isToday && !isPast) cls += ' today';
+
+    const dot = !isPast ? `<span class="avail-dot"></span>` : '';
+    grid.innerHTML += `<div class="${cls}" ${!isPast?`onclick="selectCalDate('${key}',${d},${calMonth},${calYear})"`:''}>${d}${dot}</div>`;
+  }
+}
+
+function changeMonth(dir) {
+  calMonth += dir;
+  if (calMonth < 0) { calMonth=11; calYear--; }
+  if (calMonth > 11) { calMonth=0; calYear++; }
+  buildCalendar();
+}
+
+function selectCalDate(key, d, m, y) {
+  booking.selectedDateKey = key;
+  const months = T('cal_months');
+  booking.selectedDateStr = `${d} ${months[m]} ${y}`;
+  booking.time = null;
+  document.getElementById('next-2').disabled = false;
+  buildCalendar();
+  buildSlots(key);
+}
+
+// ── SLOTS ─────────────────────────────────────────────────────────────────────
+function buildSlots(dateKey) {
+  const grid = document.getElementById('slots-grid');
+  grid.innerHTML = '';
+  const slots = getSlots(dateKey);
+  slots.forEach(s => {
+    const free = 6 - s.used;
+    const full = free === 0;
+    const sel = booking.time === s.t;
+    const cls = `slot-card ${full?'full':'available'}${sel?' selected':''}`;
+    grid.innerHTML += `
+      <div class="${cls}" ${!full?`onclick="selectSlot(this,'${s.t}',${free})"`:'id="slot-${s.t.replace(':','')}"'}>
+        ${full?`<div class="slot-badge-full">${T('slot_full')}</div>`:''}
+        <div class="slot-time">${s.t}</div>
+        <div class="slot-status"><span class="avail-dot-inline"></span>${full?`<span style="color:var(--red)">${T('slot_full')}</span>`:`${free} ${T('slot_available')}`}</div>
+        <div class="slot-vagas">6 ${T('slot_spots')}</div>
+      </div>`;
+  });
+}
+
+function selectSlot(el, time, free) {
+  document.querySelectorAll('.slot-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  booking.time = time;
+  document.getElementById('next-3').disabled = false;
+}
+
+// ── LESSON SELECT ─────────────────────────────────────────────────────────────
+function selectLesson(el, key, price, raw) {
+  document.querySelectorAll('.lesson-option').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  booking.lessonKey = key;
+  booking.lessonPrice = raw;
+  booking.lessonPrivate = (key === 'l3_name');
+  document.getElementById('next-1').disabled = false;
+}
+
+// ── STEPS ─────────────────────────────────────────────────────────────────────
+function goToStep(n) {
+  for (let i=1;i<=4;i++) {
+    document.getElementById(`step-${i}`).classList.remove('active');
+    const tab = document.getElementById(`tab-${i}`);
+    tab.classList.remove('active','done');
+    if(i<n) tab.classList.add('done');
+    else if(i===n) tab.classList.add('active');
+  }
+  document.getElementById(`step-${n}`).classList.add('active');
+  if(n===4) buildSummary();
+  document.querySelector('.booking-wrapper').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function buildSummary() {
+  const p = parseInt(document.getElementById('fpessoas')?.value||'1');
+  const total = booking.lessonPrivate ? booking.lessonPrice : booking.lessonPrice * p;
+  document.getElementById('booking-summary').innerHTML = `
+    <div class="summary-title">${T('summary_title')}</div>
+    <div class="summary-items">
+      <div class="summary-item"><span>${T('summary_lesson')}</span><strong>${T(booking.lessonKey)}</strong></div>
+      <div class="summary-item"><span>${T('summary_date')}</span><strong>${booking.selectedDateStr}</strong></div>
+      <div class="summary-item"><span>${T('summary_time')}</span><strong>${booking.time}</strong></div>
+      <div class="summary-item"><span>${T('summary_unit')}</span><strong>€${booking.lessonPrice}</strong></div>
+    </div>
+    <div class="summary-total"><span>${T('summary_total')}</span><span class="total-price">€${total}</span></div>`;
+}
+
+// ── WHATSAPP ──────────────────────────────────────────────────────────────────
+const WA_NUMBER = '351912345678';
+
+function reservarWhatsApp() {
+  const nome = document.getElementById('fname').value.trim();
+  const tel  = document.getElementById('fphone').value.trim();
+  const email= document.getElementById('femail').value.trim();
+  const pess = document.getElementById('fpessoas').value;
+  const nota = document.getElementById('fnota').value.trim();
+  if (!nome||!tel) { alert(T('f_name').replace(' *','') + ' / ' + T('f_phone').replace(' *','')); return; }
+  const total = booking.lessonPrivate ? booking.lessonPrice : booking.lessonPrice * parseInt(pess);
+  let msg = `🏄 *${T('wa_header')}*\n\n`;
+  msg += `👤 *${T('wa_name')}:* ${nome}\n`;
+  msg += `📞 *${T('wa_phone')}:* ${tel}\n`;
+  if(email) msg += `📧 *${T('wa_email')}:* ${email}\n`;
+  msg += `\n🌊 *${T('wa_lesson')}:* ${T(booking.lessonKey)}\n`;
+  msg += `📅 *${T('wa_date')}:* ${booking.selectedDateStr}\n`;
+  msg += `⏰ *${T('wa_time')}:* ${booking.time}\n`;
+  msg += `👥 *${T('wa_people')}:* ${pess}\n`;
+  msg += `💰 *${T('wa_total')}:* €${total}\n`;
+  if(nota) msg += `\n📝 *${T('wa_note')}:* ${nota}\n`;
+  msg += `\n${T('wa_closing')}`;
+  window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+// ── MENU ──────────────────────────────────────────────────────────────────────
+function toggleMenu() {
+  const ul = document.querySelector('nav ul');
+  const open = ul.style.display === 'flex';
+  Object.assign(ul.style,{ display:open?'none':'flex', flexDirection:'column', position:'absolute', top:'65px', left:'0', right:'0', background:'rgba(5,13,26,0.97)', padding:'1.2rem 5%', borderBottom:'1px solid rgba(255,255,255,0.1)', gap:'1rem' });
+  if(open) ul.style.display='none';
+}
+
+// ── SCROLL ANIMATION ──────────────────────────────────────────────────────────
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; } });
+}, {threshold:0.08});
+document.querySelectorAll('.lesson-card,.feature,.instructor-card,.beach-card,.tide-day').forEach(el=>{
+  el.style.opacity='0'; el.style.transform='translateY(24px)'; el.style.transition='opacity .5s ease,transform .5s ease';
+  obs.observe(el);
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+setLang('pt');
+buildTideGrid();
+buildCalendar();
+updateNextTide();
+setInterval(updateNextTide, 60000);
 </script>
 </body>
 </html>
