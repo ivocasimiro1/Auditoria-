@@ -6,6 +6,7 @@
   <title>Arrifana Surf Academy · Aljezur</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -1079,13 +1080,21 @@ function changeMonth(dir) {
   buildCalendar();
 }
 
-function selectCalDate(key, d, m, y) {
+async function selectCalDate(key, d, m, y) {
   booking.selectedDateKey = key;
   const months = T('cal_months');
   booking.selectedDateStr = `${d} ${months[m]} ${y}`;
   booking.time = null;
   document.getElementById('next-2').disabled = false;
   buildCalendar();
+
+  // Load real availability from Supabase
+  const usedFromDB = await loadSlotAvailability(key);
+  // Merge with mock data — real DB wins
+  const slots = getSlots(key);
+  slots.forEach(s => {
+    if (usedFromDB[s.t] !== undefined) s.used = usedFromDB[s.t];
+  });
   buildSlots(key);
 }
 
@@ -1154,17 +1163,57 @@ function buildSummary() {
     <div class="summary-total"><span>${T('summary_total')}</span><span class="total-price">€${total}</span></div>`;
 }
 
-// ── WHATSAPP ──────────────────────────────────────────────────────────────────
+// ── SUPABASE ──────────────────────────────────────────────────────────────────
+const { createClient } = supabase;
+const sb = createClient(
+  'https://ubeqidccuvsjhjphybxz.supabase.co',
+  'sb_publishable_X0-ZNy93MbCR-cXSdi4tRg_dpITamQj'
+);
+
+async function loadSlotAvailability(dateKey) {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  try {
+    const { data } = await sb.rpc('get_slot_availability', { p_date: dateStr });
+    const used = {};
+    (data || []).forEach(r => { used[r.slot_time] = r.booked_people; });
+    return used;
+  } catch { return {}; }
+}
+
+// ── WHATSAPP + SAVE ───────────────────────────────────────────────────────────
 const WA_NUMBER = '351912345678';
 
-function reservarWhatsApp() {
+async function reservarWhatsApp() {
   const nome = document.getElementById('fname').value.trim();
   const tel  = document.getElementById('fphone').value.trim();
   const email= document.getElementById('femail').value.trim();
   const pess = document.getElementById('fpessoas').value;
   const nota = document.getElementById('fnota').value.trim();
   if (!nome||!tel) { alert(T('f_name').replace(' *','') + ' / ' + T('f_phone').replace(' *','')); return; }
+
   const total = booking.lessonPrivate ? booking.lessonPrice : booking.lessonPrice * parseInt(pess);
+
+  // Guardar na base de dados (não bloqueia o WhatsApp se falhar)
+  try {
+    const [year, month, day] = booking.selectedDateKey.split('-').map(Number);
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    await sb.from('bookings').insert([{
+      school_id:    'arrifana-surf-academy',
+      lesson_type:  T(booking.lessonKey),
+      booking_date: dateStr,
+      booking_time: booking.time,
+      num_people:   parseInt(pess),
+      client_name:  nome,
+      client_phone: tel,
+      client_email: email || null,
+      notes:        nota || null,
+      total_price:  total,
+      language:     currentLang,
+      status:       'pending'
+    }]);
+  } catch(e) { console.warn('Supabase save failed', e); }
+
   let msg = `🏄 *${T('wa_header')}*\n\n`;
   msg += `👤 *${T('wa_name')}:* ${nome}\n`;
   msg += `📞 *${T('wa_phone')}:* ${tel}\n`;
