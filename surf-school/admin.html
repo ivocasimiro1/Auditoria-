@@ -267,6 +267,76 @@
     .spinner { display: inline-block; width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--cyan); border-radius: 50%; animation: spin .8s linear infinite; margin-bottom: 1rem; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* Calendar */
+    .calendar-wrap {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 1.3rem 1.5rem; margin-bottom: 1.5rem;
+    }
+    .cal-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.1rem; flex-wrap: wrap; gap: .5rem;
+    }
+    .cal-title { font-size: 1rem; font-weight: 700; }
+    .cal-nav { display: flex; gap: .4rem; align-items: center; }
+    .cal-nav-btn {
+      height: 30px; min-width: 30px; padding: 0 .5rem; border-radius: 8px;
+      border: 1px solid var(--border); background: transparent; color: var(--white);
+      cursor: pointer; font-size: .85rem; transition: all .18s;
+      display: inline-flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif;
+    }
+    .cal-nav-btn:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,207,253,.1); }
+    .cal-nav-today { font-size: .75rem; font-weight: 600; color: #C9A84C; border-color: rgba(201,168,76,.4); padding: 0 .75rem; }
+    .cal-nav-today:hover { background: rgba(201,168,76,.15); border-color: #C9A84C; color: #C9A84C; }
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;
+    }
+    .cal-dow {
+      text-align: center; font-size: .65rem; font-weight: 600; color: var(--gray);
+      text-transform: uppercase; padding: .3rem 0; letter-spacing: .04em;
+    }
+    .cal-day {
+      border-radius: 8px; padding: .4rem .2rem .35rem; text-align: center;
+      border: 1px solid transparent; cursor: pointer; transition: all .15s;
+      min-height: 50px; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    }
+    .cal-day:not(.cal-empty):hover { border-color: var(--border); background: rgba(255,255,255,.05); }
+    .cal-day.cal-today { border-color: rgba(0,207,253,.5); background: rgba(0,207,253,.09); }
+    .cal-day.cal-selected { border-color: var(--cyan) !important; background: rgba(0,207,253,.18) !important; }
+    .cal-day.cal-has-pending { background: rgba(234,179,8,.06); }
+    .cal-empty { cursor: default; }
+    .cal-day-num { font-size: .82rem; font-weight: 600; line-height: 1; }
+    .cal-dots { display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; margin-top: 1px; }
+    .cal-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .cal-dot-pending   { background: #fde047; }
+    .cal-dot-confirmed { background: var(--cyan); }
+    .cal-dot-completed { background: var(--green); }
+    .cal-count { font-size: .6rem; color: var(--gray); font-weight: 600; }
+
+    /* Today's briefing */
+    .today-brief {
+      background: linear-gradient(135deg, rgba(0,112,243,.12), rgba(0,207,253,.08));
+      border: 1px solid rgba(0,207,253,.25); border-radius: 16px;
+      padding: 1.2rem 1.5rem; margin-bottom: 1.5rem;
+    }
+    .today-brief-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: .5rem; }
+    .today-brief-title { font-size: .95rem; font-weight: 700; }
+    .today-brief-sub { font-size: .8rem; color: var(--cyan); font-weight: 600; }
+    .today-cards { display: flex; flex-wrap: wrap; gap: .8rem; }
+    .today-card {
+      background: rgba(0,0,0,.3); border: 1px solid var(--border); border-radius: 12px;
+      padding: .9rem 1rem; flex: 1 1 260px;
+    }
+    .today-card-time { font-size: 1.1rem; font-weight: 700; color: var(--cyan); margin-bottom: .3rem; }
+    .today-card-name { font-size: .88rem; font-weight: 600; margin-bottom: .2rem; }
+    .today-card-lesson { font-size: .78rem; color: var(--gray); margin-bottom: .6rem; }
+    .today-card-equip {
+      background: rgba(255,255,255,.04); border-radius: 8px;
+      padding: .5rem .7rem; margin-top: .4rem;
+    }
+    .today-equip-title { font-size: .65rem; color: var(--yellow); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .35rem; }
+    .today-equip-person { font-size: .78rem; color: var(--gray); margin: .15rem 0; }
+    .today-equip-person strong { color: var(--white); }
+    .today-card-status { float: right; margin-top: -2.4rem; }
+
     @media(max-width: 768px) {
       .dash-content { padding: 1rem; }
       .topbar { padding: .8rem 1rem; }
@@ -374,6 +444,28 @@
       </div>
     </div>
 
+    <!-- Today's Briefing -->
+    <div class="today-brief" id="today-brief" style="display:none">
+      <div class="today-brief-header">
+        <span class="today-brief-title">📅 Hoje — <span id="today-brief-date"></span></span>
+        <span class="today-brief-sub" id="today-brief-sub"></span>
+      </div>
+      <div id="today-cards"></div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="calendar-wrap">
+      <div class="cal-header">
+        <div class="cal-title" id="cal-title">—</div>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="calNavigate(-1)">‹</button>
+          <button class="cal-nav-btn cal-nav-today" onclick="calGoToday()">📅 Hoje</button>
+          <button class="cal-nav-btn" onclick="calNavigate(1)">›</button>
+        </div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+
     <!-- Filters -->
     <div class="filters-bar">
       <div class="filter-group admin-only" id="fg-school" style="display:none">
@@ -384,7 +476,7 @@
       </div>
       <div class="filter-group">
         <span class="filter-label">Mês</span>
-        <input type="month" id="f-month" class="filter-input" onchange="clearDayFilter();applyFilters()" />
+        <input type="month" id="f-month" class="filter-input" onchange="clearDayFilter();syncCalToMonth();applyFilters()" />
       </div>
       <div class="filter-group">
         <span class="filter-label">Dia</span>
@@ -483,14 +575,28 @@
   };
 
   // ── AUTH ──────────────────────────────────────────────────────
+  let realtimeChannel = null;
+
   async function init() {
     const { data: { session } } = await sb.auth.getSession();
     if (session) { currentUser = session.user; showDashboard(); }
 
     sb.auth.onAuthStateChange((_e, session) => {
       if (session) { currentUser = session.user; showDashboard(); }
-      else         { currentUser = null; showLogin(); }
+      else         { currentUser = null; showLogin(); if (realtimeChannel) sb.removeChannel(realtimeChannel); }
     });
+  }
+
+  function startRealtime() {
+    if (realtimeChannel) return; // already subscribed
+    realtimeChannel = sb
+      .channel('admin-bookings')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings' }, payload => {
+        const b = payload.new;
+        showToast(`🔔 Nova marcação: ${b.client_name} · ${b.booking_date} ${b.booking_time}`, 'success');
+        loadBookings();
+      })
+      .subscribe();
   }
 
   async function doLogin() {
@@ -562,6 +668,8 @@
     }
     updateTopbarSchool();
     setDefaultFilters();
+    initCalendar();
+    startRealtime();
     loadBookings();
   }
 
@@ -603,6 +711,8 @@
     }
     allBookings = data || [];
     applyFilters();
+    buildCalendar();
+    buildTodayBriefing();
   }
 
   function applyFilters() {
@@ -787,8 +897,219 @@
     document.getElementById('f-search').value = '';
     document.getElementById('f-date').value   = todayStr;
     applyFilters();
+    buildCalendar();
     document.getElementById('table-count').textContent =
       `Hoje · ${allBookings.filter(b=>b.booking_date===todayStr).length} marcação${allBookings.filter(b=>b.booking_date===todayStr).length!==1?'ões':''}`;
+  }
+
+  // ── CALENDAR ──────────────────────────────────────────────────
+  let calYear = new Date().getFullYear();
+  let calMonth = new Date().getMonth(); // 0-indexed
+
+  function initCalendar() {
+    const now = new Date();
+    calYear  = now.getFullYear();
+    calMonth = now.getMonth();
+    buildCalendar();
+  }
+
+  function calNavigate(delta) {
+    calMonth += delta;
+    if (calMonth < 0)  { calMonth = 11; calYear--; }
+    if (calMonth > 11) { calMonth = 0;  calYear++; }
+    document.getElementById('f-month').value = `${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+    clearDayFilter();
+    buildCalendar();
+    applyFilters();
+  }
+
+  function calGoToday() {
+    const now = new Date();
+    calYear  = now.getFullYear();
+    calMonth = now.getMonth();
+    document.getElementById('f-month').value = `${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+    filterToday();
+  }
+
+  function syncCalToMonth() {
+    const val = document.getElementById('f-month').value;
+    if (!val) return;
+    const [y, m] = val.split('-');
+    calYear  = parseInt(y);
+    calMonth = parseInt(m) - 1;
+    buildCalendar();
+  }
+
+  function selectCalDay(dateStr) {
+    document.getElementById('f-date').value = dateStr;
+    // Sync month if needed
+    const [y, m] = dateStr.split('-');
+    calYear  = parseInt(y);
+    calMonth = parseInt(m) - 1;
+    document.getElementById('f-month').value = `${y}-${m}`;
+    applyFilters();
+    buildCalendar();
+    // Scroll to table
+    document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function buildCalendar() {
+    const grid = document.getElementById('cal-grid');
+    if (!grid) return;
+
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const selectedDay = document.getElementById('f-date').value;
+    const monthPfx   = `${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+
+    const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    document.getElementById('cal-title').textContent = `${monthNames[calMonth]} ${calYear}`;
+
+    // Build day→status counts map for this month
+    const dayMap = {};
+    allBookings.forEach(b => {
+      if (!b.booking_date.startsWith(monthPfx)) return;
+      if (!dayMap[b.booking_date]) dayMap[b.booking_date] = { pending:0, confirmed:0, completed:0 };
+      const st = b.status;
+      if (st !== 'cancelled') dayMap[b.booking_date][st] = (dayMap[b.booking_date][st]||0) + 1;
+    });
+
+    const dows = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+    let html = dows.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+    const firstDow = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+    const startOffset = (firstDow === 0) ? 6 : firstDow - 1; // Monday-first
+    const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+
+    for (let i = 0; i < startOffset; i++) html += `<div class="cal-empty"></div>`;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const isToday    = dateStr === todayStr;
+      const isSelected = dateStr === selectedDay;
+      const dm = dayMap[dateStr];
+
+      let dots = '';
+      let total = 0;
+      if (dm) {
+        total = (dm.pending||0) + (dm.confirmed||0) + (dm.completed||0);
+        for (let i=0; i<Math.min(dm.pending,3);   i++) dots += `<div class="cal-dot cal-dot-pending"></div>`;
+        for (let i=0; i<Math.min(dm.confirmed,3); i++) dots += `<div class="cal-dot cal-dot-confirmed"></div>`;
+        for (let i=0; i<Math.min(dm.completed,2); i++) dots += `<div class="cal-dot cal-dot-completed"></div>`;
+      }
+
+      const cls = [
+        'cal-day',
+        isToday    ? 'cal-today'    : '',
+        isSelected ? 'cal-selected' : '',
+        dm && dm.pending ? 'cal-has-pending' : '',
+      ].filter(Boolean).join(' ');
+
+      html += `<div class="${cls}" onclick="selectCalDay('${dateStr}')">
+        <div class="cal-day-num">${day}</div>
+        ${dots ? `<div class="cal-dots">${dots}</div>` : ''}
+        ${total > 0 ? `<div class="cal-count">${total}</div>` : ''}
+      </div>`;
+    }
+
+    grid.innerHTML = html;
+  }
+
+  // ── UPCOMING DAYS BRIEFING (today + next 3 days with bookings) ──
+  function buildTodayBriefing() {
+    const toDateStr = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const dayNames   = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+    const monthNames = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+    // Collect next 5 dates that have bookings
+    const today = new Date();
+    const upcoming = [];
+    for (let i = 0; i < 30 && upcoming.length < 5; i++) {
+      const d = new Date(today); d.setDate(today.getDate() + i);
+      const ds = toDateStr(d);
+      const books = allBookings.filter(b => b.booking_date === ds && b.status !== 'cancelled')
+                               .sort((a,b) => a.booking_time.localeCompare(b.booking_time));
+      if (books.length) upcoming.push({ date: d, dateStr: ds, books });
+    }
+
+    const wrap = document.getElementById('today-brief');
+    if (!upcoming.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+
+    const totalPending = upcoming.flatMap(u => u.books).filter(b => b.status === 'pending').length;
+    const totalAulas   = upcoming.reduce((s, u) => s + u.books.length, 0);
+
+    // Header label
+    const firstDate = upcoming[0].date;
+    const isToday   = toDateStr(firstDate) === toDateStr(today);
+    document.getElementById('today-brief-date').textContent =
+      isToday ? `Hoje · ${dayNames[firstDate.getDay()]}` : `${dayNames[firstDate.getDay()]}, ${firstDate.getDate()} de ${monthNames[firstDate.getMonth()]}`;
+    document.getElementById('today-brief-sub').textContent =
+      [`${totalAulas} aula${totalAulas!==1?'s':''} nos próximos dias`,
+       totalPending ? `⚠️ ${totalPending} por confirmar` : '✅ tudo confirmado'].join(' · ');
+
+    const genLabel = g => g==='H'?'♂':g==='M'?'♀':g==='C'?'👶':'';
+    const expLabel = e => ({'Nunca surfei':'🔰','Já surfei':'🏄','Intermédio':'⭐','Avançado':'🌟'})[e]||'';
+
+    const sections = upcoming.map(({ date, dateStr, books }) => {
+      const isToday2 = dateStr === toDateStr(today);
+      const isTomorrow = dateStr === toDateStr(new Date(today.getTime() + 86400000));
+      const label = isToday2 ? '📅 HOJE' : isTomorrow ? '📅 AMANHÃ' : `📅 ${dayNames[date.getDay()].toUpperCase()} ${date.getDate()}/${date.getMonth()+1}`;
+
+      const cards = books.map(b => {
+        const s = STATUS[b.status] || STATUS.pending;
+        const price = parseFloat(b.total_price).toFixed(2);
+        const sch   = SCHOOLS.find(sc => sc.id === b.school_id) || SCHOOLS[0];
+        const phone = b.client_phone.replace(/\D/g,'');
+        const waMsg = encodeURIComponent(
+          `🏄 *${sch.name}*\n\nOlá ${b.client_name}! ✅\n\nA sua aula está *confirmada*!\n\n📅 ${isToday2?'Hoje':date.getDate()+'/'+(date.getMonth()+1)} às ${b.booking_time}\n🌊 ${b.lesson_type}\n👥 ${b.num_people} pessoa(s)\n💰 €${price}\n\n📍 ${sch.meeting_point}\n\n🩱 Vista o fato de banho por baixo do fato de surf.\n🚿 Traga toalha e protetor solar.\n\nAté já! 🤙`
+        );
+
+        // Equipment
+        const list = b.equipment_list && b.equipment_list.length ? b.equipment_list : null;
+        let equipHtml = '';
+        if (list) {
+          const rows = list.map((p,i) => {
+            const parts = [
+              p.gender ? `<strong>${genLabel(p.gender)}</strong>` : '',
+              p.weight ? `${p.weight}kg` : '',
+              p.height ? `${p.height}cm` : '',
+              p.size   ? `Fato <strong>${p.size}</strong>` : '',
+              p.experience ? expLabel(p.experience)+' '+p.experience : '',
+            ].filter(Boolean).join(' · ');
+            return `<div class="today-equip-person">P${i+1}: ${parts}</div>`;
+          }).join('');
+          equipHtml = `<div class="today-card-equip"><div class="today-equip-title">👕 Equipamento</div>${rows}</div>`;
+        }
+
+        return `<div class="today-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
+            <div>
+              <div class="today-card-time">${b.booking_time}</div>
+              <div class="today-card-name">${b.client_name}</div>
+              <div class="today-card-lesson">${b.lesson_type} · ${b.num_people} pess. · €${price}</div>
+              <div style="font-size:.73rem;color:var(--gray);margin-top:.2rem">📞 ${b.client_phone}${b.client_email?' · '+b.client_email:''}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.35rem;flex-shrink:0">
+              <span class="status-badge ${s.cls}" style="font-size:.65rem">${s.label}</span>
+              ${b.status==='pending'
+                ? `<button class="act-btn act-confirm" title="Confirmar" onclick="updateStatus('${b.id}','confirmed')" style="width:auto;padding:0 .5rem;font-size:.75rem">✓ Confirmar</button>
+                   <button class="act-btn act-cancel"  title="Cancelar"  onclick="updateStatus('${b.id}','cancelled')"  style="width:auto;padding:0 .5rem;font-size:.75rem">✕</button>`
+                : `<a href="https://wa.me/${phone}?text=${waMsg}" target="_blank" style="text-decoration:none"><button class="act-btn act-wa" style="width:auto;padding:0 .5rem;font-size:.75rem">💬 WA</button></a>`
+              }
+            </div>
+          </div>
+          ${equipHtml}
+        </div>`;
+      }).join('');
+
+      return `<div style="margin-bottom:1rem">
+        <div style="font-size:.7rem;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">${label}</div>
+        <div class="today-cards">${cards}</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('today-cards').innerHTML = sections;
   }
 
   function showToast(msg, type = 'success') {

@@ -1407,10 +1407,36 @@ async function reservarWhatsApp() {
     });
   }
 
-  const waBtn = document.querySelector('.btn-whatsapp');
-  if (waBtn) { waBtn.disabled = true; waBtn.innerHTML = '⏳ A preparar...'; }
   const total = booking.lessonPrivate ? booking.lessonPrice : booking.lessonPrice * pess;
 
+  // ── Build WA message BEFORE any await (mobile browsers block popup after async) ──
+  const genLabel = g => g==='H'?T('g_homem'):g==='M'?T('g_mulher'):g==='C'?T('g_crianca'):'—';
+  let msg = `🏄 *${T('wa_header')}*\n\n`;
+  msg += `👤 *${T('wa_name')}:* ${nome}\n📞 *${T('wa_phone')}:* ${tel}\n`;
+  if (email) msg += `📧 *${T('wa_email')}:* ${email}\n`;
+  msg += `\n🌊 *${T('wa_lesson')}:* ${T(booking.lessonKey)}\n`;
+  msg += `📅 *${T('wa_date')}:* ${booking.selectedDateStr}\n`;
+  msg += `⏰ *${T('wa_time')}:* ${booking.time}\n`;
+  msg += `👥 *${T('wa_people')}:* ${pess}\n💰 *${T('wa_total')}:* €${total}\n`;
+
+  const hasEquip = equipment.some(p => p.weight || p.gender || p.size);
+  if (hasEquip) {
+    msg += `\n👕 *Equipamento:*\n`;
+    equipment.forEach((p, i) => {
+      const label = PERSON_LABELS[currentLang] || 'Pessoa';
+      const expStr = p.experience ? ` · ${p.experience}` : '';
+      msg += `  ${label} ${i+1}: ${genLabel(p.gender)} · ${p.weight?p.weight+'kg':'—'} · ${p.height?p.height+'cm':'—'} · ${p.size||'—'}${expStr}\n`;
+    });
+  }
+  if (nota) msg += `\n📝 *${T('wa_note')}:* ${nota}\n`;
+  msg += `\n${T('wa_closing')}`;
+
+  // ── Open WhatsApp SYNCHRONOUSLY (user gesture still active) ──
+  window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+
+  // ── Save to Supabase AFTER opening WA (async is fine here) ──
+  const waBtn = document.querySelector('.btn-whatsapp');
+  if (waBtn) { waBtn.disabled = true; waBtn.innerHTML = '⏳ A guardar...'; }
   try {
     const [year, month, day] = booking.selectedDateKey.split('-').map(Number);
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
@@ -1426,31 +1452,7 @@ async function reservarWhatsApp() {
       language:currentLang, status:'pending'
     }]);
   } catch(e) { console.warn('Supabase save failed', e); }
-
-  const genLabel = g => g==='H'?T('g_homem'):g==='M'?T('g_mulher'):g==='C'?T('g_crianca'):'—';
-  let msg = `🏄 *${T('wa_header')}*\n\n`;
-  msg += `👤 *${T('wa_name')}:* ${nome}\n📞 *${T('wa_phone')}:* ${tel}\n`;
-  if (email) msg += `📧 *${T('wa_email')}:* ${email}\n`;
-  msg += `\n🌊 *${T('wa_lesson')}:* ${T(booking.lessonKey)}\n`;
-  msg += `📅 *${T('wa_date')}:* ${booking.selectedDateStr}\n`;
-  msg += `⏰ *${T('wa_time')}:* ${booking.time}\n`;
-  msg += `👥 *${T('wa_people')}:* ${pess}\n💰 *${T('wa_total')}:* €${total}\n`;
-
-  const hasEquip = equipment.some(p => p.weight || p.gender || p.size);
-  if (hasEquip) {
-    msg += `\n👕 *Equipamento:*\n`;
-    equipment.forEach((p, i) => {
-      const label = PERSON_LABELS[currentLang] || 'Pessoa';
-      const expLabels = { nunca: T('exp_nunca'), ja_surfei: T('exp_ja'), intermedio: T('exp_inter'), avancado: T('exp_avanc') };
-      const expStr = p.experience ? ` · ${expLabels[p.experience] || p.experience}` : '';
-      msg += `  ${label} ${i+1}: ${genLabel(p.gender)} · ${p.weight?p.weight+'kg':'—'} · ${p.height?p.height+'cm':'—'} · ${p.size||'—'}${expStr}\n`;
-    });
-  }
-  if (nota) msg += `\n📝 *${T('wa_note')}:* ${nota}\n`;
-  msg += `\n${T('wa_closing')}`;
-
   if (waBtn) { waBtn.disabled = false; waBtn.innerHTML = `📱 <span data-t="btn_whatsapp">${T('btn_whatsapp')}</span>`; }
-  window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
 const WETSUIT_SIZES = {
