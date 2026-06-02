@@ -378,7 +378,7 @@
     <div class="filters-bar">
       <div class="filter-group admin-only" id="fg-school" style="display:none">
         <span class="filter-label">Escola</span>
-        <select id="f-school" class="filter-select" onchange="loadBookings()">
+        <select id="f-school" class="filter-select" onchange="updateTopbarSchool();loadBookings()">
           <option value="">Todas</option>
         </select>
       </div>
@@ -539,23 +539,37 @@
     document.getElementById('login-wrap').style.display = 'none';
     document.getElementById('dash-wrap').style.display  = 'block';
     document.getElementById('user-email').textContent   = currentUser.email;
-    document.getElementById('user-role').textContent    = isAdmin() ? '👑 Administrador' : '🏄 Dono da Escola';
+    document.getElementById('user-role').textContent    = isAdmin() ? '👑 Administrador da Escola' : '🏄 Administrador da Escola';
 
     if (isAdmin()) {
-      document.getElementById('topbar-logo').innerHTML = 'Ivo <span>Casimiro</span> · Admin';
       // Show school filter and populate it
       document.getElementById('fg-school').style.display = 'flex';
       const sel = document.getElementById('f-school');
-      SCHOOLS.forEach(s => {
+      // Default to first school so topbar always shows a school name
+      SCHOOLS.forEach((s, i) => {
         const opt = document.createElement('option');
         opt.value = s.id; opt.textContent = s.name;
+        if (i === 0) opt.selected = true;
         sel.appendChild(opt);
       });
     } else {
       document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
     }
+    updateTopbarSchool();
     setDefaultFilters();
     loadBookings();
+  }
+
+  function updateTopbarSchool() {
+    const sel = document.getElementById('f-school');
+    const schoolId = sel ? sel.value : '';
+    const school = SCHOOLS.find(s => s.id === schoolId);
+    const name = school ? school.name : 'Todas as Escolas';
+    const parts = name.split(' ');
+    const first = parts.slice(0, -1).join(' ') || name;
+    const last  = parts[parts.length - 1];
+    document.getElementById('topbar-logo').innerHTML =
+      schoolId ? `${first} <span>${last}</span>` : `<span>Todas</span> as Escolas`;
   }
 
   // ── DATA ──────────────────────────────────────────────────────
