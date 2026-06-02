@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel de Controlo · Arrifana Surf Academy</title>
+  <title>Painel de Controlo · Escola Surf Teste</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -279,7 +279,7 @@
 <!-- LOGIN SCREEN -->
 <div id="login-wrap">
   <div class="login-card">
-    <div class="login-logo">Arrifana <span>Surf</span> Academy</div>
+    <div class="login-logo">Escola <span>Surf</span> Teste</div>
     <p class="login-subtitle">Painel de Controlo · Gestão de Marcações</p>
 
     <h2 class="login-title">Iniciar Sessão</h2>
@@ -305,7 +305,7 @@
 
   <!-- Top Bar -->
   <div class="topbar">
-    <div id="topbar-logo" class="topbar-logo">Arrifana <span>Surf</span> Academy</div>
+    <div id="topbar-logo" class="topbar-logo">Escola <span>Surf</span> Teste</div>
     <div class="topbar-right">
       <div class="user-info">
         <div class="user-email" id="user-email"></div>
@@ -467,7 +467,7 @@
 
   // Adicionar novas escolas aqui quando forem integradas
   const SCHOOLS = [
-    { id: 'arrifana-surf-academy', name: 'Arrifana Surf Academy' },
+    { id: 'escola-teste', name: 'Escola Surf Teste' },
   ];
 
   const STATUS = {
@@ -564,7 +564,7 @@
       `<tr><td colspan="9" class="loading"><div class="spinner"></div><br>A carregar...</td></tr>`;
 
     const schoolSel = document.getElementById('f-school');
-    const schoolId  = schoolSel ? schoolSel.value : 'arrifana-surf-academy';
+    const schoolId  = schoolSel ? schoolSel.value : 'escola-teste';
 
     let query = sb.from('bookings').select('*');
     if (schoolId) {
