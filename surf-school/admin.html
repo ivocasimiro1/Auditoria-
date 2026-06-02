@@ -214,6 +214,37 @@
     .act-cancel:hover { background: rgba(239,68,68,.15); border-color: var(--red); }
     .act-wa { color: #25D366; border-color: rgba(37,211,102,.3); font-size: .9rem; }
     .act-wa:hover { background: rgba(37,211,102,.15); border-color: #25D366; }
+    .act-detail { color: var(--cyan); border-color: rgba(0,207,253,.3); font-size: .8rem; }
+    .act-detail:hover { background: rgba(0,207,253,.1); border-color: var(--cyan); }
+
+    /* Detail Modal */
+    .detail-modal-bg {
+      display: none; position: fixed; inset: 0; z-index: 900;
+      background: rgba(0,0,0,.65); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    .detail-modal-bg.open { display: flex; }
+    .detail-modal {
+      background: #0A1929; border: 1px solid var(--border); border-radius: 22px;
+      padding: 2rem; width: 100%; max-width: 520px; max-height: 85vh; overflow-y: auto;
+    }
+    .detail-modal h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.4rem; color: var(--cyan); }
+    .detail-section { margin-bottom: 1.2rem; }
+    .detail-section-title {
+      font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+      color: var(--gold); margin-bottom: .55rem; padding-bottom: .35rem;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+    .detail-row { display: flex; justify-content: space-between; font-size: .86rem; margin: .35rem 0; }
+    .detail-row span { color: var(--gray); }
+    .detail-row strong { color: var(--white); text-align: right; max-width: 60%; }
+    .person-chip {
+      background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 10px;
+      padding: .7rem .9rem; margin-bottom: .5rem; font-size: .83rem;
+    }
+    .person-chip-title { font-size: .68rem; color: var(--gold); font-weight: 700; margin-bottom: .4rem; }
+    .person-chip-vals { display: flex; gap: .8rem; flex-wrap: wrap; color: var(--gray); }
+    .person-chip-vals strong { color: var(--white); }
 
     /* Toast notification */
     .toast {
@@ -412,6 +443,15 @@
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- Detail Modal -->
+<div class="detail-modal-bg" id="detail-modal-bg" onclick="closeDetail(event)">
+  <div class="detail-modal" id="detail-modal">
+    <h3>📋 Detalhes da Marcação</h3>
+    <div id="detail-content"></div>
+    <button onclick="closeDetailModal()" style="width:100%;margin-top:1rem;padding:.75rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-family:'Inter',sans-serif;font-size:.88rem">Fechar</button>
+  </div>
+</div>
 
 <script>
   const SUPABASE_URL = 'https://ubeqidccuvsjhjphybxz.supabase.co';
@@ -625,17 +665,33 @@
         `🏄 *Arrifana Surf Academy*\n✅ Marcação confirmada!\n\n📅 ${dateStr} às ${b.booking_time}\n🌊 ${b.lesson_type}\n👥 ${b.num_people} pessoa(s)\n💰 €${price.toFixed(2)}\n\nAté já na praia! 🤙`
       );
 
+      // Equipment summary for table row
+      const equip = b.equipment_list && b.equipment_list.length
+        ? b.equipment_list.map((p,pi) => {
+            const g = p.gender==='H'?'♂':p.gender==='M'?'♀':p.gender==='C'?'👶':'';
+            return `P${pi+1}:${g}${p.size?` ${p.size}`:''}`;
+          }).join(' · ')
+        : (b.wetsuit_size || b.client_weight)
+          ? `${b.client_gender==='H'?'♂':b.client_gender==='M'?'♀':''}${b.wetsuit_size?' '+b.wetsuit_size:''}`
+          : '';
+
+      const bJson = encodeURIComponent(JSON.stringify(b));
+
       return `<tr>
         <td style="color:var(--gray);font-size:.8rem">#${b.booking_ref || (i+1)}</td>
         <td><strong>${dateStr}</strong><small>${b.booking_time}</small></td>
         <td>${b.lesson_type} ${langFlag}</td>
-        <td>${b.client_name}<small>${b.client_phone}${b.client_email ? ' · ' + b.client_email : ''}</small>${b.wetsuit_size||b.client_weight ? `<small style="color:#C9A84C">👕 ${b.wetsuit_size||'—'} · ${b.client_weight?b.client_weight+'kg':'—'} · ${b.client_height?b.client_height+'cm':'—'} · ${b.client_gender==='H'?'♂':b.client_gender==='M'?'♀':b.client_gender==='C'?'👶':'—'}</small>` : ''}</td>
+        <td>${b.client_name}
+          <small>${b.client_phone}${b.client_email ? ' · ' + b.client_email : ''}</small>
+          ${equip ? `<small style="color:#C9A84C">👕 ${equip}</small>` : ''}
+        </td>
         <td class="col-center">${b.num_people}</td>
         <td class="col-price">€${price.toFixed(2)}</td>
         <td class="col-commission admin-only">€${com.toFixed(2)}</td>
         <td><span class="status-badge ${s.cls}">${s.label}</span></td>
-        <td style="display:flex;gap:.4rem;align-items:center">
+        <td style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
           ${actions}
+          <button class="act-btn act-detail" title="Ver detalhes" onclick="openDetail(${JSON.stringify(bJson)})">👁</button>
           <a href="https://wa.me/${b.client_phone.replace(/\D/g,'')}?text=${waMsg}" target="_blank">
             <button class="act-btn act-wa" title="WhatsApp">💬</button>
           </a>
@@ -720,6 +776,69 @@
       hideChangePass();
       showToast('✅ Password alterada com sucesso!', 'success');
     }
+  }
+
+  // ── DETAIL MODAL ─────────────────────────────────────────────
+  function openDetail(bJsonEncoded) {
+    const b = JSON.parse(decodeURIComponent(bJsonEncoded));
+    const [y, m, d] = b.booking_date.split('-');
+    const dateStr = `${d}/${m}/${y}`;
+    const s = STATUS[b.status] || STATUS.pending;
+    const genLabel = g => g==='H'?'Homem ♂':g==='M'?'Mulher ♀':g==='C'?'Criança 👶':'—';
+
+    let equipHtml = '';
+    const list = b.equipment_list && b.equipment_list.length ? b.equipment_list : null;
+    if (list) {
+      equipHtml = list.map((p, i) => `
+        <div class="person-chip">
+          <div class="person-chip-title">Pessoa ${i+1}</div>
+          <div class="person-chip-vals">
+            <span>Género: <strong>${genLabel(p.gender)}</strong></span>
+            <span>Peso: <strong>${p.weight ? p.weight+'kg' : '—'}</strong></span>
+            <span>Altura: <strong>${p.height ? p.height+'cm' : '—'}</strong></span>
+            <span>Fato: <strong>${p.size || '—'}</strong></span>
+            ${p.experience ? `<span>Nível: <strong>${p.experience}</strong></span>` : ''}
+          </div>
+        </div>`).join('');
+    } else if (b.client_weight || b.wetsuit_size) {
+      equipHtml = `<div class="person-chip">
+        <div class="person-chip-title">Pessoa 1</div>
+        <div class="person-chip-vals">
+          <span>Género: <strong>${genLabel(b.client_gender)}</strong></span>
+          <span>Peso: <strong>${b.client_weight ? b.client_weight+'kg' : '—'}</strong></span>
+          <span>Altura: <strong>${b.client_height ? b.client_height+'cm' : '—'}</strong></span>
+          <span>Fato: <strong>${b.wetsuit_size || '—'}</strong></span>
+        </div>
+      </div>`;
+    }
+
+    document.getElementById('detail-content').innerHTML = `
+      <div class="detail-section">
+        <div class="detail-section-title">📋 Reserva</div>
+        <div class="detail-row"><span>Referência</span><strong>#${b.booking_ref || b.id?.slice(0,8)}</strong></div>
+        <div class="detail-row"><span>Modalidade</span><strong>${b.lesson_type}</strong></div>
+        <div class="detail-row"><span>Data</span><strong>${dateStr} às ${b.booking_time}</strong></div>
+        <div class="detail-row"><span>Pessoas</span><strong>${b.num_people}</strong></div>
+        <div class="detail-row"><span>Total</span><strong style="color:var(--cyan)">€${parseFloat(b.total_price).toFixed(2)}</strong></div>
+        <div class="detail-row"><span>Estado</span><strong><span class="status-badge ${s.cls}" style="font-size:.7rem">${s.label}</span></strong></div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">👤 Cliente</div>
+        <div class="detail-row"><span>Nome</span><strong>${b.client_name}</strong></div>
+        <div class="detail-row"><span>Telemóvel</span><strong>${b.client_phone}</strong></div>
+        ${b.client_email ? `<div class="detail-row"><span>Email</span><strong>${b.client_email}</strong></div>` : ''}
+        ${b.notes ? `<div class="detail-row"><span>Nota</span><strong style="max-width:70%;text-align:right">${b.notes}</strong></div>` : ''}
+      </div>
+      ${equipHtml ? `<div class="detail-section"><div class="detail-section-title">👕 Equipamento</div>${equipHtml}</div>` : ''}
+    `;
+    document.getElementById('detail-modal-bg').classList.add('open');
+  }
+
+  function closeDetail(e) {
+    if (e.target === document.getElementById('detail-modal-bg')) closeDetailModal();
+  }
+  function closeDetailModal() {
+    document.getElementById('detail-modal-bg').classList.remove('open');
   }
 
   init();
