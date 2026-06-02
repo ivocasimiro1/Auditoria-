@@ -1068,17 +1068,24 @@ function getDayTides(beach, localDate) {
 function buildBeachSelector() {
   const sel = document.getElementById('beach-selector');
   if (!sel) return;
-  sel.innerHTML = BEACHES.map(b =>
-    `<button class="beach-btn${b.id===currentBeachId?' active':''}" onclick="selectBeach('${b.id}')">
-      ${b.name} <span style="font-size:.7rem;opacity:.65">${b.region}</span>
-    </button>`
-  ).join('');
+  if (!sel.children.length) {
+    sel.innerHTML = BEACHES.map(b =>
+      `<button class="beach-btn${b.id===currentBeachId?' active':''}" data-beach="${b.id}" onclick="selectBeach('${b.id}')">
+        ${b.name} <span style="font-size:.7rem;opacity:.65">${b.region}</span>
+      </button>`
+    ).join('');
+  } else {
+    sel.querySelectorAll('.beach-btn').forEach(btn =>
+      btn.classList.toggle('active', btn.dataset.beach === currentBeachId)
+    );
+  }
 }
 
 function selectBeach(id) {
   currentBeachId = id;
   const b = getBeach();
-  document.getElementById('cond-beach-name').textContent = b.name;
+  const nameEl = document.getElementById('cond-beach-name');
+  if (nameEl) nameEl.textContent = b.name;
   buildBeachSelector();
   buildTideGrid();
   updateNextTide();
