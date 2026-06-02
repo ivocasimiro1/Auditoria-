@@ -247,24 +247,21 @@
         <label>Email</label>
         <input type="email" id="l-email" placeholder="email@exemplo.com" onkeydown="if(event.key==='Enter')sendOtp()" />
       </div>
-      <button class="btn-login" onclick="sendOtp()">Enviar código →</button>
+      <button class="btn-login" onclick="sendOtp()">Enviar link de acesso →</button>
     </div>
 
-    <!-- PASSO 2: Código OTP -->
-    <div id="step-otp" style="display:none">
-      <h2 class="login-title">Verificar código</h2>
-      <p style="font-size:.84rem;color:var(--gray);margin-bottom:1.2rem;text-align:center">
-        Enviámos um código de 6 dígitos para<br><strong id="otp-email-display" style="color:var(--white)"></strong>
+    <!-- PASSO 2: Aguardar clique no email -->
+    <div id="step-otp" style="display:none;text-align:center">
+      <div style="font-size:2.5rem;margin-bottom:1rem">📬</div>
+      <h2 class="login-title">Verifica o teu email</h2>
+      <p style="font-size:.88rem;color:var(--gray);margin-bottom:.6rem;line-height:1.6">
+        Enviámos um link para<br><strong id="otp-email-display" style="color:var(--white)"></strong>
       </p>
-      <div class="form-group">
-        <label>Código</label>
-        <input type="text" id="l-otp" placeholder="000000" maxlength="6"
-          style="letter-spacing:.3em;font-size:1.5rem;text-align:center;font-weight:700"
-          oninput="this.value=this.value.replace(/\D/g,'')"
-          onkeydown="if(event.key==='Enter')verifyOtp()" />
-      </div>
-      <button class="btn-login" onclick="verifyOtp()">Entrar no Painel</button>
-      <p style="text-align:center;margin-top:1rem;font-size:.8rem;color:var(--gray)">
+      <p style="font-size:.82rem;color:var(--cyan);margin-bottom:1.8rem">
+        Clica em <strong>"Sign in"</strong> no email para entrares.
+      </p>
+      <div style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .9s linear infinite;margin:0 auto 1.5rem"></div>
+      <p style="font-size:.78rem;color:var(--gray)">
         Não recebeste? <a href="#" onclick="showEmailStep();return false" style="color:var(--cyan);text-decoration:none">Tentar novamente</a>
       </p>
     </div>
@@ -431,7 +428,7 @@
     const btn = document.querySelector('#step-email .btn-login');
     btn.textContent = 'A enviar...'; btn.disabled = true;
     const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: window.location.origin + '/admin.html' } });
-    btn.textContent = 'Enviar código →'; btn.disabled = false;
+    btn.textContent = 'Enviar link de acesso →'; btn.disabled = false;
 
     if (error) {
       errEl.textContent = error.message.includes('not found') || error.message.includes('registered')
@@ -442,24 +439,6 @@
     document.getElementById('otp-email-display').textContent = email;
     document.getElementById('step-email').style.display = 'none';
     document.getElementById('step-otp').style.display = 'block';
-    document.getElementById('l-otp').focus();
-  }
-
-  async function verifyOtp() {
-    const token = document.getElementById('l-otp').value.trim();
-    const errEl = document.getElementById('login-error');
-    errEl.textContent = ''; errEl.classList.remove('show');
-    if (token.length !== 6) { errEl.textContent = 'O código tem 6 dígitos.'; errEl.classList.add('show'); return; }
-
-    const btn = document.querySelector('#step-otp .btn-login');
-    btn.textContent = 'A verificar...'; btn.disabled = true;
-    const { error } = await sb.auth.verifyOtp({ email: otpEmail, token, type: 'email' });
-    btn.textContent = 'Entrar no Painel'; btn.disabled = false;
-
-    if (error) {
-      errEl.textContent = 'Código incorreto ou expirado. Tenta novamente.';
-      errEl.classList.add('show');
-    }
   }
 
   async function logout() {
