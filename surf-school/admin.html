@@ -467,7 +467,12 @@
 
   // Adicionar novas escolas aqui quando forem integradas
   const SCHOOLS = [
-    { id: 'escola-teste', name: 'Escola Surf Teste' },
+    {
+      id:            'escola-teste',
+      name:          'Escola Surf Teste',
+      wa_number:     '351962800400',
+      meeting_point: 'Encontramo-nos na Praia de Arrifana, junto ao acesso principal às escadas, 15 minutos antes da aula.',
+    },
   ];
 
   const STATUS = {
@@ -675,8 +680,9 @@
            <button class="act-btn act-cancel"   title="Cancelar"  onclick="updateStatus('${b.id}','cancelled')">✕</button>`
         : '—';
 
+      const schoolForRow = SCHOOLS.find(s => s.id === b.school_id) || SCHOOLS[0];
       const waMsg = encodeURIComponent(
-        `🏄 *Arrifana Surf Academy*\n✅ Marcação confirmada!\n\n📅 ${dateStr} às ${b.booking_time}\n🌊 ${b.lesson_type}\n👥 ${b.num_people} pessoa(s)\n💰 €${price.toFixed(2)}\n\nAté já na praia! 🤙`
+        `🏄 *${schoolForRow.name}*\n✅ Marcação confirmada!\n\n📅 ${dateStr} às ${b.booking_time}\n🌊 ${b.lesson_type}\n👥 ${b.num_people} pessoa(s)\n💰 €${price.toFixed(2)}\n\nAté já na praia! 🤙`
       );
 
       // Equipment summary for table row
@@ -728,6 +734,42 @@
     if (error) { showToast('Erro ao atualizar estado', 'error'); return; }
     const labels = { confirmed: 'Confirmado ✓', completed: 'Concluído ★', cancelled: 'Cancelado' };
     showToast(`Estado atualizado: ${labels[newStatus] || newStatus}`, 'success');
+
+    if (newStatus === 'confirmed' || newStatus === 'cancelled') {
+      const b = allBookings.find(bk => bk.id === id);
+      if (b) {
+        const school = SCHOOLS.find(s => s.id === b.school_id) || SCHOOLS[0];
+        const [y, m, d] = b.booking_date.split('-');
+        const dateStr = `${d}/${m}/${y}`;
+        const price = parseFloat(b.total_price).toFixed(2);
+        let msg;
+        if (newStatus === 'confirmed') {
+          msg =
+            `🏄 *${school.name}*\n\n` +
+            `Olá ${b.client_name}! ✅\n\n` +
+            `A sua aula de surf está *confirmada*!\n\n` +
+            `📅 *Data:* ${dateStr}\n` +
+            `⏰ *Hora:* ${b.booking_time}\n` +
+            `🌊 *Modalidade:* ${b.lesson_type}\n` +
+            `👥 *Pessoas:* ${b.num_people}\n` +
+            `💰 *Total:* €${price}\n\n` +
+            `📍 *Ponto de encontro:*\n${school.meeting_point}\n\n` +
+            `🩱 Vista o fato de banho por baixo do fato de surf.\n` +
+            `🚿 Traga toalha e protetor solar.\n\n` +
+            `Até já! 🤙`;
+        } else {
+          msg =
+            `🏄 *${school.name}*\n\n` +
+            `Olá ${b.client_name},\n\n` +
+            `Infelizmente não conseguimos confirmar a sua marcação para ${dateStr} às ${b.booking_time}.\n\n` +
+            `Pedimos desculpa pelo inconveniente. Por favor contacte-nos para remarcar.\n\n` +
+            `Obrigado pela compreensão 🙏`;
+        }
+        const phone = b.client_phone.replace(/\D/g, '');
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+      }
+    }
+
     await loadBookings();
   }
 
