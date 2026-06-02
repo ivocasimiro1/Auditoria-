@@ -5,23 +5,34 @@
 
 -- Tabela de marcações
 create table if not exists public.bookings (
-  id            uuid          default gen_random_uuid() primary key,
-  created_at    timestamptz   default now(),
-  school_id     text          not null default 'arrifana-surf-academy',
-  lesson_type   text          not null,
-  booking_date  date          not null,
-  booking_time  text          not null,
-  num_people    int           not null default 1 check (num_people >= 1 and num_people <= 6),
-  client_name   text          not null,
-  client_phone  text          not null,
-  client_email  text,
-  notes         text,
-  status        text          not null default 'pending'
-                              check (status in ('pending','confirmed','completed','cancelled')),
-  total_price   numeric(10,2) not null,
-  language      text          default 'pt',
-  booking_ref   serial
+  id             uuid          default gen_random_uuid() primary key,
+  created_at     timestamptz   default now(),
+  school_id      text          not null default 'arrifana-surf-academy',
+  lesson_type    text          not null,
+  booking_date   date          not null,
+  booking_time   text          not null,
+  num_people     int           not null default 1 check (num_people >= 1 and num_people <= 6),
+  client_name    text          not null,
+  client_phone   text          not null,
+  client_email   text,
+  notes          text,
+  status         text          not null default 'pending'
+                               check (status in ('pending','confirmed','completed','cancelled')),
+  total_price    numeric(10,2) not null,
+  language       text          default 'pt',
+  booking_ref    serial,
+  -- Equipment fields (wetsuit & board prep)
+  client_weight  int,
+  client_height  int,
+  client_gender  text          check (client_gender in ('H','M','C')),
+  wetsuit_size   text
 );
+
+-- Add equipment columns if table already exists (safe to run multiple times)
+alter table public.bookings add column if not exists client_weight int;
+alter table public.bookings add column if not exists client_height int;
+alter table public.bookings add column if not exists client_gender text check (client_gender in ('H','M','C'));
+alter table public.bookings add column if not exists wetsuit_size  text;
 
 -- Índices
 create index if not exists idx_bookings_date   on public.bookings(booking_date);

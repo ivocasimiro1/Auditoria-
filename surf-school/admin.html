@@ -60,9 +60,15 @@
     .login-error {
       background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3);
       border-radius: 10px; padding: .7rem 1rem; font-size: .85rem;
-      color: #fca5a5; margin-bottom: 1rem; display: none;
+      color: #fca5a5; margin-top: 1rem; display: none;
     }
     .login-error.show { display: block; }
+    .login-info {
+      background: rgba(0,207,253,.1); border: 1px solid rgba(0,207,253,.3);
+      border-radius: 10px; padding: .7rem 1rem; font-size: .85rem;
+      color: #a0e8f8; margin-top: 1rem; display: none;
+    }
+    .login-info.show { display: block; }
 
     /* ── DASHBOARD ── */
     #dash-wrap { min-height: 100vh; display: flex; flex-direction: column; }
@@ -238,19 +244,20 @@
   <div class="login-card">
     <div class="login-logo">Arrifana <span>Surf</span> Academy</div>
     <p class="login-subtitle">Painel de Controlo · Gestão de Marcações</p>
-    <div class="login-error" id="login-error"></div>
 
     <h2 class="login-title">Iniciar Sessão</h2>
     <div class="form-group">
       <label>Email</label>
-      <input type="email" id="l-email" placeholder="email@exemplo.com" onkeydown="if(event.key==='Enter')doLogin()" />
+      <input type="email" id="l-email" placeholder="email@exemplo.com" autofocus onkeydown="if(event.key==='Enter')doLogin()" />
     </div>
     <div class="form-group">
       <label>Password</label>
       <input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
     </div>
     <button class="btn-login" onclick="doLogin()">Entrar →</button>
-    <p style="text-align:center;margin-top:1rem;font-size:.78rem;color:var(--gray)">
+    <div class="login-error" id="login-error"></div>
+    <div class="login-info"  id="login-info"></div>
+    <p style="text-align:center;margin-top:1.2rem;font-size:.78rem;color:var(--gray)">
       Esqueceste? <a href="#" onclick="sendReset();return false" style="color:var(--cyan);text-decoration:none">Recuperar password</a>
     </p>
   </div>
@@ -418,13 +425,20 @@
   }
 
   async function sendReset() {
-    const email = document.getElementById('l-email').value.trim();
-    const errEl = document.getElementById('login-error');
-    if (!email) { errEl.textContent = 'Insere o teu email primeiro.'; errEl.classList.add('show'); return; }
+    const email  = document.getElementById('l-email').value.trim();
+    const errEl  = document.getElementById('login-error');
+    const infoEl = document.getElementById('login-info');
+    errEl.classList.remove('show');
+    infoEl.classList.remove('show');
+    if (!email) {
+      errEl.textContent = 'Escreve o teu email no campo acima e depois clica em Recuperar password.';
+      errEl.classList.add('show');
+      document.getElementById('l-email').focus();
+      return;
+    }
     await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/admin.html' });
-    errEl.style.background = 'rgba(34,197,94,.12)'; errEl.style.borderColor = 'rgba(34,197,94,.3)'; errEl.style.color = '#86efac';
-    errEl.textContent = 'Email de recuperação enviado! Verifica a caixa de entrada.';
-    errEl.classList.add('show');
+    infoEl.textContent = '📧 Email de recuperação enviado! Verifica a caixa de entrada.';
+    infoEl.classList.add('show');
   }
 
   async function logout() {
@@ -463,7 +477,14 @@
       .order('booking_date', { ascending: false })
       .order('booking_time',  { ascending: true  });
 
-    if (error) { showToast('Erro ao carregar marcações', 'error'); return; }
+    if (error) {
+      const msg = error.code === '42P01'
+        ? 'A tabela de marcações ainda não foi criada no Supabase. Abre o SQL Editor e cria a tabela.'
+        : `Erro: ${error.message}`;
+      document.getElementById('bookings-tbody').innerHTML =
+        `<tr><td colspan="9" style="text-align:center;padding:2.5rem;color:#fca5a5">⚠️ ${msg}</td></tr>`;
+      return;
+    }
     allBookings = data || [];
     applyFilters();
   }
