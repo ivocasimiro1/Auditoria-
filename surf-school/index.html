@@ -671,6 +671,28 @@
               <option value="4">4</option><option value="5">5</option><option value="6">6</option>
             </select>
           </div>
+          <div class="form-group"><label data-t="f_peso"></label><input type="number" id="fpeso" min="30" max="200" placeholder="kg" /></div>
+          <div class="form-group"><label data-t="f_altura"></label><input type="number" id="faltura" min="100" max="220" placeholder="cm" /></div>
+          <div class="form-group"><label data-t="f_genero"></label>
+            <select id="fgenero">
+              <option value="">—</option>
+              <option value="H" data-t="g_homem"></option>
+              <option value="M" data-t="g_mulher"></option>
+              <option value="C" data-t="g_crianca"></option>
+            </select>
+          </div>
+          <div class="form-group"><label data-t="f_fato"></label>
+            <select id="ffato">
+              <option value="">—</option>
+              <option value="XS">XS</option>
+              <option value="S">S</option>
+              <option value="M">M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="XXL">XXL</option>
+              <option value="XXXL">XXXL</option>
+            </select>
+          </div>
           <div class="form-group full"><label data-t="f_nota"></label><textarea id="fnota" data-placeholder="f_nota_ph"></textarea></div>
         </div>
         <button class="btn-whatsapp" onclick="reservarWhatsApp()">📱 <span data-t="btn_whatsapp"></span></button>
@@ -779,6 +801,8 @@ const LANGS = {
     s4_title:'Os teus dados', s4_desc:'Preenche para confirmarmos a reserva via WhatsApp.',
     f_name:'Nome completo *', f_name_ph:'Ex: João Silva', f_phone:'Telemóvel *',
     f_email:'Email', f_email_ph:'joao@email.com', f_pessoas:'Nº de pessoas',
+    f_peso:'Peso (kg)', f_altura:'Altura (cm)', f_genero:'Género', f_fato:'Tamanho do fato',
+    g_homem:'Homem', g_mulher:'Mulher', g_crianca:'Criança',
     f_nota:'Nota (opcional)', f_nota_ph:'Alergias, idades do grupo, nível de experiência...',
     btn_next:'Próximo →', btn_back:'← Voltar', btn_whatsapp:'Confirmar via WhatsApp',
     pp:'pessoa', ps:'sessão',
@@ -788,6 +812,7 @@ const LANGS = {
     wa_header:'Nova Reserva — Arrifana Surf Academy',
     wa_name:'Nome', wa_phone:'Telemóvel', wa_email:'Email', wa_lesson:'Aula',
     wa_date:'Data', wa_time:'Horário', wa_people:'Pessoas', wa_total:'Total estimado', wa_note:'Nota',
+    wa_weight:'Peso', wa_height:'Altura', wa_gender:'Género', wa_wetsuit:'Fato',
     wa_closing:'Aguardo confirmação! 🤙',
     cond_wave:'Ondas', cond_wind:'Vento', cond_water:'Água', cond_tide:'Próxima maré', cond_pt:'Hora PT',
     team_tag:'Equipa', team_title:'Os nossos instrutores', team_sub:'Profissionais apaixonados pelo surf e pelo ensino.',
@@ -840,6 +865,8 @@ const LANGS = {
     s4_title:'Your details', s4_desc:'Fill in to confirm your booking via WhatsApp.',
     f_name:'Full name *', f_name_ph:'Ex: John Smith', f_phone:'Mobile *',
     f_email:'Email', f_email_ph:'john@email.com', f_pessoas:'Number of people',
+    f_peso:'Weight (kg)', f_altura:'Height (cm)', f_genero:'Gender', f_fato:'Wetsuit size',
+    g_homem:'Man', g_mulher:'Woman', g_crianca:'Child',
     f_nota:'Note (optional)', f_nota_ph:'Allergies, group ages, experience level...',
     btn_next:'Next →', btn_back:'← Back', btn_whatsapp:'Confirm via WhatsApp',
     pp:'person', ps:'session',
@@ -849,6 +876,7 @@ const LANGS = {
     wa_header:'New Booking — Arrifana Surf Academy',
     wa_name:'Name', wa_phone:'Mobile', wa_email:'Email', wa_lesson:'Lesson',
     wa_date:'Date', wa_time:'Time', wa_people:'People', wa_total:'Estimated total', wa_note:'Note',
+    wa_weight:'Weight', wa_height:'Height', wa_gender:'Gender', wa_wetsuit:'Wetsuit',
     wa_closing:'Awaiting confirmation! 🤙',
     cond_wave:'Waves', cond_wind:'Wind', cond_water:'Water', cond_tide:'Next tide', cond_pt:'PT Time',
     team_tag:'Team', team_title:'Our instructors', team_sub:'Professionals passionate about surf and teaching.',
@@ -901,6 +929,8 @@ const LANGS = {
     s4_title:'Vos coordonnées', s4_desc:'Remplissez pour confirmer votre réservation via WhatsApp.',
     f_name:'Nom complet *', f_name_ph:'Ex: Jean Dupont', f_phone:'Téléphone *',
     f_email:'Email', f_email_ph:'jean@email.com', f_pessoas:'Nombre de personnes',
+    f_peso:'Poids (kg)', f_altura:'Taille (cm)', f_genero:'Genre', f_fato:'Taille combinaison',
+    g_homem:'Homme', g_mulher:'Femme', g_crianca:'Enfant',
     f_nota:'Note (optionnel)', f_nota_ph:'Allergies, âges du groupe, niveau...',
     btn_next:'Suivant →', btn_back:'← Retour', btn_whatsapp:'Confirmer via WhatsApp',
     pp:'pers.', ps:'séance',
@@ -910,6 +940,7 @@ const LANGS = {
     wa_header:'Nouvelle Réservation — Arrifana Surf Academy',
     wa_name:'Nom', wa_phone:'Téléphone', wa_email:'Email', wa_lesson:'Cours',
     wa_date:'Date', wa_time:'Horaire', wa_people:'Personnes', wa_total:'Total estimé', wa_note:'Note',
+    wa_weight:'Poids', wa_height:'Taille', wa_gender:'Genre', wa_wetsuit:'Combinaison',
     wa_closing:'En attente de confirmation ! 🤙',
     cond_wave:'Vagues', cond_wind:'Vent', cond_water:'Eau', cond_tide:'Prochaine marée', cond_pt:'Heure PT',
     team_tag:'Équipe', team_title:'Nos instructeurs', team_sub:"Des professionnels passionnés par le surf et l'enseignement.",
@@ -962,6 +993,8 @@ const LANGS = {
     s4_title:'Deine Daten', s4_desc:'Ausfüllen zur Buchungsbestätigung per WhatsApp.',
     f_name:'Vollständiger Name *', f_name_ph:'z.B. Hans Müller', f_phone:'Handy *',
     f_email:'E-Mail', f_email_ph:'hans@email.com', f_pessoas:'Personenanzahl',
+    f_peso:'Gewicht (kg)', f_altura:'Größe (cm)', f_genero:'Typ', f_fato:'Neoprenanzuggröße',
+    g_homem:'Herren', g_mulher:'Damen', g_crianca:'Kind',
     f_nota:'Notiz (optional)', f_nota_ph:'Allergien, Gruppenalter, Erfahrungslevel...',
     btn_next:'Weiter →', btn_back:'← Zurück', btn_whatsapp:'Per WhatsApp bestätigen',
     pp:'Pers.', ps:'Einheit',
@@ -971,6 +1004,7 @@ const LANGS = {
     wa_header:'Neue Buchung — Arrifana Surf Academy',
     wa_name:'Name', wa_phone:'Handy', wa_email:'E-Mail', wa_lesson:'Kurs',
     wa_date:'Datum', wa_time:'Uhrzeit', wa_people:'Personen', wa_total:'Geschätzte Gesamtsumme', wa_note:'Notiz',
+    wa_weight:'Gewicht', wa_height:'Größe', wa_gender:'Typ', wa_wetsuit:'Neoprenanzug',
     wa_closing:'Warte auf Bestätigung! 🤙',
     cond_wave:'Wellen', cond_wind:'Wind', cond_water:'Wasser', cond_tide:'Nächste Tide', cond_pt:'PT Zeit',
     team_tag:'Team', team_title:'Unsere Instruktoren', team_sub:'Leidenschaftliche Profis für Surf und Unterricht.',
@@ -1375,11 +1409,15 @@ async function loadSlotAvailability(dateKey) {
 const WA_NUMBER = '351912345678';
 
 async function reservarWhatsApp() {
-  const nome  = document.getElementById('fname').value.trim();
-  const tel   = document.getElementById('fphone').value.trim();
-  const email = document.getElementById('femail').value.trim();
-  const pess  = document.getElementById('fpessoas').value;
-  const nota  = document.getElementById('fnota').value.trim();
+  const nome   = document.getElementById('fname').value.trim();
+  const tel    = document.getElementById('fphone').value.trim();
+  const email  = document.getElementById('femail').value.trim();
+  const pess   = document.getElementById('fpessoas').value;
+  const nota   = document.getElementById('fnota').value.trim();
+  const peso   = document.getElementById('fpeso').value.trim();
+  const altura = document.getElementById('faltura').value.trim();
+  const genero = document.getElementById('fgenero').value;
+  const fato   = document.getElementById('ffato').value;
   if (!nome || !tel) { alert(T('f_name').replace(' *','') + ' / ' + T('f_phone').replace(' *','')); return; }
   const total = booking.lessonPrivate ? booking.lessonPrice : booking.lessonPrice * parseInt(pess);
   try {
@@ -1389,7 +1427,9 @@ async function reservarWhatsApp() {
       school_id:'arrifana-surf-academy', lesson_type:T(booking.lessonKey),
       booking_date:dateStr, booking_time:booking.time, num_people:parseInt(pess),
       client_name:nome, client_phone:tel, client_email:email||null,
-      notes:nota||null, total_price:total, language:currentLang, status:'pending'
+      client_weight:peso?parseInt(peso):null, client_height:altura?parseInt(altura):null,
+      client_gender:genero||null, wetsuit_size:fato||null, notes:nota||null, total_price:total,
+      language:currentLang, status:'pending'
     }]);
   } catch(e) { console.warn('Supabase save failed', e); }
   let msg = `🏄 *${T('wa_header')}*\n\n`;
@@ -1399,6 +1439,11 @@ async function reservarWhatsApp() {
   msg += `📅 *${T('wa_date')}:* ${booking.selectedDateStr}\n`;
   msg += `⏰ *${T('wa_time')}:* ${booking.time}\n`;
   msg += `👥 *${T('wa_people')}:* ${pess}\n💰 *${T('wa_total')}:* €${total}\n`;
+  if(peso || altura || genero || fato) {
+    const genLabel = genero==='H'?T('g_homem'):genero==='M'?T('g_mulher'):genero==='C'?T('g_crianca'):'—';
+    msg += `\n📏 *${T('wa_weight')}:* ${peso?peso+'kg':'—'}  *${T('wa_height')}:* ${altura?altura+'cm':'—'}\n`;
+    msg += `👕 *${T('wa_gender')}:* ${genLabel}  *${T('wa_wetsuit')}:* ${fato||'—'}\n`;
+  }
   if(nota) msg += `\n📝 *${T('wa_note')}:* ${nota}\n`;
   msg += `\n${T('wa_closing')}`;
   window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
