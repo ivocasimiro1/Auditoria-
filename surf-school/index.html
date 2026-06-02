@@ -314,6 +314,12 @@
       .gi{height:240px}
       section{padding:4.5rem 5%}
     }
+    .beach-selector{display:flex;gap:.5rem;overflow-x:auto;padding:.5rem 0 1rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem;scrollbar-width:none}
+    .beach-selector::-webkit-scrollbar{display:none}
+    .beach-btn{padding:.45rem 1rem;border-radius:50px;border:1px solid var(--border);background:transparent;color:var(--gray);font-size:.78rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;white-space:nowrap}
+    .beach-btn:hover{border-color:rgba(201,168,76,.4);color:var(--white)}
+    .beach-btn.active{background:var(--gold);border-color:var(--gold);color:var(--navy);font-weight:700}
+    .cond-loading{opacity:.5}
   </style>
 </head>
 <body>
@@ -323,11 +329,13 @@
 <!-- CONDITIONS BAR -->
 <div class="cb">
   <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center">
-    <div class="ci">🌊 <span data-t="cond_wave"></span>: <span class="cv cg">1.2m</span></div>
+    <div class="ci" style="color:var(--gold);font-weight:600">📍 <span id="cond-beach-name">Meia Praia</span></div>
     <span style="color:var(--border)">·</span>
-    <div class="ci">💨 <span data-t="cond_wind"></span>: <span class="cv">NO 14km/h</span></div>
+    <div class="ci">🌊 <span data-t="cond_wave"></span>: <span class="cv cg" id="cond-wave-val">—</span></div>
     <span style="color:var(--border)">·</span>
-    <div class="ci">🌡 <span data-t="cond_water"></span>: <span class="cv">18°C</span></div>
+    <div class="ci">💨 <span data-t="cond_wind"></span>: <span class="cv" id="cond-wind-val">—</span></div>
+    <span style="color:var(--border)">·</span>
+    <div class="ci">🌡 <span data-t="cond_water"></span>: <span class="cv" id="cond-water-val">—</span></div>
     <span style="color:var(--border)">·</span>
     <div class="ci">⬆ <span data-t="cond_tide"></span>: <span class="cv" id="next-tide-val">—</span></div>
     <span style="color:var(--border)">·</span>
@@ -457,6 +465,7 @@
     <h2 class="section-title" data-t="tides_title"></h2>
     <p class="section-sub" data-t="tides_sub"></p>
   </div>
+  <div class="beach-selector" id="beach-selector"></div>
   <div class="tide-grid" id="tide-grid"></div>
 </section>
 
@@ -970,69 +979,165 @@ function setLang(lang) {
   if (document.getElementById('step-4').classList.contains('active')) buildSummary();
 }
 
-// ── TIDES ─────────────────────────────────────────────────────────────────────
-function generateTides(startDate, days) {
-  const tides = [];
-  const period = 12 * 60 + 25;
-  let baseHigh = 6 * 60 + 15;
-  for (let d = 0; d < days; d++) {
-    const date = new Date(startDate);
-    date.setDate(startDate.getDate() + d);
-    const springFactor = 0.5 + 0.5 * Math.cos((2 * Math.PI * d) / 14.7);
-    const highH = +(2.4 + 0.9 * springFactor).toFixed(2);
-    const lowH  = +(0.25 - 0.1 * springFactor).toFixed(2);
-    const h1 = Math.round(baseHigh + d * 25) % (24 * 60);
-    const l1 = Math.round(h1 + period / 2) % (24 * 60);
-    const h2 = Math.round(h1 + period) % (24 * 60);
-    const l2 = Math.round(l1 + period) % (24 * 60);
-    const fmt = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
-    const score = Math.min(5, Math.round(2 + springFactor * 3));
-    tides.push({ date, h1:fmt(h1), h1v:highH, l1:fmt(l1), l1v:Math.max(0.1,lowH), h2:fmt(h2), h2v:highH, l2:fmt(l2), l2v:Math.max(0.1,lowH), score });
-  }
-  return tides;
+// ── BEACHES & CONDITIONS ──────────────────────────────────────────────────────
+const BEACHES = [
+  { id:'meia-praia',    name:'Meia Praia',   region:'Lagos',        lat:37.097, lon:-8.713, hw_spring:3.3, hw_neap:2.4, lw_spring:0.2, lw_neap:1.0,  hw_offset_min:0  },
+  { id:'arrifana',      name:'Arrifana',     region:'Aljezur',      lat:37.297, lon:-8.865, hw_spring:3.1, hw_neap:2.2, lw_spring:0.2, lw_neap:0.9,  hw_offset_min:10 },
+  { id:'monte-clerigo', name:'Monte Clérigo',region:'Aljezur',      lat:37.347, lon:-8.856, hw_spring:3.1, hw_neap:2.2, lw_spring:0.2, lw_neap:0.9,  hw_offset_min:12 },
+  { id:'amado',         name:'Amado',        region:'Carrapateira', lat:37.170, lon:-8.907, hw_spring:3.2, hw_neap:2.3, lw_spring:0.2, lw_neap:0.95, hw_offset_min:8  },
+  { id:'amoreira',      name:'Amoreira',     region:'Aljezur',      lat:37.368, lon:-8.852, hw_spring:3.1, hw_neap:2.2, lw_spring:0.2, lw_neap:0.9,  hw_offset_min:15 },
+  { id:'odeceixe',      name:'Odeceixe',     region:'Odemira',      lat:37.440, lon:-8.832, hw_spring:3.0, hw_neap:2.2, lw_spring:0.2, lw_neap:0.9,  hw_offset_min:18 },
+];
+let currentBeachId = 'meia-praia';
+function getBeach(id) { return BEACHES.find(b => b.id === (id || currentBeachId)); }
+
+// ── TIDE MATHS ────────────────────────────────────────────────────────────────
+const LAGOS_CAL_HW_MS  = Date.UTC(2025, 0, 2, 3, 52);    // Lagos HW calibration
+const M2_PERIOD_MS     = 44714143;                         // 12h 25m 14.143s
+const KNOWN_NEW_MOON   = Date.UTC(2025, 0, 30, 5, 36);    // Jan 30 2025
+const LUNAR_PERIOD_MS  = 29530588800;                      // 29.5306 days
+
+function springFactor(ms) {
+  const age = ((ms - KNOWN_NEW_MOON) % LUNAR_PERIOD_MS + LUNAR_PERIOD_MS) % LUNAR_PERIOD_MS / LUNAR_PERIOD_MS;
+  const shifted = (age - 0.051 + 1) % 1; // ~1.5 day lag after syzygy
+  return Math.pow(Math.abs(Math.cos(shifted * 2 * Math.PI)), 0.7);
 }
 
+function tideHts(beach, ms) {
+  const sf = springFactor(ms);
+  return {
+    hw: +(beach.hw_neap + sf * (beach.hw_spring - beach.hw_neap)).toFixed(2),
+    lw: +(beach.lw_neap - sf * (beach.lw_neap  - beach.lw_spring)).toFixed(2),
+  };
+}
+
+function getDayTides(beach, localDate) {
+  // Work in UTC; localDate is midnight local
+  const dayStartUtc = Date.UTC(localDate.getFullYear(), localDate.getMonth(), localDate.getDate()) - 3600000; // -1h buffer
+  const dayEndUtc   = dayStartUtc + 93600000; // 26h window
+  const beachRef    = LAGOS_CAL_HW_MS + beach.hw_offset_min * 60000;
+  // Rewind to last HW before window
+  let hw = beachRef;
+  while (hw > dayStartUtc) hw -= M2_PERIOD_MS;
+  hw += M2_PERIOD_MS;
+  // Collect all turns in window
+  const turns = [];
+  for (let t = hw; t < dayEndUtc; t += M2_PERIOD_MS) {
+    turns.push({ type:'H', ms:t });
+    turns.push({ type:'L', ms:t + M2_PERIOD_MS / 2 });
+  }
+  turns.sort((a,b) => a.ms - b.ms);
+  const { hw:hwH, lw:lwH } = tideHts(beach, (dayStartUtc + dayEndUtc) / 2);
+  const fmt = ms => new Date(ms).toLocaleTimeString('pt-PT',{timeZone:'Europe/Lisbon',hour:'2-digit',minute:'2-digit'});
+  // Filter to events that display as "today" in Lisbon
+  const todayStr = localDate.toLocaleDateString('pt-PT',{timeZone:'Europe/Lisbon'});
+  return turns.filter(t => {
+    const d = new Date(t.ms).toLocaleDateString('pt-PT',{timeZone:'Europe/Lisbon'});
+    return d === todayStr;
+  }).slice(0,4).map(t => ({ type:t.type, time:fmt(t.ms), height:t.type==='H'?hwH:lwH, ms:t.ms }));
+}
+
+function buildBeachSelector() {
+  const sel = document.getElementById('beach-selector');
+  if (!sel) return;
+  sel.innerHTML = BEACHES.map(b =>
+    `<button class="beach-btn${b.id===currentBeachId?' active':''}" onclick="selectBeach('${b.id}')">
+      ${b.name} <span style="font-size:.7rem;opacity:.65">${b.region}</span>
+    </button>`
+  ).join('');
+}
+
+function selectBeach(id) {
+  currentBeachId = id;
+  const b = getBeach();
+  document.getElementById('cond-beach-name').textContent = b.name;
+  buildBeachSelector();
+  buildTideGrid();
+  updateNextTide();
+  fetchConditions(b);
+}
+
+// ── REAL CONDITIONS (Open-Meteo) ──────────────────────────────────────────────
+function degToCompass(d) {
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'];
+  return dirs[Math.round(d / 22.5) % 16];
+}
+
+async function fetchConditions(beach) {
+  const waveEl  = document.getElementById('cond-wave-val');
+  const windEl  = document.getElementById('cond-wind-val');
+  const waterEl = document.getElementById('cond-water-val');
+  if (waveEl)  waveEl.classList.add('cond-loading');
+  if (windEl)  windEl.classList.add('cond-loading');
+  if (waterEl) waterEl.classList.add('cond-loading');
+  try {
+    const [marine, weather] = await Promise.all([
+      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${beach.lat}&longitude=${beach.lon}&current=wave_height,wave_period,wave_direction&wind_speed_unit=kmh&timezone=Europe%2FLisbon`).then(r=>r.json()),
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${beach.lat}&longitude=${beach.lon}&current=wind_speed_10m,wind_direction_10m,temperature_2m&wind_speed_unit=kmh&timezone=Europe%2FLisbon`).then(r=>r.json())
+    ]);
+    const wh  = marine.current?.wave_height;
+    const ws  = weather.current?.wind_speed_10m;
+    const wd  = weather.current?.wind_direction_10m;
+    const tmp = weather.current?.temperature_2m;
+    if (waveEl)  { waveEl.textContent  = wh  != null ? `${wh.toFixed(1)}m` : '—'; waveEl.classList.remove('cond-loading'); }
+    if (windEl)  { windEl.textContent  = ws  != null ? `${degToCompass(wd)} ${Math.round(ws)}km/h` : '—'; windEl.classList.remove('cond-loading'); }
+    if (waterEl) { waterEl.textContent = tmp != null ? `${Math.round(tmp)}°C` : '—'; waterEl.classList.remove('cond-loading'); }
+  } catch(e) {
+    if (waveEl)  { waveEl.textContent  = '—'; waveEl.classList.remove('cond-loading'); }
+    if (windEl)  { windEl.textContent  = '—'; windEl.classList.remove('cond-loading'); }
+    if (waterEl) { waterEl.textContent = '—'; waterEl.classList.remove('cond-loading'); }
+  }
+}
+
+// ── TIDE GRID ─────────────────────────────────────────────────────────────────
 const TODAY = new Date(); TODAY.setHours(0,0,0,0);
-const TIDE_DATA = generateTides(TODAY, 14);
 
 function buildTideGrid() {
   const grid = document.getElementById('tide-grid');
   if (!grid) return;
   grid.innerHTML = '';
+  const beach = getBeach();
   const tDays = T('tide_days');
   const scoreLabels = T('surf_labels');
-  TIDE_DATA.slice(0,7).forEach((t,i) => {
-    const isToday = i === 0;
-    const dayName = tDays[t.date.getDay()];
-    const scoreIdx = Math.min(t.score - 1, scoreLabels.length - 1);
+  for (let d = 0; d < 7; d++) {
+    const date = new Date(TODAY); date.setDate(TODAY.getDate() + d);
+    const isToday = d === 0;
+    const dayName = tDays[date.getDay()];
+    const turns = getDayTides(beach, date);
+    const sf = springFactor(date.getTime() + 43200000);
+    const score = Math.min(5, Math.max(1, Math.round(1 + sf * 4)));
+    const scoreIdx = Math.min(score - 1, scoreLabels.length - 1);
     const dots = Array.from({length:5},(_,j) => {
-      const cls = j < t.score ? (t.score >= 4 ? 'on' : t.score >= 3 ? 'mid' : 'off') : '';
+      const cls = j < score ? (score >= 4 ? 'on' : score >= 3 ? 'mid' : 'off') : '';
       return `<span class="sd ${cls}"></span>`;
     }).join('');
+    let teHtml = '';
+    turns.forEach(t => {
+      const arrow = t.type === 'H' ? '<span class="tau">↑</span>' : '<span class="tad">↓</span>';
+      const cls   = t.type === 'H' ? 'th' : 'tl';
+      teHtml += `<div class="te">${arrow}<span class="tt">${t.time}</span><span class="${cls}">${t.height}m</span></div>`;
+    });
+    if (!teHtml) teHtml = '<div class="te" style="color:var(--gray);font-size:.75rem">—</div>';
     grid.innerHTML += `
       <div class="tide-day${isToday?' today':''}">
         <div class="tdn">${isToday?'<span style="color:var(--gold)">★</span> ':''}${dayName}</div>
-        <div class="tdd">${t.date.getDate()}/${t.date.getMonth()+1}</div>
-        <div class="te"><span class="tau">↑</span><span class="tt">${t.h1}</span><span class="th">${t.h1v}m</span></div>
-        <div class="te"><span class="tad">↓</span><span class="tt">${t.l1}</span><span class="tl">${t.l1v}m</span></div>
-        <div class="te"><span class="tau">↑</span><span class="tt">${t.h2}</span><span class="th">${t.h2v}m</span></div>
-        <div class="te"><span class="tad">↓</span><span class="tt">${t.l2}</span><span class="tl">${t.l2v}m</span></div>
+        <div class="tdd">${date.getDate()}/${date.getMonth()+1}</div>
+        ${teHtml}
         <div class="surf-score"><div class="surf-dots">${dots}</div><div class="surf-label">${scoreLabels[scoreIdx]}</div></div>
       </div>`;
-  });
+  }
 }
 
 function updateNextTide() {
-  const now = new Date();
-  const nowMin = now.getHours()*60 + now.getMinutes();
-  const t = TIDE_DATA[0];
-  const times = [
-    {label:'↑', t:t.h1},{label:'↓', t:t.l1},
-    {label:'↑', t:t.h2},{label:'↓', t:t.l2}
-  ];
-  const next = times.find(x => { const [h,m]=x.t.split(':').map(Number); return h*60+m > nowMin; });
+  const beach = getBeach();
+  const now   = new Date();
+  const todayTurns = getDayTides(beach, TODAY);
+  const tomorrowDate = new Date(TODAY); tomorrowDate.setDate(TODAY.getDate() + 1);
+  const tomorrowTurns = getDayTides(beach, tomorrowDate);
+  const allTurns = [...todayTurns, ...tomorrowTurns];
+  const next = allTurns.find(t => t.ms > now.getTime());
   const el = document.getElementById('next-tide-val');
-  if (el && next) el.textContent = `${next.label} ${next.t}`;
+  if (el && next) el.textContent = `${next.type==='H'?'↑':'↓'} ${next.time}`;
 }
 
 function updateClock() {
@@ -1269,13 +1374,16 @@ document.querySelectorAll('.lesson-card,.feature,.instructor-card,.beach-card,.t
 });
 
 // ── INIT (always runs, regardless of Supabase) ────────────────────────────────
+buildBeachSelector();
 setLang('pt');
 buildTideGrid();
 buildCalendar();
 updateNextTide();
 updateClock();
+fetchConditions(getBeach());
 setInterval(updateClock, 1000);
 setInterval(updateNextTide, 60000);
+setInterval(() => fetchConditions(getBeach()), 600000); // refresh conditions every 10min
 
 // Hero photo Ken Burns effect
 setTimeout(() => {
