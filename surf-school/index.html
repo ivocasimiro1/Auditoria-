@@ -1371,19 +1371,28 @@ async function reservarWhatsApp() {
 
 // ── MENU ──────────────────────────────────────────────────────────────────────
 function toggleMenu() {
-  const ul = document.querySelector('nav ul');
-  const hbg = document.querySelector('.hbg');
+  const ul      = document.querySelector('nav ul');
+  const hbg     = document.querySelector('.hbg');
   const overlay = document.getElementById('nav-overlay');
-  const isOpen = ul.classList.contains('mob-open');
+  const navbar  = document.getElementById('navbar');
+  const isOpen  = ul.classList.contains('mob-open');
   if (isOpen) { closeMenu(); return; }
+  const navH = navbar ? (navbar.offsetTop + navbar.offsetHeight) : 60;
   ul.classList.add('mob-open');
   hbg.classList.add('open');
   overlay.classList.add('open');
   Object.assign(ul.style, {
     display:'flex', flexDirection:'column', position:'fixed',
-    top:'90px', left:'0', right:'0', bottom:'0',
-    background:'rgba(6,13,27,0.98)', padding:'2rem 5%',
-    gap:'1.5rem', zIndex:'99', overflowY:'auto'
+    top: navH + 'px', left:'0', right:'0', bottom:'0',
+    background:'rgba(6,13,27,0.98)', padding:'2rem 7%',
+    gap:'0', zIndex:'101', overflowY:'auto'
+  });
+  ul.querySelectorAll('a').forEach(a => {
+    Object.assign(a.style, {
+      display:'block', fontSize:'1.35rem', fontWeight:'600',
+      color:'var(--white)', padding:'1rem 0',
+      borderBottom:'1px solid rgba(255,255,255,.07)'
+    });
   });
 }
 function closeMenu() {
