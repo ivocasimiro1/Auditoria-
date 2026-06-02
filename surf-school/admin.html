@@ -129,9 +129,16 @@
       padding: .55rem 1.1rem; background: linear-gradient(135deg, var(--blue), var(--cyan));
       border: none; border-radius: 9px; color: white; font-size: .85rem; font-weight: 600;
       cursor: pointer; font-family: 'Inter', sans-serif; transition: transform .2s;
-      margin-left: auto;
     }
     .btn-refresh:hover { transform: translateY(-1px); }
+    .btn-today {
+      padding: .55rem 1.1rem; background: rgba(201,168,76,.15);
+      border: 1px solid rgba(201,168,76,.4); border-radius: 9px;
+      color: #C9A84C; font-size: .85rem; font-weight: 600;
+      cursor: pointer; font-family: 'Inter', sans-serif; transition: all .2s;
+      margin-left: auto;
+    }
+    .btn-today:hover { background: rgba(201,168,76,.25); }
 
     /* Table */
     .table-wrap {
@@ -337,6 +344,7 @@
         <span class="filter-label">Pesquisar</span>
         <input type="text" id="f-search" class="filter-input" placeholder="Nome ou telemóvel..." oninput="applyFilters()" />
       </div>
+      <button class="btn-today" onclick="filterToday()">📅 Hoje</button>
       <button class="btn-refresh" onclick="loadBookings()">↻ Atualizar</button>
     </div>
 
@@ -379,7 +387,7 @@
 <script>
   const SUPABASE_URL = 'https://ubeqidccuvsjhjphybxz.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_X0-ZNy93MbCR-cXSdi4tRg_dpITamQj';
-  const ADMIN_EMAIL  = 'ivocasimiro@gmail.com';
+  const ADMIN_EMAIL  = 'ivo@despomar.com';
   const COMMISSION   = 0.05;
 
   const { createClient } = supabase;
@@ -486,6 +494,7 @@
     const { data, error } = await sb
       .from('bookings')
       .select('*')
+      .eq('school_id', 'arrifana-surf-academy')
       .order('booking_date', { ascending: false })
       .order('booking_time',  { ascending: true  });
 
@@ -571,7 +580,7 @@
         <td style="color:var(--gray);font-size:.8rem">#${b.booking_ref || (i+1)}</td>
         <td><strong>${dateStr}</strong><small>${b.booking_time}</small></td>
         <td>${b.lesson_type} ${langFlag}</td>
-        <td>${b.client_name}<small>${b.client_phone}${b.client_email ? ' · ' + b.client_email : ''}</small></td>
+        <td>${b.client_name}<small>${b.client_phone}${b.client_email ? ' · ' + b.client_email : ''}</small>${b.wetsuit_size||b.client_weight ? `<small style="color:#C9A84C">👕 ${b.wetsuit_size||'—'} · ${b.client_weight?b.client_weight+'kg':'—'} · ${b.client_height?b.client_height+'cm':'—'} · ${b.client_gender==='H'?'♂':b.client_gender==='M'?'♀':b.client_gender==='C'?'👶':'—'}</small>` : ''}</td>
         <td class="col-center">${b.num_people}</td>
         <td class="col-price">€${price.toFixed(2)}</td>
         <td class="col-commission admin-only">€${com.toFixed(2)}</td>
@@ -608,6 +617,17 @@
     const now = new Date();
     document.getElementById('f-month').value =
       `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
+
+  function filterToday() {
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    document.getElementById('f-status').value = '';
+    document.getElementById('f-search').value = '';
+    const filtered = allBookings.filter(b => b.booking_date === todayStr);
+    renderStats(null);
+    renderTable(filtered);
+    document.getElementById('table-count').textContent = `Hoje · ${filtered.length} marcação${filtered.length !== 1 ? 'ões' : ''}`;
   }
 
   function showToast(msg, type = 'success') {

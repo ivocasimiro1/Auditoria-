@@ -300,20 +300,6 @@
       .cb{display:none}
       nav{top:0}
       nav ul{display:none}
-      nav ul.mob-open{
-        display:flex !important; flex-direction:column; list-style:none;
-        position:fixed; top:0; left:0; right:0; bottom:0;
-        background:rgba(6,13,27,0.99);
-        padding:80px 7% 2rem; gap:0;
-        z-index:150; overflow-y:auto;
-      }
-      nav ul.mob-open li a{
-        display:block !important; font-size:1.4rem !important;
-        font-weight:700 !important; color:#fff !important;
-        padding:.9rem 0 !important; text-decoration:none !important;
-        border-bottom:1px solid rgba(255,255,255,.1) !important;
-      }
-      nav ul.mob-open li:last-child a{ border-bottom:none !important; }
       .hbg{display:flex}
       .form-grid{grid-template-columns:1fr}
       .form-group.full{grid-column:1}
@@ -389,7 +375,7 @@
   <a href="#praias"  onclick="closeMenu()" data-t="nav_praias"></a>
   <a href="#mares"   onclick="closeMenu()" data-t="nav_mares"></a>
   <a href="#aulas"   onclick="closeMenu()" data-t="nav_aulas"></a>
-  <a href="#reservar" onclick="closeMenu()">Reservar</a>
+  <a href="#reservar" onclick="closeMenu()" data-t="nav_reservar"></a>
 </div>
 
 <!-- HERO -->
@@ -1361,7 +1347,7 @@ function goToStep(n) {
     else if(i===n) tab.classList.add('active');
   }
   document.getElementById(`step-${n}`).classList.add('active');
-  if(n===4) buildSummary();
+  if(n===4) { buildSummary(); updatePessoasVisibility(); }
   const wrap = document.querySelector('.booking-wrap');
   if (wrap) wrap.scrollIntoView({behavior:'smooth', block:'start'});
 }
@@ -1419,6 +1405,8 @@ async function reservarWhatsApp() {
   const genero = document.getElementById('fgenero').value;
   const fato   = document.getElementById('ffato').value;
   if (!nome || !tel) { alert(T('f_name').replace(' *','') + ' / ' + T('f_phone').replace(' *','')); return; }
+  const waBtn = document.querySelector('.btn-whatsapp');
+  if (waBtn) { waBtn.disabled = true; waBtn.innerHTML = '⏳ A preparar...'; }
   const total = booking.lessonPrivate ? booking.lessonPrice : booking.lessonPrice * parseInt(pess);
   try {
     const [year, month, day] = booking.selectedDateKey.split('-').map(Number);
@@ -1446,7 +1434,16 @@ async function reservarWhatsApp() {
   }
   if(nota) msg += `\n📝 *${T('wa_note')}:* ${nota}\n`;
   msg += `\n${T('wa_closing')}`;
+  if (waBtn) { waBtn.disabled = false; waBtn.innerHTML = `📱 <span data-t="btn_whatsapp">${T('btn_whatsapp')}</span>`; }
   window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function updatePessoasVisibility() {
+  const fp    = document.getElementById('fpessoas');
+  const fpGrp = fp?.closest('.form-group');
+  if (!fp || !fpGrp) return;
+  if (booking.lessonPrivate) { fp.value = '1'; fpGrp.style.opacity = '.4'; fpGrp.style.pointerEvents = 'none'; }
+  else { fpGrp.style.opacity = ''; fpGrp.style.pointerEvents = ''; }
 }
 
 // ── MENU ──────────────────────────────────────────────────────────────────────
@@ -1513,6 +1510,15 @@ function updateScrollSpy() {
 }
 window.addEventListener('scroll', updateScrollSpy, { passive: true });
 updateScrollSpy();
+
+function setNavTop() {
+  const cb  = document.querySelector('.cb');
+  const nav = document.getElementById('navbar');
+  if (!cb || !nav || window.innerWidth <= 768) return;
+  nav.style.top = Math.ceil(cb.getBoundingClientRect().height) + 'px';
+}
+window.addEventListener('resize', setNavTop);
+setNavTop();
 
 // ── VISITOR COUNTER ───────────────────────────────────────────────────────────
 (function() {

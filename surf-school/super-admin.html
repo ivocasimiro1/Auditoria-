@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Super Admin · Plataforma Surf Schools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #050D1A; --ocean: #0A2540; --blue: #0070F3; --cyan: #00CFFD;
+      --teal: #00A896; --gold: #C9A84C; --white: #FFFFFF; --gray: #8B9AB0;
+      --card: rgba(255,255,255,0.05); --border: rgba(255,255,255,0.1);
+      --green: #22c55e; --red: #ef4444; --yellow: #eab308; --orange: #f97316;
+    }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', sans-serif; background: var(--navy); color: var(--white); }
+
+    /* ── LOGIN ── */
+    #login-wrap {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at 70% 30%, #0A3055 0%, var(--navy) 60%);
+      padding: 1rem;
+    }
+    .login-card {
+      width: 100%; max-width: 420px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(201,168,76,.2);
+      border-radius: 24px; padding: 2.5rem; backdrop-filter: blur(20px);
+    }
+    .login-logo { font-family: 'Playfair Display', serif; font-size: 1.4rem; text-align: center; margin-bottom: .25rem; }
+    .login-logo span { color: var(--gold); }
+    .login-badge {
+      display: inline-flex; align-items: center; gap: .4rem; margin: 0 auto .8rem;
+      background: rgba(201,168,76,.1); border: 1px solid rgba(201,168,76,.3);
+      border-radius: 50px; padding: .25rem .9rem; font-size: .72rem;
+      color: var(--gold); font-weight: 600; letter-spacing: .07em;
+    }
+    .login-badge-wrap { text-align: center; margin-bottom: 1.8rem; }
+    .login-subtitle { text-align: center; color: var(--gray); font-size: .85rem; margin-bottom: 1.5rem; }
+    .login-title { font-size: 1.3rem; font-weight: 700; text-align: center; margin-bottom: 1.5rem; }
+    .form-group { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1rem; }
+    label { font-size: .82rem; font-weight: 500; color: var(--gray); }
+    input[type="email"], input[type="text"] {
+      background: rgba(255,255,255,0.07); border: 1px solid var(--border); border-radius: 12px;
+      padding: .85rem 1rem; color: var(--white); font-family: 'Inter', sans-serif;
+      font-size: .95rem; outline: none; transition: border-color .2s; width: 100%;
+    }
+    input:focus { border-color: var(--gold); }
+    input::placeholder { color: #4a5a6e; }
+    .btn-login {
+      width: 100%; padding: .95rem; margin-top: .5rem;
+      background: linear-gradient(135deg, #8B6914, var(--gold));
+      border: none; border-radius: 12px; color: var(--navy);
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      font-family: 'Inter', sans-serif; transition: transform .2s, box-shadow .2s;
+      box-shadow: 0 4px 20px rgba(201,168,76,.3);
+    }
+    .btn-login:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(201,168,76,.45); }
+    .login-error {
+      background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3);
+      border-radius: 10px; padding: .7rem 1rem; font-size: .85rem;
+      color: #fca5a5; margin-bottom: 1rem; display: none;
+    }
+    .login-error.show { display: block; }
+
+    /* ── DASHBOARD ── */
+    #dash-wrap { min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* Top bar */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; background: rgba(0,0,0,.35);
+      border-bottom: 1px solid rgba(201,168,76,.2); flex-wrap: wrap; gap: 1rem;
+    }
+    .topbar-logo { font-family: 'Playfair Display', serif; font-size: 1.15rem; display: flex; align-items: center; gap: .6rem; }
+    .topbar-logo span { color: var(--gold); }
+    .crown-badge {
+      background: rgba(201,168,76,.15); border: 1px solid rgba(201,168,76,.3);
+      border-radius: 50px; padding: .2rem .7rem; font-size: .72rem; color: var(--gold); font-weight: 700;
+    }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; }
+    .user-info { text-align: right; }
+    .user-email { font-size: .82rem; font-weight: 600; }
+    .user-role { font-size: .72rem; color: var(--gold); }
+    .btn-logout {
+      padding: .45rem 1rem; background: transparent;
+      border: 1px solid var(--border); border-radius: 8px;
+      color: var(--gray); font-size: .82rem; cursor: pointer;
+      font-family: 'Inter', sans-serif; transition: all .2s;
+    }
+    .btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+    /* Main content */
+    .dash-content { flex: 1; padding: 2rem; max-width: 1500px; width: 100%; margin: 0 auto; }
+
+    /* Global Stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 1.3rem 1.5rem; display: flex; align-items: center; gap: 1rem;
+    }
+    .stat-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;
+    }
+    .si-gold   { background: linear-gradient(135deg, rgba(201,168,76,.3), rgba(201,168,76,.1)); }
+    .si-blue   { background: linear-gradient(135deg, rgba(0,112,243,.3), rgba(0,207,253,.2)); }
+    .si-green  { background: linear-gradient(135deg, rgba(34,197,94,.3), rgba(0,207,253,.15)); }
+    .si-orange { background: linear-gradient(135deg, rgba(249,115,22,.3), rgba(234,179,8,.2)); }
+    .stat-info { flex: 1; }
+    .stat-label { font-size: .75rem; color: var(--gray); text-transform: uppercase; letter-spacing: .07em; }
+    .stat-value { font-size: 1.7rem; font-weight: 700; line-height: 1.2; }
+    .stat-sub { font-size: .72rem; color: var(--gray); margin-top: .2rem; }
+
+    /* School tabs */
+    .school-tabs { display: flex; gap: .5rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+    .school-tab {
+      padding: .5rem 1.2rem; border-radius: 50px; border: 1px solid var(--border);
+      background: transparent; color: var(--gray); font-size: .84rem; font-weight: 500;
+      cursor: pointer; font-family: 'Inter', sans-serif; transition: all .2s; white-space: nowrap;
+    }
+    .school-tab:hover { border-color: rgba(201,168,76,.4); color: var(--white); }
+    .school-tab.active { background: var(--gold); border-color: var(--gold); color: var(--navy); font-weight: 700; }
+    .school-tab.all { border-color: rgba(0,207,253,.3); color: var(--cyan); }
+    .school-tab.all.active { background: var(--cyan); border-color: var(--cyan); color: var(--navy); }
+
+    /* School cards row */
+    .schools-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .school-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 1.4rem;
+      transition: border-color .2s, transform .2s; cursor: pointer;
+    }
+    .school-card:hover { border-color: rgba(201,168,76,.3); transform: translateY(-2px); }
+    .school-card.active-card { border-color: var(--gold); background: rgba(201,168,76,.06); }
+    .sc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .sc-name { font-size: 1rem; font-weight: 700; }
+    .sc-id { font-size: .72rem; color: var(--gray); font-family: monospace; background: rgba(255,255,255,.06); padding: .15rem .5rem; border-radius: 5px; }
+    .sc-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .6rem; }
+    .sc-stat { text-align: center; }
+    .sc-val { font-size: 1.3rem; font-weight: 700; color: var(--white); line-height: 1; }
+    .sc-lbl { font-size: .67rem; color: var(--gray); text-transform: uppercase; letter-spacing: .07em; margin-top: .2rem; }
+    .sc-commission { color: var(--green); }
+    .sc-revenue { color: var(--cyan); }
+    .sc-links { display: flex; gap: .5rem; margin-top: 1rem; }
+    .sc-link {
+      flex: 1; padding: .4rem .7rem; border-radius: 8px; font-size: .76rem; font-weight: 600;
+      text-align: center; text-decoration: none; border: 1px solid var(--border);
+      color: var(--gray); transition: all .2s; cursor: pointer; background: transparent;
+      font-family: 'Inter', sans-serif;
+    }
+    .sc-link:hover { border-color: rgba(201,168,76,.4); color: var(--white); }
+    .sc-link.site { border-color: rgba(0,207,253,.3); color: var(--cyan); }
+    .sc-link.site:hover { background: rgba(0,207,253,.1); }
+    .sc-pending { display: inline-flex; align-items: center; gap: .3rem; font-size: .72rem; color: #fde047; }
+    .sc-pending::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #fde047; }
+
+    /* Filters */
+    .filters-bar {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1rem 1.3rem; display: flex; align-items: center; gap: 1rem;
+      flex-wrap: wrap; margin-bottom: 1.5rem;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: .3rem; }
+    .filter-label { font-size: .72rem; color: var(--gray); text-transform: uppercase; letter-spacing: .07em; }
+    select.filter-select, input.filter-input {
+      background: rgba(255,255,255,.08); border: 1px solid var(--border); border-radius: 9px;
+      padding: .55rem .9rem; color: var(--white); font-family: 'Inter', sans-serif;
+      font-size: .88rem; outline: none; transition: border-color .2s; cursor: pointer;
+    }
+    select.filter-select:focus, input.filter-input:focus { border-color: var(--gold); }
+    select.filter-select option { background: var(--ocean); }
+    input.filter-input::placeholder { color: #4a5a6e; }
+    .btn-refresh {
+      padding: .55rem 1.1rem; background: linear-gradient(135deg, var(--blue), var(--cyan));
+      border: none; border-radius: 9px; color: white; font-size: .85rem; font-weight: 600;
+      cursor: pointer; font-family: 'Inter', sans-serif; transition: transform .2s; margin-left: auto;
+    }
+    .btn-refresh:hover { transform: translateY(-1px); }
+
+    /* Table */
+    .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    .table-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.1rem 1.5rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: .5rem;
+    }
+    .table-title { font-size: 1rem; font-weight: 700; }
+    .table-count { font-size: .8rem; color: var(--gray); }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      padding: .75rem 1rem; text-align: left; font-size: .72rem;
+      text-transform: uppercase; letter-spacing: .08em; color: var(--gray);
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+      background: rgba(0,0,0,.15);
+    }
+    td {
+      padding: .85rem 1rem; font-size: .88rem; border-bottom: 1px solid rgba(255,255,255,.05);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,.03); }
+    td small { font-size: .75rem; color: var(--gray); display: block; margin-top: .15rem; }
+    .col-center { text-align: center; }
+    .col-price { font-weight: 700; color: var(--cyan); white-space: nowrap; }
+    .col-commission { font-weight: 600; color: var(--green); white-space: nowrap; }
+    .empty-row { text-align: center; color: var(--gray); padding: 3rem; }
+    .school-chip {
+      display: inline-block; padding: .2rem .6rem; border-radius: 50px; font-size: .72rem; font-weight: 600;
+      background: rgba(201,168,76,.12); color: var(--gold); border: 1px solid rgba(201,168,76,.25);
+      white-space: nowrap;
+    }
+
+    /* Status badges */
+    .status-badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .3rem .75rem; border-radius: 50px; font-size: .75rem; font-weight: 600; white-space: nowrap;
+    }
+    .status-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+    .status-pending   { background: rgba(234,179,8,.15);  color: #fde047; border: 1px solid rgba(234,179,8,.3); }
+    .status-pending::before   { background: #fde047; }
+    .status-confirmed { background: rgba(0,207,253,.15);  color: var(--cyan); border: 1px solid rgba(0,207,253,.3); }
+    .status-confirmed::before { background: var(--cyan); }
+    .status-completed { background: rgba(34,197,94,.15);  color: #86efac; border: 1px solid rgba(34,197,94,.3); }
+    .status-completed::before { background: #86efac; }
+    .status-cancelled { background: rgba(239,68,68,.15);  color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
+    .status-cancelled::before { background: #fca5a5; }
+
+    /* Summary row */
+    .summary-row { background: rgba(201,168,76,.06); border-top: 2px solid rgba(201,168,76,.2) !important; }
+    .summary-row td { font-weight: 700; color: var(--gold); }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+      padding: .85rem 1.3rem; border-radius: 12px; font-size: .9rem; font-weight: 500;
+      transform: translateY(100px); opacity: 0; transition: transform .3s, opacity .3s; max-width: 320px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast-success { background: rgba(34,197,94,.2); border: 1px solid rgba(34,197,94,.4); color: #86efac; }
+    .toast-error   { background: rgba(239,68,68,.2);  border: 1px solid rgba(239,68,68,.4);  color: #fca5a5; }
+
+    /* Loading */
+    .loading { text-align: center; padding: 3rem; color: var(--gray); }
+    .spinner { display: inline-block; width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; margin-bottom: 1rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media(max-width: 768px) {
+      .dash-content { padding: 1rem; }
+      .topbar { padding: .8rem 1rem; }
+      .filters-bar { gap: .6rem; }
+      .schools-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">Surf <span>Schools</span> Platform</div>
+    <div class="login-badge-wrap">
+      <div class="login-badge">👑 Super Administrador</div>
+    </div>
+    <div class="login-error" id="login-error"></div>
+
+    <div id="step-email">
+      <h2 class="login-title">Acesso Restrito</h2>
+      <div class="form-group">
+        <label>Email de administrador</label>
+        <input type="email" id="l-email" placeholder="email@exemplo.com" onkeydown="if(event.key==='Enter')sendOtp()" />
+      </div>
+      <button class="btn-login" onclick="sendOtp()">Enviar código →</button>
+    </div>
+
+    <div id="step-otp" style="display:none">
+      <h2 class="login-title">Verificar código</h2>
+      <p style="font-size:.84rem;color:var(--gray);margin-bottom:1.2rem;text-align:center">
+        Código enviado para<br><strong id="otp-email-display" style="color:var(--white)"></strong>
+      </p>
+      <div class="form-group">
+        <label>Código de 6 dígitos</label>
+        <input type="text" id="l-otp" placeholder="000000" maxlength="6"
+          style="letter-spacing:.3em;font-size:1.5rem;text-align:center;font-weight:700"
+          oninput="this.value=this.value.replace(/\D/g,'')"
+          onkeydown="if(event.key==='Enter')verifyOtp()" />
+      </div>
+      <button class="btn-login" onclick="verifyOtp()">Entrar no Painel 👑</button>
+      <p style="text-align:center;margin-top:1rem;font-size:.8rem;color:var(--gray)">
+        Não recebeste? <a href="#" onclick="showEmailStep();return false" style="color:var(--gold);text-decoration:none">Tentar novamente</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dash-wrap" style="display:none">
+
+  <div class="topbar">
+    <div class="topbar-logo">
+      Surf <span>Schools</span> Platform
+      <span class="crown-badge">👑 Super Admin</span>
+    </div>
+    <div class="topbar-right">
+      <div class="user-info">
+        <div class="user-email" id="user-email"></div>
+        <div class="user-role">Administrador da Plataforma</div>
+      </div>
+      <button class="btn-logout" onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="dash-content">
+
+    <!-- Global Stats -->
+    <div class="stats-grid" id="global-stats">
+      <div class="stat-card">
+        <div class="stat-icon si-gold">🏫</div>
+        <div class="stat-info">
+          <div class="stat-label">Escolas Activas</div>
+          <div class="stat-value" id="gs-schools">—</div>
+          <div class="stat-sub">na plataforma</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon si-blue">📋</div>
+        <div class="stat-info">
+          <div class="stat-label">Marcações Totais</div>
+          <div class="stat-value" id="gs-bookings">—</div>
+          <div class="stat-sub" id="gs-month-label">este mês</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon si-green">💶</div>
+        <div class="stat-info">
+          <div class="stat-label">Receita Total</div>
+          <div class="stat-value" id="gs-revenue">—</div>
+          <div class="stat-sub">todas as escolas</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon si-orange">🤙</div>
+        <div class="stat-info">
+          <div class="stat-label">Comissões (5%)</div>
+          <div class="stat-value" id="gs-commission">—</div>
+          <div class="stat-sub">a receber</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- School Cards -->
+    <div class="schools-row" id="schools-row"></div>
+
+    <!-- School Tabs -->
+    <div class="school-tabs" id="school-tabs"></div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="filter-group">
+        <span class="filter-label">Mês</span>
+        <input type="month" id="f-month" class="filter-input" onchange="applyFilters()" />
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Estado</span>
+        <select id="f-status" class="filter-select" onchange="applyFilters()">
+          <option value="">Todos</option>
+          <option value="pending">Pendente</option>
+          <option value="confirmed">Confirmado</option>
+          <option value="completed">Concluído</option>
+          <option value="cancelled">Cancelado</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Pesquisar</span>
+        <input type="text" id="f-search" class="filter-input" placeholder="Nome, telemóvel..." oninput="applyFilters()" />
+      </div>
+      <button class="btn-refresh" onclick="loadBookings()">↻ Atualizar</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <div>
+          <div class="table-title" id="table-title">Todas as Marcações</div>
+          <div class="table-count" id="table-count"></div>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Data / Hora</th>
+              <th>Escola</th>
+              <th>Modalidade</th>
+              <th>Cliente</th>
+              <th class="col-center">Pess.</th>
+              <th>Preço</th>
+              <th>Comissão 5%</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="bookings-tbody">
+            <tr><td colspan="9" class="loading"><div class="spinner"></div><br>A carregar...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SUPABASE_URL  = 'https://ubeqidccuvsjhjphybxz.supabase.co';
+  const SUPABASE_KEY  = 'sb_publishable_X0-ZNy93MbCR-cXSdi4tRg_dpITamQj';
+  const ADMIN_EMAIL   = 'ivo@despomar.com';
+  const COMMISSION    = 0.05;
+
+  const { createClient } = supabase;
+  const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let currentUser  = null;
+  let allBookings  = [];
+  let activeSchool = 'all';
+
+  // ── SCHOOL REGISTRY ──────────────────────────────────────────────────────────
+  // Add new schools here when onboarded
+  const SCHOOLS = [
+    {
+      id:    'arrifana-surf-academy',
+      name:  'Arrifana Surf Academy',
+      region:'Aljezur · Costa Vicentina',
+      site:  '/index.html',
+      admin: '/admin.html',
+    },
+  ];
+
+  const STATUS = {
+    pending:   { label: 'Pendente',   cls: 'status-pending'   },
+    confirmed: { label: 'Confirmado', cls: 'status-confirmed' },
+    completed: { label: 'Concluído',  cls: 'status-completed' },
+    cancelled: { label: 'Cancelado',  cls: 'status-cancelled' },
+  };
+
+  // ── AUTH ──────────────────────────────────────────────────────────────────────
+  async function init() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) { currentUser = session.user; checkAndShowDash(); }
+    sb.auth.onAuthStateChange((_e, session) => {
+      if (session) { currentUser = session.user; checkAndShowDash(); }
+      else         { currentUser = null; showLogin(); }
+    });
+  }
+
+  function checkAndShowDash() {
+    if (currentUser?.email !== ADMIN_EMAIL) {
+      sb.auth.signOut();
+      const errEl = document.getElementById('login-error');
+      errEl.textContent = 'Acesso restrito ao administrador da plataforma.';
+      errEl.classList.add('show');
+      return;
+    }
+    showDashboard();
+  }
+
+  let otpEmail = '';
+
+  function showEmailStep() {
+    document.getElementById('step-email').style.display = 'block';
+    document.getElementById('step-otp').style.display   = 'none';
+    document.getElementById('login-error').classList.remove('show');
+  }
+
+  async function sendOtp() {
+    const email = document.getElementById('l-email').value.trim();
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = ''; errEl.classList.remove('show');
+    if (!email) { errEl.textContent = 'Introduz o teu email.'; errEl.classList.add('show'); return; }
+
+    const btn = document.querySelector('#step-email .btn-login');
+    btn.textContent = 'A enviar...'; btn.disabled = true;
+    const { error } = await sb.auth.signInWithOtp({
+      email, options: { shouldCreateUser: false, emailRedirectTo: window.location.origin + '/super-admin.html' }
+    });
+    btn.textContent = 'Enviar código →'; btn.disabled = false;
+
+    if (error) {
+      errEl.textContent = error.message.includes('not found') || error.message.includes('registered')
+        ? 'Email não autorizado.' : error.message;
+      errEl.classList.add('show'); return;
+    }
+    otpEmail = email;
+    document.getElementById('otp-email-display').textContent = email;
+    document.getElementById('step-email').style.display = 'none';
+    document.getElementById('step-otp').style.display   = 'block';
+    document.getElementById('l-otp').focus();
+  }
+
+  async function verifyOtp() {
+    const token = document.getElementById('l-otp').value.trim();
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = ''; errEl.classList.remove('show');
+    if (token.length !== 6) { errEl.textContent = 'O código tem 6 dígitos.'; errEl.classList.add('show'); return; }
+
+    const btn = document.querySelector('#step-otp .btn-login');
+    btn.textContent = 'A verificar...'; btn.disabled = true;
+    const { error } = await sb.auth.verifyOtp({ email: otpEmail, token, type: 'email' });
+    btn.textContent = 'Entrar no Painel 👑'; btn.disabled = false;
+
+    if (error) {
+      errEl.textContent = 'Código incorreto ou expirado.';
+      errEl.classList.add('show');
+    }
+  }
+
+  async function logout() { await sb.auth.signOut(); showLogin(); }
+
+  function showLogin() {
+    document.getElementById('login-wrap').style.display = 'flex';
+    document.getElementById('dash-wrap').style.display  = 'none';
+  }
+
+  function showDashboard() {
+    document.getElementById('login-wrap').style.display = 'none';
+    document.getElementById('dash-wrap').style.display  = 'block';
+    document.getElementById('user-email').textContent   = currentUser.email;
+    setDefaultFilters();
+    buildSchoolUI();
+    loadBookings();
+  }
+
+  // ── SCHOOL UI ─────────────────────────────────────────────────────────────────
+  function buildSchoolUI() {
+    // Tabs
+    const tabsEl = document.getElementById('school-tabs');
+    tabsEl.innerHTML = `<button class="school-tab all active" onclick="switchSchool('all')">🌍 Todas as Escolas</button>` +
+      SCHOOLS.map(s => `<button class="school-tab" id="tab-${s.id}" onclick="switchSchool('${s.id}')">${s.name}</button>`).join('');
+
+    // Cards
+    const rowEl = document.getElementById('schools-row');
+    rowEl.innerHTML = SCHOOLS.map(s => `
+      <div class="school-card" id="card-${s.id}" onclick="switchSchool('${s.id}')">
+        <div class="sc-top">
+          <div class="sc-name">${s.name}</div>
+          <div class="sc-id">${s.id}</div>
+        </div>
+        <div style="font-size:.78rem;color:var(--gray);margin-bottom:.9rem">📍 ${s.region}</div>
+        <div class="sc-stats">
+          <div class="sc-stat"><div class="sc-val" id="sc-bookings-${s.id}">—</div><div class="sc-lbl">Marcações</div></div>
+          <div class="sc-stat"><div class="sc-val sc-revenue" id="sc-revenue-${s.id}">—</div><div class="sc-lbl">Receita</div></div>
+          <div class="sc-stat"><div class="sc-val sc-commission" id="sc-commission-${s.id}">—</div><div class="sc-lbl">Comissão</div></div>
+        </div>
+        <div class="sc-links">
+          <a href="${s.site}" target="_blank" class="sc-link site">🌊 Site</a>
+          <a href="${s.admin}" target="_blank" class="sc-link">⚙️ Admin</a>
+        </div>
+      </div>`).join('');
+  }
+
+  function switchSchool(id) {
+    activeSchool = id;
+    document.querySelectorAll('.school-tab').forEach(t => t.classList.remove('active'));
+    const tab = id === 'all' ? document.querySelector('.school-tab.all') : document.getElementById(`tab-${id}`);
+    if (tab) tab.classList.add('active');
+    document.querySelectorAll('.school-card').forEach(c => c.classList.remove('active-card'));
+    if (id !== 'all') { const card = document.getElementById(`card-${id}`); if (card) card.classList.add('active-card'); }
+    document.getElementById('table-title').textContent = id === 'all' ? 'Todas as Marcações' : SCHOOLS.find(s=>s.id===id)?.name || id;
+    applyFilters();
+  }
+
+  // ── DATA ──────────────────────────────────────────────────────────────────────
+  async function loadBookings() {
+    document.getElementById('bookings-tbody').innerHTML =
+      `<tr><td colspan="9" class="loading"><div class="spinner"></div><br>A carregar...</td></tr>`;
+
+    const { data, error } = await sb
+      .from('bookings')
+      .select('*')
+      .order('booking_date', { ascending: false })
+      .order('booking_time',  { ascending: true });
+
+    if (error) { showToast('Erro ao carregar marcações', 'error'); return; }
+    allBookings = data || [];
+    updateSchoolCards();
+    applyFilters();
+  }
+
+  function updateSchoolCards() {
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+    SCHOOLS.forEach(s => {
+      const sBookings = allBookings.filter(b => b.school_id === s.id && b.status !== 'cancelled' && b.booking_date.startsWith(monthKey));
+      const rev = sBookings.reduce((sum, b) => sum + parseFloat(b.total_price||0), 0);
+      const com = rev * COMMISSION;
+      const bEl = document.getElementById(`sc-bookings-${s.id}`);
+      const rEl = document.getElementById(`sc-revenue-${s.id}`);
+      const cEl = document.getElementById(`sc-commission-${s.id}`);
+      if (bEl) bEl.textContent = sBookings.length;
+      if (rEl) rEl.textContent = `€${rev.toFixed(0)}`;
+      if (cEl) cEl.textContent = `€${com.toFixed(0)}`;
+    });
+
+    document.getElementById('gs-schools').textContent = SCHOOLS.length;
+  }
+
+  function applyFilters() {
+    const month  = document.getElementById('f-month').value;
+    const status = document.getElementById('f-status').value;
+    const search = document.getElementById('f-search').value.toLowerCase();
+
+    let filtered = allBookings;
+    if (activeSchool !== 'all') filtered = filtered.filter(b => b.school_id === activeSchool);
+    if (month)  filtered = filtered.filter(b => b.booking_date.startsWith(month));
+    if (status) filtered = filtered.filter(b => b.status === status);
+    if (search) filtered = filtered.filter(b =>
+      b.client_name.toLowerCase().includes(search) || b.client_phone.includes(search)
+    );
+
+    renderGlobalStats(filtered);
+    renderTable(filtered);
+  }
+
+  function renderGlobalStats(rows) {
+    const active   = rows.filter(b => b.status !== 'cancelled');
+    const revenue  = active.reduce((s, b) => s + parseFloat(b.total_price||0), 0);
+    const commission = revenue * COMMISSION;
+    const month    = document.getElementById('f-month').value;
+
+    document.getElementById('gs-bookings').textContent   = active.length;
+    document.getElementById('gs-revenue').textContent    = `€${revenue.toFixed(2)}`;
+    document.getElementById('gs-commission').textContent = `€${commission.toFixed(2)}`;
+
+    if (month) {
+      const [y, m] = month.split('-');
+      const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      document.getElementById('gs-month-label').textContent = `${months[parseInt(m)-1]} ${y}`;
+    } else {
+      document.getElementById('gs-month-label').textContent = 'todas as datas';
+    }
+  }
+
+  function renderTable(rows) {
+    const tbody   = document.getElementById('bookings-tbody');
+    const countEl = document.getElementById('table-count');
+    countEl.textContent = `${rows.length} registo${rows.length !== 1 ? 's' : ''}`;
+
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="9" class="empty-row">Nenhuma marcação encontrada</td></tr>`;
+      return;
+    }
+
+    let totalRev = 0, totalCom = 0;
+
+    const html = rows.map((b, i) => {
+      const s     = STATUS[b.status] || STATUS.pending;
+      const price = parseFloat(b.total_price||0);
+      const com   = price * COMMISSION;
+      if (b.status !== 'cancelled') { totalRev += price; totalCom += com; }
+
+      const [y, m, d] = b.booking_date.split('-');
+      const dateStr   = `${d}/${m}/${y}`;
+      const langFlag  = { pt:'🇵🇹', en:'🇬🇧', fr:'🇫🇷', de:'🇩🇪' }[b.language] || '';
+      const school    = SCHOOLS.find(s => s.id === b.school_id);
+      const schoolName = school ? school.name.replace(' Surf Academy','').replace(' Surf School','') : (b.school_id||'—');
+
+      return `<tr>
+        <td style="color:var(--gray);font-size:.8rem">#${b.booking_ref || (i+1)}</td>
+        <td><strong>${dateStr}</strong><small>${b.booking_time}</small></td>
+        <td><span class="school-chip">${schoolName}</span></td>
+        <td>${b.lesson_type} ${langFlag}</td>
+        <td>${b.client_name}<small>${b.client_phone}${b.client_email ? ' · ' + b.client_email : ''}</small>${b.wetsuit_size||b.client_weight ? `<small style="color:var(--gold)">👕 ${b.wetsuit_size||'—'} · ${b.client_weight?b.client_weight+'kg':'—'} · ${b.client_height?b.client_height+'cm':'—'}</small>` : ''}</td>
+        <td class="col-center">${b.num_people}</td>
+        <td class="col-price">€${price.toFixed(2)}</td>
+        <td class="col-commission">€${com.toFixed(2)}</td>
+        <td><span class="status-badge ${s.cls}">${s.label}</span></td>
+      </tr>`;
+    }).join('');
+
+    const summaryRow = `<tr class="summary-row">
+      <td colspan="6" style="text-align:right;font-weight:700">TOTAL</td>
+      <td class="col-price">€${totalRev.toFixed(2)}</td>
+      <td class="col-commission">€${totalCom.toFixed(2)}</td>
+      <td></td>
+    </tr>`;
+
+    tbody.innerHTML = html + summaryRow;
+  }
+
+  // ── UTILS ─────────────────────────────────────────────────────────────────────
+  function setDefaultFilters() {
+    const now = new Date();
+    document.getElementById('f-month').value =
+      `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast toast-${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  init();
+</script>
+</body>
+</html>
