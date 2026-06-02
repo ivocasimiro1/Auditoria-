@@ -314,6 +314,12 @@
       .gi{height:240px}
       section{padding:4.5rem 5%}
     }
+    /* PERSON ROWS */
+    .person-row{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.2rem;margin-bottom:.75rem}
+    .person-row-label{font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);margin-bottom:.8rem}
+    .person-row-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.75rem}
+    @media(max-width:600px){.person-row-grid{grid-template-columns:1fr 1fr}}
+
     /* MOBILE DRAWER */
     #mob-drawer{display:none;position:fixed;inset:0;background:#060D1B;z-index:200;flex-direction:column;padding:90px 8% 3rem;overflow-y:auto}
     #mob-drawer.open{display:flex}
@@ -652,26 +658,15 @@
           <div class="form-group"><label data-t="f_phone"></label><input type="tel" id="fphone" placeholder="+351 9XX XXX XXX" /></div>
           <div class="form-group"><label data-t="f_email"></label><input type="email" id="femail" data-placeholder="f_email_ph" /></div>
           <div class="form-group"><label data-t="f_pessoas"></label>
-            <select id="fpessoas">
+            <select id="fpessoas" onchange="onPessoasChange()">
               <option value="1">1</option><option value="2">2</option><option value="3">3</option>
               <option value="4">4</option><option value="5">5</option><option value="6">6</option>
             </select>
           </div>
-          <div class="form-group"><label data-t="f_peso"></label><input type="number" id="fpeso" min="30" max="200" placeholder="kg" /></div>
-          <div class="form-group"><label data-t="f_altura"></label><input type="number" id="faltura" min="100" max="220" placeholder="cm" /></div>
-          <div class="form-group"><label data-t="f_genero"></label>
-            <select id="fgenero" onchange="updateWetsuitSizes()">
-              <option value="">—</option>
-              <option value="H" data-t="g_homem"></option>
-              <option value="M" data-t="g_mulher"></option>
-              <option value="C" data-t="g_crianca"></option>
-            </select>
-          </div>
-          <div class="form-group"><label data-t="f_fato"></label>
-            <select id="ffato">
-              <option value="">—</option>
-            </select>
-          </div>
+        </div>
+        <!-- Equipment rows per person — built dynamically -->
+        <div id="equipment-rows"></div>
+        <div class="form-grid" style="margin-top:.8rem">
           <div class="form-group full"><label data-t="f_nota"></label><textarea id="fnota" data-placeholder="f_nota_ph"></textarea></div>
         </div>
         <button class="btn-whatsapp" onclick="reservarWhatsApp()">📱 <span data-t="btn_whatsapp"></span></button>
@@ -727,7 +722,7 @@
     </div>
     <div class="footer-col">
       <h4 data-t="footer_contact"></h4>
-      <a href="https://wa.me/351912345678" target="_blank">WhatsApp</a>
+      <a href="https://wa.me/351962800400" target="_blank">WhatsApp</a>
       <a href="mailto:geral@arrifanasurfacademy.pt">Email</a>
       <a href="#mares" data-t="nav_mares"></a>
     </div>
@@ -1385,70 +1380,132 @@ async function loadSlotAvailability(dateKey) {
 }
 
 // ── WHATSAPP ──────────────────────────────────────────────────────────────────
-const WA_NUMBER = '351912345678';
+const WA_NUMBER = '351962800400';
 
 async function reservarWhatsApp() {
-  const nome   = document.getElementById('fname').value.trim();
-  const tel    = document.getElementById('fphone').value.trim();
-  const email  = document.getElementById('femail').value.trim();
-  const pess   = document.getElementById('fpessoas').value;
-  const nota   = document.getElementById('fnota').value.trim();
-  const peso   = document.getElementById('fpeso').value.trim();
-  const altura = document.getElementById('faltura').value.trim();
-  const genero = document.getElementById('fgenero').value;
-  const fato   = document.getElementById('ffato').value;
+  const nome  = document.getElementById('fname').value.trim();
+  const tel   = document.getElementById('fphone').value.trim();
+  const email = document.getElementById('femail').value.trim();
+  const pess  = parseInt(document.getElementById('fpessoas').value || '1');
+  const nota  = document.getElementById('fnota').value.trim();
   if (!nome || !tel) { alert(T('f_name').replace(' *','') + ' / ' + T('f_phone').replace(' *','')); return; }
+
+  // Collect per-person equipment
+  const equipment = [];
+  for (let i = 0; i < pess; i++) {
+    equipment.push({
+      weight: parseInt(document.getElementById(`fpeso_${i}`)?.value) || null,
+      height: parseInt(document.getElementById(`faltura_${i}`)?.value) || null,
+      gender: document.getElementById(`fgenero_${i}`)?.value || null,
+      size:   document.getElementById(`ffato_${i}`)?.value || null,
+    });
+  }
+
   const waBtn = document.querySelector('.btn-whatsapp');
   if (waBtn) { waBtn.disabled = true; waBtn.innerHTML = '⏳ A preparar...'; }
-  const total = booking.lessonPrivate ? booking.lessonPrice : booking.lessonPrice * parseInt(pess);
+  const total = booking.lessonPrivate ? booking.lessonPrice : booking.lessonPrice * pess;
+
   try {
     const [year, month, day] = booking.selectedDateKey.split('-').map(Number);
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const p0 = equipment[0] || {};
     if (sb) await sb.from('bookings').insert([{
       school_id:'arrifana-surf-academy', lesson_type:T(booking.lessonKey),
-      booking_date:dateStr, booking_time:booking.time, num_people:parseInt(pess),
+      booking_date:dateStr, booking_time:booking.time, num_people:pess,
       client_name:nome, client_phone:tel, client_email:email||null,
-      client_weight:peso?parseInt(peso):null, client_height:altura?parseInt(altura):null,
-      client_gender:genero||null, wetsuit_size:fato||null, notes:nota||null, total_price:total,
+      client_weight:p0.weight, client_height:p0.height,
+      client_gender:p0.gender, wetsuit_size:p0.size,
+      notes:nota||null, total_price:total,
       language:currentLang, status:'pending'
     }]);
   } catch(e) { console.warn('Supabase save failed', e); }
+
+  const genLabel = g => g==='H'?T('g_homem'):g==='M'?T('g_mulher'):g==='C'?T('g_crianca'):'—';
   let msg = `🏄 *${T('wa_header')}*\n\n`;
   msg += `👤 *${T('wa_name')}:* ${nome}\n📞 *${T('wa_phone')}:* ${tel}\n`;
-  if(email) msg += `📧 *${T('wa_email')}:* ${email}\n`;
+  if (email) msg += `📧 *${T('wa_email')}:* ${email}\n`;
   msg += `\n🌊 *${T('wa_lesson')}:* ${T(booking.lessonKey)}\n`;
   msg += `📅 *${T('wa_date')}:* ${booking.selectedDateStr}\n`;
   msg += `⏰ *${T('wa_time')}:* ${booking.time}\n`;
   msg += `👥 *${T('wa_people')}:* ${pess}\n💰 *${T('wa_total')}:* €${total}\n`;
-  if(peso || altura || genero || fato) {
-    const genLabel = genero==='H'?T('g_homem'):genero==='M'?T('g_mulher'):genero==='C'?T('g_crianca'):'—';
-    msg += `\n📏 *${T('wa_weight')}:* ${peso?peso+'kg':'—'}  *${T('wa_height')}:* ${altura?altura+'cm':'—'}\n`;
-    msg += `👕 *${T('wa_gender')}:* ${genLabel}  *${T('wa_wetsuit')}:* ${fato||'—'}\n`;
+
+  const hasEquip = equipment.some(p => p.weight || p.gender || p.size);
+  if (hasEquip) {
+    msg += `\n👕 *Equipamento:*\n`;
+    equipment.forEach((p, i) => {
+      const label = PERSON_LABELS[currentLang] || 'Pessoa';
+      msg += `  ${label} ${i+1}: ${genLabel(p.gender)} · ${p.weight?p.weight+'kg':'—'} · ${p.height?p.height+'cm':'—'} · ${p.size||'—'}\n`;
+    });
   }
-  if(nota) msg += `\n📝 *${T('wa_note')}:* ${nota}\n`;
+  if (nota) msg += `\n📝 *${T('wa_note')}:* ${nota}\n`;
   msg += `\n${T('wa_closing')}`;
+
   if (waBtn) { waBtn.disabled = false; waBtn.innerHTML = `📱 <span data-t="btn_whatsapp">${T('btn_whatsapp')}</span>`; }
   window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-function updateWetsuitSizes() {
-  const genero = document.getElementById('fgenero').value;
-  const sel    = document.getElementById('ffato');
-  const prev   = sel.value;
+const WETSUIT_SIZES = {
+  H: ['XS','S','SM','M','MT','ML','L','XL','XXL'],
+  M: ['6','8','10','12','14','S','M','L','XL'],
+  C: ['8','10','12','14','16','18','20','22','24'],
+};
 
-  const sizes = {
-    H: ['XS','S','SM','M','MT','ML','L','XL','XXL'],
-    M: ['6','8','10','12','14','S','M','L','XL'],
-    C: ['8','10','12','14','16','18','20','22','24'],
-  };
+const PERSON_LABELS = { pt:'Pessoa', en:'Person', fr:'Personne', de:'Person' };
 
+function buildEquipmentRows(n) {
+  const container = document.getElementById('equipment-rows');
+  if (!container) return;
+  const label = PERSON_LABELS[currentLang] || 'Pessoa';
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    html += `<div class="person-row">
+      <div class="person-row-label">${label} ${i + 1}</div>
+      <div class="person-row-grid">
+        <div class="form-group">
+          <label>${T('f_peso')}</label>
+          <input type="number" id="fpeso_${i}" min="20" max="200" placeholder="kg" />
+        </div>
+        <div class="form-group">
+          <label>${T('f_altura')}</label>
+          <input type="number" id="faltura_${i}" min="80" max="220" placeholder="cm" />
+        </div>
+        <div class="form-group">
+          <label>${T('f_genero')}</label>
+          <select id="fgenero_${i}" onchange="updateWetsuitSizesFor(${i})">
+            <option value="">—</option>
+            <option value="H">${T('g_homem')}</option>
+            <option value="M">${T('g_mulher')}</option>
+            <option value="C">${T('g_crianca')}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>${T('f_fato')}</label>
+          <select id="ffato_${i}"><option value="">—</option></select>
+        </div>
+      </div>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+function updateWetsuitSizesFor(i) {
+  const genero = document.getElementById(`fgenero_${i}`)?.value;
+  const sel    = document.getElementById(`ffato_${i}`);
+  if (!sel) return;
+  const prev = sel.value;
   sel.innerHTML = '<option value="">—</option>';
-  (sizes[genero] || []).forEach(s => {
+  (WETSUIT_SIZES[genero] || []).forEach(s => {
     const opt = document.createElement('option');
     opt.value = s; opt.textContent = s;
     if (s === prev) opt.selected = true;
     sel.appendChild(opt);
   });
+}
+
+function onPessoasChange() {
+  const n = parseInt(document.getElementById('fpessoas')?.value || '1');
+  buildEquipmentRows(n);
+  buildSummary();
 }
 
 function updatePessoasVisibility() {
@@ -1457,6 +1514,7 @@ function updatePessoasVisibility() {
   if (!fp || !fpGrp) return;
   if (booking.lessonPrivate) { fp.value = '1'; fpGrp.style.opacity = '.4'; fpGrp.style.pointerEvents = 'none'; }
   else { fpGrp.style.opacity = ''; fpGrp.style.pointerEvents = ''; }
+  buildEquipmentRows(parseInt(fp.value));
 }
 
 // ── MENU ──────────────────────────────────────────────────────────────────────
