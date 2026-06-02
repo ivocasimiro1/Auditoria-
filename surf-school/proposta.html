@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SurfBook — Proposta Comercial</title>
+  <style>
+    /* ============================================================
+       RESET & BASE
+    ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:      #050D1A;
+      --navy-mid:  #0A1A30;
+      --navy-card: #0D2040;
+      --ocean:     #0070F3;
+      --cyan:      #00CFFD;
+      --cyan-soft: #00b4d8;
+      --white:     #FFFFFF;
+      --gray-100:  #F0F4F8;
+      --gray-200:  #CBD5E1;
+      --gray-400:  #94A3B8;
+      --gold:      #F59E0B;
+      --green:     #10B981;
+      --radius:    12px;
+      --shadow:    0 4px 24px rgba(0,0,0,0.35);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   Helvetica, Arial, sans-serif;
+      background: var(--navy);
+      color: var(--white);
+      line-height: 1.65;
+      font-size: 15px;
+    }
+
+    /* ============================================================
+       PRINT BUTTON (hidden on print)
+    ============================================================ */
+    #print-bar {
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      background: rgba(5,13,26,0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(0,207,253,0.2);
+      padding: 10px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #print-bar .brand {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--cyan);
+      letter-spacing: 0.05em;
+    }
+    #print-bar button {
+      background: linear-gradient(135deg, var(--ocean), var(--cyan));
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      padding: 9px 22px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: opacity .2s;
+    }
+    #print-bar button:hover { opacity: 0.85; }
+
+    /* ============================================================
+       LAYOUT WRAPPER
+    ============================================================ */
+    .wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 32px 80px;
+    }
+
+    /* ============================================================
+       HERO
+    ============================================================ */
+    .hero {
+      text-align: center;
+      padding: 72px 20px 60px;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%,
+                  rgba(0,112,243,0.22) 0%, transparent 70%);
+      border-bottom: 1px solid rgba(0,207,253,0.12);
+      margin-bottom: 56px;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(0,207,253,0.12);
+      border: 1px solid rgba(0,207,253,0.35);
+      color: var(--cyan);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 999px;
+      margin-bottom: 22px;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 44px);
+      font-weight: 800;
+      line-height: 1.15;
+      background: linear-gradient(135deg, var(--white) 30%, var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+    .hero-sub {
+      font-size: 17px;
+      color: var(--gray-200);
+      max-width: 560px;
+      margin: 0 auto 32px;
+    }
+    .hero-meta {
+      font-size: 12px;
+      color: var(--gray-400);
+      letter-spacing: 0.04em;
+    }
+    .hero-meta span { color: var(--cyan); font-weight: 600; }
+
+    /* wave decoration */
+    .wave-divider {
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 8px;
+      opacity: 0.5;
+      letter-spacing: 4px;
+    }
+
+    /* ============================================================
+       SECTION HEADERS
+    ============================================================ */
+    .section {
+      margin-bottom: 52px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(0,207,253,0.18);
+    }
+    .section-num {
+      background: linear-gradient(135deg, var(--ocean), var(--cyan));
+      color: var(--white);
+      font-size: 11px;
+      font-weight: 800;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      letter-spacing: 0.05em;
+    }
+    .section-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    /* ============================================================
+       CARD
+    ============================================================ */
+    .card {
+      background: var(--navy-card);
+      border: 1px solid rgba(0,207,253,0.12);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      box-shadow: var(--shadow);
+    }
+    .card p { color: var(--gray-200); font-size: 15px; }
+    .card p + p { margin-top: 10px; }
+
+    /* ============================================================
+       HIGHLIGHT BOX
+    ============================================================ */
+    .highlight-box {
+      background: linear-gradient(135deg,
+                  rgba(0,112,243,0.15) 0%, rgba(0,207,253,0.08) 100%);
+      border-left: 4px solid var(--cyan);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 18px 24px;
+      color: var(--gray-100);
+      margin-top: 16px;
+      font-size: 14px;
+    }
+
+    /* ============================================================
+       FLOW STEPS
+    ============================================================ */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+      background: var(--navy-card);
+      border: 1px solid rgba(0,207,253,0.10);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      transition: border-color .2s;
+    }
+    .flow-step:hover { border-color: rgba(0,207,253,0.3); }
+    .flow-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, var(--ocean), var(--cyan));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .flow-body { flex: 1; }
+    .flow-step-num {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--cyan);
+      margin-bottom: 4px;
+    }
+    .flow-step-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+    .flow-step-desc {
+      font-size: 13px;
+      color: var(--gray-400);
+      line-height: 1.5;
+    }
+    .flow-connector {
+      display: flex;
+      justify-content: flex-start;
+      padding-left: 39px;
+    }
+    .flow-connector-line {
+      width: 2px;
+      height: 16px;
+      background: linear-gradient(to bottom, var(--ocean), transparent);
+      border-radius: 2px;
+    }
+
+    /* ============================================================
+       FEATURES GRID
+    ============================================================ */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .feature-item {
+      background: var(--navy-card);
+      border: 1px solid rgba(0,207,253,0.10);
+      border-radius: 10px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .feature-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .feature-text {
+      font-size: 13.5px;
+      color: var(--gray-200);
+      line-height: 1.45;
+    }
+    .feature-text strong {
+      display: block;
+      color: var(--white);
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    /* ============================================================
+       MODALITIES & CONFIG — TWO COLUMN LIST
+    ============================================================ */
+    .two-col-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 24px;
+    }
+    .list-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--gray-200);
+      line-height: 1.45;
+    }
+    .list-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--cyan);
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 6px;
+    }
+
+    /* ============================================================
+       DELIVERABLES (what school receives)
+    ============================================================ */
+    .deliverables {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .deliverable-card {
+      background: linear-gradient(135deg,
+                  rgba(0,112,243,0.12) 0%, rgba(0,207,253,0.06) 100%);
+      border: 1px solid rgba(0,207,253,0.20);
+      border-radius: 10px;
+      padding: 20px 18px;
+      text-align: center;
+    }
+    .deliverable-icon { font-size: 28px; margin-bottom: 10px; }
+    .deliverable-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--white);
+      line-height: 1.4;
+    }
+
+    /* ============================================================
+       PRICING TABLE
+    ============================================================ */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 4px;
+    }
+    .plan-card {
+      background: var(--navy-card);
+      border: 1px solid rgba(0,207,253,0.14);
+      border-radius: var(--radius);
+      padding: 28px 22px;
+      text-align: center;
+      position: relative;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .plan-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(0,112,243,0.2);
+    }
+    .plan-card.featured {
+      border-color: var(--ocean);
+      background: linear-gradient(180deg,
+                  rgba(0,112,243,0.18) 0%, var(--navy-card) 60%);
+    }
+    .plan-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--ocean), var(--cyan));
+      color: var(--white);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .plan-name {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--cyan);
+      margin-bottom: 16px;
+    }
+    .plan-setup {
+      font-size: 30px;
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .plan-setup-label {
+      font-size: 11px;
+      color: var(--gray-400);
+      margin-bottom: 18px;
+    }
+    .plan-commission {
+      background: rgba(0,207,253,0.1);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 18px;
+    }
+    .plan-commission-pct {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--cyan);
+    }
+    .plan-commission-label {
+      font-size: 11px;
+      color: var(--gray-400);
+    }
+    .plan-ideal {
+      font-size: 12.5px;
+      color: var(--gray-400);
+      line-height: 1.45;
+      font-style: italic;
+    }
+    .pricing-note {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 12.5px;
+      color: var(--gray-400);
+    }
+    .pricing-note strong { color: var(--green); }
+
+    /* ============================================================
+       DEMO LINKS
+    ============================================================ */
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .demo-card {
+      background: var(--navy-card);
+      border: 1px solid rgba(0,207,253,0.12);
+      border-radius: 10px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .demo-card-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gray-400);
+    }
+    .demo-card-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--white);
+    }
+    .demo-card a {
+      font-size: 12px;
+      color: var(--cyan);
+      text-decoration: none;
+      word-break: break-all;
+      transition: opacity .2s;
+    }
+    .demo-card a:hover { opacity: 0.75; text-decoration: underline; }
+    .demo-credentials {
+      margin-top: 16px;
+      background: rgba(0,207,253,0.06);
+      border: 1px solid rgba(0,207,253,0.18);
+      border-radius: 10px;
+      padding: 16px 22px;
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .cred-item { display: flex; flex-direction: column; gap: 3px; }
+    .cred-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gray-400);
+    }
+    .cred-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--cyan);
+      font-family: monospace;
+    }
+
+    /* ============================================================
+       NEXT STEPS
+    ============================================================ */
+    .steps-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .timeline-item {
+      display: flex;
+      gap: 20px;
+      padding-bottom: 0;
+    }
+    .timeline-left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .timeline-circle {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--ocean), var(--cyan));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--white);
+      flex-shrink: 0;
+    }
+    .timeline-line {
+      width: 2px;
+      flex: 1;
+      min-height: 20px;
+      background: linear-gradient(to bottom, rgba(0,112,243,0.5), rgba(0,207,253,0.1));
+      margin: 4px 0;
+    }
+    .timeline-item:last-child .timeline-line { display: none; }
+    .timeline-body {
+      padding: 6px 0 24px;
+      flex: 1;
+    }
+    .timeline-title {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 3px;
+    }
+    .timeline-desc {
+      font-size: 13px;
+      color: var(--gray-400);
+    }
+
+    /* ============================================================
+       FOOTER / CONTACT
+    ============================================================ */
+    .footer {
+      border-top: 1px solid rgba(0,207,253,0.15);
+      margin-top: 60px;
+      padding-top: 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: gap;
+      gap: 20px;
+    }
+    .footer-brand {
+      font-size: 20px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--white), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .footer-tagline {
+      font-size: 12px;
+      color: var(--gray-400);
+      margin-top: 4px;
+    }
+    .contact-grid {
+      display: flex;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+    .contact-item { display: flex; flex-direction: column; gap: 3px; }
+    .contact-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gray-400);
+    }
+    .contact-value {
+      font-size: 13.5px;
+      color: var(--cyan);
+      font-weight: 600;
+    }
+    .footer-copy {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 11px;
+      color: rgba(148,163,184,0.5);
+      letter-spacing: 0.03em;
+    }
+
+    /* ============================================================
+       PRINT STYLES
+    ============================================================ */
+    @media print {
+      @page {
+        size: A4;
+        margin: 18mm 18mm 18mm 18mm;
+      }
+
+      #print-bar { display: none !important; }
+
+      body {
+        background: #fff !important;
+        color: #111 !important;
+        font-size: 11pt;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .wrapper { max-width: 100%; padding: 0; }
+
+      .hero {
+        background: none !important;
+        border-bottom: 2px solid #0070F3;
+        padding: 24px 0 20px;
+        margin-bottom: 30px;
+      }
+      .hero h1 {
+        background: none !important;
+        -webkit-text-fill-color: #050D1A !important;
+        color: #050D1A !important;
+        font-size: 26pt;
+      }
+      .hero-sub { color: #333 !important; }
+      .hero-meta { color: #666 !important; }
+      .hero-badge {
+        background: #e0f2fe !important;
+        border-color: #0070F3 !important;
+        color: #0070F3 !important;
+      }
+
+      .card, .flow-step, .feature-item, .plan-card,
+      .demo-card, .deliverable-card {
+        background: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .card p, .flow-step-desc, .feature-text,
+      .list-item, .timeline-desc { color: #334155 !important; }
+
+      .section-title, .flow-step-title, .feature-text strong,
+      .deliverable-title, .plan-setup, .timeline-title { color: #050D1A !important; }
+
+      .section-num, .flow-icon, .timeline-circle {
+        background: #0070F3 !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .flow-step-num, .demo-card-label, .cred-label,
+      .contact-label, .plan-commission-label { color: #64748b !important; }
+
+      .plan-commission { background: #e0f2fe !important; }
+      .plan-commission-pct { color: #0070F3 !important; }
+      .plan-name { color: #0070F3 !important; }
+      .plan-ideal { color: #475569 !important; }
+      .pricing-note { color: #475569 !important; }
+
+      .demo-credentials {
+        background: #f0f9ff !important;
+        border-color: #0070F3 !important;
+      }
+      .cred-value, .demo-card a, .contact-value { color: #0070F3 !important; }
+
+      .section-header { border-bottom-color: #0070F3; }
+      .list-dot { background: #0070F3 !important; }
+      .highlight-box {
+        background: #f0f9ff !important;
+        border-left-color: #0070F3 !important;
+        color: #334155 !important;
+      }
+
+      .footer {
+        border-top-color: #0070F3;
+        margin-top: 30px;
+        padding-top: 20px;
+      }
+      .footer-brand {
+        background: none !important;
+        -webkit-text-fill-color: #050D1A !important;
+        color: #050D1A !important;
+      }
+      .footer-tagline { color: #64748b !important; }
+      .footer-copy { color: #94a3b8 !important; }
+
+      .plan-card.featured { background: #f0f9ff !important; }
+
+      a { color: #0070F3 !important; text-decoration: underline; }
+
+      .section { page-break-inside: avoid; }
+      .pricing-grid { page-break-inside: avoid; }
+      .flow { page-break-inside: avoid; }
+    }
+
+    /* ============================================================
+       RESPONSIVE (screen only, for smaller laptops)
+    ============================================================ */
+    @media screen and (max-width: 680px) {
+      .wrapper { padding: 0 18px 60px; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .two-col-list { grid-template-columns: 1fr; }
+      .features-grid { grid-template-columns: 1fr; }
+      .footer { flex-direction: column; align-items: flex-start; }
+      #print-bar { padding: 10px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     PRINT BAR
+============================================================ -->
+<div id="print-bar">
+  <span class="brand">SurfBook — Proposta Comercial</span>
+  <button onclick="window.print()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+         stroke-linejoin="round">
+      <polyline points="6 9 6 2 18 2 18 9"/>
+      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+      <rect x="6" y="14" width="12" height="8"/>
+    </svg>
+    Imprimir / Guardar PDF
+  </button>
+</div>
+
+<!-- ============================================================
+     MAIN WRAPPER
+============================================================ -->
+<div class="wrapper">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">🌊 Proposta Comercial — Confidencial</div>
+    <h1>SurfBook</h1>
+    <p class="hero-sub">
+      A plataforma digital completa para escolas de surf — reservas online 24h/dia,
+      gestão simplificada e integração WhatsApp automática.
+    </p>
+    <div class="hero-meta">
+      Preparado para: <span>Escolas de Surf · Algarve / Portugal</span>
+      &nbsp;|&nbsp;
+      Data: <span>Junho 2026</span>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECÇÃO 1 — O QUE É
+  ============================================================ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">01</div>
+      <div class="section-title">O que é o SurfBook</div>
+    </div>
+    <div class="card">
+      <p>
+        O <strong>SurfBook</strong> é um sistema completo de gestão de marcações online
+        criado especificamente para escolas de surf. Permite que os seus clientes
+        reservem aulas <strong>24 horas por dia, 7 dias por semana</strong> diretamente
+        através do website da escola ou via WhatsApp — sem necessidade de telefonemas
+        ou mensagens manuais.
+      </p>
+      <p>
+        O dono e a sua equipa gerem tudo num <strong>dashboard intuitivo</strong>: confirmam
+        reservas, consultam o briefing diário, preparam o equipamento certo e acompanham
+        o desempenho do negócio em tempo real.
+      </p>
+      <div class="highlight-box">
+        💡 <strong>O objetivo:</strong> Poupar tempo, eliminar erros de comunicação,
+        aumentar a taxa de conversão de clientes e profissionalizar a imagem da escola —
+        tudo integrado com a ferramenta que já usa diariamente: o WhatsApp.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECÇÃO 2 — COMO FUNCIONA
+  ============================================================ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">02</div>
+      <div class="section-title">Como Funciona — Fluxo Completo</div>
+    </div>
+    <div class="flow">
+
+      <div class="flow-step">
+        <div class="flow-icon">🏄</div>
+        <div class="flow-body">
+          <div class="flow-step-num">Passo 1</div>
+          <div class="flow-step-title">Cliente acede ao site da escola</div>
+          <div class="flow-step-desc">
+            Escolhe o tipo de aula, a data, o horário e o número de participantes
+            — disponível em português, inglês, francês e alemão.
+          </div>
+        </div>
+      </div>
+      <div class="flow-connector"><div class="flow-connector-line"></div></div>
+
+      <div class="flow-step">
+        <div class="flow-icon">📋</div>
+        <div class="flow-body">
+          <div class="flow-step-num">Passo 2</div>
+          <div class="flow-step-title">Preenchimento automático de equipamento</div>
+          <div class="flow-step-desc">
+            O cliente indica peso, altura e género — o sistema calcula automaticamente
+            o tamanho do fato de surf, eliminando erros e poupando tempo na preparação.
+          </div>
+        </div>
+      </div>
+      <div class="flow-connector"><div class="flow-connector-line"></div></div>
+
+      <div class="flow-step">
+        <div class="flow-icon">💬</div>
+        <div class="flow-body">
+          <div class="flow-step-num">Passo 3</div>
+          <div class="flow-step-title">Reserva via WhatsApp com 1 clique</div>
+          <div class="flow-step-desc">
+            O cliente clica em "Reservar via WhatsApp" — é gerada automaticamente
+            uma mensagem pré-preenchida com todos os detalhes da reserva, enviada
+            diretamente para o número da escola.
+          </div>
+        </div>
+      </div>
+      <div class="flow-connector"><div class="flow-connector-line"></div></div>
+
+      <div class="flow-step">
+        <div class="flow-icon">🔔</div>
+        <div class="flow-body">
+          <div class="flow-step-num">Passo 4</div>
+          <div class="flow-step-title">Notificação imediata no dashboard</div>
+          <div class="flow-step-desc">
+            O dono recebe a marcação em tempo real no painel de administração e
+            no WhatsApp. Visão completa: aluno, aula, data, hora, equipamento necessário.
+          </div>
+        </div>
+      </div>
+      <div class="flow-connector"><div class="flow-connector-line"></div></div>
+
+      <div class="flow-step">
+        <div class="flow-icon">✅</div>
+        <div class="flow-body">
+          <div class="flow-step-num">Passo 5</div>
+          <div class="flow-step-title">Confirmação com 1 clique no painel</div>
+          <div class="flow-step-desc">
+            O dono confirma ou cancela a marcação diretamente no dashboard,
+            sem necessidade de responder manualmente a cada cliente.
+          </div>
+        </div>
+      </div>
+      <div class="flow-connector"><div class="flow-connector-line"></div></div>
+
+      <div class="flow-step">
+        <div class="flow-icon">📲</div>
+        <div class="flow-body">
+          <div class="flow-step-num">Passo 6</div>
+          <div class="flow-step-title">WA automático de confirmação ao cliente</div>
+          <div class="flow-step-desc">
+            O sistema envia automaticamente uma mensagem WhatsApp ao cliente com
+            a confirmação da reserva, o ponto de encontro e todas as instruções
+            necessárias — sem qualquer esforço adicional da escola.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECÇÃO 3 — FUNCIONALIDADES
+  ============================================================ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">03</div>
+      <div class="section-title">Principais Funcionalidades</div>
+    </div>
+    <div class="features-grid">
+
+      <div class="feature-item">
+        <div class="feature-icon">🌍</div>
+        <div class="feature-text">
+          <strong>Site Multi-idioma</strong>
+          Reservas em PT, EN, FR e DE — alcance clientes internacionais sem barreiras.
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon">📅</div>
+        <div class="feature-text">
+          <strong>Calendário Integrado</strong>
+          Disponibilidade em tempo real — clientes veem apenas slots livres.
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon">🩱</div>
+        <div class="feature-text">
+          <strong>Cálculo de Fatos Automático</strong>
+          Tamanho calculado por género, peso e altura. Sem erros, sem perguntas.
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon">📊</div>
+        <div class="feature-text">
+          <strong>Dashboard Executivo</strong>
+          Marcações do dia, semana e mês. KPIs visuais e claros para decisões rápidas.
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon">📋</div>
+        <div class="feature-text">
+          <strong>Briefing Diário</strong>
+          Lista de alunos com equipamento a preparar — a escola começa o dia organizada.
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon">💬</div>
+        <div class="feature-text">
+          <strong>WhatsApp Automático</strong>
+          Notificações bidirecionais escola ↔ cliente sem qualquer intervenção manual.
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon">✔️</div>
+        <div class="feature-text">
+          <strong>Confirmar / Cancelar com 1 Clique</strong>
+          Gestão de marcações simples e rápida, em qualquer dispositivo.
+        </div>
+      </div>
+
+      <div class="feature-item">
+        <div class="feature-icon">🏢</div>
+        <div class="feature-text">
+          <strong>Painel Super-Admin</strong>
+          Gestão centralizada de múltiplas escolas numa única plataforma.
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECÇÃO 4 — MODALIDADES
+  ============================================================ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">04</div>
+      <div class="section-title">Modalidades de Aula Suportadas</div>
+    </div>
+    <div class="card">
+      <div class="two-col-list">
+        <div class="list-item"><div class="list-dot"></div>Surf Iniciação</div>
+        <div class="list-item"><div class="list-dot"></div>Surf Avançado</div>
+        <div class="list-item"><div class="list-dot"></div>Stand Up Paddle (SUP)</div>
+        <div class="list-item"><div class="list-dot"></div>Bodyboard</div>
+        <div class="list-item"><div class="list-dot"></div>Aulas Privadas (preço fixo)</div>
+        <div class="list-item"><div class="list-dot"></div>Aulas de Grupo (preço por pessoa)</div>
+        <div class="list-item"><div class="list-dot"></div>Mínimo de participantes configurável</div>
+        <div class="list-item"><div class="list-dot"></div>Máximo de participantes por slot</div>
+      </div>
+      <div class="highlight-box" style="margin-top:20px;">
+        Todas as modalidades e preços são <strong>100% configuráveis</strong> pela escola —
+        sem necessidade de intervenção técnica após a configuração inicial.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECÇÃO 5 — CONFIGURAÇÃO
+  ============================================================ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">05</div>
+      <div class="section-title">O que é Personalizável para a sua Escola</div>
+    </div>
+    <div class="card">
+      <div class="two-col-list">
+        <div class="list-item"><div class="list-dot"></div>Nome e logo da escola</div>
+        <div class="list-item"><div class="list-dot"></div>Número de WhatsApp da escola</div>
+        <div class="list-item"><div class="list-dot"></div>Tipos de aulas e respetivos preços</div>
+        <div class="list-item"><div class="list-dot"></div>Horários disponíveis (slots diários)</div>
+        <div class="list-item"><div class="list-dot"></div>Capacidade máxima por slot</div>
+        <div class="list-item"><div class="list-dot"></div>Ponto de encontro e instruções</div>
+        <div class="list-item"><div class="list-dot"></div>Idiomas disponíveis no site</div>
+        <div class="list-item"><div class="list-dot"></div>Comissão da plataforma (negociável)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECÇÃO 6 — O QUE A ESCOLA RECEBE
+  ============================================================ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">06</div>
+      <div class="section-title">O que a Escola Recebe</div>
+    </div>
+    <div class="deliverables">
+
+      <div class="deliverable-card">
+        <div class="deliverable-icon">🌐</div>
+        <div class="deliverable-title">Site próprio de reservas com URL dedicado</div>
+      </div>
+
+      <div class="deliverable-card">
+        <div class="deliverable-icon">🖥️</div>
+        <div class="deliverable-title">Painel de administração exclusivo</div>
+      </div>
+
+      <div class="deliverable-card">
+        <div class="deliverable-icon">📊</div>
+        <div class="deliverable-title">Dashboard de marcações em tempo real</div>
+      </div>
+
+      <div class="deliverable-card">
+        <div class="deliverable-icon">🛠️</div>
+        <div class="deliverable-title">Suporte na configuração inicial incluído</div>
+      </div>
+
+      <div class="deliverable-card">
+        <div class="deliverable-icon">💬</div>
+        <div class="deliverable-title">WhatsApp Business integrado sem custos extra</div>
+      </div>
+
+      <div class="deliverable-card">
+        <div class="deliverable-icon">🎓</div>
+        <div class="deliverable-title">Formação ao dono e staff incluída</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECÇÃO 7 — PREÇOS
+  ============================================================ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">07</div>
+      <div class="section-title">Modelo de Negócio &amp; Planos</div>
+    </div>
+    <div class="pricing-grid">
+
+      <div class="plan-card">
+        <div class="plan-name">Starter</div>
+        <div class="plan-setup">Grátis</div>
+        <div class="plan-setup-label">Setup inicial</div>
+        <div class="plan-commission">
+          <div class="plan-commission-pct">8%</div>
+          <div class="plan-commission-label">por marcação confirmada</div>
+        </div>
+        <div class="plan-ideal">
+          Ideal para escolas pequenas com menos de 50 aulas/mês.
+          Começa sem investimento inicial.
+        </div>
+      </div>
+
+      <div class="plan-card featured">
+        <div class="plan-badge">Mais Popular</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-setup">€200</div>
+        <div class="plan-setup-label">Setup inicial (único)</div>
+        <div class="plan-commission">
+          <div class="plan-commission-pct">5%</div>
+          <div class="plan-commission-label">por marcação confirmada</div>
+        </div>
+        <div class="plan-ideal">
+          Para escolas médias com 50 a 200 aulas/mês.
+          Retorno do investimento já no 1.º mês.
+        </div>
+      </div>
+
+      <div class="plan-card">
+        <div class="plan-name">Premium</div>
+        <div class="plan-setup">€500</div>
+        <div class="plan-setup-label">Setup inicial (único)</div>
+        <div class="plan-commission">
+          <div class="plan-commission-pct">3%</div>
+          <div class="plan-commission-label">por marcação confirmada</div>
+        </div>
+        <div class="plan-ideal">
+          Para escolas grandes com mais de 200 aulas/mês.
+          Máxima poupança em comissões.
+        </div>
+      </div>
+
+    </div>
+    <p class="pricing-note">
+      <strong>✓ Comissão cobrada apenas sobre marcações efetivamente confirmadas e pagas.</strong>
+      Sem mensalidades fixas. Sem risco.
+    </p>
+  </section>
+
+  <!-- ============================================================
+       SECÇÃO 8 — DEMONSTRAÇÃO
+  ============================================================ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">08</div>
+      <div class="section-title">Links de Demonstração</div>
+    </div>
+    <div class="demo-grid">
+
+      <div class="demo-card">
+        <div class="demo-card-label">Site de Reservas</div>
+        <div class="demo-card-title">Portal do Cliente</div>
+        <a href="https://auditoria-25b.pages.dev/surf-school/" target="_blank">
+          auditoria-25b.pages.dev/surf-school/
+        </a>
+      </div>
+
+      <div class="demo-card">
+        <div class="demo-card-label">Gestão da Escola</div>
+        <div class="demo-card-title">Painel Admin</div>
+        <a href="https://auditoria-25b.pages.dev/admin.html" target="_blank">
+          auditoria-25b.pages.dev/admin.html
+        </a>
+      </div>
+
+      <div class="demo-card">
+        <div class="demo-card-label">Gestão Multi-escola</div>
+        <div class="demo-card-title">Super Admin</div>
+        <a href="https://auditoria-25b.pages.dev/super-admin.html" target="_blank">
+          auditoria-25b.pages.dev/super-admin.html
+        </a>
+      </div>
+
+    </div>
+    <div class="demo-credentials">
+      <div class="cred-item">
+        <div class="cred-label">Email de Acesso Demo</div>
+        <div class="cred-value">ivocasimiro@gmail.com</div>
+      </div>
+      <div class="cred-item">
+        <div class="cred-label">Password Demo</div>
+        <div class="cred-value">Teste2025!</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECÇÃO 9 — PRÓXIMOS PASSOS
+  ============================================================ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-num">09</div>
+      <div class="section-title">Próximos Passos</div>
+    </div>
+    <div class="card">
+      <div class="steps-timeline">
+
+        <div class="timeline-item">
+          <div class="timeline-left">
+            <div class="timeline-circle">1</div>
+            <div class="timeline-line"></div>
+          </div>
+          <div class="timeline-body">
+            <div class="timeline-title">Reunião de apresentação (30 min)</div>
+            <div class="timeline-desc">
+              Vemos a plataforma em conjunto, respondemos a todas as questões
+              e percebemos as necessidades específicas da escola.
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-left">
+            <div class="timeline-circle">2</div>
+            <div class="timeline-line"></div>
+          </div>
+          <div class="timeline-body">
+            <div class="timeline-title">Configuração personalizada para a escola (1-2 dias)</div>
+            <div class="timeline-desc">
+              Criamos o site de reservas com as aulas, preços, horários, logo
+              e WhatsApp da escola. Totalmente personalizado.
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-left">
+            <div class="timeline-circle">3</div>
+            <div class="timeline-line"></div>
+          </div>
+          <div class="timeline-body">
+            <div class="timeline-title">Formação ao dono e staff (1 hora)</div>
+            <div class="timeline-desc">
+              Sessão prática para dominar o dashboard, gerir marcações e usar
+              todas as funcionalidades do sistema.
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-left">
+            <div class="timeline-circle">4</div>
+            <div class="timeline-line"></div>
+          </div>
+          <div class="timeline-body">
+            <div class="timeline-title">Lançamento do site de reservas</div>
+            <div class="timeline-desc">
+              A escola fica online e começa a receber reservas digitais imediatamente.
+              Partilhamos o link nas redes sociais e Google.
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-left">
+            <div class="timeline-circle">5</div>
+            <div class="timeline-line"></div>
+          </div>
+          <div class="timeline-body">
+            <div class="timeline-title">Acompanhamento nos primeiros 30 dias (incluído)</div>
+            <div class="timeline-desc">
+              Suporte direto via WhatsApp. Ajustes, otimizações e resposta rápida
+              a qualquer questão durante o primeiro mês.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FOOTER
+  ============================================================ -->
+  <footer>
+    <div class="footer">
+      <div>
+        <div class="footer-brand">SurfBook</div>
+        <div class="footer-tagline">Plataforma Digital de Marcações para Escolas de Surf</div>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-item">
+          <div class="contact-label">Contacto</div>
+          <div class="contact-value">Ivo Casimiro</div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-label">Email</div>
+          <div class="contact-value">ivo@despomar.com</div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-label">Telefone / WhatsApp</div>
+          <div class="contact-value">+351 962 800 400</div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-copy">
+      Documento confidencial — Proposta comercial SurfBook · 2026
+    </div>
+  </footer>
+
+</div><!-- /wrapper -->
+
+</body>
+</html>
