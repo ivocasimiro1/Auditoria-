@@ -92,6 +92,12 @@
       font-family: 'Inter', sans-serif; transition: all .2s;
     }
     .btn-logout:hover { border-color: var(--red); color: var(--red); }
+    .btn-change-pass {
+      padding: .4rem .6rem; background: transparent;
+      border: 1px solid var(--border); border-radius: 8px;
+      font-size: .95rem; cursor: pointer; transition: all .2s; line-height:1;
+    }
+    .btn-change-pass:hover { border-color: var(--cyan); background: rgba(0,207,253,.1); }
 
     /* Main content */
     .dash-content { flex: 1; padding: 2rem; max-width: 1400px; width: 100%; margin: 0 auto; }
@@ -268,13 +274,34 @@
 
   <!-- Top Bar -->
   <div class="topbar">
-    <div class="topbar-logo">Arrifana <span>Surf</span> Academy</div>
+    <div id="topbar-logo" class="topbar-logo">Arrifana <span>Surf</span> Academy</div>
     <div class="topbar-right">
       <div class="user-info">
         <div class="user-email" id="user-email"></div>
         <div class="user-role" id="user-role"></div>
       </div>
+      <button class="btn-change-pass" onclick="showChangePass()" title="Alterar password">🔑</button>
       <button class="btn-logout" onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div id="pass-modal" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+    <div style="background:#0A1929;border:1px solid var(--border);border-radius:20px;padding:2rem;width:100%;max-width:380px;margin:1rem">
+      <h3 style="margin-bottom:1.2rem;font-size:1.1rem">🔑 Alterar Password</h3>
+      <div class="form-group">
+        <label>Nova password</label>
+        <input type="password" id="new-pass" placeholder="mínimo 6 caracteres" style="background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem;color:var(--white);font-family:'Inter',sans-serif;font-size:.95rem;outline:none;width:100%;transition:border-color .2s" />
+      </div>
+      <div class="form-group">
+        <label>Confirmar nova password</label>
+        <input type="password" id="new-pass2" placeholder="repetir password" style="background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem;color:var(--white);font-family:'Inter',sans-serif;font-size:.95rem;outline:none;width:100%;transition:border-color .2s" />
+      </div>
+      <div id="pass-msg" style="font-size:.83rem;margin-bottom:.8rem;display:none"></div>
+      <div style="display:flex;gap:.8rem">
+        <button onclick="doChangePass()" style="flex:1;padding:.8rem;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;border-radius:10px;color:white;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Guardar</button>
+        <button onclick="hideChangePass()" style="padding:.8rem 1.2rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-family:'Inter',sans-serif">Cancelar</button>
+      </div>
     </div>
   </div>
 
@@ -458,6 +485,12 @@
     document.getElementById('dash-wrap').style.display  = 'block';
     document.getElementById('user-email').textContent   = currentUser.email;
     document.getElementById('user-role').textContent    = isAdmin() ? '👑 Administrador' : '🏄 Dono da Escola';
+
+    // Dynamic topbar logo: admin sees their name, school owner sees school name
+    if (isAdmin()) {
+      document.getElementById('topbar-logo').innerHTML = 'Ivo <span>Casimiro</span> · Admin';
+    }
+
     if (!isAdmin()) {
       document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
     }
@@ -621,6 +654,42 @@
     t.textContent = msg;
     t.className = `toast toast-${type} show`;
     setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  // ── PASSWORD CHANGE ───────────────────────────────────────────
+  function showChangePass() {
+    document.getElementById('pass-modal').style.display = 'flex';
+    document.getElementById('new-pass').value  = '';
+    document.getElementById('new-pass2').value = '';
+    document.getElementById('pass-msg').style.display = 'none';
+    setTimeout(() => document.getElementById('new-pass').focus(), 100);
+  }
+
+  function hideChangePass() {
+    document.getElementById('pass-modal').style.display = 'none';
+  }
+
+  async function doChangePass() {
+    const p1  = document.getElementById('new-pass').value;
+    const p2  = document.getElementById('new-pass2').value;
+    const msg = document.getElementById('pass-msg');
+    msg.style.display = 'block';
+
+    if (p1.length < 6) {
+      msg.style.color = '#fca5a5'; msg.textContent = 'A password deve ter pelo menos 6 caracteres.'; return;
+    }
+    if (p1 !== p2) {
+      msg.style.color = '#fca5a5'; msg.textContent = 'As passwords não coincidem.'; return;
+    }
+    msg.style.color = '#8B9AB0'; msg.textContent = 'A guardar...';
+
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    if (error) {
+      msg.style.color = '#fca5a5'; msg.textContent = 'Erro: ' + error.message;
+    } else {
+      hideChangePass();
+      showToast('✅ Password alterada com sucesso!', 'success');
+    }
   }
 
   init();
