@@ -345,9 +345,19 @@
 
     <!-- Filters -->
     <div class="filters-bar">
+      <div class="filter-group admin-only" id="fg-school" style="display:none">
+        <span class="filter-label">Escola</span>
+        <select id="f-school" class="filter-select" onchange="loadBookings()">
+          <option value="">Todas</option>
+        </select>
+      </div>
       <div class="filter-group">
         <span class="filter-label">Mês</span>
-        <input type="month" id="f-month" class="filter-input" onchange="applyFilters()" />
+        <input type="month" id="f-month" class="filter-input" onchange="clearDayFilter();applyFilters()" />
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Dia</span>
+        <input type="date" id="f-date" class="filter-input" onchange="applyFilters()" />
       </div>
       <div class="filter-group">
         <span class="filter-label">Estado</span>
@@ -414,6 +424,11 @@
 
   let currentUser = null;
   let allBookings = [];
+
+  // Adicionar novas escolas aqui quando forem integradas
+  const SCHOOLS = [
+    { id: 'arrifana-surf-academy', name: 'Arrifana Surf Academy' },
+  ];
 
   const STATUS = {
     pending:   { label: 'Pendente',   cls: 'status-pending'   },
@@ -486,12 +501,17 @@
     document.getElementById('user-email').textContent   = currentUser.email;
     document.getElementById('user-role').textContent    = isAdmin() ? '👑 Administrador' : '🏄 Dono da Escola';
 
-    // Dynamic topbar logo: admin sees their name, school owner sees school name
     if (isAdmin()) {
       document.getElementById('topbar-logo').innerHTML = 'Ivo <span>Casimiro</span> · Admin';
-    }
-
-    if (!isAdmin()) {
+      // Show school filter and populate it
+      document.getElementById('fg-school').style.display = 'flex';
+      const sel = document.getElementById('f-school');
+      SCHOOLS.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id; opt.textContent = s.name;
+        sel.appendChild(opt);
+      });
+    } else {
       document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
     }
     setDefaultFilters();
@@ -503,10 +523,14 @@
     document.getElementById('bookings-tbody').innerHTML =
       `<tr><td colspan="9" class="loading"><div class="spinner"></div><br>A carregar...</td></tr>`;
 
-    const { data, error } = await sb
-      .from('bookings')
-      .select('*')
-      .eq('school_id', 'arrifana-surf-academy')
+    const schoolSel = document.getElementById('f-school');
+    const schoolId  = schoolSel ? schoolSel.value : 'arrifana-surf-academy';
+
+    let query = sb.from('bookings').select('*');
+    if (schoolId) {
+      query = query.eq('school_id', schoolId);
+    }
+    const { data, error } = await query
       .order('booking_date', { ascending: false })
       .order('booking_time',  { ascending: true  });
 
@@ -524,19 +548,25 @@
 
   function applyFilters() {
     const month  = document.getElementById('f-month').value;
+    const day    = document.getElementById('f-date').value;  // YYYY-MM-DD
     const status = document.getElementById('f-status').value;
     const search = document.getElementById('f-search').value.toLowerCase();
 
     const filtered = allBookings.filter(b => {
-      if (month  && !b.booking_date.startsWith(month)) return false;
-      if (status && b.status !== status)               return false;
+      if (day    && b.booking_date !== day)                  return false;  // day overrides month
+      if (!day && month && !b.booking_date.startsWith(month)) return false;
+      if (status && b.status !== status)                     return false;
       if (search && !b.client_name.toLowerCase().includes(search) &&
-                    !b.client_phone.includes(search))  return false;
+                    !b.client_phone.includes(search))        return false;
       return true;
     });
 
-    renderStats(month);
+    renderStats(day ? null : month);
     renderTable(filtered);
+  }
+
+  function clearDayFilter() {
+    document.getElementById('f-date').value = '';
   }
 
   function renderStats(monthFilter) {
@@ -643,10 +673,10 @@
     const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     document.getElementById('f-status').value = '';
     document.getElementById('f-search').value = '';
-    const filtered = allBookings.filter(b => b.booking_date === todayStr);
-    renderStats(null);
-    renderTable(filtered);
-    document.getElementById('table-count').textContent = `Hoje · ${filtered.length} marcação${filtered.length !== 1 ? 'ões' : ''}`;
+    document.getElementById('f-date').value   = todayStr;
+    applyFilters();
+    document.getElementById('table-count').textContent =
+      `Hoje · ${allBookings.filter(b=>b.booking_date===todayStr).length} marcação${allBookings.filter(b=>b.booking_date===todayStr).length!==1?'ões':''}`;
   }
 
   function showToast(msg, type = 'success') {
