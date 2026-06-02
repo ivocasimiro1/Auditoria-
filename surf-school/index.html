@@ -35,10 +35,20 @@
     nav ul{display:flex;gap:1.8rem;list-style:none}
     nav a{color:var(--gray);text-decoration:none;font-size:.86rem;font-weight:500;transition:color .2s}
     nav a:hover{color:var(--white)}
+    nav a.active{color:var(--white);font-weight:600}
     .nav-cta{background:var(--gold);color:var(--navy)!important;padding:.42rem 1.2rem;border-radius:50px;font-weight:700!important;transition:box-shadow .2s,transform .2s!important}
-    .nav-cta:hover{box-shadow:0 4px 20px rgba(201,168,76,.4);transform:translateY(-1px)}
+    .nav-cta:hover,.nav-cta.active{box-shadow:0 4px 20px rgba(201,168,76,.4);transform:translateY(-1px);color:var(--navy)!important}
     .hbg{display:none;cursor:pointer;flex-direction:column;gap:5px;background:none;border:none;padding:.3rem}
-    .hbg span{display:block;width:24px;height:2px;background:var(--white);border-radius:2px}
+    .hbg span{display:block;width:24px;height:2px;background:var(--white);border-radius:2px;transition:all .3s}
+    .hbg.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+    .hbg.open span:nth-child(2){opacity:0}
+    .hbg.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+    .nav-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:98;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .3s}
+    .nav-overlay.open{opacity:1;pointer-events:all}
+    /* Visitor counter */
+    .vc{display:flex;align-items:center;gap:.35rem;font-size:.75rem;color:var(--gray)}
+    .vc-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:vcpulse 2s infinite;flex-shrink:0}
+    @keyframes vcpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
 
     /* HERO */
     .hero{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
@@ -67,7 +77,7 @@
     @keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(7px)}}
 
     /* SECTIONS */
-    section{padding:6rem 5%}
+    section{padding:6rem 5%;scroll-margin-top:90px}
     .section-tag{display:inline-block;font-size:.68rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem}
     .section-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4.5vw,3rem);line-height:1.12;margin-bottom:1rem;font-weight:700}
     .section-sub{color:var(--gray);font-size:.97rem;line-height:1.75;max-width:560px}
@@ -306,6 +316,8 @@
 </head>
 <body>
 
+<div class="nav-overlay" id="nav-overlay" onclick="closeMenu()"></div>
+
 <!-- CONDITIONS BAR -->
 <div class="cb">
   <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center">
@@ -318,6 +330,8 @@
     <div class="ci">⬆ <span data-t="cond_tide"></span>: <span class="cv" id="next-tide-val">—</span></div>
     <span style="color:var(--border)">·</span>
     <div class="ci">🕐 <span data-t="cond_pt"></span>: <span class="cv" id="pt-time">—</span></div>
+    <span style="color:var(--border)">·</span>
+    <div class="vc"><span class="vc-dot"></span>👥 <span id="visitor-count">—</span></div>
   </div>
   <div class="ls">
     <button class="lb active" onclick="setLang('pt')">PT</button>
@@ -1215,19 +1229,31 @@ async function reservarWhatsApp() {
 // ── MENU ──────────────────────────────────────────────────────────────────────
 function toggleMenu() {
   const ul = document.querySelector('nav ul');
-  const open = ul.style.display === 'flex';
-  if (open) {
-    ul.style.display = 'none';
-  } else {
-    Object.assign(ul.style, {
-      display:'flex', flexDirection:'column', position:'absolute',
-      top:'100%', left:'0', right:'0',
-      background:'rgba(6,13,27,0.98)', padding:'1.2rem 5%',
-      borderBottom:'1px solid rgba(255,255,255,0.1)', gap:'1rem',
-      zIndex:'99'
-    });
-  }
+  const hbg = document.querySelector('.hbg');
+  const overlay = document.getElementById('nav-overlay');
+  const isOpen = ul.classList.contains('mob-open');
+  if (isOpen) { closeMenu(); return; }
+  ul.classList.add('mob-open');
+  hbg.classList.add('open');
+  overlay.classList.add('open');
+  Object.assign(ul.style, {
+    display:'flex', flexDirection:'column', position:'fixed',
+    top:'90px', left:'0', right:'0', bottom:'0',
+    background:'rgba(6,13,27,0.98)', padding:'2rem 5%',
+    gap:'1.5rem', zIndex:'99', overflowY:'auto'
+  });
 }
+function closeMenu() {
+  const ul = document.querySelector('nav ul');
+  const hbg = document.querySelector('.hbg');
+  const overlay = document.getElementById('nav-overlay');
+  ul.classList.remove('mob-open');
+  hbg.classList.remove('open');
+  overlay.classList.remove('open');
+  ul.style.display = '';
+}
+// Fechar menu ao clicar num link
+document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', closeMenu));
 
 // ── ANIMATIONS ────────────────────────────────────────────────────────────────
 const obs = new IntersectionObserver(entries => {
@@ -1254,6 +1280,37 @@ setTimeout(() => {
   const hp = document.getElementById('hero-photo');
   if (hp) hp.classList.add('loaded');
 }, 150);
+
+// ── SCROLL SPY ────────────────────────────────────────────────────────────────
+const NAV_SECTIONS = ['home','sobre','praias','mares','galeria','aulas','avaliacoes','reservar','instrutores'];
+function updateScrollSpy() {
+  const scrollY = window.scrollY + 100;
+  let current = 'home';
+  NAV_SECTIONS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.offsetTop <= scrollY) current = id;
+  });
+  document.querySelectorAll('nav a').forEach(a => {
+    const href = a.getAttribute('href') || '';
+    a.classList.toggle('active', href === '#' + current || (current === 'home' && href === '#home'));
+  });
+}
+window.addEventListener('scroll', updateScrollSpy, { passive: true });
+updateScrollSpy();
+
+// ── VISITOR COUNTER ───────────────────────────────────────────────────────────
+(function() {
+  const BASE = 1247;
+  let extra = parseInt(localStorage.getItem('vc_extra') || '0');
+  if (!localStorage.getItem('vc_visited')) {
+    extra++;
+    localStorage.setItem('vc_extra', extra);
+    localStorage.setItem('vc_visited', '1');
+  }
+  const total = BASE + extra;
+  const el = document.getElementById('visitor-count');
+  if (el) el.textContent = total.toLocaleString('pt-PT') + ' visitantes';
+})();
 </script>
 </body>
 </html>
