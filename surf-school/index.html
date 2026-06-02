@@ -328,6 +328,11 @@
       .gi{height:240px}
       section{padding:4.5rem 5%}
     }
+    /* MOBILE DRAWER */
+    #mob-drawer{display:none;position:fixed;inset:0;background:#060D1B;z-index:200;flex-direction:column;padding:90px 8% 3rem;overflow-y:auto}
+    #mob-drawer.open{display:flex}
+    #mob-drawer a{color:#fff;font-size:1.5rem;font-weight:700;text-decoration:none;padding:1rem 0;border-bottom:1px solid rgba(255,255,255,.12);font-family:'Inter',sans-serif;letter-spacing:-.01em}
+    #mob-drawer a:last-child{border-bottom:none;margin-top:.5rem;background:var(--gold);color:#060D1B;text-align:center;border-radius:50px;padding:.8rem 2rem}
     .beach-selector{display:flex;gap:.5rem;overflow-x:auto;padding:.5rem 0 1rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem;scrollbar-width:none}
     .beach-selector::-webkit-scrollbar{display:none}
     .beach-btn{padding:.45rem 1rem;border-radius:50px;border:1px solid var(--border);background:transparent;color:var(--gray);font-size:.78rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;white-space:nowrap}
@@ -377,6 +382,15 @@
   </ul>
   <button class="hbg" onclick="toggleMenu()" aria-label="Menu"><span></span><span></span><span></span></button>
 </nav>
+
+<!-- MOBILE DRAWER -->
+<div id="mob-drawer">
+  <a href="#sobre"   onclick="closeMenu()" data-t="nav_sobre"></a>
+  <a href="#praias"  onclick="closeMenu()" data-t="nav_praias"></a>
+  <a href="#mares"   onclick="closeMenu()" data-t="nav_mares"></a>
+  <a href="#aulas"   onclick="closeMenu()" data-t="nav_aulas"></a>
+  <a href="#reservar" onclick="closeMenu()">Reservar</a>
+</div>
 
 <!-- HERO -->
 <section class="hero" id="home">
@@ -1385,24 +1399,18 @@ async function reservarWhatsApp() {
 
 // ── MENU ──────────────────────────────────────────────────────────────────────
 function toggleMenu() {
-  const ul      = document.querySelector('nav ul');
-  const hbg     = document.querySelector('.hbg');
-  const overlay = document.getElementById('nav-overlay');
-  const isOpen  = ul.classList.contains('mob-open');
-  if (isOpen) { closeMenu(); return; }
-  ul.classList.add('mob-open');
+  const drawer = document.getElementById('mob-drawer');
+  const hbg    = document.querySelector('.hbg');
+  if (drawer.classList.contains('open')) { closeMenu(); return; }
+  drawer.classList.add('open');
   hbg.classList.add('open');
-  overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 function closeMenu() {
-  const ul      = document.querySelector('nav ul');
-  const hbg     = document.querySelector('.hbg');
-  const overlay = document.getElementById('nav-overlay');
-  ul.classList.remove('mob-open');
+  const drawer = document.getElementById('mob-drawer');
+  const hbg    = document.querySelector('.hbg');
+  drawer.classList.remove('open');
   hbg.classList.remove('open');
-  overlay.classList.remove('open');
-  ul.style.cssText = '';
   document.body.style.overflow = '';
 }
 // Fechar menu ao clicar num link
