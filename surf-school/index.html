@@ -331,13 +331,13 @@
   <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center">
     <div class="ci" style="color:var(--gold);font-weight:600">📍 <span id="cond-beach-name">Meia Praia</span></div>
     <span style="color:var(--border)">·</span>
-    <div class="ci">🌊 <span data-t="cond_wave"></span>: <span class="cv cg" id="cond-wave-val">—</span></div>
+    <div class="ci">🌊 <span class="cv" id="cond-wave-val">—</span> <span id="cond-wave-quality"></span></div>
     <span style="color:var(--border)">·</span>
-    <div class="ci">💨 <span data-t="cond_wind"></span>: <span class="cv" id="cond-wind-val">—</span></div>
+    <div class="ci">💨 <span class="cv" id="cond-wind-val">—</span></div>
     <span style="color:var(--border)">·</span>
-    <div class="ci">🌡 <span data-t="cond_water"></span>: <span class="cv" id="cond-water-val">—</span></div>
+    <div class="ci">🌡 <span class="cv" id="cond-water-val">—</span></div>
     <span style="color:var(--border)">·</span>
-    <div class="ci">⬆ <span data-t="cond_tide"></span>: <span class="cv" id="next-tide-val">—</span></div>
+    <div class="ci"><span id="tide-direction" class="cv">—</span> <span style="opacity:.6;font-size:.7rem" id="tide-next-label">—</span> <span class="cv" id="next-tide-val" style="font-size:.7rem"></span></div>
     <span style="color:var(--border)">·</span>
     <div class="ci">🕐 <span data-t="cond_pt"></span>: <span class="cv" id="pt-time">—</span></div>
     <span style="color:var(--border)">·</span>
@@ -1063,29 +1063,52 @@ function degToCompass(d) {
   return dirs[Math.round(d / 22.5) % 16];
 }
 
+function waveQualityColor(wh) {
+  if (wh == null) return 'var(--gray)';
+  if (wh < 0.4)  return 'var(--gray)';
+  if (wh < 1.0)  return 'var(--green)';
+  if (wh < 2.0)  return 'var(--gold)';
+  if (wh < 3.0)  return '#f97316';
+  return 'var(--red)';
+}
+function waveQualityLabel(wh) {
+  if (wh == null) return '';
+  if (wh < 0.4)  return '●';
+  if (wh < 1.0)  return '● Bom iniciante';
+  if (wh < 2.0)  return '● Intermédio';
+  if (wh < 3.0)  return '● Avançado';
+  return '● Peritos';
+}
+
 async function fetchConditions(beach) {
-  const waveEl  = document.getElementById('cond-wave-val');
-  const windEl  = document.getElementById('cond-wind-val');
-  const waterEl = document.getElementById('cond-water-val');
-  if (waveEl)  waveEl.classList.add('cond-loading');
-  if (windEl)  windEl.classList.add('cond-loading');
-  if (waterEl) waterEl.classList.add('cond-loading');
+  const waveEl    = document.getElementById('cond-wave-val');
+  const waveQEl   = document.getElementById('cond-wave-quality');
+  const windEl    = document.getElementById('cond-wind-val');
+  const waterEl   = document.getElementById('cond-water-val');
+  [waveEl,windEl,waterEl].forEach(el => el && el.classList.add('cond-loading'));
   try {
     const [marine, weather] = await Promise.all([
-      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${beach.lat}&longitude=${beach.lon}&current=wave_height,wave_period,wave_direction&wind_speed_unit=kmh&timezone=Europe%2FLisbon`).then(r=>r.json()),
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${beach.lat}&longitude=${beach.lon}&current=wind_speed_10m,wind_direction_10m,temperature_2m&wind_speed_unit=kmh&timezone=Europe%2FLisbon`).then(r=>r.json())
+      fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${beach.lat}&longitude=${beach.lon}&current=wave_height,wave_period,wave_direction,sea_surface_temperature&wind_speed_unit=kmh&timezone=Europe%2FLisbon`).then(r=>r.json()),
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${beach.lat}&longitude=${beach.lon}&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=kmh&timezone=Europe%2FLisbon`).then(r=>r.json())
     ]);
     const wh  = marine.current?.wave_height;
+    const sst = marine.current?.sea_surface_temperature;
     const ws  = weather.current?.wind_speed_10m;
     const wd  = weather.current?.wind_direction_10m;
-    const tmp = weather.current?.temperature_2m;
-    if (waveEl)  { waveEl.textContent  = wh  != null ? `${wh.toFixed(1)}m` : '—'; waveEl.classList.remove('cond-loading'); }
-    if (windEl)  { windEl.textContent  = ws  != null ? `${degToCompass(wd)} ${Math.round(ws)}km/h` : '—'; windEl.classList.remove('cond-loading'); }
-    if (waterEl) { waterEl.textContent = tmp != null ? `${Math.round(tmp)}°C` : '—'; waterEl.classList.remove('cond-loading'); }
+    if (waveEl) {
+      waveEl.textContent = wh != null ? `${wh.toFixed(1)}m` : '—';
+      waveEl.style.color = waveQualityColor(wh);
+      waveEl.classList.remove('cond-loading');
+    }
+    if (waveQEl && wh != null) {
+      waveQEl.textContent  = waveQualityLabel(wh);
+      waveQEl.style.color  = waveQualityColor(wh);
+      waveQEl.style.fontSize = '.68rem';
+    }
+    if (windEl) { windEl.textContent  = ws != null ? `${degToCompass(wd)} ${Math.round(ws)}km/h` : '—'; windEl.classList.remove('cond-loading'); }
+    if (waterEl){ waterEl.textContent = sst != null ? `${sst.toFixed(1)}°C` : '—'; waterEl.classList.remove('cond-loading'); }
   } catch(e) {
-    if (waveEl)  { waveEl.textContent  = '—'; waveEl.classList.remove('cond-loading'); }
-    if (windEl)  { windEl.textContent  = '—'; windEl.classList.remove('cond-loading'); }
-    if (waterEl) { waterEl.textContent = '—'; waterEl.classList.remove('cond-loading'); }
+    [waveEl,windEl,waterEl].forEach(el => { if(el){ el.textContent='—'; el.classList.remove('cond-loading'); } });
   }
 }
 
@@ -1136,8 +1159,21 @@ function updateNextTide() {
   const tomorrowTurns = getDayTides(beach, tomorrowDate);
   const allTurns = [...todayTurns, ...tomorrowTurns];
   const next = allTurns.find(t => t.ms > now.getTime());
-  const el = document.getElementById('next-tide-val');
-  if (el && next) el.textContent = `${next.type==='H'?'↑':'↓'} ${next.time}`;
+  const prev = [...allTurns].reverse().find(t => t.ms <= now.getTime());
+
+  const dirEl   = document.getElementById('tide-direction');
+  const labelEl = document.getElementById('tide-next-label');
+  const nextEl  = document.getElementById('next-tide-val');
+
+  if (!next) return;
+
+  // If next event is HW → tide is currently RISING; if LW → FALLING
+  const rising = next.type === 'H';
+  const color  = rising ? 'var(--cyan)' : 'var(--gold)';
+
+  if (dirEl)   { dirEl.textContent  = rising ? '↑ A subir' : '↓ A descer'; dirEl.style.color = color; }
+  if (labelEl) { labelEl.textContent = rising ? '→ PM' : '→ BM'; }
+  if (nextEl)  { nextEl.textContent  = next.time; nextEl.style.color = color; }
 }
 
 function updateClock() {
