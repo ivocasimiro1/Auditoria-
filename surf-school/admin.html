@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -473,6 +474,49 @@
       .topbar { padding: .8rem 1rem; }
       .filters-bar { gap: .6rem; }
     }
+
+    /* ── ANALYTICS ── */
+    #analytics-section { margin-bottom: 1.5rem; }
+    .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.2rem; }
+    .chart-card-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--cyan); margin-bottom: .8rem; display: flex; align-items: center; justify-content: space-between; }
+    .chart-year-btns { display: flex; gap: .4rem; margin-bottom: 1rem; }
+    .chart-year-btn { padding: .3rem .8rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--gray); font-size: .78rem; cursor: pointer; font-family: 'Inter',sans-serif; }
+    .chart-year-btn.active { background: var(--cyan); border-color: var(--cyan); color: var(--navy); font-weight: 700; }
+    .btn-analytics { background: rgba(167,139,250,.12); border: 1px solid rgba(167,139,250,.3); color: #a78bfa; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
+
+    /* ── MANUAL BOOKING MODAL ── */
+    #manual-booking-modal-bg {
+      display: none; position: fixed; inset: 0; z-index: 950;
+      background: rgba(0,0,0,.7); backdrop-filter: blur(5px);
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    #manual-booking-modal-bg.open { display: flex; }
+    #manual-booking-modal {
+      background: #0A1929; border: 1px solid var(--border); border-radius: 20px;
+      padding: 1.8rem; width: 100%; max-width: 620px; max-height: 90vh; overflow-y: auto;
+    }
+    #manual-booking-modal h3 { font-size: 1rem; font-weight: 700; color: var(--cyan); margin-bottom: 1.4rem; }
+    .mb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; margin-bottom: 1.2rem; }
+    @media(max-width: 560px) { .mb-grid { grid-template-columns: 1fr; } }
+    .mb-field label { display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--cyan); margin-bottom: .4rem; }
+    .mb-field input, .mb-field select, .mb-field textarea {
+      width: 100%; padding: .6rem .85rem; background: #0d1f3c;
+      border: 1px solid var(--border); border-radius: 9px; color: var(--white);
+      font-size: .9rem; font-family: 'Inter',sans-serif; color-scheme: dark;
+    }
+    .mb-field input:focus, .mb-field select:focus, .mb-field textarea:focus { outline: none; border-color: var(--cyan); }
+    .mb-field select option { background: #0d1f3c; color: var(--white); }
+    .mb-field textarea { resize: vertical; min-height: 68px; }
+    .mb-field.full { grid-column: 1 / -1; }
+    .mb-actions { display: flex; gap: .7rem; margin-top: .4rem; }
+    .btn-nova-marcacao {
+      padding: .45rem 1rem; background: linear-gradient(135deg, var(--blue), var(--cyan));
+      border: none; border-radius: 8px; color: white; font-size: .82rem; font-weight: 600;
+      cursor: pointer; font-family: 'Inter', sans-serif; transition: transform .2s;
+      white-space: nowrap;
+    }
+    .btn-nova-marcacao:hover { transform: translateY(-1px); }
   </style>
 </head>
 <body>
@@ -512,6 +556,7 @@
         <div class="user-email" id="user-email"></div>
         <div class="user-role" id="user-role"></div>
       </div>
+      <button class="btn-nova-marcacao" onclick="openManualBooking()">+ Nova Marcação</button>
       <button class="btn-change-pass" onclick="showChangePass()" title="Alterar password">🔑</button>
       <button class="btn-logout" onclick="logout()">Sair</button>
     </div>
@@ -571,6 +616,37 @@
           <div class="stat-label">Por Confirmar</div>
           <div class="stat-value" id="stat-pending">—</div>
           <div class="stat-sub">clica para confirmar</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics toggle button -->
+    <div style="margin-bottom:1rem;display:flex;justify-content:flex-end">
+      <button class="btn-analytics" onclick="toggleAnalytics()">📊 Ver Análise</button>
+    </div>
+
+    <!-- Analytics Section -->
+    <div id="analytics-section" style="display:none">
+      <div class="chart-year-btns">
+        <button class="chart-year-btn active" id="chart-year-cur" data-year="" onclick="setChartYear(new Date().getFullYear())"></button>
+        <button class="chart-year-btn" id="chart-year-prev" data-year="" onclick="setChartYear(new Date().getFullYear()-1)"></button>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-card-title">Marcações por Mês</div>
+          <canvas id="chart-monthly" style="max-height:200px"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-title">Por Género</div>
+          <canvas id="chart-gender" style="max-height:200px"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-title">Por Nacionalidade</div>
+          <canvas id="chart-nationality" style="max-height:200px"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-title">Tamanhos de Fato</div>
+          <canvas id="chart-wetsuit" style="max-height:200px"></canvas>
         </div>
       </div>
     </div>
@@ -709,6 +785,112 @@
     <div class="rsch-actions">
       <button onclick="saveReschedule()" style="flex:1;padding:.7rem;background:linear-gradient(135deg,var(--ocean),var(--cyan));border:none;border-radius:10px;color:var(--white);font-weight:700;cursor:pointer;font-size:.9rem">Confirmar Remarcação</button>
       <button onclick="closeReschedule()" style="padding:.7rem 1.1rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-size:.9rem">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manual Booking Modal -->
+<div id="manual-booking-modal-bg" onclick="if(event.target===this)closeManualBooking()">
+  <div id="manual-booking-modal">
+    <h3>📋 Nova Marcação Manual</h3>
+    <div class="mb-grid">
+      <div class="mb-field">
+        <label>Data *</label>
+        <input type="date" id="mb-date" required />
+      </div>
+      <div class="mb-field">
+        <label>Horário *</label>
+        <select id="mb-time"></select>
+      </div>
+      <div class="mb-field">
+        <label>Modalidade *</label>
+        <select id="mb-lesson">
+          <option value="Iniciante">Iniciante</option>
+          <option value="Intermédio">Intermédio</option>
+          <option value="Aula Privada">Aula Privada</option>
+          <option value="Bodyboard">Bodyboard</option>
+          <option value="Stand Up Paddle">Stand Up Paddle</option>
+        </select>
+      </div>
+      <div class="mb-field">
+        <label>Nº Pessoas *</label>
+        <select id="mb-people">
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+        </select>
+      </div>
+      <div class="mb-field">
+        <label>Estado</label>
+        <select id="mb-status">
+          <option value="confirmed" selected>Confirmado</option>
+          <option value="pending">Pendente</option>
+        </select>
+      </div>
+      <div class="mb-field">
+        <label>Total (€)</label>
+        <input type="number" id="mb-total" min="0" step="0.01" placeholder="0.00" />
+      </div>
+      <div class="mb-field">
+        <label>Nome Completo *</label>
+        <input type="text" id="mb-name" placeholder="Nome do cliente" />
+      </div>
+      <div class="mb-field">
+        <label>Telemóvel *</label>
+        <input type="text" id="mb-phone" placeholder="+351 912 345 678" />
+      </div>
+      <div class="mb-field">
+        <label>Email</label>
+        <input type="email" id="mb-email" placeholder="cliente@email.com" />
+      </div>
+      <div class="mb-field">
+        <label>País</label>
+        <select id="mb-country">
+          <option value="">— Selecionar —</option>
+          <option value="🇵🇹 Portugal">🇵🇹 Portugal</option>
+          <option value="🇬🇧 United Kingdom">🇬🇧 United Kingdom</option>
+          <option value="🇫🇷 France">🇫🇷 France</option>
+          <option value="🇩🇪 Germany">🇩🇪 Germany</option>
+          <option value="🇪🇸 Spain">🇪🇸 Spain</option>
+          <option value="🇳🇱 Netherlands">🇳🇱 Netherlands</option>
+          <option value="🇺🇸 USA">🇺🇸 USA</option>
+          <option value="🇨🇦 Canada">🇨🇦 Canada</option>
+          <option value="🇮🇪 Ireland">🇮🇪 Ireland</option>
+          <option value="🇦🇹 Austria">🇦🇹 Austria</option>
+          <option value="🇧🇪 Belgium">🇧🇪 Belgium</option>
+          <option value="🇨🇭 Switzerland">🇨🇭 Switzerland</option>
+          <option value="🇮🇹 Italy">🇮🇹 Italy</option>
+          <option value="🇧🇷 Brazil">🇧🇷 Brazil</option>
+          <option value="🇦🇺 Australia">🇦🇺 Australia</option>
+          <option value="🇸🇪 Sweden">🇸🇪 Sweden</option>
+          <option value="🇩🇰 Denmark">🇩🇰 Denmark</option>
+          <option value="🇳🇴 Norway">🇳🇴 Norway</option>
+        </select>
+      </div>
+      <div class="mb-field">
+        <label>Idioma</label>
+        <select id="mb-language">
+          <option value="pt" selected>🇵🇹 Português</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="nl">🇳🇱 Nederlands</option>
+        </select>
+      </div>
+      <div class="mb-field full">
+        <label>Nota</label>
+        <textarea id="mb-notes" placeholder="Observações adicionais..."></textarea>
+      </div>
+    </div>
+    <div class="mb-actions">
+      <button onclick="saveManualBooking()" style="flex:1;padding:.7rem;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;border-radius:10px;color:var(--white);font-weight:700;cursor:pointer;font-size:.9rem;font-family:'Inter',sans-serif">Guardar</button>
+      <button onclick="closeManualBooking()" style="padding:.7rem 1.1rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-size:.9rem;font-family:'Inter',sans-serif">Cancelar</button>
     </div>
   </div>
 </div>
@@ -1675,6 +1857,173 @@
   }
   function closeDetailModal() {
     document.getElementById('detail-modal-bg').classList.remove('open');
+  }
+
+  // ── MANUAL BOOKING ────────────────────────────────────────────
+  function openManualBooking() {
+    // Reset form
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    document.getElementById('mb-date').value     = todayStr;
+    document.getElementById('mb-lesson').value   = 'Iniciante';
+    document.getElementById('mb-people').value   = '1';
+    document.getElementById('mb-status').value   = 'confirmed';
+    document.getElementById('mb-name').value     = '';
+    document.getElementById('mb-phone').value    = '';
+    document.getElementById('mb-email').value    = '';
+    document.getElementById('mb-country').value  = '';
+    document.getElementById('mb-language').value = 'pt';
+    document.getElementById('mb-total').value    = '';
+    document.getElementById('mb-notes').value    = '';
+
+    // Populate time slots from school config
+    const schoolSel = document.getElementById('f-school');
+    const school = SCHOOLS.find(s => s.id === (schoolSel ? schoolSel.value : '')) || SCHOOLS[0];
+    const sel = document.getElementById('mb-time');
+    sel.innerHTML = (school.slots || ['09:00','11:00','14:00','16:00'])
+      .map((t, i) => `<option value="${t}" ${i === 0 ? 'selected' : ''}>${t}</option>`)
+      .join('');
+
+    document.getElementById('manual-booking-modal-bg').classList.add('open');
+    setTimeout(() => document.getElementById('mb-name').focus(), 100);
+  }
+
+  function closeManualBooking() {
+    document.getElementById('manual-booking-modal-bg').classList.remove('open');
+  }
+
+  async function saveManualBooking() {
+    const date    = document.getElementById('mb-date').value;
+    const time    = document.getElementById('mb-time').value;
+    const name    = document.getElementById('mb-name').value.trim();
+    const phone   = document.getElementById('mb-phone').value.trim();
+    const lesson  = document.getElementById('mb-lesson').value;
+    const people  = parseInt(document.getElementById('mb-people').value);
+    const status  = document.getElementById('mb-status').value;
+    const email   = document.getElementById('mb-email').value.trim();
+    const country = document.getElementById('mb-country').value;
+    const lang    = document.getElementById('mb-language').value;
+    const total   = parseFloat(document.getElementById('mb-total').value) || 0;
+    const notes   = document.getElementById('mb-notes').value.trim();
+
+    if (!date)  { showToast('Escolhe a data', 'error'); return; }
+    if (!time)  { showToast('Escolhe o horário', 'error'); return; }
+    if (!name)  { showToast('Preenche o nome do cliente', 'error'); return; }
+    if (!phone) { showToast('Preenche o telemóvel do cliente', 'error'); return; }
+
+    const schoolSel = document.getElementById('f-school');
+    const schoolId  = (schoolSel ? schoolSel.value : '') || SCHOOLS[0].id;
+
+    const record = {
+      school_id:     schoolId,
+      lesson_type:   lesson,
+      booking_date:  date,
+      booking_time:  time,
+      num_people:    people,
+      client_name:   name,
+      client_phone:  phone,
+      client_email:  email || null,
+      client_country: country || null,
+      total_price:   total,
+      notes:         notes || null,
+      language:      lang,
+      status:        status,
+    };
+
+    const { error } = await sb.from('bookings').insert([record]);
+    if (error) { showToast('Erro ao guardar: ' + error.message, 'error'); return; }
+
+    showToast('✅ Marcação registada com sucesso!', 'success');
+    closeManualBooking();
+    await loadBookings();
+  }
+
+  // ── ANALYTICS ─────────────────────────────────────────────────
+  let chartYear = new Date().getFullYear();
+  let chartInstances = {};
+
+  function toggleAnalytics() {
+    const el = document.getElementById('analytics-section');
+    const isHidden = el.style.display === 'none' || el.style.display === '';
+    el.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) {
+      // Set year button labels now that we know the year
+      const curY = new Date().getFullYear();
+      const curBtn  = document.getElementById('chart-year-cur');
+      const prevBtn = document.getElementById('chart-year-prev');
+      if (curBtn)  { curBtn.textContent  = curY;     curBtn.dataset.year  = curY; }
+      if (prevBtn) { prevBtn.textContent = curY - 1; prevBtn.dataset.year = curY - 1; }
+      buildCharts();
+    }
+  }
+
+  function buildCharts() {
+    const year = chartYear;
+    const data = allBookings.filter(b => b.booking_date?.startsWith(year) && b.status !== 'cancelled');
+
+    // Monthly chart — 12 months
+    const monthly = Array(12).fill(0);
+    data.forEach(b => { const m = parseInt(b.booking_date.split('-')[1]) - 1; monthly[m]++; });
+
+    // Gender chart
+    const genderMap = {};
+    data.forEach(b => { const g = b.client_gender || 'N/A'; genderMap[g] = (genderMap[g]||0) + 1; });
+
+    // Nationality chart (top 8)
+    const natMap = {};
+    data.forEach(b => { const n = (b.client_country||'').replace(/^\S+\s/,'') || 'N/A'; natMap[n] = (natMap[n]||0) + 1; });
+    const topNat = Object.entries(natMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+    // Wetsuit chart
+    const wsMap = {};
+    data.forEach(b => {
+      const sizes = Array.isArray(b.equipment_list) ? b.equipment_list.map(p=>p.size).filter(Boolean) : (b.wetsuit_size ? [b.wetsuit_size] : []);
+      sizes.forEach(s => { wsMap[s] = (wsMap[s]||0) + 1; });
+    });
+    const sortedWs = Object.entries(wsMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+    // Destroy existing charts
+    Object.values(chartInstances).forEach(c => c.destroy());
+    chartInstances = {};
+
+    const chartDefaults = {
+      plugins: { legend: { labels: { color: '#8B9AB0', font: { size: 11 } } } },
+      scales: { x: { ticks: { color: '#8B9AB0' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                y: { ticks: { color: '#8B9AB0' }, grid: { color: 'rgba(255,255,255,0.05)' } } }
+    };
+
+    chartInstances.monthly = new Chart(document.getElementById('chart-monthly'), {
+      type: 'bar',
+      data: { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
+              datasets: [{ label: 'Marcações', data: monthly, backgroundColor: 'rgba(0,207,253,.6)', borderRadius: 5 }] },
+      options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false } } }
+    });
+
+    const gLabels = { H:'Homem', M:'Mulher', C:'Criança', 'N/A':'N/D' };
+    chartInstances.gender = new Chart(document.getElementById('chart-gender'), {
+      type: 'doughnut',
+      data: { labels: Object.keys(genderMap).map(g=>gLabels[g]||g),
+              datasets: [{ data: Object.values(genderMap), backgroundColor: ['#00CFFD','#a78bfa','#22c55e','#eab308'] }] },
+      options: { plugins: { legend: { labels: { color: '#8B9AB0', font: { size: 11 } } } } }
+    });
+
+    chartInstances.nationality = new Chart(document.getElementById('chart-nationality'), {
+      type: 'bar',
+      data: { labels: topNat.map(([k])=>k), datasets: [{ label: 'Clientes', data: topNat.map(([,v])=>v), backgroundColor: 'rgba(167,139,250,.7)', borderRadius: 5 }] },
+      options: { indexAxis: 'y', ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false } } }
+    });
+
+    chartInstances.wetsuit = new Chart(document.getElementById('chart-wetsuit'), {
+      type: 'bar',
+      data: { labels: sortedWs.map(([k])=>k), datasets: [{ label: 'Fatos', data: sortedWs.map(([,v])=>v), backgroundColor: 'rgba(34,197,94,.6)', borderRadius: 5 }] },
+      options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false } } }
+    });
+  }
+
+  function setChartYear(y) {
+    chartYear = y;
+    document.querySelectorAll('.chart-year-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.year) === y));
+    buildCharts();
   }
 
   init();
