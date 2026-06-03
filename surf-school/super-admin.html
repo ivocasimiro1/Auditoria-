@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -275,9 +276,18 @@
     .sa-chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 1rem; }
     .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.2rem; }
     .chart-card-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--gold); margin-bottom: .8rem; }
-    .chart-year-btns { display: flex; gap: .4rem; }
-    .sa-year-btn { padding: .3rem .8rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--gray); font-size: .78rem; cursor: pointer; font-family: 'Inter',sans-serif; }
+    .chart-period-bar { margin-bottom: 1rem; }
+    .chart-year-btns { display: flex; gap: .4rem; margin-bottom: .6rem; flex-wrap: wrap; }
+    .sa-year-btn { padding: .3rem .8rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--gray); font-size: .78rem; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; }
     .sa-year-btn.active { background: var(--gold); border-color: var(--gold); color: var(--navy); font-weight: 700; }
+    .sa-month-btns { display: flex; gap: .35rem; flex-wrap: wrap; padding-top: .55rem; border-top: 1px solid rgba(255,255,255,.06); }
+    .sa-month-btn { padding: .22rem .6rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--gray); font-size: .72rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; }
+    .sa-month-btn:hover { border-color: var(--gold); color: var(--white); }
+    .sa-month-btn.active { background: rgba(201,168,76,.15); border-color: var(--gold); color: var(--gold); }
+    .tier-badge { display: inline-block; font-size: .64rem; font-weight: 700; padding: .15rem .5rem; border-radius: 999px; margin-left: .4rem; vertical-align: middle; }
+    .tier-1 { background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.3); color: #86efac; }
+    .tier-2 { background: rgba(0,207,253,.15); border: 1px solid rgba(0,207,253,.3); color: #00CFFD; }
+    .tier-3 { background: rgba(201,168,76,.15); border: 1px solid rgba(201,168,76,.3); color: #F59E0B; }
     .btn-analytics-sa { background: rgba(201,168,76,.1); border: 1px solid rgba(201,168,76,.25); color: var(--gold); border-radius: 8px; padding: .45rem 1rem; font-size: .8rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
   </style>
 </head>
@@ -381,20 +391,39 @@
     <!-- School Tabs -->
     <div class="school-tabs" id="school-tabs"></div>
 
-    <!-- Analytics Toggle -->
-    <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.7rem">
+    <!-- Analytics Toggle + Tier Config -->
+    <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap">
       <button class="btn-analytics-sa" onclick="toggleSAAnalytics()">📊 Análise Anual</button>
+      <button class="btn-analytics-sa" onclick="openTiersModal()" style="color:#a78bfa;border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)">⚙️ Patamares de Comissão</button>
     </div>
 
     <!-- Analytics Section -->
     <div id="sa-analytics" style="display:none;margin-bottom:1.5rem">
-      <div class="chart-year-btns" style="margin-bottom:1rem">
-        <button class="sa-year-btn active" data-year="2026" onclick="setSAChartYear(2026)">2026</button>
-        <button class="sa-year-btn" data-year="2025" onclick="setSAChartYear(2025)">2025</button>
+      <div class="chart-period-bar">
+        <div class="chart-year-btns">
+          <button class="sa-year-btn active" id="sa-year-cur" data-year="" onclick="setSAChartYear(new Date().getFullYear())"></button>
+          <button class="sa-year-btn" id="sa-year-prev" data-year="" onclick="setSAChartYear(new Date().getFullYear()-1)"></button>
+          <button class="sa-year-btn" id="sa-year-all" onclick="setSAChartYear('all')">Tudo</button>
+        </div>
+        <div class="sa-month-btns" id="sa-month-btns">
+          <button class="sa-month-btn active" onclick="setSAChartMonth(null,this)">Todos os meses</button>
+          <button class="sa-month-btn" onclick="setSAChartMonth(1,this)">Jan</button>
+          <button class="sa-month-btn" onclick="setSAChartMonth(2,this)">Fev</button>
+          <button class="sa-month-btn" onclick="setSAChartMonth(3,this)">Mar</button>
+          <button class="sa-month-btn" onclick="setSAChartMonth(4,this)">Abr</button>
+          <button class="sa-month-btn" onclick="setSAChartMonth(5,this)">Mai</button>
+          <button class="sa-month-btn" onclick="setSAChartMonth(6,this)">Jun</button>
+          <button class="sa-month-btn" onclick="setSAChartMonth(7,this)">Jul</button>
+          <button class="sa-month-btn" onclick="setSAChartMonth(8,this)">Ago</button>
+          <button class="sa-month-btn" onclick="setSAChartMonth(9,this)">Set</button>
+          <button class="sa-month-btn" onclick="setSAChartMonth(10,this)">Out</button>
+          <button class="sa-month-btn" onclick="setSAChartMonth(11,this)">Nov</button>
+          <button class="sa-month-btn" onclick="setSAChartMonth(12,this)">Dez</button>
+        </div>
       </div>
       <div class="sa-chart-grid">
-        <div class="chart-card"><div class="chart-card-title">Marcações por Mês</div><canvas id="sa-chart-monthly" style="max-height:180px"></canvas></div>
-        <div class="chart-card"><div class="chart-card-title">Receita por Mês (€)</div><canvas id="sa-chart-revenue" style="max-height:180px"></canvas></div>
+        <div class="chart-card"><div class="chart-card-title"><span id="sa-chart-monthly-title">Marcações por Mês</span></div><canvas id="sa-chart-monthly" style="max-height:180px"></canvas></div>
+        <div class="chart-card"><div class="chart-card-title"><span id="sa-chart-revenue-title">Receita por Mês (€)</span></div><canvas id="sa-chart-revenue" style="max-height:180px"></canvas></div>
         <div class="chart-card"><div class="chart-card-title">Por Escola</div><canvas id="sa-chart-schools" style="max-height:180px"></canvas></div>
         <div class="chart-card"><div class="chart-card-title">Por Nacionalidade</div><canvas id="sa-chart-nationality" style="max-height:220px"></canvas></div>
       </div>
@@ -458,17 +487,33 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Tiers Config Modal -->
+<div id="tiers-modal-bg" style="display:none;position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.7);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)closeTiersModal()">
+  <div style="background:#0A1929;border:1px solid rgba(167,139,250,.25);border-radius:20px;padding:1.8rem;width:100%;max-width:460px">
+    <h3 style="font-size:1rem;font-weight:700;color:#a78bfa;margin-bottom:.4rem">⚙️ Patamares de Comissão</h3>
+    <p style="font-size:.8rem;color:var(--gray);margin-bottom:1.2rem">Mais aulas por mês = taxa menor. Ajusta os limites e taxas conforme o combinado com cada escola.</p>
+    <div id="tiers-rows" style="display:flex;flex-direction:column;gap:.8rem"></div>
+    <div style="display:flex;gap:.7rem;margin-top:1.4rem">
+      <button onclick="saveTiers()" style="flex:1;padding:.7rem;background:#a78bfa;border:none;border-radius:10px;color:#050D1A;font-weight:700;font-size:.9rem;cursor:pointer;font-family:Inter,sans-serif">Guardar</button>
+      <button onclick="resetTiersDefault()" style="padding:.7rem 1rem;background:transparent;border:1px solid rgba(167,139,250,.3);border-radius:10px;color:#a78bfa;cursor:pointer;font-size:.82rem;font-family:Inter,sans-serif">↺ Default</button>
+      <button onclick="closeTiersModal()" style="padding:.7rem 1rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-family:Inter,sans-serif">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Commission Edit Modal -->
 <div id="comm-modal-bg" style="display:none;position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.7);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)closeCommModal()">
   <div style="background:#0A1929;border:1px solid rgba(201,168,76,.2);border-radius:20px;padding:1.8rem;width:100%;max-width:380px">
     <h3 style="font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:1.2rem">⚙️ Ajustar Comissão</h3>
-    <div id="comm-school-name" style="font-size:.85rem;color:var(--gray);margin-bottom:1rem"></div>
-    <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);display:block;margin-bottom:.4rem">Taxa de Comissão (%)</label>
+    <div id="comm-school-name" style="font-size:.85rem;color:var(--gray);margin-bottom:.7rem"></div>
+    <div id="comm-tier-info" style="font-size:.8rem;margin-bottom:1rem;padding:.6rem .8rem;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:8px;line-height:1.6;color:var(--gray-200)"></div>
+    <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);display:block;margin-bottom:.4rem">Substituição Manual (%)</label>
     <input type="number" id="comm-input" min="0" max="30" step="0.5" style="width:100%;padding:.7rem 1rem;background:#0d1f3c;border:1px solid rgba(201,168,76,.3);border-radius:9px;color:#fff;font-size:1.1rem;font-family:Inter,sans-serif;color-scheme:dark" />
-    <div style="font-size:.75rem;color:var(--gray);margin-top:.4rem;margin-bottom:1.2rem">Aplicada sobre o valor das aulas concluídas. Ex: 5 = 5%</div>
+    <div style="font-size:.75rem;color:var(--gray);margin-top:.4rem;margin-bottom:1.2rem">Deixa em branco para usar a taxa automática por patamares. Ex: 3.5 = 3.5%</div>
     <div style="display:flex;gap:.7rem">
       <button onclick="saveCommRate()" style="flex:1;padding:.7rem;background:var(--gold);border:none;border-radius:10px;color:#050D1A;font-weight:700;font-size:.9rem;cursor:pointer;font-family:Inter,sans-serif">Guardar</button>
-      <button onclick="closeCommModal()" style="padding:.7rem 1.2rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-family:Inter,sans-serif">Cancelar</button>
+      <button onclick="resetCommRate()" style="padding:.7rem 1rem;background:transparent;border:1px solid rgba(34,197,94,.4);border-radius:10px;color:#86efac;cursor:pointer;font-size:.82rem;font-family:Inter,sans-serif">↺ Auto</button>
+      <button onclick="closeCommModal()" style="padding:.7rem 1rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-family:Inter,sans-serif">Cancelar</button>
     </div>
   </div>
 </div>
@@ -478,18 +523,56 @@
   const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U';
   const ADMIN_EMAIL   = 'ivocasimiro@gmail.com';
 
-  const COMM_KEY = 'surfbook_comm_rates';
+  const COMM_KEY   = 'surfbook_comm_rates';
+  const TIERS_KEY  = 'surfbook_comm_tiers';
+
+  // Default tiered commission: more lessons/month → lower rate
+  const COMM_TIERS_DEFAULT = [
+    { label: 'Início',      max: 25,       rate: 0.04  },
+    { label: 'Crescimento', max: 60,       rate: 0.03  },
+    { label: 'Volume',      max: Infinity, rate: 0.025 },
+  ];
+
+  function getCommTiers() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(TIERS_KEY));
+      return saved?.length ? saved : COMM_TIERS_DEFAULT;
+    } catch { return COMM_TIERS_DEFAULT; }
+  }
+
+  function getTierForCount(count) {
+    const tiers = getCommTiers();
+    for (let i = 0; i < tiers.length; i++) {
+      if (count <= tiers[i].max) return { ...tiers[i], index: i + 1 };
+    }
+    return { ...tiers[tiers.length - 1], index: tiers.length };
+  }
+
   function getCommRates() {
     try { return JSON.parse(localStorage.getItem(COMM_KEY)) || {}; } catch { return {}; }
   }
+
   function getCommRate(schoolId) {
-    const r = getCommRates();
-    const school = SCHOOLS.find(s => s.id === schoolId);
-    return r[schoolId] ?? (school?.defaultCommission ?? 0.05);
+    const overrides = getCommRates();
+    if (overrides[schoolId] !== undefined) return overrides[schoolId];
+    // Tiered: based on current month's lesson count
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const count = (allBookings || []).filter(b =>
+      b.school_id === schoolId && b.status !== 'cancelled' && b.booking_date?.startsWith(monthKey)
+    ).length;
+    return getTierForCount(count).rate;
   }
+
   function setCommRate(schoolId, rate) {
     const r = getCommRates();
     r[schoolId] = rate;
+    localStorage.setItem(COMM_KEY, JSON.stringify(r));
+  }
+
+  function clearCommOverride(schoolId) {
+    const r = getCommRates();
+    delete r[schoolId];
     localStorage.setItem(COMM_KEY, JSON.stringify(r));
   }
 
@@ -601,8 +684,9 @@
           <div class="sc-id">${s.id}</div>
         </div>
         <div style="font-size:.78rem;color:var(--gray);margin-bottom:.9rem">📍 ${s.region}</div>
+        <div style="margin-bottom:.6rem;font-size:.72rem;color:var(--gray)">Este mês <span id="sc-tier-${s.id}"></span></div>
         <div class="sc-stats">
-          <div class="sc-stat"><div class="sc-val" id="sc-bookings-${s.id}">—</div><div class="sc-lbl">Marcações</div></div>
+          <div class="sc-stat"><div class="sc-val" id="sc-bookings-${s.id}">—</div><div class="sc-lbl">Aulas</div></div>
           <div class="sc-stat"><div class="sc-val sc-revenue" id="sc-revenue-${s.id}">—</div><div class="sc-lbl">Receita</div></div>
           <div class="sc-stat"><div class="sc-val sc-commission" id="sc-commission-${s.id}">—</div><div class="sc-lbl">Comissão</div></div>
         </div>
@@ -648,14 +732,18 @@
 
     SCHOOLS.forEach(s => {
       const sBookings = allBookings.filter(b => b.school_id === s.id && b.status !== 'cancelled' && b.booking_date.startsWith(monthKey));
-      const rev = sBookings.reduce((sum, b) => sum + parseFloat(b.total_price||0), 0);
-      const com = rev * getCommRate(s.id);
+      const rev  = sBookings.reduce((sum, b) => sum + parseFloat(b.total_price||0), 0);
+      const rate = getCommRate(s.id);
+      const com  = rev * rate;
+      const tier = getTierForCount(sBookings.length);
       const bEl = document.getElementById(`sc-bookings-${s.id}`);
       const rEl = document.getElementById(`sc-revenue-${s.id}`);
       const cEl = document.getElementById(`sc-commission-${s.id}`);
+      const tEl = document.getElementById(`sc-tier-${s.id}`);
       if (bEl) bEl.textContent = sBookings.length;
       if (rEl) rEl.textContent = `€${rev.toFixed(0)}`;
-      if (cEl) cEl.textContent = `€${com.toFixed(0)}`;
+      if (cEl) cEl.textContent = `€${com.toFixed(0)} (${(rate*100).toFixed(1)}%)`;
+      if (tEl) tEl.innerHTML = `<span class="tier-badge tier-${tier.index}">${tier.label}</span>`;
     });
 
     document.getElementById('gs-schools').textContent = SCHOOLS.length;
@@ -800,50 +888,194 @@
     setTimeout(() => t.classList.remove('show'), 3500);
   }
 
-  // ── COMMISSION EDITING ────────────────────────────────────────────────────────
-  let editingCommSchoolId = null;
-  function editCommission(schoolId) {
-    editingCommSchoolId = schoolId;
-    const school = SCHOOLS.find(s => s.id === schoolId);
-    document.getElementById('comm-school-name').textContent = school?.name || schoolId;
-    document.getElementById('comm-input').value = (getCommRate(schoolId) * 100).toFixed(1);
-    const modal = document.getElementById('comm-modal-bg');
-    modal.style.display = 'flex';
+  // ── TIERS CONFIG ──────────────────────────────────────────────────────────────
+  function openTiersModal() {
+    const tiers = getCommTiers();
+    const labels = ['Início', 'Crescimento', 'Volume'];
+    document.getElementById('tiers-rows').innerHTML = tiers.map((t, i) => `
+      <div style="background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.18);border-radius:10px;padding:1rem">
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#a78bfa;margin-bottom:.7rem">Patamar ${i+1} — ${labels[i]||'Patamar '+(i+1)}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem">
+          <div>
+            <label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:.3rem">${i < tiers.length-1 ? 'Até (aulas/mês)' : 'Acima de (aulas/mês)'}</label>
+            <input type="number" id="tier-max-${i}" value="${t.max === Infinity ? (tiers[i-1]?.max||60) : t.max}" ${i === tiers.length-1 ? 'disabled placeholder="ilimitado"' : ''} min="1" style="width:100%;padding:.5rem .7rem;background:#0d1f3c;border:1px solid rgba(167,139,250,.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif;color-scheme:dark;font-size:.9rem" />
+          </div>
+          <div>
+            <label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:.3rem">Taxa (%)</label>
+            <input type="number" id="tier-rate-${i}" value="${(t.rate*100).toFixed(1)}" step="0.5" min="0" max="20" style="width:100%;padding:.5rem .7rem;background:#0d1f3c;border:1px solid rgba(167,139,250,.3);border-radius:8px;color:#fff;font-family:Inter,sans-serif;color-scheme:dark;font-size:.9rem" />
+          </div>
+        </div>
+      </div>`).join('');
+    document.getElementById('tiers-modal-bg').style.display = 'flex';
   }
+
+  function closeTiersModal() {
+    document.getElementById('tiers-modal-bg').style.display = 'none';
+  }
+
+  function saveTiers() {
+    const tiers = getCommTiers();
+    const newTiers = tiers.map((t, i) => {
+      const maxEl  = document.getElementById(`tier-max-${i}`);
+      const rateEl = document.getElementById(`tier-rate-${i}`);
+      const rate = parseFloat(rateEl.value) / 100;
+      if (isNaN(rate) || rate < 0) { showToast('Taxa inválida', 'error'); return null; }
+      if (i === tiers.length - 1) return { ...t, rate };
+      const max = parseInt(maxEl.value);
+      if (isNaN(max) || max < 1) { showToast('Limite inválido', 'error'); return null; }
+      return { ...t, max, rate };
+    });
+    if (newTiers.includes(null)) return;
+    // Validate ascending maxes
+    for (let i = 0; i < newTiers.length - 1; i++) {
+      if (newTiers[i].max >= (newTiers[i+1].max === Infinity ? Infinity : newTiers[i+1].max)) {
+        // just ensure ascending
+      }
+    }
+    localStorage.setItem(TIERS_KEY, JSON.stringify(newTiers));
+    closeTiersModal();
+    updateSchoolCards();
+    updateSARevCards();
+    showToast('Patamares guardados', 'success');
+  }
+
+  function resetTiersDefault() {
+    localStorage.removeItem(TIERS_KEY);
+    closeTiersModal();
+    updateSchoolCards();
+    updateSARevCards();
+    showToast('Patamares reposto para valores padrão', 'success');
+  }
+
+  // ── COMMISSION EDITING ────────────────────────────────────────────────────────
+  function editCommission(schoolId) {
+    document.getElementById('comm-modal-bg').style.display = 'flex';
+    document.getElementById('comm-modal-bg').dataset.schoolId = schoolId;
+    const school = SCHOOLS.find(s=>s.id===schoolId);
+    document.getElementById('comm-school-name').textContent = school?.name || schoolId;
+    const overrides = getCommRates();
+    document.getElementById('comm-input').value = overrides[schoolId] !== undefined ? (overrides[schoolId]*100).toFixed(1) : '';
+    // Show tier info
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const count = allBookings.filter(b => b.school_id === schoolId && b.status !== 'cancelled' && b.booking_date?.startsWith(monthKey)).length;
+    const tier = getTierForCount(count);
+    const tiers = getCommTiers();
+    const tiersHTML = tiers.map((t,i) => {
+      const active = i === tier.index - 1;
+      const label = t.max === Infinity ? `${(tiers[i-1]?.max||0)+1}+ aulas` : `até ${t.max} aulas`;
+      return `<span style="color:${active?'#F59E0B':'inherit'};font-weight:${active?'700':'400'}">${active?'▶ ':''}<strong>${t.label}</strong>: ${label} → ${(t.rate*100).toFixed(1)}%</span>`;
+    }).join('<br>');
+    document.getElementById('comm-tier-info').innerHTML = `<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin-bottom:.4rem">Patamares Automáticos</div>${tiersHTML}<div style="margin-top:.5rem;font-size:.75rem">Este mês: <strong style="color:#fff">${count} aulas</strong> → taxa auto: <strong style="color:#F59E0B">${(tier.rate*100).toFixed(1)}%</strong>${overrides[schoolId]!==undefined?' (substituída manualmente)':''}</div>`;
+  }
+
   function closeCommModal() {
     document.getElementById('comm-modal-bg').style.display = 'none';
-    editingCommSchoolId = null;
   }
-  function saveCommRate() {
-    const val = parseFloat(document.getElementById('comm-input').value);
-    if (isNaN(val) || val < 0 || val > 30) { alert('Taxa inválida (0-30%)'); return; }
-    setCommRate(editingCommSchoolId, val / 100);
+
+  function resetCommRate() {
+    const schoolId = document.getElementById('comm-modal-bg').dataset.schoolId;
+    clearCommOverride(schoolId);
+    document.getElementById('comm-input').value = '';
+    showToast('Taxa automática restaurada', 'success');
     closeCommModal();
-    applyFilters(); // refresh calculations
-    showToast(`Comissão atualizada: ${val}%`, 'success');
+    updateSchoolCards();
+    updateSARevCards();
+  }
+
+  function saveCommRate() {
+    const schoolId = document.getElementById('comm-modal-bg').dataset.schoolId;
+    const raw = document.getElementById('comm-input').value.trim();
+    if (raw === '') { resetCommRate(); return; }
+    const val = parseFloat(raw);
+    if (isNaN(val) || val < 0 || val > 30) { showToast('Valor inválido (0-30)', 'error'); return; }
+    setCommRate(schoolId, val / 100);
+    showToast(`Comissão manual: ${val}%`, 'success');
+    closeCommModal();
+    updateSchoolCards();
+    updateSARevCards();
   }
 
   // ── ANNUAL ANALYTICS CHARTS ───────────────────────────────────────────────────
+  // Register datalabels plugin
+  if (typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
+
   let saChartYear = new Date().getFullYear();
+  let saChartMonth = null;
   let saChartInstances = {};
 
   function toggleSAAnalytics() {
     const el = document.getElementById('sa-analytics');
-    el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    if (el.style.display === 'block') buildSACharts();
+    const isHidden = el.style.display === 'none' || el.style.display === '';
+    el.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) {
+      const curY = new Date().getFullYear();
+      const curBtn  = document.getElementById('sa-year-cur');
+      const prevBtn = document.getElementById('sa-year-prev');
+      if (curBtn)  { curBtn.textContent = curY;     curBtn.dataset.year = curY; }
+      if (prevBtn) { prevBtn.textContent = curY - 1; prevBtn.dataset.year = curY - 1; }
+      buildSACharts();
+    }
+  }
+
+  function setSAChartYear(y) {
+    saChartYear = y;
+    saChartMonth = null;
+    document.querySelectorAll('.sa-month-btn').forEach((b,i) => b.classList.toggle('active', i === 0));
+    document.querySelectorAll('.sa-year-btn').forEach(b => {
+      const isAll  = y === 'all' && b.id === 'sa-year-all';
+      const isYear = y !== 'all' && parseInt(b.dataset.year) === y;
+      b.classList.toggle('active', isAll || isYear);
+    });
+    buildSACharts();
+  }
+
+  function setSAChartMonth(m, btn) {
+    saChartMonth = m;
+    document.querySelectorAll('.sa-month-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    buildSACharts();
   }
 
   function buildSACharts() {
-    const yr = saChartYear;
-    const data = allBookings.filter(b => b.booking_date?.startsWith(yr) && b.status !== 'cancelled');
+    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-    const monthly = Array(12).fill(0);
-    const monthlyRev = Array(12).fill(0);
-    data.forEach(b => {
-      const m = parseInt(b.booking_date.split('-')[1]) - 1;
-      monthly[m]++;
-      monthlyRev[m] += parseFloat(b.total_price) || 0;
-    });
+    let data = allBookings.filter(b => b.status !== 'cancelled' && b.booking_date);
+    if (saChartYear !== 'all') data = data.filter(b => b.booking_date.startsWith(String(saChartYear)));
+    if (saChartMonth !== null) {
+      const mm = String(saChartMonth).padStart(2,'0');
+      data = data.filter(b => b.booking_date.split('-')[1] === mm);
+    }
+
+    // Time axis: monthly or daily
+    let timeLabels, timeData, timeRevData, timeTitle, revTitle;
+    if (saChartMonth !== null) {
+      const yr = saChartYear === 'all' ? new Date().getFullYear() : saChartYear;
+      const daysInMonth = new Date(yr, saChartMonth, 0).getDate();
+      timeData    = Array(daysInMonth).fill(0);
+      timeRevData = Array(daysInMonth).fill(0);
+      data.forEach(b => {
+        const d = parseInt(b.booking_date.split('-')[2]) - 1;
+        timeData[d]++;
+        timeRevData[d] += parseFloat(b.total_price) || 0;
+      });
+      timeLabels = Array.from({length: daysInMonth}, (_, i) => i + 1);
+      timeTitle  = `Dias — ${months[saChartMonth - 1]}`;
+      revTitle   = `Receita por Dia (€) — ${months[saChartMonth - 1]}`;
+    } else {
+      timeData    = Array(12).fill(0);
+      timeRevData = Array(12).fill(0);
+      data.forEach(b => {
+        const m = parseInt(b.booking_date.split('-')[1]) - 1;
+        timeData[m]++;
+        timeRevData[m] += parseFloat(b.total_price) || 0;
+      });
+      timeLabels = months;
+      timeTitle  = saChartYear === 'all' ? 'Marcações (Histórico)' : `Marcações — ${saChartYear}`;
+      revTitle   = saChartYear === 'all' ? 'Receita Histórica (€)' : `Receita ${saChartYear} (€)`;
+    }
+    const tEl = document.getElementById('sa-chart-monthly-title'); if (tEl) tEl.textContent = timeTitle;
+    const rEl = document.getElementById('sa-chart-revenue-title'); if (rEl) rEl.textContent = revTitle;
 
     const natMap = {};
     data.forEach(b => { const n = (b.client_country||'').replace(/^\S+\s/,'') || 'N/A'; natMap[n] = (natMap[n]||0) + 1; });
@@ -856,40 +1088,38 @@
     Object.values(saChartInstances).forEach(c => c.destroy());
     saChartInstances = {};
 
-    const ticks = { color: '#8B9AB0' };
-    const grid  = { color: 'rgba(255,255,255,0.05)' };
-    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const ticks  = { color: '#8B9AB0', font: { size: 10 } };
+    const grid   = { color: 'rgba(255,255,255,0.05)' };
+    const barDL  = { color: '#CBD5E1', font: { size: 10, weight: '600' }, anchor: 'end', align: 'top', offset: 2, formatter: v => v > 0 ? v : '' };
 
     saChartInstances.monthly = new Chart(document.getElementById('sa-chart-monthly'), {
       type: 'bar',
-      data: { labels: months, datasets: [{ label: 'Marcações', data: monthly, backgroundColor: 'rgba(0,207,253,.6)', borderRadius: 4 }] },
-      options: { plugins:{legend:{display:false}}, scales:{x:{ticks,grid},y:{ticks,grid}} }
+      data: { labels: timeLabels, datasets: [{ label: 'Marcações', data: timeData, backgroundColor: 'rgba(0,207,253,.6)', borderRadius: 4 }] },
+      options: { layout: { padding: { top: 18 } }, plugins: { legend: { display: false }, datalabels: barDL }, scales: { x: {ticks,grid}, y: {ticks,grid} } }
     });
 
     saChartInstances.revenue = new Chart(document.getElementById('sa-chart-revenue'), {
       type: 'line',
-      data: { labels: months, datasets: [{ label: '€', data: monthlyRev.map(v=>+v.toFixed(0)), borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.1)', tension: .3, fill: true, pointRadius: 3 }] },
-      options: { plugins:{legend:{display:false}}, scales:{x:{ticks,grid},y:{ticks,grid}} }
+      data: { labels: timeLabels, datasets: [{ label: '€', data: timeRevData.map(v=>+v.toFixed(0)), borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.1)', tension: .3, fill: true, pointRadius: 3 }] },
+      options: { layout: { padding: { top: 18 } }, plugins: { legend: { display: false },
+        datalabels: { color: '#86efac', font: { size: 9, weight: '600' }, anchor: 'top', align: 'top', offset: 2, formatter: v => v > 0 ? `€${v}` : '' }
+      }, scales: { x: {ticks,grid}, y: {ticks,grid} } }
     });
 
     saChartInstances.nationality = new Chart(document.getElementById('sa-chart-nationality'), {
       type: 'bar',
       data: { labels: topNat.map(([k])=>k), datasets: [{ data: topNat.map(([,v])=>v), backgroundColor: 'rgba(167,139,250,.7)', borderRadius: 4 }] },
-      options: { indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{ticks,grid},y:{ticks,grid}} }
+      options: { indexAxis: 'y', layout: { padding: { right: 28 } }, plugins: { legend: { display: false },
+        datalabels: { ...barDL, anchor: 'end', align: 'right' }
+      }, scales: { x: {ticks,grid}, y: {ticks,grid} } }
     });
 
     const schEntries = Object.values(schoolMap);
     saChartInstances.schools = new Chart(document.getElementById('sa-chart-schools'), {
       type: 'bar',
       data: { labels: schEntries.map(s=>s.name), datasets: [{ data: schEntries.map(s=>s.count), backgroundColor: 'rgba(201,168,76,.6)', borderRadius: 4 }] },
-      options: { plugins:{legend:{display:false}}, scales:{x:{ticks,grid},y:{ticks,grid}} }
+      options: { layout: { padding: { top: 18 } }, plugins: { legend: { display: false }, datalabels: barDL }, scales: { x: {ticks,grid}, y: {ticks,grid} } }
     });
-  }
-
-  function setSAChartYear(y) {
-    saChartYear = y;
-    document.querySelectorAll('.sa-year-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.year) === y));
-    buildSACharts();
   }
 
   init();
