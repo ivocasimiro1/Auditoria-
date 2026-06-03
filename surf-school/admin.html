@@ -495,6 +495,21 @@
     .chart-month-btn:hover { border-color: var(--cyan); color: var(--white); }
     .chart-month-btn.active { background: rgba(0,207,253,.15); border-color: var(--cyan); color: var(--cyan); }
     .btn-analytics { background: rgba(167,139,250,.12); border: 1px solid rgba(167,139,250,.3); color: #a78bfa; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
+    .btn-reviews   { background: rgba(245,158,11,.11); border: 1px solid rgba(245,158,11,.3);  color: #fbbf24; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; margin-left: .5rem; }
+    #reviews-section { margin-bottom: 1.5rem; }
+    .review-card { background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: .7rem; }
+    .review-stars { color: #f59e0b; font-size: 1rem; letter-spacing: .08rem; }
+    .review-meta  { font-size: .75rem; color: var(--gray); margin-top: .15rem; }
+    .review-comment { font-size: .86rem; margin-top: .45rem; line-height: 1.55; font-style: italic; color: #cbd5e1; }
+    .review-actions { display: flex; gap: .4rem; margin-top: .7rem; }
+    .btn-approve { background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.3); color: #86efac; border-radius: 8px; padding: .25rem .75rem; font-size: .75rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
+    .btn-approve:hover { background: rgba(34,197,94,.22); }
+    .btn-reject  { background: rgba(239,68,68,.1);  border: 1px solid rgba(239,68,68,.25); color: #fca5a5; border-radius: 8px; padding: .25rem .75rem; font-size: .75rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
+    .btn-reject:hover  { background: rgba(239,68,68,.2); }
+    .reviews-filter-bar { display: flex; gap: .4rem; margin-bottom: 1rem; }
+    .rev-filter-btn { background: transparent; border: 1px solid var(--border); color: var(--gray); border-radius: 6px; padding: .25rem .7rem; font-size: .75rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; }
+    .rev-filter-btn.active { background: rgba(245,158,11,.14); border-color: #f59e0b; color: #fbbf24; }
+    .reviews-avg-badge { display: inline-flex; align-items: center; gap: .35rem; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.25); border-radius: 50px; padding: .25rem .8rem; font-size: .78rem; font-weight: 700; color: #fbbf24; margin-bottom: .9rem; }
 
     /* ── MANUAL BOOKING MODAL ── */
     #manual-booking-modal-bg {
@@ -640,9 +655,26 @@
       </div>
     </div>
 
-    <!-- Analytics toggle button -->
-    <div style="margin-bottom:1rem;display:flex;justify-content:flex-end">
+    <!-- Analytics + Reviews buttons -->
+    <div style="margin-bottom:1rem;display:flex;justify-content:flex-end;flex-wrap:wrap;gap:.4rem">
+      <button class="btn-reviews"   id="btn-reviews"   onclick="toggleReviews()">⭐ Avaliações</button>
       <button class="btn-analytics" onclick="toggleAnalytics()">📊 Ver Análise</button>
+    </div>
+
+    <!-- Reviews Section -->
+    <div id="reviews-section" style="display:none">
+      <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#fbbf24">⭐ Avaliações dos Clientes</div>
+          <div id="reviews-avg-badge" class="reviews-avg-badge" style="display:none"></div>
+        </div>
+        <div class="reviews-filter-bar">
+          <button class="rev-filter-btn active" onclick="setRevFilter('all',this)">Todas</button>
+          <button class="rev-filter-btn"        onclick="setRevFilter('pending',this)">Pendentes</button>
+          <button class="rev-filter-btn"        onclick="setRevFilter('published',this)">Publicadas</button>
+        </div>
+        <div id="reviews-list"><div style="color:var(--gray);font-size:.85rem;padding:.5rem 0">A carregar avaliações...</div></div>
+      </div>
     </div>
 
     <!-- Analytics Section -->
@@ -1155,6 +1187,7 @@
     applyFilters();
     buildCalendar();
     buildTodayBriefing();
+    updateReviewsBadge();
     // Refresh slot availability if a day is currently selected
     const selDay = document.getElementById('f-date').value;
     if (selDay) buildSlotAvailability(selDay);
@@ -1306,7 +1339,7 @@
         ? `<button class="act-btn act-confirm"  title="Confirmar"          onclick="updateStatus('${b.id}','confirmed')">✓</button>
            <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`
         : b.status === 'confirmed'
-        ? `<button class="act-btn act-complete" title="Marcar concluído"   onclick="updateStatus('${b.id}','completed')">★</button>
+        ? `<button class="act-btn act-complete" title="Marcar concluído + pedir avaliação" onclick="completeAndReview('${b.id}')">★</button>
            <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`
         : b.status === 'completed'
         ? `<span title="Concluído — bloqueado pelo sistema" style="font-size:.85rem;color:var(--gray);padding:.2rem .4rem;display:inline-block;line-height:1;cursor:default">🔒</span>`
@@ -1366,6 +1399,138 @@
   function confirmRevert(id, newStatus, msg) {
     if (!confirm(msg + '\n\nNenhuma mensagem será enviada ao cliente.')) return;
     updateStatus(id, newStatus, false); // audit note appended inside updateStatus
+  }
+
+  // ── COMPLETE + REVIEW REQUEST ─────────────────────────────────────────
+  function completeAndReview(id) {
+    const b = allBookings.find(bk => bk.id === id);
+    if (!b) return;
+    const school = SCHOOLS.find(s => s.id === b.school_id) || SCHOOLS[0];
+    const [y, m, d] = b.booking_date.split('-');
+    const dateStr = `${d}/${m}/${y}`;
+    const reviewUrl = `https://auditoria-25b.pages.dev/review?b=${id}`;
+
+    let lang = (b.language || 'pt').toLowerCase();
+    if (b.client_country) {
+      const cn = b.client_country.replace(/^\S+\s/, '');
+      const CL = { 'United Kingdom':'en','USA':'en','Canada':'en','Ireland':'en',
+        'France':'fr','Belgium':'fr','Switzerland':'fr','Germany':'de','Austria':'de',
+        'Spain':'es','Netherlands':'nl','Brasil':'pt-br','Brazil':'pt-br' };
+      if (CL[cn]) lang = CL[cn];
+    }
+    const msgs = {
+      pt:    `*${school.name}* 🏄\n\nObrigado ${b.client_name}! Esperamos que tenha adorado a aula de surf de ${dateStr}. 🌊\n\nA sua opinião é muito importante e ajuda outros surfistas a escolher — deixe uma avaliação em menos de 1 minuto:\n\n⭐ ${reviewUrl}\n\nAté à próxima!`,
+      en:    `*${school.name}* 🏄\n\nThank you ${b.client_name}! Hope you loved your surf lesson on ${dateStr}. 🌊\n\nYour opinion matters and helps other surfers — leave a review in under 1 minute:\n\n⭐ ${reviewUrl}\n\nSee you again!`,
+      'pt-br': `*${school.name}* 🏄\n\nObrigado ${b.client_name}! Esperamos que tenha amado a aula de surf de ${dateStr}. 🌊\n\nSua opinião é muito importante — deixe uma avaliação em menos de 1 minuto:\n\n⭐ ${reviewUrl}\n\nAté logo!`,
+      fr:    `*${school.name}* 🏄\n\nMerci ${b.client_name}! Nous espérons que vous avez adoré votre cours de surf du ${dateStr}. 🌊\n\nVotre avis compte — laissez un avis en moins d'une minute:\n\n⭐ ${reviewUrl}\n\nÀ bientôt!`,
+      de:    `*${school.name}* 🏄\n\nDanke ${b.client_name}! Wir hoffen, du hast deinen Surfkurs am ${dateStr} geliebt. 🌊\n\nDeine Meinung zählt — hinterlasse eine Bewertung in unter 1 Minute:\n\n⭐ ${reviewUrl}\n\nBis bald!`,
+      es:    `*${school.name}* 🏄\n\n¡Gracias ${b.client_name}! Esperamos que hayas disfrutado tu clase de surf del ${dateStr}. 🌊\n\nTu opinión importa — deja una reseña en menos de 1 minuto:\n\n⭐ ${reviewUrl}\n\n¡Hasta pronto!`,
+      nl:    `*${school.name}* 🏄\n\nBedankt ${b.client_name}! Hopelijk heb je je surfles op ${dateStr} geweldig gevonden. 🌊\n\nJouw mening telt — laat een beoordeling achter in minder dan 1 minuut:\n\n⭐ ${reviewUrl}\n\nTot snel!`,
+    };
+    const phone = b.client_phone.replace(/\D/g, '');
+    // Open WA BEFORE any await (browser popup policy)
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msgs[lang] || msgs['pt'])}`, '_blank');
+    // Now update status (async, but WA already opened)
+    updateStatus(id, 'completed', false);
+  }
+
+  // ── REVIEWS PANEL ─────────────────────────────────────────────────────
+  let allReviews = [];
+  let revFilter  = 'all';
+
+  async function toggleReviews() {
+    const sec = document.getElementById('reviews-section');
+    const btn = document.getElementById('btn-reviews');
+    if (sec.style.display === 'none') {
+      sec.style.display = 'block';
+      btn.textContent = '⭐ Fechar Avaliações';
+      await loadReviews();
+    } else {
+      sec.style.display = 'none';
+      btn.textContent = '⭐ Avaliações';
+    }
+  }
+
+  async function loadReviews() {
+    const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
+    const { data, error } = await sb.from('reviews').select('*').eq('school_id', school.id).order('created_at', { ascending: false });
+    if (error) { document.getElementById('reviews-list').innerHTML = '<p style="color:var(--gray)">Erro ao carregar avaliações.</p>'; return; }
+    allReviews = data || [];
+    const avg = allReviews.length ? (allReviews.reduce((s,r) => s + r.rating, 0) / allReviews.length).toFixed(1) : null;
+    const badge = document.getElementById('reviews-avg-badge');
+    if (avg) {
+      badge.style.display = 'inline-flex';
+      badge.textContent = `${'★'.repeat(Math.round(avg))}${'☆'.repeat(5-Math.round(avg))}  ${avg}  (${allReviews.length})`;
+    }
+    renderReviews();
+    // Update button with pending count
+    const pending = allReviews.filter(r => r.status === 'pending').length;
+    document.getElementById('btn-reviews').textContent = pending > 0 ? `⭐ Fechar Avaliações (${pending} pendente${pending>1?'s':''})` : '⭐ Fechar Avaliações';
+  }
+
+  function setRevFilter(f, btn) {
+    revFilter = f;
+    document.querySelectorAll('.rev-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderReviews();
+  }
+
+  function renderReviews() {
+    const filtered = revFilter === 'all' ? allReviews
+      : allReviews.filter(r => r.status === revFilter);
+    if (!filtered.length) {
+      document.getElementById('reviews-list').innerHTML = `<p style="color:var(--gray);font-size:.85rem;padding:.3rem 0">Nenhuma avaliação${revFilter !== 'all' ? ' nesta categoria' : ''}.</p>`;
+      return;
+    }
+    document.getElementById('reviews-list').innerHTML = filtered.map(r => {
+      const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+      const date  = new Date(r.created_at).toLocaleDateString('pt');
+      const statusBadge = r.status === 'pending'
+        ? `<span style="background:rgba(234,179,8,.12);color:#fde047;border:1px solid rgba(234,179,8,.3);border-radius:50px;padding:.12rem .5rem;font-size:.67rem;font-weight:700">Pendente</span>`
+        : r.status === 'published'
+        ? `<span style="background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.3);border-radius:50px;padding:.12rem .5rem;font-size:.67rem;font-weight:700">Publicada</span>`
+        : `<span style="background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid rgba(239,68,68,.25);border-radius:50px;padding:.12rem .5rem;font-size:.67rem;font-weight:700">Rejeitada</span>`;
+      const actions = r.status === 'pending' ? `
+        <div class="review-actions">
+          <button class="btn-approve" onclick="moderateReview('${r.id}','published')">✓ Publicar</button>
+          <button class="btn-reject"  onclick="moderateReview('${r.id}','rejected')">✕ Rejeitar</button>
+        </div>` : r.status === 'published' ? `
+        <div class="review-actions">
+          <button class="btn-reject" onclick="moderateReview('${r.id}','rejected')">✕ Retirar</button>
+        </div>` : `
+        <div class="review-actions">
+          <button class="btn-approve" onclick="moderateReview('${r.id}','published')">↩ Republicar</button>
+        </div>`;
+      return `<div class="review-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
+          <div>
+            <span class="review-stars">${stars}</span> ${statusBadge}
+            <div class="review-meta">${r.client_name} · ${date}</div>
+            ${r.comment ? `<div class="review-comment">"${r.comment}"</div>` : ''}
+          </div>
+        </div>
+        ${actions}
+      </div>`;
+    }).join('');
+  }
+
+  async function moderateReview(reviewId, newStatus) {
+    const { error } = await sb.from('reviews').update({ status: newStatus }).eq('id', reviewId);
+    if (error) { showToast('Erro ao atualizar avaliação', 'error'); return; }
+    showToast(newStatus === 'published' ? 'Avaliação publicada ✓' : newStatus === 'rejected' ? 'Avaliação rejeitada' : 'Feito', 'success');
+    await loadReviews();
+  }
+
+  async function updateReviewsBadge() {
+    try {
+      const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
+      if (!school) return;
+      const { count } = await sb.from('reviews').select('id', { count: 'exact', head: true }).eq('school_id', school.id).eq('status', 'pending');
+      const btn = document.getElementById('btn-reviews');
+      if (!btn) return;
+      if (count > 0) btn.textContent = `⭐ Avaliações (${count} nova${count>1?'s':''})`;
+      else btn.textContent = '⭐ Avaliações';
+    } catch(_) {}
   }
 
   // WA messages per client language — school owner always sees PT dashboard
