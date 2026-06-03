@@ -360,6 +360,8 @@
     <button class="lb" onclick="setLang('en')">EN</button>
     <button class="lb" onclick="setLang('fr')">FR</button>
     <button class="lb" onclick="setLang('de')">DE</button>
+    <button class="lb" onclick="setLang('es')">ES</button>
+    <button class="lb" onclick="setLang('nl')">NL</button>
   </div>
 </div>
 
@@ -658,6 +660,28 @@
           <div class="form-group"><label data-t="f_name"></label><input type="text" id="fname" data-placeholder="f_name_ph" /></div>
           <div class="form-group"><label data-t="f_phone"></label><input type="tel" id="fphone" data-placeholder="f_phone_ph" /></div>
           <div class="form-group"><label data-t="f_email"></label><input type="email" id="femail" data-placeholder="f_email_ph" /></div>
+          <div class="form-group"><label data-t="f_country"></label>
+            <select id="fcountry">
+              <option value="🇵🇹 Portugal">🇵🇹 Portugal</option>
+              <option value="🇬🇧 United Kingdom">🇬🇧 United Kingdom</option>
+              <option value="🇫🇷 France">🇫🇷 France</option>
+              <option value="🇩🇪 Germany">🇩🇪 Germany</option>
+              <option value="🇪🇸 Spain">🇪🇸 Spain</option>
+              <option value="🇳🇱 Netherlands">🇳🇱 Netherlands</option>
+              <option value="🇧🇪 Belgium">🇧🇪 Belgium</option>
+              <option value="🇮🇪 Ireland">🇮🇪 Ireland</option>
+              <option value="🇮🇹 Italy">🇮🇹 Italy</option>
+              <option value="🇨🇭 Switzerland">🇨🇭 Switzerland</option>
+              <option value="🇦🇹 Austria">🇦🇹 Austria</option>
+              <option value="🇸🇪 Sweden">🇸🇪 Sweden</option>
+              <option value="🇩🇰 Denmark">🇩🇰 Denmark</option>
+              <option value="🇳🇴 Norway">🇳🇴 Norway</option>
+              <option value="🇺🇸 USA">🇺🇸 USA</option>
+              <option value="🇨🇦 Canada">🇨🇦 Canada</option>
+              <option value="🇧🇷 Brasil">🇧🇷 Brasil</option>
+              <option value="🌍 Other">🌍 Other</option>
+            </select>
+          </div>
           <div class="form-group"><label data-t="f_pessoas"></label>
             <select id="fpessoas" onchange="onPessoasChange()">
               <option value="1">1</option><option value="2">2</option><option value="3">3</option>
@@ -774,7 +798,7 @@ const LANGS = {
     s2_title:'Escolhe o dia', s2_desc:'Seleciona uma data disponível no calendário.',
     s3_title:'Escolhe o horário', s3_desc:'Vagas disponíveis para o dia selecionado.',
     s4_title:'Os teus dados', s4_desc:'Preenche para confirmarmos a reserva via WhatsApp.',
-    f_name:'Nome completo *', f_name_ph:'Ex: João Silva', f_phone:'Telemóvel *', f_phone_ph:'+351 912 345 678',
+    f_name:'Nome completo *', f_name_ph:'Ex: João Silva', f_phone:'Telemóvel *', f_phone_ph:'+351 912 345 678', f_country:'País',
     f_email:'Email', f_email_ph:'joao@email.com', f_pessoas:'Nº de pessoas',
     f_peso:'Peso (kg)', f_altura:'Altura (cm)', f_genero:'Género', f_fato:'Tamanho do fato',
     f_exp:'Experiência', exp_nunca:'Nunca surfei', exp_ja:'Já surfei', exp_inter:'Intermédio', exp_avanc:'Avançado',
@@ -839,7 +863,7 @@ const LANGS = {
     s2_title:'Choose a day', s2_desc:'Select an available date on the calendar.',
     s3_title:'Choose a time', s3_desc:'Available slots for the selected day.',
     s4_title:'Your details', s4_desc:'Fill in to confirm your booking via WhatsApp.',
-    f_name:'Full name *', f_name_ph:'Ex: John Smith', f_phone:'Mobile *', f_phone_ph:'+44 7911 123456',
+    f_name:'Full name *', f_name_ph:'Ex: John Smith', f_phone:'Mobile *', f_phone_ph:'+44 7911 123456', f_country:'Country',
     f_email:'Email', f_email_ph:'john@email.com', f_pessoas:'Number of people',
     f_peso:'Weight (kg)', f_altura:'Height (cm)', f_genero:'Gender', f_fato:'Wetsuit size',
     f_exp:'Experience', exp_nunca:'Never surfed', exp_ja:'Surfed before', exp_inter:'Intermediate', exp_avanc:'Advanced',
@@ -904,7 +928,7 @@ const LANGS = {
     s2_title:'Choisissez un jour', s2_desc:'Sélectionnez une date disponible dans le calendrier.',
     s3_title:'Choisissez un horaire', s3_desc:'Créneaux disponibles pour le jour sélectionné.',
     s4_title:'Vos coordonnées', s4_desc:'Remplissez pour confirmer votre réservation via WhatsApp.',
-    f_name:'Nom complet *', f_name_ph:'Ex: Jean Dupont', f_phone:'Téléphone *', f_phone_ph:'+33 6 12 34 56 78',
+    f_name:'Nom complet *', f_name_ph:'Ex: Jean Dupont', f_phone:'Téléphone *', f_phone_ph:'+33 6 12 34 56 78', f_country:'Pays',
     f_email:'Email', f_email_ph:'jean@email.com', f_pessoas:'Nombre de personnes',
     f_peso:'Poids (kg)', f_altura:'Taille (cm)', f_genero:'Genre', f_fato:'Taille combinaison',
     f_exp:'Expérience', exp_nunca:'Jamais surfé', exp_ja:'Déjà surfé', exp_inter:'Intermédiaire', exp_avanc:'Avancé',
@@ -969,7 +993,7 @@ const LANGS = {
     s2_title:'Wähle einen Tag', s2_desc:'Wähle ein verfügbares Datum im Kalender.',
     s3_title:'Wähle eine Uhrzeit', s3_desc:'Verfügbare Plätze für den ausgewählten Tag.',
     s4_title:'Deine Daten', s4_desc:'Ausfüllen zur Buchungsbestätigung per WhatsApp.',
-    f_name:'Vollständiger Name *', f_name_ph:'z.B. Hans Müller', f_phone:'Handy *', f_phone_ph:'+49 151 12345678',
+    f_name:'Vollständiger Name *', f_name_ph:'z.B. Hans Müller', f_phone:'Handy *', f_phone_ph:'+49 151 12345678', f_country:'Land',
     f_email:'E-Mail', f_email_ph:'hans@email.com', f_pessoas:'Personenanzahl',
     f_peso:'Gewicht (kg)', f_altura:'Größe (cm)', f_genero:'Typ', f_fato:'Neoprenanzuggröße',
     f_exp:'Erfahrung', exp_nunca:'Noch nie gesurft', exp_ja:'Schon gesurft', exp_inter:'Mittelstufe', exp_avanc:'Fortgeschritten',
@@ -996,11 +1020,150 @@ const LANGS = {
     cal_months:['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
     tide_days:['So','Mo','Di','Mi','Do','Fr','Sa'],
     surf_labels:['Schwach','Mäßig','Gut','Sehr gut','Ausgezeichnet'],
-  }
+  },
+  es: {
+    nav_sobre:'Sobre nosotros', nav_praias:'Playas', nav_mares:'Mareas', nav_aulas:'Clases', nav_reservar:'Reservar',
+    hero_line1:'Aprende a Surfear', hero_line2:'con Pasión',
+    hero_sub:'En la Costa Vicentina, donde las olas son perfectas y la naturaleza es salvaje. Clases para todos los niveles, instructores certificados ISA.',
+    hero_cta1:'Reservar Clase', hero_cta2:'Ver Clases',
+    stat_alunos:'Alumnos / año', stat_anos:'Años de experiencia', stat_sat:'Satisfacción', stat_cert:'Certificados',
+    about_tag:'Sobre nosotros', about_title:'La mejor escuela de surf del Algarve',
+    about_sub:'Fundada en 2013 en Praia da Arrifana, somos apasionados del surf y de la Costa Vicentina. Nuestro método garantiza que cualquier persona aprenda a surfear con seguridad.',
+    about_reviews:'+320 opiniones',
+    feat1_title:'Instructores ISA Certificados', feat1_sub:'Todos los instructores tienen certificación internacional y formación en primeros auxilios.',
+    feat2_title:'Material de Calidad', feat2_sub:'Trajes de neopreno, tablas softop y leashes incluidos en todas las clases.',
+    feat3_title:'Ubicación Privilegiada', feat3_sub:'Arrifana tiene olas perfectas para todos los niveles, en el corazón del Parque Natural.',
+    beaches_tag:'Costa Vicentina', beaches_title:'Nuestras playas', beaches_sub:'Descubre las mejores playas de la zona de Aljezur y elige dónde quieres aprender a surfear.',
+    level_all:'Todos los niveles', level_beg:'Principiante', level_adv:'Avanzado',
+    beach1_desc:'Nuestra playa principal. Acantilados impresionantes, olas consistentes todo el año. Perfecta para todos los niveles.',
+    beach2_desc:'Más protegida del viento norte. Ideal para principiantes y familias. Pequeña y acogedora con olas suaves.',
+    beach3_desc:'Desembocadura de río con barra de arena en constante cambio. Muy tranquila, ideal para niños.',
+    beach4_desc:'La más expuesta de la zona. Olas potentes y tubulares. Favorita de surfistas experimentados.',
+    beach_wave_type:'Fondo rocoso', beach_sandy:'Fondo arenoso', beach_river:'Desembocadura', beach_reef:'Fondo mixto',
+    beach1_wind:'Viento N ideal', beach2_wind:'Protegida N/NO', beach3_wind:'Viento N ideal', beach4_wind:'Viento N ideal',
+    tides_tag:'Tabla de Mareas', tides_title:'Mareas · Aljezur', tides_sub:'Condiciones en tiempo real para planear tu clase. Mejor surf: 2h antes y después de la pleamar.',
+    gallery_tag:'Galería', gallery_title:'Nuestra esencia', gallery_sub:'Momentos capturados en la Costa Vicentina, donde cada ola cuenta una historia.',
+    lessons_tag:'Actividades', lessons_title:'Elige tu clase', lessons_sub:'Desde el primer contacto con el océano hasta las maniobras avanzadas.',
+    l1_name:'Principiante', l1_desc:'¿Nunca has surfeado? Empieza aquí. Teoría, seguridad, palada y primeras olas de pie — todo en 2 horas.',
+    l2_name:'Intermedio', l2_desc:'¿Ya tienes las bases? Aprende a leer las olas, elegir la posición correcta y encadenar maniobras.',
+    l3_name:'Clase Privada', l3_desc:'Atención 100% personalizada. Ideal para progresión rápida o necesidades específicas.',
+    l4_name:'Bodyboard', l4_desc:'Diversión garantizada para todas las edades. Aprende a deslizarte en las olas con bodyboard.',
+    max:'Máx.', per_person:'/ persona', per_session:'/ sesión', popular:'Popular',
+    includes:'Incluido', inc_wetsuit:'Traje de neopreno', inc_board:'Tabla softop', inc_insurance:'Seguro de accidentes',
+    inc_video:'Análisis de vídeo', inc_bodyboard:'Bodyboard + aletas',
+    reviews_tag:'Opiniones', reviews_title:'Lo que dicen de nosotros', reviews_sub:'Más de 320 opiniones verificadas de surfistas de todo el mundo.',
+    book_tag:'Reservas', book_title:'Reserva tu clase', book_sub:'Elige la actividad, el día y el horario — confirmamos vía WhatsApp en minutos.',
+    step1_label:'Actividad', step2_label:'Fecha', step3_label:'Horario', step4_label:'Datos',
+    s1_title:'¿Qué tipo de clase?', s1_desc:'Selecciona la actividad más adecuada para tu nivel.',
+    s2_title:'Elige un día', s2_desc:'Selecciona una fecha disponible en el calendario.',
+    s3_title:'Elige un horario', s3_desc:'Plazas disponibles para el día seleccionado.',
+    s4_title:'Tus datos', s4_desc:'Rellena para confirmar tu reserva vía WhatsApp.',
+    f_name:'Nombre completo *', f_name_ph:'Ej: Carlos García', f_phone:'Teléfono *', f_phone_ph:'+34 612 345 678', f_country:'País',
+    f_email:'Email', f_email_ph:'carlos@email.com', f_pessoas:'Número de personas',
+    f_peso:'Peso (kg)', f_altura:'Altura (cm)', f_genero:'Género', f_fato:'Talla de traje',
+    f_exp:'Experiencia', exp_nunca:'Nunca he surfeado', exp_ja:'Ya he surfeado', exp_inter:'Intermedio', exp_avanc:'Avanzado',
+    g_homem:'Hombre', g_mulher:'Mujer', g_crianca:'Niño/a',
+    f_nota:'Nota (opcional)', f_nota_ph:'Alergias, edades del grupo, nivel de experiencia...',
+    btn_next:'Siguiente →', btn_back:'← Volver', btn_whatsapp:'Confirmar vía WhatsApp',
+    pp:'pers.', ps:'sesión',
+    slot_available:'plazas disponibles', slot_full:'Sin plazas', slot_spots:'plazas en total',
+    summary_title:'Resumen de reserva', summary_lesson:'Actividad', summary_date:'Fecha',
+    summary_time:'Horario', summary_unit:'Precio unitario', summary_total:'Total estimado',
+    wa_header:'Nueva Reserva — Escola Surf Teste',
+    wa_name:'Nombre', wa_phone:'Teléfono', wa_email:'Email', wa_lesson:'Clase',
+    wa_date:'Fecha', wa_time:'Horario', wa_people:'Personas', wa_total:'Total estimado', wa_note:'Nota',
+    wa_weight:'Peso', wa_height:'Altura', wa_gender:'Género', wa_wetsuit:'Traje',
+    wa_closing:'¡Espero confirmación! 🤙',
+    cond_wave:'Olas', cond_wind:'Viento', cond_water:'Agua', cond_tide:'Próxima marea', cond_pt:'Hora PT',
+    team_tag:'Equipo', team_title:'Nuestros instructores', team_sub:'Profesionales apasionados por el surf y la enseñanza.',
+    inst1_desc:'12 años enseñando en Arrifana. Campeón regional de longboard 2016 y 2019.',
+    inst2_desc:'Surfeando desde los 8 años. Campeona Nacional Junior 2018. Especialista surf femenino.',
+    inst2_t1:'Surf femenino', inst3_t1:'Avanzado',
+    inst3_desc:'Nacido en Aljezur, creció en las olas de Arrifana. Especialista en clases privadas.',
+    footer_nav:'Navegación', footer_contact:'Contacto', footer_rights:'Todos los derechos reservados.',
+    cal_days:['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],
+    cal_months:['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
+    tide_days:['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],
+    surf_labels:['Débil','Aceptable','Bueno','Muy bueno','Excelente'],
+  },
+  nl: {
+    nav_sobre:'Over ons', nav_praias:'Stranden', nav_mares:'Getij', nav_aulas:'Lessen', nav_reservar:'Boeken',
+    hero_line1:'Leer Surfen', hero_line2:'met Passie',
+    hero_sub:'Aan de Costa Vicentina, waar de golven perfect zijn en de natuur ongerept is. Lessen voor alle niveaus, ISA-gecertificeerde instructeurs.',
+    hero_cta1:'Les boeken', hero_cta2:'Lessen bekijken',
+    stat_alunos:'Leerlingen / jaar', stat_anos:'Jaar ervaring', stat_sat:'Tevredenheid', stat_cert:'Gecertificeerd',
+    about_tag:'Over ons', about_title:'De beste surfschool van de Algarve',
+    about_sub:'Opgericht in 2013 aan Praia da Arrifana, zijn wij gepassioneerd door surfen en de Costa Vicentina. Onze methode zorgt ervoor dat iedereen veilig leert surfen.',
+    about_reviews:'+320 beoordelingen',
+    feat1_title:'ISA-gecertificeerde instructeurs', feat1_sub:'Alle instructeurs hebben internationale certificering en EHBO-training.',
+    feat2_title:'Kwaliteitsuitrusting', feat2_sub:'Wetsuits, softboards en leashes inbegrepen in alle lessen.',
+    feat3_title:'Uitstekende locatie', feat3_sub:'Arrifana heeft perfecte golven voor alle niveaus, in het hart van het Natuurpark.',
+    beaches_tag:'Costa Vicentina', beaches_title:'Onze stranden', beaches_sub:'Ontdek de mooiste stranden rondom Aljezur en kies waar je wilt leren surfen.',
+    level_all:'Alle niveaus', level_beg:'Beginner', level_adv:'Gevorderd',
+    beach1_desc:'Ons hoofdstrand. Imposante rotswanden, consistente golven het hele jaar door. Geschikt voor alle niveaus.',
+    beach2_desc:'Meer beschermd tegen noordenwind. Ideaal voor beginners en families. Klein en gastvrij met rustige golven.',
+    beach3_desc:'Riviermonding met steeds veranderende zandbank. Heel kalm, ideaal voor kinderen.',
+    beach4_desc:'Het meest blootgestelde strand van de regio. Krachtige, holle golven. Favoriet van ervaren surfers.',
+    beach_wave_type:'Rotsbodem', beach_sandy:'Zandbodem', beach_river:'Riviermonding', beach_reef:'Gemengde bodem',
+    beach1_wind:'N-wind ideaal', beach2_wind:'Beschermd N/NW', beach3_wind:'N-wind ideaal', beach4_wind:'N-wind ideaal',
+    tides_tag:'Getijdentabel', tides_title:'Getij · Aljezur', tides_sub:'Real-time omstandigheden om je les te plannen. Beste surf: 2u voor en na vloed.',
+    gallery_tag:'Galerij', gallery_title:'Onze essentie', gallery_sub:'Momenten vastgelegd aan de Costa Vicentina, waar elke golf een verhaal vertelt.',
+    lessons_tag:'Activiteiten', lessons_title:'Kies je les', lessons_sub:'Van eerste contact met de oceaan tot geavanceerde manoeuvres.',
+    l1_name:'Beginner', l1_desc:'Nog nooit gesurft? Begin hier. Theorie, veiligheid, peddelen en eerste golven staand — alles in 2 uur.',
+    l2_name:'Gevorderd', l2_desc:'Heb je al de basis? Leer golven lezen, de juiste positie kiezen en manoeuvres aaneenschakelen.',
+    l3_name:'Privéles', l3_desc:'100% persoonlijke aandacht. Ideaal voor snelle progressie of specifieke behoeften.',
+    l4_name:'Bodyboard', l4_desc:'Gegarandeerd plezier voor alle leeftijden. Leer op golven te glijden met een bodyboard.',
+    max:'Max.', per_person:'/ pers.', per_session:'/ sessie', popular:'Populair',
+    includes:'Inbegrepen', inc_wetsuit:'Wetsuit', inc_board:'Softboard', inc_insurance:'Ongevallenverzekering',
+    inc_video:'Video-analyse', inc_bodyboard:'Bodyboard + vinnen',
+    reviews_tag:'Beoordelingen', reviews_title:'Wat onze leerlingen zeggen', reviews_sub:'Meer dan 320 geverifieerde beoordelingen van surfers wereldwijd.',
+    book_tag:'Reserveringen', book_title:'Boek je les', book_sub:'Kies activiteit, dag en tijd — bevestiging via WhatsApp in minuten.',
+    step1_label:'Activiteit', step2_label:'Datum', step3_label:'Tijd', step4_label:'Gegevens',
+    s1_title:'Welk type les?', s1_desc:'Selecteer de meest geschikte activiteit voor jouw niveau.',
+    s2_title:'Kies een dag', s2_desc:'Selecteer een beschikbare datum in de kalender.',
+    s3_title:'Kies een tijd', s3_desc:'Beschikbare plaatsen voor de geselecteerde dag.',
+    s4_title:'Jouw gegevens', s4_desc:'Vul in om je reservering te bevestigen via WhatsApp.',
+    f_name:'Volledige naam *', f_name_ph:'Bijv: Jan de Vries', f_phone:'Mobiel *', f_phone_ph:'+31 6 12345678', f_country:'Land',
+    f_email:'E-mail', f_email_ph:'jan@email.com', f_pessoas:'Aantal personen',
+    f_peso:'Gewicht (kg)', f_altura:'Lengte (cm)', f_genero:'Geslacht', f_fato:'Maat wetsuit',
+    f_exp:'Ervaring', exp_nunca:'Nog nooit gesurft', exp_ja:'Al eerder gesurft', exp_inter:'Gemiddeld', exp_avanc:'Gevorderd',
+    g_homem:'Man', g_mulher:'Vrouw', g_crianca:'Kind',
+    f_nota:'Opmerking (optioneel)', f_nota_ph:'Allergieën, leeftijden groep, ervaringsniveau...',
+    btn_next:'Volgende →', btn_back:'← Terug', btn_whatsapp:'Bevestigen via WhatsApp',
+    pp:'pers.', ps:'sessie',
+    slot_available:'plaatsen beschikbaar', slot_full:'Volgeboekt', slot_spots:'plaatsen totaal',
+    summary_title:'Reserveringsoverzicht', summary_lesson:'Activiteit', summary_date:'Datum',
+    summary_time:'Tijd', summary_unit:'Prijs per persoon', summary_total:'Geschat totaal',
+    wa_header:'Nieuwe Reservering — Escola Surf Teste',
+    wa_name:'Naam', wa_phone:'Mobiel', wa_email:'E-mail', wa_lesson:'Les',
+    wa_date:'Datum', wa_time:'Tijd', wa_people:'Personen', wa_total:'Geschat totaal', wa_note:'Opmerking',
+    wa_weight:'Gewicht', wa_height:'Lengte', wa_gender:'Geslacht', wa_wetsuit:'Wetsuit',
+    wa_closing:'Wacht op bevestiging! 🤙',
+    cond_wave:'Golven', cond_wind:'Wind', cond_water:'Water', cond_tide:'Volgend getij', cond_pt:'PT Tijd',
+    team_tag:'Team', team_title:'Onze instructeurs', team_sub:'Professionals gepassioneerd door surfen en lesgeven.',
+    inst1_desc:'12 jaar lesgeven in Arrifana. Regionaal longboard-kampioen 2016 en 2019.',
+    inst2_desc:"Surft sinds haar 8e. Nationaal Juniorkampioen 2018. Specialiste vrouwensurfen.",
+    inst2_t1:'Vrouwensurfen', inst3_t1:'Gevorderd',
+    inst3_desc:"Geboren in Aljezur, opgegroeid op Arrifana's golven. Specialist privélessen.",
+    footer_nav:'Navigatie', footer_contact:'Contact', footer_rights:'Alle rechten voorbehouden.',
+    cal_days:['Zo','Ma','Di','Wo','Do','Vr','Za'],
+    cal_months:['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'],
+    tide_days:['Zo','Ma','Di','Wo','Do','Vr','Za'],
+    surf_labels:['Slecht','Matig','Goed','Zeer goed','Uitstekend'],
+  },
 };
 
 let currentLang = 'pt';
 function T(key) { return LANGS[currentLang][key] || LANGS['pt'][key] || key; }
+
+const LANG_DEFAULT_COUNTRY = {
+  pt: '🇵🇹 Portugal',
+  en: '🇬🇧 United Kingdom',
+  fr: '🇫🇷 France',
+  de: '🇩🇪 Germany',
+  es: '🇪🇸 Spain',
+  nl: '🇳🇱 Netherlands',
+};
 
 function setLang(lang) {
   currentLang = lang;
@@ -1014,6 +1177,11 @@ function setLang(lang) {
   document.querySelectorAll('[data-placeholder]').forEach(el => {
     el.placeholder = T(el.dataset.placeholder);
   });
+  // Auto-select country based on language
+  const countrySel = document.getElementById('fcountry');
+  if (countrySel && LANG_DEFAULT_COUNTRY[lang]) {
+    countrySel.value = LANG_DEFAULT_COUNTRY[lang];
+  }
   buildCalendar();
   buildTideGrid();
   if (booking.selectedDateKey) buildSlots(booking.selectedDateKey);
@@ -1389,11 +1557,12 @@ async function loadSlotAvailability(dateKey) {
 const WA_NUMBER = '351962800400';
 
 async function reservarWhatsApp() {
-  const nome  = document.getElementById('fname').value.trim();
-  const tel   = document.getElementById('fphone').value.trim();
-  const email = document.getElementById('femail').value.trim();
-  const pess  = parseInt(document.getElementById('fpessoas').value || '1');
-  const nota  = document.getElementById('fnota').value.trim();
+  const nome    = document.getElementById('fname').value.trim();
+  const tel     = document.getElementById('fphone').value.trim();
+  const email   = document.getElementById('femail').value.trim();
+  const country = document.getElementById('fcountry').value;
+  const pess    = parseInt(document.getElementById('fpessoas').value || '1');
+  const nota    = document.getElementById('fnota').value.trim();
   if (!nome || !tel) { alert(T('f_name').replace(' *','') + ' / ' + T('f_phone').replace(' *','')); return; }
 
   // Collect per-person equipment + experience
@@ -1416,6 +1585,7 @@ async function reservarWhatsApp() {
 
   let msg = `*${T('wa_header')}*\n\n`;
   msg += `*${T('wa_name')}:* ${nome}\n`;
+  if (country) msg += `*${T('f_country')}:* ${country}\n`;
   msg += `*${T('wa_phone')}:* ${tel}\n`;
   if (email) msg += `*${T('wa_email')}:* ${email}\n`;
   msg += `\n*${T('wa_lesson')}:* ${T(booking.lessonKey)}\n`;
@@ -1450,6 +1620,7 @@ async function reservarWhatsApp() {
       school_id:'escola-teste', lesson_type:T(booking.lessonKey),
       booking_date:dateStr, booking_time:booking.time, num_people:pess,
       client_name:nome, client_phone:tel, client_email:email||null,
+      client_country: country || null,
       client_weight:p0.weight, client_height:p0.height,
       client_gender:p0.gender, wetsuit_size:p0.size,
       equipment_list: equipment,

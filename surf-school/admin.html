@@ -14,6 +14,7 @@
       --teal: #00A896; --white: #FFFFFF; --gray: #8B9AB0;
       --card: rgba(255,255,255,0.05); --border: rgba(255,255,255,0.1);
       --green: #22c55e; --red: #ef4444; --yellow: #eab308; --orange: #f97316;
+      color-scheme: dark;
     }
     html, body { height: 100%; }
     body { font-family: 'Inter', sans-serif; background: var(--navy); color: var(--white); }
@@ -155,12 +156,13 @@
     .filter-group { display: flex; flex-direction: column; gap: .3rem; }
     .filter-label { font-size: .72rem; color: var(--gray); text-transform: uppercase; letter-spacing: .07em; }
     select.filter-select, input.filter-input {
-      background: rgba(255,255,255,.08); border: 1px solid var(--border); border-radius: 9px;
+      background: #0d1f3c; border: 1px solid var(--border); border-radius: 9px;
       padding: .55rem .9rem; color: var(--white); font-family: 'Inter', sans-serif;
       font-size: .88rem; outline: none; transition: border-color .2s; cursor: pointer;
+      color-scheme: dark;
     }
     select.filter-select:focus, input.filter-input:focus { border-color: var(--cyan); }
-    select.filter-select option { background: var(--ocean); }
+    select.filter-select option { background: #0d1f3c; color: var(--white); }
     input.filter-input::placeholder { color: #4a5a6e; }
     .btn-refresh {
       padding: .55rem 1.1rem; background: linear-gradient(135deg, var(--blue), var(--cyan));
@@ -269,11 +271,13 @@
     .rsch-fields { display: flex; flex-direction: column; gap: .8rem; margin-bottom: 1.2rem; }
     .rsch-field label { display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--cyan); margin-bottom: .4rem; }
     .rsch-field input, .rsch-field select {
-      width: 100%; padding: .6rem .85rem; background: rgba(255,255,255,.05);
+      width: 100%; padding: .6rem .85rem; background: #0d1f3c;
       border: 1px solid var(--border); border-radius: 9px; color: var(--white);
       font-size: .9rem; font-family: 'Inter',sans-serif;
+      color-scheme: dark;
     }
     .rsch-field input:focus, .rsch-field select:focus { outline: none; border-color: var(--cyan); }
+    .rsch-field select option { background: #0d1f3c; color: var(--white); }
     .rsch-actions { display: flex; gap: .7rem; }
     .rsch-send-wa { display: flex; align-items: center; gap: .5rem; font-size: .78rem; color: var(--gray); margin-bottom: 1rem; cursor: pointer; }
     .rsch-send-wa input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--green); }
@@ -994,7 +998,7 @@
       const [y, m, d] = b.booking_date.split('-');
       const dateStr = `${d}/${m}/${y}`;
 
-      const langFlag = { pt:'🇵🇹', en:'🇬🇧', fr:'🇫🇷', de:'🇩🇪' }[b.language] || '';
+      const langFlag = { pt:'🇵🇹', en:'🇬🇧', fr:'🇫🇷', de:'🇩🇪', es:'🇪🇸', nl:'🇳🇱' }[b.language] || '';
 
       const actions = b.status === 'pending'
         ? `<button class="act-btn act-confirm"  title="Confirmar"          onclick="updateStatus('${b.id}','confirmed')">✓</button>
@@ -1029,7 +1033,7 @@
         <td style="color:var(--gray);font-size:.8rem">#${b.booking_ref || (i+1)}</td>
         <td><strong>${dateStr}</strong><small>${b.booking_time}</small></td>
         <td>${b.lesson_type} ${langFlag}</td>
-        <td>${b.client_name}
+        <td>${b.client_name}${b.client_country ? `<small style="margin-left:.35rem;opacity:.8">${b.client_country.split(' ')[0]}</small>` : ''}
           <small>${b.client_phone}${b.client_email ? ' · ' + b.client_email : ''}</small>
           ${equip ? `<small style="color:#C9A84C">👕 ${equip}</small>` : ''}
         </td>
@@ -1073,6 +1077,10 @@
         `*${school} — Cours Confirme*\n\nBonjour ${name},\n\nVotre cours de surf est *confirme*.\n\n*Date:* ${date}\n*Heure:* ${time}\n*Activite:* ${lesson}\n*Personnes:* ${people}\n*Total:* €${price}\n\n*Point de rendez-vous:*\n${meet}\n\nPortez votre maillot sous la combinaison. Apportez une serviette et de la creme solaire.\n\nA bientot!`,
       de: (name, school, date, time, lesson, people, price, meet) =>
         `*${school} — Kurs Bestatigt*\n\nHallo ${name},\n\nDein Surfkurs ist *bestatigt*.\n\n*Datum:* ${date}\n*Uhrzeit:* ${time}\n*Aktivitat:* ${lesson}\n*Personen:* ${people}\n*Gesamt:* €${price}\n\n*Treffpunkt:*\n${meet}\n\nTrage deinen Badeanzug unter dem Neoprenanzug. Bring ein Handtuch und Sonnencreme mit.\n\nBis bald!`,
+      es: (name, school, date, time, lesson, people, price, meet) =>
+        `*${school} — Clase Confirmada*\n\nHola ${name},\n\nTu clase de surf esta *confirmada*.\n\n*Fecha:* ${date}\n*Hora:* ${time}\n*Actividad:* ${lesson}\n*Personas:* ${people}\n*Total:* €${price}\n\n*Punto de encuentro:*\n${meet}\n\nViste el banador debajo del traje de neopreno. Trae una toalla y protector solar.\n\n¡Hasta pronto!`,
+      nl: (name, school, date, time, lesson, people, price, meet) =>
+        `*${school} — Les Bevestigd*\n\nHoi ${name},\n\nJe surfles is *bevestigd*.\n\n*Datum:* ${date}\n*Tijd:* ${time}\n*Activiteit:* ${lesson}\n*Personen:* ${people}\n*Totaal:* €${price}\n\n*Ontmoetingspunt:*\n${meet}\n\nDraag je zwemkleding onder het wetsuit. Breng een handdoek en zonnebrand mee.\n\nTot snel!`,
     },
     cancelled: {
       pt: (name, school, date, time) =>
@@ -1083,6 +1091,10 @@
         `*${school}*\n\nBonjour ${name},\n\nNous n'avons malheureusement pas pu confirmer votre reservation pour le ${date} a ${time}.\n\nNous nous excusons pour la gene occasionnee. Contactez-nous pour reprogrammer.\n\nMerci de votre comprehension.`,
       de: (name, school, date, time) =>
         `*${school}*\n\nHallo ${name},\n\nLeider konnten wir deine Buchung fur den ${date} um ${time} nicht bestatigen.\n\nWir entschuldigen uns fur die Unannehmlichkeiten. Bitte kontaktiere uns fur eine Umbuchung.\n\nVielen Dank fur dein Verstandnis.`,
+      es: (name, school, date, time) =>
+        `*${school}*\n\nHola ${name},\n\nLamentablemente no pudimos confirmar tu reserva para el ${date} a las ${time}.\n\nPedimos disculpas por los inconvenientes. Contactanos para reprogramar.\n\nGracias por tu comprension.`,
+      nl: (name, school, date, time) =>
+        `*${school}*\n\nHoi ${name},\n\nHelaas konden we je reservering voor ${date} om ${time} niet bevestigen.\n\nOns excuses voor het ongemak. Neem contact met ons op om opnieuw in te plannen.\n\nBedankt voor je begrip.`,
     },
   };
 
@@ -1099,7 +1111,16 @@
         const [y, m, d] = b.booking_date.split('-');
         const dateStr = `${d}/${m}/${y}`;
         const price   = parseFloat(b.total_price).toFixed(2);
-        const lang    = (b.language || 'pt').toLowerCase();
+        let lang      = (b.language || 'pt').toLowerCase();
+        // Infer language from country when saved as PT but client is foreign
+        if (b.client_country) {
+          const cn = b.client_country.replace(/^\S+\s/, '');
+          const COUNTRY_LANG = { 'United Kingdom':'en', 'USA':'en', 'Canada':'en', 'Ireland':'en',
+            'France':'fr', 'Belgium':'fr', 'Switzerland':'fr',
+            'Germany':'de', 'Austria':'de',
+            'Spain':'es', 'Netherlands':'nl' };
+          if (COUNTRY_LANG[cn]) lang = COUNTRY_LANG[cn];
+        }
         const msgs    = WA_MSGS[newStatus];
         const fn      = msgs[lang] || msgs['pt'];
         const msg     = newStatus === 'confirmed'
@@ -1453,9 +1474,9 @@
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
             <div>
               <div class="today-card-time">${b.booking_time}</div>
-              <div class="today-card-name">${b.client_name}</div>
+              <div class="today-card-name">${b.client_name}${b.client_country ? `<span style="font-size:.8rem;margin-left:.4rem;opacity:.8">${b.client_country.split(' ')[0]}</span>` : ''}</div>
               <div class="today-card-lesson">${b.lesson_type} · ${b.num_people} pess. · €${price}</div>
-              <div style="font-size:.73rem;color:var(--gray);margin-top:.2rem">📞 ${b.client_phone}${b.client_email?' · '+b.client_email:''}</div>
+              <div style="font-size:.73rem;color:var(--gray);margin-top:.2rem">📞 ${b.client_phone}${b.client_email?' · '+b.client_email:''}${b.client_country?` · ${b.client_country}`:''}</div>
             </div>
             <span class="status-badge ${s.cls}" style="font-size:.65rem;flex-shrink:0">${s.label}</span>
           </div>
@@ -1530,12 +1551,22 @@
         const sch  = SCHOOLS.find(s => s.id === b.school_id) || SCHOOLS[0];
         const [y,m,d] = newDate.split('-');
         const dateStr = `${d}/${m}/${y}`;
-        const lang = (b.language || 'pt').toLowerCase();
+        let lang = (b.language || 'pt').toLowerCase();
+        if (b.client_country) {
+          const cn = b.client_country.replace(/^\S+\s/, '');
+          const COUNTRY_LANG = { 'United Kingdom':'en', 'USA':'en', 'Canada':'en', 'Ireland':'en',
+            'France':'fr', 'Belgium':'fr', 'Switzerland':'fr',
+            'Germany':'de', 'Austria':'de',
+            'Spain':'es', 'Netherlands':'nl' };
+          if (COUNTRY_LANG[cn]) lang = COUNTRY_LANG[cn];
+        }
         const rschMsgs = {
           pt: `*${sch.name} — Aula Remarcada*\n\nOla ${b.client_name},\n\nA sua aula foi remarcada:\n\n*Nova data:* ${dateStr}\n*Novo horario:* ${newTime}\n*Modalidade:* ${b.lesson_type}\n\n*Ponto de encontro:*\n${sch.meeting_point}\n\nQualquer duvida estamos disponiveis. Ate ja!`,
           en: `*${sch.name} — Lesson Rescheduled*\n\nHi ${b.client_name},\n\nYour lesson has been rescheduled:\n\n*New date:* ${dateStr}\n*New time:* ${newTime}\n*Activity:* ${b.lesson_type}\n\n*Meeting point:*\n${sch.meeting_point}\n\nAny questions, we are available. See you soon!`,
           fr: `*${sch.name} — Cours Reprogramme*\n\nBonjour ${b.client_name},\n\nVotre cours a ete reprogramme:\n\n*Nouvelle date:* ${dateStr}\n*Nouvel horaire:* ${newTime}\n*Activite:* ${b.lesson_type}\n\n*Point de rendez-vous:*\n${sch.meeting_point}\n\nPour toute question, nous sommes disponibles. A bientot!`,
           de: `*${sch.name} — Kurs Umgebucht*\n\nHallo ${b.client_name},\n\nDein Kurs wurde umgebucht:\n\n*Neues Datum:* ${dateStr}\n*Neue Uhrzeit:* ${newTime}\n*Aktivitat:* ${b.lesson_type}\n\n*Treffpunkt:*\n${sch.meeting_point}\n\nBei Fragen stehen wir zur Verfugung. Bis bald!`,
+          es: `*${sch.name} — Clase Reprogramada*\n\nHola ${b.client_name},\n\nTu clase ha sido reprogramada:\n\n*Nueva fecha:* ${dateStr}\n*Nueva hora:* ${newTime}\n*Actividad:* ${b.lesson_type}\n\n*Punto de encuentro:*\n${sch.meeting_point}\n\n¡Para cualquier duda, estamos disponibles. Hasta pronto!`,
+          nl: `*${sch.name} — Les Verzet*\n\nHoi ${b.client_name},\n\nJe les is verzet:\n\n*Nieuwe datum:* ${dateStr}\n*Nieuwe tijd:* ${newTime}\n*Activiteit:* ${b.lesson_type}\n\n*Ontmoetingspunt:*\n${sch.meeting_point}\n\nVragen? We zijn beschikbaar. Tot snel!`,
         };
         const msg = encodeURIComponent(rschMsgs[lang] || rschMsgs['pt']);
         const phone = b.client_phone.replace(/\D/g,'');
