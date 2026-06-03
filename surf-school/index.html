@@ -1753,8 +1753,7 @@ async function reservarWhatsApp() {
         console.warn('Supabase save error:', error.code, error.message);
         showConfirm(false, 'Erro ao guardar', `Código: ${error.code} — ${error.message}\n\nO WhatsApp foi aberto. O dono foi notificado.`);
       } else {
-        showConfirm(true, 'Reserva guardada!', 'Aguarda confirmação por WhatsApp. O formulário vai reiniciar em 4 segundos.');
-        setTimeout(() => resetBookingForm(), 4000);
+        showConfirm(true, 'Reserva guardada!', 'Aguarda confirmação por WhatsApp. Clica em "Nova Marcação" quando quiseres marcar mais.');
       }
     } else {
       showConfirm(false, 'Sem ligação à base de dados', 'O WhatsApp foi aberto. O dono foi notificado por WhatsApp.');
