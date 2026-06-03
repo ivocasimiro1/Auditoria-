@@ -1387,48 +1387,96 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-(function() {
-  const p = new URLSearchParams(location.search);
-  const nome     = p.get('nome');    // school display name
-  const comissao = p.get('comissao'); // single commission rate override (e.g. "3.5")
-  const escola   = p.get('escola');  // school id (for localStorage lookup)
+(async function() {
+  const p      = new URLSearchParams(location.search);
+  const escola = p.get('escola');
+  const nomeP  = p.get('nome');
 
-  // Personalise hero
-  if (nome) {
+  // Personalise hero name (from URL param first, will be overridden by Supabase if available)
+  function setHeroName(n) {
     const el = document.getElementById('hero-escola');
-    if (el) el.textContent = nome + ' · Portugal';
-    document.title = 'SurfBook — Proposta para ' + nome;
+    if (el && n) { el.textContent = n + ' · Portugal'; document.title = 'SurfBook — Proposta para ' + n; }
   }
+  if (nomeP) setHeroName(nomeP);
 
-  // Try to read commission from localStorage (set by super-admin)
-  let resolvedComm = comissao ? parseFloat(comissao) : null;
-  if (!resolvedComm && escola) {
-    try {
-      const rates = JSON.parse(localStorage.getItem('surfbook_comm_rates') || '{}');
-      if (rates[escola]) resolvedComm = parseFloat(rates[escola]) * 100;
-    } catch(_) {}
-  }
-
-  // If a custom commission rate was supplied, replace the tiers with a single personalised card
-  if (resolvedComm && resolvedComm > 0) {
-    const grid = document.getElementById('pricing-tiers-grid');
+  function renderTiers(tiers, nomeEscola) {
+    const grid  = document.getElementById('pricing-tiers-grid');
     const title = document.getElementById('pricing-tiers-title');
-    const example = document.getElementById('pricing-example');
-    if (grid && title) {
-      title.textContent = 'Comissao acordada para ' + (nome || 'a sua escola');
+    const ex    = document.getElementById('pricing-example');
+    if (!grid || !tiers?.length) return;
+
+    const colors = [
+      { bg:'rgba(34,197,94,.1)',  border:'rgba(34,197,94,.25)',  text:'#86efac'  },
+      { bg:'rgba(0,112,243,.15)', border:'rgba(0,207,253,.3)',   text:'#00CFFD'  },
+      { bg:'rgba(201,168,76,.1)', border:'rgba(201,168,76,.25)', text:'#F59E0B'  },
+      { bg:'rgba(167,139,250,.1)',border:'rgba(167,139,250,.3)', text:'#a78bfa'  },
+    ];
+
+    if (title) title.textContent = 'Patamares acordados' + (nomeEscola ? ' — ' + nomeEscola : '');
+
+    if (tiers.length === 1) {
+      // Single fixed rate
+      const rate = (tiers[0].rate * 100);
       grid.innerHTML = `
         <div style="grid-column:1/-1;background:linear-gradient(135deg,rgba(0,112,243,.18),rgba(0,207,253,.1));border:2px solid rgba(0,207,253,.45);border-radius:16px;padding:2rem;text-align:center;position:relative">
-          <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--ocean),var(--cyan));color:#fff;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 14px;border-radius:999px;white-space:nowrap">Taxa personalizada</div>
-          <div style="font-size:3.5rem;font-weight:900;color:var(--white);line-height:1;margin-bottom:.5rem">${resolvedComm}<span style="font-size:1.8rem">%</span></div>
+          <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--ocean),var(--cyan));color:#fff;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 12px;border-radius:999px;white-space:nowrap">Taxa personalizada</div>
+          <div style="font-size:3.5rem;font-weight:900;color:var(--white);line-height:1;margin-bottom:.5rem">${rate.toFixed(1)}<span style="font-size:1.8rem">%</span></div>
           <div style="font-size:.9rem;color:var(--cyan);font-weight:600">Comissao fixa sobre aulas concluidas</div>
           <div style="font-size:.8rem;color:var(--gray);margin-top:.5rem">Sem mensalidades · So paga quando vende · Revisao anual conjunta</div>
         </div>`;
-      if (example) {
-        const ex = (resolvedComm / 100 * 35 * 80).toFixed(0);
-        example.innerHTML = `Exemplo de agosto (alta epoca): 80 aulas × €35 med × ${resolvedComm}% = <strong style="color:var(--white)">€${ex} de comissao</strong> — modelo justo e transparente.`;
-      }
+      if (ex) { const e=(rate/100*35*80).toFixed(0); ex.innerHTML=`Exemplo agosto: 80 aulas × €35 × ${rate.toFixed(1)}% = <strong style="color:var(--white)">€${e} de comissao</strong>.`; }
+    } else {
+      // Multi-tier
+      grid.innerHTML = tiers.map((t, i) => {
+        const c    = colors[i % colors.length];
+        const prev = tiers[i-1];
+        const rangeLabel = t.max == null
+          ? `${prev ? (prev.max+1)+'+ aulas/mês' : '61+ aulas/mês'}`
+          : `${prev ? (prev.max+1) : 1} – ${t.max} aulas/mês`;
+        const isMiddle = i > 0 && i < tiers.length - 1;
+        const rate = (t.rate * 100).toFixed(1);
+        return `
+          <div style="background:${c.bg};border:1px solid ${c.border};border-radius:12px;padding:1.2rem 1rem;text-align:center;position:relative">
+            ${isMiddle ? `<div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--ocean),var(--cyan));color:#fff;font-size:.62rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 9px;border-radius:999px;white-space:nowrap">Mais comum</div>` : ''}
+            <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:${c.text};margin-bottom:.6rem">${t.label || 'Patamar '+(i+1)}</div>
+            <div style="font-size:2rem;font-weight:800;color:var(--white);line-height:1">${rate}<span style="font-size:1.1rem">%</span></div>
+            <div style="font-size:.78rem;color:var(--gray);margin-top:.4rem">${rangeLabel}</div>
+          </div>`;
+      }).join('');
+      // Example uses last tier rate
+      const lastRate = (tiers[tiers.length-1].rate * 100).toFixed(1);
+      if (ex) { const e=(tiers[tiers.length-1].rate*35*80).toFixed(0); ex.innerHTML=`Exemplo agosto (alta epoca): 80 aulas × €35 × ${lastRate}% = <strong style="color:var(--white)">€${e} de comissao</strong> — volume premiado, modelo justo.`; }
     }
+  }
+
+  // Try to load from Supabase
+  if (escola) {
+    try {
+      const { createClient } = supabase;
+      const sb = createClient(
+        'https://ubeqidccuvsjhjphybxz.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U'
+      );
+      const { data } = await sb.from('schools').select('name,commission_tiers,commission_rate').eq('id', escola).single();
+      if (data) {
+        const nome = data.name || nomeP;
+        if (nome) setHeroName(nome);
+        if (data.commission_tiers?.length) {
+          renderTiers(data.commission_tiers, nome);
+        } else if (data.commission_rate) {
+          renderTiers([{ label: 'Taxa Acordada', max: null, rate: data.commission_rate }], nome);
+        }
+      }
+    } catch(_) {}
+  }
+
+  // URL param fallback (comissao=3.5 with no escola in DB)
+  const comissaoP = p.get('comissao');
+  if (comissaoP && !escola) {
+    const rate = parseFloat(comissaoP);
+    if (!isNaN(rate) && rate > 0) renderTiers([{ label: 'Taxa Acordada', max: null, rate: rate / 100 }], nomeP);
   }
 })();
 </script>

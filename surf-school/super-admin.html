@@ -602,16 +602,31 @@
     try { return JSON.parse(localStorage.getItem(COMM_KEY)) || {}; } catch { return {}; }
   }
 
+  function getSchoolTiers(schoolId) {
+    const school = SCHOOLS.find(s => s.id === schoolId);
+    if (school?.commissionTiers?.length) return school.commissionTiers;
+    return null; // fall back to global
+  }
+
+  function getTierForCountAndSchool(count, schoolId) {
+    const schoolTiers = getSchoolTiers(schoolId);
+    const tiers = schoolTiers || getCommTiers();
+    for (let i = 0; i < tiers.length; i++) {
+      const max = tiers[i].max === null ? Infinity : tiers[i].max;
+      if (count <= max) return { ...tiers[i], index: i + 1 };
+    }
+    return { ...tiers[tiers.length - 1], index: tiers.length };
+  }
+
   function getCommRate(schoolId) {
     const overrides = getCommRates();
     if (overrides[schoolId] !== undefined) return overrides[schoolId];
-    // Tiered: based on current month's lesson count
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
     const count = (allBookings || []).filter(b =>
       b.school_id === schoolId && b.status !== 'cancelled' && b.booking_date?.startsWith(monthKey)
     ).length;
-    return getTierForCount(count).rate;
+    return getTierForCountAndSchool(count, schoolId).rate;
   }
 
   function setCommRate(schoolId, rate) {
@@ -648,7 +663,7 @@
 
   async function tryLoadSchools() {
     try {
-      const { data, error } = await sb.from('schools').select('id,name,city,wa_number,email,status,commission_rate,created_at,onboarding_completed_at');
+      const { data, error } = await sb.from('schools').select('id,name,city,wa_number,email,status,commission_rate,commission_tiers,created_at,onboarding_completed_at');
       if (!error && data && data.length) {
         SCHOOLS = data.map(s => ({
           id:                s.id,
@@ -657,6 +672,7 @@
           site:              `/surf-school/?school=${s.id}`,
           admin:             `/admin?school=${s.id}`,
           defaultCommission: s.commission_rate || 0.04,
+          commissionTiers:   s.commission_tiers || null,
           status:            s.status || 'active',
           email:             s.email,
         }));
@@ -804,7 +820,7 @@
       const rev  = sBookings.reduce((sum, b) => sum + parseFloat(b.total_price||0), 0);
       const rate = getCommRate(s.id);
       const com  = rev * rate;
-      const tier = getTierForCount(sBookings.length);
+      const tier = getTierForCountAndSchool(sBookings.length, s.id);
       const bEl = document.getElementById(`sc-bookings-${s.id}`);
       const rEl = document.getElementById(`sc-revenue-${s.id}`);
       const cEl = document.getElementById(`sc-commission-${s.id}`);
@@ -1047,54 +1063,158 @@
     showToast('Patamares reposto para valores padrão', 'success');
   }
 
-  // ── COMMISSION EDITING ────────────────────────────────────────────────────────
-  function editCommission(schoolId) {
+  // ── COMMISSION EDITING (per school, saved to Supabase) ───────────────────────
+  let commTiersWorking = []; // working copy while editing
+
+  async function editCommission(schoolId) {
+    const school = SCHOOLS.find(s => s.id === schoolId);
     document.getElementById('comm-modal-bg').style.display = 'flex';
     document.getElementById('comm-modal-bg').dataset.schoolId = schoolId;
-    const school = SCHOOLS.find(s=>s.id===schoolId);
     document.getElementById('comm-school-name').textContent = school?.name || schoolId;
-    const overrides = getCommRates();
-    document.getElementById('comm-input').value = overrides[schoolId] !== undefined ? (overrides[schoolId]*100).toFixed(1) : '';
-    // Show tier info
+
+    // Month stats
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
     const count = allBookings.filter(b => b.school_id === schoolId && b.status !== 'cancelled' && b.booking_date?.startsWith(monthKey)).length;
-    const tier = getTierForCount(count);
-    const tiers = getCommTiers();
-    const tiersHTML = tiers.map((t,i) => {
-      const active = i === tier.index - 1;
-      const label = t.max === Infinity ? `${(tiers[i-1]?.max||0)+1}+ aulas` : `até ${t.max} aulas`;
-      return `<span style="color:${active?'#F59E0B':'inherit'};font-weight:${active?'700':'400'}">${active?'▶ ':''}<strong>${t.label}</strong>: ${label} → ${(t.rate*100).toFixed(1)}%</span>`;
-    }).join('<br>');
-    document.getElementById('comm-tier-info').innerHTML = `<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin-bottom:.4rem">Patamares Automáticos</div>${tiersHTML}<div style="margin-top:.5rem;font-size:.75rem">Este mês: <strong style="color:#fff">${count} aulas</strong> → taxa auto: <strong style="color:#F59E0B">${(tier.rate*100).toFixed(1)}%</strong>${overrides[schoolId]!==undefined?' (substituída manualmente)':''}</div>`;
+    const rev   = allBookings.filter(b => b.school_id === schoolId && b.status === 'completed'  && b.booking_date?.startsWith(monthKey)).reduce((s,b) => s + parseFloat(b.total_price||0), 0);
+    document.getElementById('comm-month-stats').innerHTML =
+      `Este mês: <strong style="color:#fff">${count} aulas</strong> · Receita: <strong style="color:var(--cyan)">€${rev.toFixed(0)}</strong>`;
+
+    // Load tiers from Supabase first, fall back to global defaults
+    let tiers = null;
+    try {
+      const { data } = await sb.from('schools').select('commission_tiers').eq('id', schoolId).single();
+      if (data?.commission_tiers?.length) tiers = data.commission_tiers;
+    } catch(_) {}
+    if (!tiers) tiers = getCommTiers().map(t => ({ ...t, max: t.max === Infinity ? null : t.max }));
+
+    commTiersWorking = tiers.map(t => ({ ...t }));
+    renderCommTierRows();
+    updatePropostaLink(schoolId, school?.name || '');
+  }
+
+  function renderCommTierRows() {
+    const labels = ['Início','Crescimento','Volume','Fidelidade','Elite'];
+    const colors = ['#86efac','#00CFFD','#F59E0B','#a78bfa','#f472b6'];
+    document.getElementById('comm-tiers-rows').innerHTML = commTiersWorking.map((t, i) => {
+      const isLast = i === commTiersWorking.length - 1;
+      const color  = colors[i % colors.length];
+      return `
+      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:.9rem 1rem;position:relative">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem">
+          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:${color}">Patamar ${i+1}</div>
+          ${commTiersWorking.length > 1 ? `<button onclick="removeCommTier(${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:.8rem;padding:.1rem .3rem;font-family:Inter,sans-serif;opacity:.7" title="Remover patamar">✕</button>` : ''}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem">
+          <div>
+            <label style="font-size:.68rem;color:var(--gray);display:block;margin-bottom:.25rem">Label</label>
+            <input type="text" id="ct-label-${i}" value="${t.label || labels[i] || 'Patamar '+(i+1)}"
+              oninput="commTiersWorking[${i}].label=this.value"
+              style="width:100%;padding:.5rem .6rem;background:#0d1f3c;border:1px solid rgba(255,255,255,.12);border-radius:7px;color:#fff;font-family:Inter,sans-serif;font-size:.83rem;color-scheme:dark" />
+          </div>
+          <div>
+            <label style="font-size:.68rem;color:var(--gray);display:block;margin-bottom:.25rem">${isLast ? 'Acima de' : 'Até (aulas/mês)'}</label>
+            <input type="number" id="ct-max-${i}" value="${t.max ?? ''}" ${isLast ? 'disabled placeholder="ilimitado"' : ''} min="1"
+              oninput="commTiersWorking[${i}].max=this.value?parseInt(this.value):null"
+              style="width:100%;padding:.5rem .6rem;background:${isLast?'rgba(255,255,255,.03)':'#0d1f3c'};border:1px solid rgba(255,255,255,.12);border-radius:7px;color:#fff;font-family:Inter,sans-serif;font-size:.83rem;color-scheme:dark" />
+          </div>
+          <div>
+            <label style="font-size:.68rem;color:var(--gray);display:block;margin-bottom:.25rem">Taxa (%)</label>
+            <input type="number" id="ct-rate-${i}" value="${((t.rate||0)*100).toFixed(1)}" step="0.5" min="0" max="30"
+              oninput="commTiersWorking[${i}].rate=parseFloat(this.value)/100||0"
+              style="width:100%;padding:.5rem .6rem;background:#0d1f3c;border:1px solid rgba(${color.replace('#','').match(/../g).map(h=>parseInt(h,16)).join(',')}, .3);border-radius:7px;color:#fff;font-family:Inter,sans-serif;font-size:.83rem;color-scheme:dark;font-weight:700" />
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function addCommTier() {
+    const prev = commTiersWorking[commTiersWorking.length - 1];
+    const newMax = prev?.max ? prev.max + 25 : 25;
+    const newRate = Math.max(0, (prev?.rate || 0.04) - 0.005);
+    // Make previous last tier no longer "last"
+    if (commTiersWorking.length) {
+      commTiersWorking[commTiersWorking.length - 1].max = newMax;
+    }
+    commTiersWorking.push({ label: 'Novo Patamar', max: null, rate: newRate });
+    renderCommTierRows();
+  }
+
+  function removeCommTier(i) {
+    if (commTiersWorking.length <= 1) return;
+    commTiersWorking.splice(i, 1);
+    // Ensure last tier has max=null
+    commTiersWorking[commTiersWorking.length - 1].max = null;
+    renderCommTierRows();
+  }
+
+  function updatePropostaLink(schoolId, schoolName) {
+    const base = 'https://auditoria-25b.pages.dev/proposta';
+    const nome = encodeURIComponent(schoolName || schoolId);
+    const url  = `${base}?escola=${encodeURIComponent(schoolId)}&nome=${nome}`;
+    const el   = document.getElementById('comm-proposta-link');
+    if (el) el.value = url;
+  }
+
+  function copyPropostaLink() {
+    const el = document.getElementById('comm-proposta-link');
+    if (!el) return;
+    navigator.clipboard.writeText(el.value).then(() => showToast('Link copiado!', 'success')).catch(() => {
+      el.select(); document.execCommand('copy'); showToast('Link copiado!', 'success');
+    });
+  }
+
+  async function saveCommTiers() {
+    const schoolId = document.getElementById('comm-modal-bg').dataset.schoolId;
+    // Validate
+    for (let i = 0; i < commTiersWorking.length - 1; i++) {
+      if (!commTiersWorking[i].max || commTiersWorking[i].max < 1) {
+        showToast(`Patamar ${i+1}: define o limite de aulas`, 'error'); return;
+      }
+      if (i > 0 && commTiersWorking[i].max <= commTiersWorking[i-1].max) {
+        showToast(`Patamar ${i+1}: limite deve ser maior que o anterior`, 'error'); return;
+      }
+    }
+    for (const t of commTiersWorking) {
+      if (isNaN(t.rate) || t.rate < 0) { showToast('Taxa inválida', 'error'); return; }
+    }
+    // Ensure last max is null (unlimited)
+    commTiersWorking[commTiersWorking.length - 1].max = null;
+
+    const tiersForDB = commTiersWorking.map(t => ({
+      label: t.label,
+      max:   t.max,
+      rate:  t.rate,
+    }));
+    const startRate = commTiersWorking[0]?.rate || 0.04;
+
+    const { error } = await sb.from('schools').upsert({
+      id:                schoolId,
+      commission_tiers:  tiersForDB,
+      commission_rate:   startRate,
+      updated_at:        new Date().toISOString(),
+    }, { onConflict: 'id' });
+
+    if (error) { showToast('Erro ao guardar: ' + (error.message||error.code), 'error'); return; }
+
+    // Also update localStorage for immediate use in this session
+    const school = SCHOOLS.find(s => s.id === schoolId);
+    if (school) school.commissionTiers = tiersForDB;
+
+    showToast('Comissões guardadas no Supabase ✓', 'success');
+    closeCommModal();
+    updateSchoolCards();
+    updateSARevCards();
   }
 
   function closeCommModal() {
     document.getElementById('comm-modal-bg').style.display = 'none';
   }
 
-  function resetCommRate() {
-    const schoolId = document.getElementById('comm-modal-bg').dataset.schoolId;
-    clearCommOverride(schoolId);
-    document.getElementById('comm-input').value = '';
-    showToast('Taxa automática restaurada', 'success');
-    closeCommModal();
-    updateSchoolCards();
-    updateSARevCards();
-  }
-
-  function saveCommRate() {
-    const schoolId = document.getElementById('comm-modal-bg').dataset.schoolId;
-    const raw = document.getElementById('comm-input').value.trim();
-    if (raw === '') { resetCommRate(); return; }
-    const val = parseFloat(raw);
-    if (isNaN(val) || val < 0 || val > 30) { showToast('Valor inválido (0-30)', 'error'); return; }
-    setCommRate(schoolId, val / 100);
-    showToast(`Comissão manual: ${val}%`, 'success');
-    closeCommModal();
-    updateSchoolCards();
-    updateSARevCards();
-  }
+  // Keep these stubs so existing callers don't break
+  function resetCommRate() { closeCommModal(); }
+  function saveCommRate()  { saveCommTiers(); }
 
   // ── ANNUAL ANALYTICS CHARTS ───────────────────────────────────────────────────
   // Register datalabels plugin
