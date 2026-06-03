@@ -521,10 +521,10 @@
       .table-scroll .summary-row td { font-size: .85rem; }
       .col-center { justify-content: flex-start; }
       .act-btn { width: 36px; height: 36px; font-size: 1rem; border-radius: 10px; }
-      .filters-bar { display: grid; grid-template-columns: 1fr 1fr; }
-      .filter-group { flex: unset; }
-      .btn-today { grid-column: 1; justify-self: start; }
-      .btn-refresh { grid-column: 2; justify-self: end; }
+      .filters-bar { display: flex; flex-wrap: wrap; gap: .4rem; }
+      .filter-group { flex: 1 1 calc(50% - .25rem); min-width: 120px; }
+      #fg-search { flex: 1 1 100%; }
+      .btn-today, .btn-refresh { flex: 1 1 calc(50% - .25rem); justify-content: center; }
     }
 
     /* ── ANALYTICS ── */
@@ -541,7 +541,9 @@
     .chart-month-btn:hover { border-color: var(--cyan); color: var(--white); }
     .chart-month-btn.active { background: rgba(0,207,253,.15); border-color: var(--cyan); color: var(--cyan); }
     .btn-analytics { background: rgba(167,139,250,.12); border: 1px solid rgba(167,139,250,.3); color: #a78bfa; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
-    .btn-reviews   { background: rgba(245,158,11,.11); border: 1px solid rgba(245,158,11,.3);  color: #fbbf24; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; margin-left: .5rem; }
+    .btn-reviews   { background: rgba(245,158,11,.11); border: 1px solid rgba(245,158,11,.3);  color: #fbbf24; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; margin-left: .5rem; transition: box-shadow .3s; }
+    @keyframes pulse-gold { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.5)} 50%{box-shadow:0 0 0 6px rgba(245,158,11,0)} }
+    .btn-reviews.has-pending { animation: pulse-gold 1.8s ease infinite; border-color: #f59e0b; background: rgba(245,158,11,.2); }
     .btn-settings  { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15); color: var(--gray); border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; margin-left: .5rem; }
     .btn-settings:hover { border-color: var(--cyan); color: var(--white); }
     #settings-section { margin-bottom: 1.5rem; }
@@ -875,7 +877,7 @@
           <option value="cancelled">Cancelado</option>
         </select>
       </div>
-      <div class="filter-group">
+      <div class="filter-group" id="fg-search">
         <span class="filter-label">Pesquisar</span>
         <input type="text" id="f-search" class="filter-input" placeholder="Nome ou telemóvel..." oninput="applyFilters()" />
       </div>
@@ -1388,7 +1390,24 @@
 
     document.getElementById('stat-bookings').textContent  = active.length;
     document.getElementById('stat-today').textContent     = todayActive.length;
-    document.getElementById('stat-today-sub').textContent = todayActive.length === 1 ? 'aula hoje' : 'aulas hoje';
+
+    // Per-slot occupancy summary for today
+    const _school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
+    const _maxSlot = _school?.max_per_slot || 6;
+    const _slots   = _school?.slots || ['08:00','10:30','14:00','16:30'];
+    if (todayActive.length > 0) {
+      const _cnt = {};
+      _slots.forEach(t => (_cnt[t] = 0));
+      todayActive.forEach(b => { if (_cnt[b.booking_time] !== undefined) _cnt[b.booking_time] += (parseInt(b.num_people)||1); });
+      const _parts = _slots.filter(t => _cnt[t] > 0).map(t => {
+        const used = _cnt[t], full = used >= _maxSlot;
+        return `${t} ${used}/${_maxSlot}${full ? ' ⛔' : ''}`;
+      });
+      document.getElementById('stat-today-sub').textContent = _parts.length ? _parts.join(' · ') : 'aulas hoje';
+    } else {
+      document.getElementById('stat-today-sub').textContent = 'nenhuma aula hoje';
+    }
+
     document.getElementById('stat-pending').textContent   = pending;
     updateRevCard();
 
@@ -1674,8 +1693,13 @@
       const { count } = await sb.from('reviews').select('id', { count: 'exact', head: true }).eq('school_id', school.id).eq('status', 'pending');
       const btn = document.getElementById('btn-reviews');
       if (!btn) return;
-      if (count > 0) btn.textContent = `⭐ Avaliações (${count} nova${count>1?'s':''})`;
-      else btn.textContent = '⭐ Avaliações';
+      if (count > 0) {
+        btn.textContent = `⭐ Avaliações (${count} nova${count>1?'s':''})`;
+        btn.classList.add('has-pending');
+      } else {
+        btn.textContent = '⭐ Avaliações';
+        btn.classList.remove('has-pending');
+      }
     } catch(_) {}
   }
 
@@ -1812,8 +1836,9 @@
     document.getElementById('f-date').value   = todayStr;
     applyFilters();
     buildCalendar();
-    document.getElementById('table-count').textContent =
-      `Hoje · ${allBookings.filter(b=>b.booking_date===todayStr).length} marcação${allBookings.filter(b=>b.booking_date===todayStr).length!==1?'ões':''}`;
+    const cnt = allBookings.filter(b=>b.booking_date===todayStr).length;
+    document.getElementById('table-count').textContent = `Hoje · ${cnt} marcação${cnt!==1?'ões':''}`;
+    document.querySelector('.table-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   // ── CALENDAR ──────────────────────────────────────────────────

@@ -1401,6 +1401,18 @@
   }
   if (nomeP) setHeroName(nomeP);
 
+  // Back button to super-admin when accessed from there
+  if (escola) {
+    const bar = document.getElementById('print-bar');
+    if (bar) {
+      const backBtn = document.createElement('a');
+      backBtn.href = '/super-admin';
+      backBtn.style.cssText = 'display:flex;align-items:center;gap:6px;color:#94a3b8;font-size:.8rem;font-weight:600;text-decoration:none;padding:6px 12px;border:1px solid rgba(255,255,255,.12);border-radius:7px;background:rgba(255,255,255,.05)';
+      backBtn.innerHTML = '← Super Admin';
+      bar.insertBefore(backBtn, bar.firstChild);
+    }
+  }
+
   function renderTiers(tiers, nomeEscola) {
     const grid  = document.getElementById('pricing-tiers-grid');
     const title = document.getElementById('pricing-tiers-title');
