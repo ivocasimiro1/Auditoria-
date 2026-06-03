@@ -547,6 +547,38 @@
     .btn-settings  { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15); color: var(--gray); border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; margin-left: .5rem; }
     .btn-settings:hover { border-color: var(--cyan); color: var(--white); }
     .btn-qr { background: rgba(0,207,253,.1); border: 1px solid rgba(0,207,253,.3); color: var(--cyan); border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
+    .btn-report { background: rgba(134,239,172,.12); border: 1px solid rgba(134,239,172,.3); color: #86efac; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
+
+    /* REPORT MODAL */
+    #report-modal-bg { display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9000;padding:1rem;overflow-y:auto;backdrop-filter:blur(6px) }
+    #report-modal { background:#0A1A30;border:1px solid rgba(255,255,255,.12);border-radius:20px;max-width:820px;margin:2rem auto;padding:0;overflow:hidden }
+    #report-modal .modal-head { padding:1.25rem 1.5rem;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between }
+    #report-modal .modal-body { padding:1.4rem 1.5rem }
+    .report-period-btns { display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.2rem }
+    .rpb { padding:.5rem 1.1rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--gray);font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s }
+    .rpb.active { background:rgba(0,207,253,.15);border-color:var(--cyan);color:var(--cyan) }
+    #report-preview { background:#050D1A;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:1.2rem;margin-bottom:1.2rem;max-height:55vh;overflow-y:auto;font-size:.78rem;line-height:1.55 }
+    .rp-section { margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid rgba(255,255,255,.06) }
+    .rp-slot-title { font-size:.85rem;font-weight:800;color:var(--cyan);margin-bottom:.5rem }
+    .rp-instructor { display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem;flex-wrap:wrap }
+    .rp-instructor input { background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:.3rem .6rem;color:#fff;font-family:'Inter',sans-serif;font-size:.75rem;outline:none;width:160px;color-scheme:dark }
+    .rp-instructor input:focus { border-color:var(--cyan) }
+    .rp-table { width:100%;border-collapse:collapse;margin-top:.4rem }
+    .rp-table th { font-size:.67rem;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);padding:.3rem .5rem;border-bottom:1px solid rgba(255,255,255,.08);text-align:left }
+    .rp-table td { padding:.3rem .5rem;border-bottom:1px solid rgba(255,255,255,.05);color:var(--gray-200);font-size:.75rem }
+    .rp-table tr:last-child td { border-bottom:none }
+    .rp-equip-summary { font-size:.72rem;color:#94a3b8;margin-top:.4rem;padding:.3rem .5rem;background:rgba(255,255,255,.03);border-radius:6px }
+    .report-share-btns { display:flex;gap:.6rem;flex-wrap:wrap }
+    .rsb { padding:.6rem 1.2rem;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:.4rem;transition:opacity .2s }
+    .rsb:hover { opacity:.85 }
+    .rsb-pdf   { background:linear-gradient(135deg,#0070F3,#00CFFD);color:#fff }
+    .rsb-wa    { background:#25D366;color:#fff }
+    .rsb-email { background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2) }
+    @media print {
+      body > *:not(#report-print-frame) { display:none!important }
+      #report-print-frame { display:block!important }
+    }
+    #report-print-frame { display:none }
     #settings-section { margin-bottom: 1.5rem; }
     .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .settings-slot-list { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: .6rem; }
@@ -715,7 +747,37 @@
       <button class="btn-settings"  id="btn-settings"  onclick="toggleSettings()">⚙️ Configurações</button>
       <button class="btn-reviews"   id="btn-reviews"   onclick="toggleReviews()">⭐ Avaliações</button>
       <button class="btn-analytics" onclick="toggleAnalytics()">📊 Ver Análise</button>
-      <button class="btn-qr" onclick="printQRCard()">🖨️ Cartão QR</button>
+      <button class="btn-qr"     onclick="printQRCard()">🖨️ Cartão QR</button>
+      <button class="btn-report" onclick="openReportModal()">📄 Relatório</button>
+    </div>
+
+    <!-- REPORT MODAL -->
+    <div id="report-modal-bg" onclick="if(event.target===this)closeReportModal()">
+      <div id="report-modal">
+        <div class="modal-head">
+          <div>
+            <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--cyan);margin-bottom:2px">Relatório de Aulas</div>
+            <div style="font-weight:800;font-size:1rem" id="report-title-label">Relatório Diário</div>
+          </div>
+          <button onclick="closeReportModal()" style="background:none;border:none;color:var(--gray);font-size:1.3rem;cursor:pointer;padding:.2rem .5rem;font-family:'Inter',sans-serif">✕</button>
+        </div>
+        <div class="modal-body">
+          <!-- Period selector -->
+          <div class="report-period-btns">
+            <button class="rpb active" onclick="setReportPeriod('today',this)">📅 Hoje</button>
+            <button class="rpb" onclick="setReportPeriod('tomorrow',this)">📅 Amanhã</button>
+            <button class="rpb" onclick="setReportPeriod('week',this)">📅 Esta Semana</button>
+          </div>
+          <!-- Preview -->
+          <div id="report-preview"><div style="color:var(--gray);text-align:center;padding:2rem">A gerar relatório...</div></div>
+          <!-- Share buttons -->
+          <div class="report-share-btns">
+            <button class="rsb rsb-pdf"   onclick="printReport()">🖨️ Imprimir / PDF</button>
+            <button class="rsb rsb-wa"    onclick="shareReportWA()">📱 Enviar WhatsApp</button>
+            <button class="rsb rsb-email" onclick="shareReportEmail()">✉️ Enviar Email</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Settings Section -->
@@ -2740,6 +2802,303 @@
   }
 
   init();
+
+  // ── DAILY REPORT ─────────────────────────────────────────────────────────────
+  let reportPeriod = 'today';
+  let reportInstructors = {}; // { 'YYYY-MM-DD|HH:MM': 'Nome Instrutor' }
+
+  function openReportModal() {
+    document.getElementById('report-modal-bg').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    buildReport();
+  }
+
+  function closeReportModal() {
+    document.getElementById('report-modal-bg').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  function setReportPeriod(period, btn) {
+    reportPeriod = period;
+    document.querySelectorAll('.rpb').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const labels = { today:'Relatório — Hoje', tomorrow:'Relatório — Amanhã', week:'Relatório — Esta Semana' };
+    document.getElementById('report-title-label').textContent = labels[period] || 'Relatório';
+    buildReport();
+  }
+
+  function getReportDates() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const fmt = d => d.toISOString().slice(0,10);
+    if (reportPeriod === 'today')    return [fmt(today)];
+    if (reportPeriod === 'tomorrow') { const t = new Date(today); t.setDate(t.getDate()+1); return [fmt(t)]; }
+    // week: today + next 6 days
+    const days = [];
+    for (let i = 0; i < 7; i++) { const d = new Date(today); d.setDate(d.getDate()+i); days.push(fmt(d)); }
+    return days;
+  }
+
+  function buildReport() {
+    const preview = document.getElementById('report-preview');
+    const schoolId = document.getElementById('f-school')?.value || SCHOOLS[0]?.id;
+    const school   = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0];
+    const dates    = getReportDates();
+
+    // Filter active bookings for the period
+    const bookings = allBookings.filter(b =>
+      dates.includes(b.booking_date) &&
+      b.school_id === schoolId &&
+      b.status !== 'cancelled'
+    );
+
+    if (!bookings.length) {
+      preview.innerHTML = '<div style="color:var(--gray);text-align:center;padding:2rem">Sem marcações para o período selecionado.</div>';
+      return;
+    }
+
+    // Group by date → slot
+    const byDate = {};
+    dates.forEach(d => { byDate[d] = {}; });
+    bookings.forEach(b => {
+      if (!byDate[b.booking_date]) byDate[b.booking_date] = {};
+      if (!byDate[b.booking_date][b.booking_time]) byDate[b.booking_date][b.booking_time] = [];
+      byDate[b.booking_date][b.booking_time].push(b);
+    });
+
+    const totalAlunos = bookings.reduce((s, b) => s + (parseInt(b.num_people)||1), 0);
+    const totalAulas  = bookings.length;
+
+    let html = `
+      <div style="margin-bottom:1rem;padding:.7rem .8rem;background:rgba(0,207,253,.07);border:1px solid rgba(0,207,253,.2);border-radius:8px;display:flex;gap:1.5rem;flex-wrap:wrap">
+        <div><span style="color:var(--gray);font-size:.7rem;text-transform:uppercase;letter-spacing:.07em">Escola</span><div style="font-weight:700;color:#fff;margin-top:1px">${school?.name||'—'}</div></div>
+        <div><span style="color:var(--gray);font-size:.7rem;text-transform:uppercase;letter-spacing:.07em">Total Alunos</span><div style="font-weight:700;color:var(--cyan);margin-top:1px">${totalAlunos}</div></div>
+        <div><span style="color:var(--gray);font-size:.7rem;text-transform:uppercase;letter-spacing:.07em">Marcações</span><div style="font-weight:700;color:#fff;margin-top:1px">${totalAulas}</div></div>
+        <div><span style="color:var(--gray);font-size:.7rem;text-transform:uppercase;letter-spacing:.07em">Período</span><div style="font-weight:700;color:#fff;margin-top:1px">${dates.length===1 ? fmtDatePT(dates[0]) : fmtDatePT(dates[0])+' – '+fmtDatePT(dates[dates.length-1])}</div></div>
+      </div>`;
+
+    dates.forEach(date => {
+      const slots = byDate[date];
+      if (!Object.keys(slots).length) return;
+      if (dates.length > 1) html += `<div style="font-weight:800;font-size:.82rem;color:#fff;margin:.8rem 0 .4rem;padding:.3rem .5rem;background:rgba(255,255,255,.05);border-radius:6px">${fmtDatePT(date)}</div>`;
+
+      Object.keys(slots).sort().forEach(slot => {
+        const blist = slots[slot];
+        const key   = `${date}|${slot}`;
+        const alunos = blist.reduce((s, b) => s + (parseInt(b.num_people)||1), 0);
+        const tipos  = [...new Set(blist.map(b => b.lesson_type))].join(', ');
+        const instrKey = `inst_${key.replace(/[|:]/g,'_')}`;
+        const instrVal = reportInstructors[key] || '';
+
+        // Equipment summary
+        const wsCount = {};
+        blist.forEach(b => {
+          (b.equipment_list||[]).forEach(p => { const sz = p.wetsuit||p.wetsuit_size||'?'; wsCount[sz] = (wsCount[sz]||0)+1; });
+        });
+        const wsSummary = Object.entries(wsCount).map(([k,v]) => `${k}×${v}`).join(' · ') || '—';
+
+        // Student rows
+        const studentRows = blist.flatMap(b => {
+          const rows = [];
+          if (b.equipment_list?.length) {
+            b.equipment_list.forEach((p,pi) => {
+              rows.push({ name: pi===0 ? b.client_name : `  └ ${p.name||'P'+(pi+1)}`, wetsuit: p.wetsuit||p.wetsuit_size||'?', weight: p.weight||'?', height: p.height||'?', gender: p.gender==='M'||p.gender==='H'?'♂':'♀', type: b.lesson_type });
+            });
+          } else {
+            rows.push({ name: b.client_name, wetsuit: b.wetsuit_size||'?', weight: b.client_weight||'?', height: b.client_height||'?', gender: b.client_gender==='M'||b.client_gender==='H'?'♂':'♀', type: b.lesson_type });
+          }
+          return rows;
+        });
+
+        html += `
+          <div class="rp-section">
+            <div class="rp-slot-title">${slot} — ${tipos} <span style="color:var(--gray);font-weight:400;font-size:.75rem">(${alunos} aluno${alunos!==1?'s':''})</span></div>
+            <div class="rp-instructor">
+              <span style="font-size:.72rem;color:var(--gray)">Instrutor:</span>
+              <input id="${instrKey}" value="${instrVal}" placeholder="Nome do instrutor"
+                oninput="reportInstructors['${key}']=this.value;updateReportText()" />
+            </div>
+            <table class="rp-table">
+              <thead><tr><th>#</th><th>Nome</th><th>Tipo</th><th>Fato</th><th>Peso</th><th>Alt.</th><th>Gén.</th></tr></thead>
+              <tbody>
+                ${studentRows.map((r,i) => `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.type}</td><td style="color:var(--cyan);font-weight:700">${r.wetsuit}</td><td>${r.weight}kg</td><td>${r.height}cm</td><td>${r.gender}</td></tr>`).join('')}
+              </tbody>
+            </table>
+            <div class="rp-equip-summary">🏊 Fatos necessários: <strong>${wsSummary}</strong></div>
+          </div>`;
+      });
+    });
+
+    preview.innerHTML = html;
+  }
+
+  function fmtDatePT(iso) {
+    if (!iso) return '';
+    const [y,m,d] = iso.split('-');
+    const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const dayName = days[new Date(iso+'T12:00:00').getDay()];
+    return `${dayName} ${d}/${m}/${y}`;
+  }
+
+  function updateReportText() { /* instructors updated live via oninput */ }
+
+  function getReportTextForWA() {
+    const schoolId = document.getElementById('f-school')?.value || SCHOOLS[0]?.id;
+    const school   = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0];
+    const dates    = getReportDates();
+    const bookings = allBookings.filter(b => dates.includes(b.booking_date) && b.school_id===schoolId && b.status!=='cancelled');
+    const byDate   = {};
+    dates.forEach(d => { byDate[d] = {}; });
+    bookings.forEach(b => {
+      if (!byDate[b.booking_date]) byDate[b.booking_date] = {};
+      if (!byDate[b.booking_date][b.booking_time]) byDate[b.booking_date][b.booking_time] = [];
+      byDate[b.booking_date][b.booking_time].push(b);
+    });
+
+    const totalAlunos = bookings.reduce((s, b) => s + (parseInt(b.num_people)||1), 0);
+    let txt = `🏄 *${school?.name||'Escola'} — Relatório de Aulas*\n`;
+    txt += dates.length===1 ? `📅 ${fmtDatePT(dates[0])}\n` : `📅 ${fmtDatePT(dates[0])} – ${fmtDatePT(dates[dates.length-1])}\n`;
+    txt += `👥 Total: ${totalAlunos} aluno${totalAlunos!==1?'s':''}\n\n`;
+
+    dates.forEach(date => {
+      const slots = byDate[date];
+      if (!Object.keys(slots).length) return;
+      if (dates.length > 1) txt += `*${fmtDatePT(date)}*\n`;
+      Object.keys(slots).sort().forEach(slot => {
+        const blist = slots[slot];
+        const key   = `${date}|${slot}`;
+        const alunos = blist.reduce((s, b) => s + (parseInt(b.num_people)||1), 0);
+        const tipos  = [...new Set(blist.map(b => b.lesson_type))].join(', ');
+        const inst   = reportInstructors[key];
+        txt += `⏰ *${slot}* — ${tipos} (${alunos} aluno${alunos!==1?'s':''})`;
+        if (inst) txt += ` — Instrutor: ${inst}`;
+        txt += '\n';
+        // Student list
+        blist.forEach(b => {
+          if (b.equipment_list?.length) {
+            b.equipment_list.forEach((p,pi) => {
+              const nm = pi===0 ? b.client_name : (p.name||'P'+(pi+1));
+              txt += `  • ${nm} — Fato ${p.wetsuit||p.wetsuit_size||'?'} · ${p.weight||'?'}kg · ${p.gender==='M'||p.gender==='H'?'♂':'♀'}\n`;
+            });
+          } else {
+            txt += `  • ${b.client_name} — Fato ${b.wetsuit_size||'?'} · ${b.client_weight||'?'}kg · ${b.client_gender==='M'||b.client_gender==='H'?'♂':'♀'}\n`;
+          }
+        });
+        // Wetsuit summary
+        const wsCount = {};
+        blist.forEach(b => { (b.equipment_list||[]).forEach(p => { const sz=p.wetsuit||p.wetsuit_size||'?'; wsCount[sz]=(wsCount[sz]||0)+1; }); });
+        const wsSummary = Object.entries(wsCount).map(([k,v])=>`${k}×${v}`).join(' ');
+        if (wsSummary) txt += `  🏊 Fatos: ${wsSummary}\n`;
+        txt += '\n';
+      });
+    });
+    return txt;
+  }
+
+  function shareReportWA() {
+    const txt = getReportTextForWA();
+    window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
+  }
+
+  function shareReportEmail() {
+    const schoolId = document.getElementById('f-school')?.value || SCHOOLS[0]?.id;
+    const school   = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0];
+    const dates    = getReportDates();
+    const subject  = encodeURIComponent(`Relatório de Aulas — ${school?.name||''} — ${fmtDatePT(dates[0])}`);
+    const body     = encodeURIComponent(getReportTextForWA());
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+  }
+
+  function printReport() {
+    const schoolId = document.getElementById('f-school')?.value || SCHOOLS[0]?.id;
+    const school   = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0];
+    const dates    = getReportDates();
+    const periodLabel = dates.length===1 ? fmtDatePT(dates[0]) : `${fmtDatePT(dates[0])} – ${fmtDatePT(dates[dates.length-1])}`;
+    const previewHtml = document.getElementById('report-preview').innerHTML;
+
+    const win = window.open('', '_blank', 'width=800,height=700');
+    win.document.write(`<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
+    <title>Relatório — ${school?.name||''} — ${periodLabel}</title>
+    <style>
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; font-size:11px; color:#1e293b; background:#fff; padding:20px; }
+      h1 { font-size:16px; font-weight:800; margin-bottom:2px; }
+      .subtitle { font-size:11px; color:#64748b; margin-bottom:16px; }
+      .summary { display:flex; gap:20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:16px; flex-wrap:wrap; }
+      .summary div span { font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:#94a3b8; display:block; }
+      .summary div strong { font-size:13px; font-weight:700; color:#0070F3; }
+      .slot-block { margin-bottom:14px; break-inside:avoid; }
+      .slot-title { font-size:12px; font-weight:800; color:#0070F3; margin-bottom:4px; border-bottom:1px solid #e2e8f0; padding-bottom:3px; }
+      .instructor { font-size:10px; color:#475569; margin-bottom:4px; }
+      table { width:100%; border-collapse:collapse; margin-bottom:4px; }
+      th { font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:#64748b; padding:3px 6px; border-bottom:1px solid #e2e8f0; text-align:left; background:#f8fafc; }
+      td { padding:3px 6px; border-bottom:1px solid #f1f5f9; font-size:10px; }
+      .ws { font-weight:700; color:#0070F3; }
+      .equip-row { font-size:9.5px; color:#475569; background:#f8fafc; padding:3px 6px; border-radius:4px; }
+      .day-header { font-size:11px; font-weight:700; background:#1e293b; color:#fff; padding:4px 8px; border-radius:4px; margin:10px 0 6px; }
+      @media print { @page { size:A4; margin:1.5cm; } body { padding:0; } }
+    </style></head><body>
+    <h1>📅 Relatório de Aulas — ${school?.name||''}</h1>
+    <div class="subtitle">Gerado em ${new Date().toLocaleString('pt-PT',{timeZone:'Europe/Lisbon'})} · Período: ${periodLabel}</div>
+    ${buildPrintHTML(schoolId, dates)}
+    <script>window.onload=()=>{ setTimeout(()=>window.print(),400); }<\/script>
+    </body></html>`);
+    win.document.close();
+  }
+
+  function buildPrintHTML(schoolId, dates) {
+    const bookings = allBookings.filter(b => dates.includes(b.booking_date) && b.school_id===schoolId && b.status!=='cancelled');
+    if (!bookings.length) return '<p>Sem marcações para o período.</p>';
+
+    const byDate = {};
+    dates.forEach(d => { byDate[d] = {}; });
+    bookings.forEach(b => {
+      if (!byDate[b.booking_date]) byDate[b.booking_date] = {};
+      if (!byDate[b.booking_date][b.booking_time]) byDate[b.booking_date][b.booking_time] = [];
+      byDate[b.booking_date][b.booking_time].push(b);
+    });
+
+    const total = bookings.reduce((s,b)=>s+(parseInt(b.num_people)||1),0);
+    let html = `<div class="summary">
+      <div><span>Total Alunos</span><strong>${total}</strong></div>
+      <div><span>Marcações</span><strong>${bookings.length}</strong></div>
+    </div>`;
+
+    dates.forEach(date => {
+      const slots = byDate[date];
+      if (!Object.keys(slots).length) return;
+      if (dates.length > 1) html += `<div class="day-header">${fmtDatePT(date)}</div>`;
+
+      Object.keys(slots).sort().forEach(slot => {
+        const blist = slots[slot];
+        const key   = `${date}|${slot}`;
+        const alunos = blist.reduce((s,b)=>s+(parseInt(b.num_people)||1),0);
+        const tipos  = [...new Set(blist.map(b=>b.lesson_type))].join(', ');
+        const inst   = reportInstructors[key] || '—';
+        const wsCount = {};
+        blist.forEach(b => { (b.equipment_list||[]).forEach(p=>{ const sz=p.wetsuit||p.wetsuit_size||'?'; wsCount[sz]=(wsCount[sz]||0)+1; }); });
+        const wsSummary = Object.entries(wsCount).map(([k,v])=>`${k}×${v}`).join(' · ')||'—';
+
+        const rows = blist.flatMap(b => {
+          if (b.equipment_list?.length) return b.equipment_list.map((p,pi)=>({
+            name: pi===0?b.client_name:(p.name||'P'+(pi+1)), wetsuit:p.wetsuit||p.wetsuit_size||'?',
+            weight:p.weight||'?', height:p.height||'?', gender:p.gender==='M'||p.gender==='H'?'♂':'♀', type:b.lesson_type
+          }));
+          return [{ name:b.client_name, wetsuit:b.wetsuit_size||'?', weight:b.client_weight||'?', height:b.client_height||'?', gender:b.client_gender==='M'||b.client_gender==='H'?'♂':'♀', type:b.lesson_type }];
+        });
+
+        html += `<div class="slot-block">
+          <div class="slot-title">${slot} — ${tipos} (${alunos} aluno${alunos!==1?'s':''})</div>
+          <div class="instructor">Instrutor: <strong>${inst}</strong></div>
+          <table>
+            <thead><tr><th>#</th><th>Nome</th><th>Modalidade</th><th>Fato</th><th>Peso</th><th>Alt.</th><th>Gén.</th></tr></thead>
+            <tbody>${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.type}</td><td class="ws">${r.wetsuit}</td><td>${r.weight}kg</td><td>${r.height}cm</td><td>${r.gender}</td></tr>`).join('')}</tbody>
+          </table>
+          <div class="equip-row">🏊 Fatos: ${wsSummary}</div>
+        </div>`;
+      });
+    });
+    return html;
+  }
 
   // ── QR CARD (editable before print) ─────────────────────────────────────────
   function printQRCard() {
