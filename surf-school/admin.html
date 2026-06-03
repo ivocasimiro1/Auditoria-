@@ -1285,7 +1285,7 @@
         ? `<button class="act-btn act-complete" title="Marcar concluído"   onclick="updateStatus('${b.id}','completed')">★</button>
            <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`
         : b.status === 'completed'
-        ? `<button class="act-btn act-revert"   title="Reverter a confirmado" onclick="confirmRevert('${b.id}','confirmed','Reverter a Confirmado?')">↩</button>`
+        ? `<span title="Concluído — bloqueado pelo sistema" style="font-size:.85rem;color:var(--gray);padding:.2rem .4rem;display:inline-block;line-height:1;cursor:default">🔒</span>`
         : b.status === 'cancelled'
         ? `<button class="act-btn act-revert"   title="Reativar (pendente)" onclick="confirmRevert('${b.id}','pending','Reativar marcação como Pendente?')">↩</button>`
         : '—';
@@ -1341,7 +1341,7 @@
 
   function confirmRevert(id, newStatus, msg) {
     if (!confirm(msg + '\n\nNenhuma mensagem será enviada ao cliente.')) return;
-    updateStatus(id, newStatus, false);
+    updateStatus(id, newStatus, false); // audit note appended inside updateStatus
   }
 
   // WA messages per client language — school owner always sees PT dashboard
@@ -1381,7 +1381,17 @@
   };
 
   async function updateStatus(id, newStatus, sendWA = true) {
-    const { error } = await sb.from('bookings').update({ status: newStatus }).eq('id', id);
+    const current = allBookings.find(bk => bk.id === id);
+    // Fraud guard: completed lessons cannot be altered by school admin
+    if (current?.status === 'completed') {
+      showToast('⚠️ Aulas concluídas não podem ser alteradas. Contacta o super-administrador.', 'error');
+      return;
+    }
+    // Append audit entry to notes
+    const nowTs = new Date().toISOString().slice(0,16).replace('T',' ');
+    const auditLine = `\n[${nowTs}] ${current?.status||'?'} → ${newStatus}`;
+    const updatedNotes = (current?.notes || '') + auditLine;
+    const { error } = await sb.from('bookings').update({ status: newStatus, notes: updatedNotes }).eq('id', id);
     if (error) { showToast('Erro ao atualizar estado', 'error'); return; }
     const labels = { confirmed: 'Confirmado ✓', completed: 'Concluído ★', cancelled: 'Cancelado', pending: 'Pendente ↩' };
     showToast(`Estado atualizado: ${labels[newStatus] || newStatus}`, 'success');

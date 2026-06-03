@@ -241,6 +241,11 @@
     .status-completed::before { background: #86efac; }
     .status-cancelled { background: rgba(239,68,68,.15);  color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
     .status-cancelled::before { background: #fca5a5; }
+    .status-suspicious { background: rgba(239,68,68,.25); color: #fca5a5; border: 2px solid #ef4444; animation: pulse-warn 1.5s ease-in-out infinite; }
+    .status-suspicious::before { background: #ef4444; }
+    @keyframes pulse-warn { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.4); } 50% { box-shadow: 0 0 0 5px rgba(239,68,68,0); } }
+    tr.row-suspicious td { background: rgba(239,68,68,.04); }
+    .audit-note { font-size:.7rem; color: #f87171; font-style:italic; margin-top:.2rem; display:block; }
 
     /* Summary row */
     .summary-row { background: rgba(201,168,76,.06); border-top: 2px solid rgba(201,168,76,.2) !important; }
@@ -383,6 +388,14 @@
           <div class="stat-sub" id="gs-comm-label">este mês · a receber</div>
         </div>
       </div>
+      <div class="stat-card" id="suspicious-card" style="cursor:pointer;border-color:rgba(239,68,68,.2)" onclick="filterSuspicious()" title="Ver marcações suspeitas">
+        <div class="stat-icon" style="background:rgba(239,68,68,.15);color:#ef4444">⚠️</div>
+        <div class="stat-info">
+          <div class="stat-label" style="color:#f87171">Suspeitas</div>
+          <div class="stat-value" id="gs-suspicious" style="color:#ef4444">0</div>
+          <div class="stat-sub">concluídas → canceladas</div>
+        </div>
+      </div>
     </div>
 
     <!-- School Cards -->
@@ -443,6 +456,7 @@
           <option value="confirmed">Confirmado</option>
           <option value="completed">Concluído</option>
           <option value="cancelled">Cancelado</option>
+          <option value="suspicious">⚠️ Suspeitas</option>
         </select>
       </div>
       <div class="filter-group">
@@ -749,6 +763,18 @@
     document.getElementById('gs-schools').textContent = SCHOOLS.length;
   }
 
+  // Suspicious = cancelled booking that was previously completed (audit trail in notes)
+  function isSuspicious(b) {
+    return b.status === 'cancelled' && b.notes && /\] completed →/.test(b.notes);
+  }
+
+  function filterSuspicious() {
+    document.getElementById('f-status').value = 'suspicious';
+    document.getElementById('f-month').value  = '';
+    applyFilters();
+    document.getElementById('table-title').textContent = '⚠️ Marcações Suspeitas';
+  }
+
   function applyFilters() {
     const month  = document.getElementById('f-month').value;
     const status = document.getElementById('f-status').value;
@@ -757,7 +783,8 @@
     let filtered = allBookings;
     if (activeSchool !== 'all') filtered = filtered.filter(b => b.school_id === activeSchool);
     if (month)  filtered = filtered.filter(b => b.booking_date.startsWith(month));
-    if (status) filtered = filtered.filter(b => b.status === status);
+    if (status === 'suspicious') filtered = filtered.filter(isSuspicious);
+    else if (status) filtered = filtered.filter(b => b.status === status);
     if (search) filtered = filtered.filter(b =>
       b.client_name.toLowerCase().includes(search) || b.client_phone.includes(search)
     );
@@ -825,6 +852,18 @@
     } else {
       document.getElementById('gs-month-label').textContent = 'todas as datas';
     }
+
+    // Suspicious count (always from all bookings, not filtered)
+    const suspCount = allBookings.filter(isSuspicious).length;
+    document.getElementById('gs-suspicious').textContent = suspCount;
+    const suspCard = document.getElementById('suspicious-card');
+    if (suspCount > 0) {
+      suspCard.style.borderColor = 'rgba(239,68,68,.6)';
+      suspCard.style.background  = 'rgba(239,68,68,.07)';
+    } else {
+      suspCard.style.borderColor = 'rgba(255,255,255,.1)';
+      suspCard.style.background  = '';
+    }
   }
 
   function renderTable(rows) {
@@ -840,6 +879,7 @@
     let totalRev = 0, totalCom = 0;
 
     const html = rows.map((b, i) => {
+      const suspicious = isSuspicious(b);
       const s     = STATUS[b.status] || STATUS.pending;
       const price = parseFloat(b.total_price||0);
       const com   = price * getCommRate(b.school_id);
@@ -851,16 +891,21 @@
       const school    = SCHOOLS.find(s => s.id === b.school_id);
       const schoolName = school ? school.name.replace(' Surf Academy','').replace(' Surf School','') : (b.school_id||'—');
 
-      return `<tr>
+      // Extract last 2 audit lines from notes for suspicious tooltip
+      const auditLines = suspicious && b.notes
+        ? b.notes.split('\n').filter(l => l.startsWith('[')).slice(-3).join(' | ')
+        : '';
+
+      return `<tr class="${suspicious ? 'row-suspicious' : ''}">
         <td style="color:var(--gray);font-size:.8rem">#${b.booking_ref || (i+1)}</td>
         <td><strong>${dateStr}</strong><small>${b.booking_time}</small></td>
         <td><span class="school-chip">${schoolName}</span></td>
         <td>${b.lesson_type} ${langFlag}</td>
-        <td>${b.client_name}<small>${b.client_phone}${b.client_email ? ' · ' + b.client_email : ''}</small>${b.wetsuit_size||b.client_weight ? `<small style="color:var(--gold)">👕 ${b.wetsuit_size||'—'} · ${b.client_weight?b.client_weight+'kg':'—'} · ${b.client_height?b.client_height+'cm':'—'}</small>` : ''}</td>
+        <td>${b.client_name}<small>${b.client_phone}${b.client_email ? ' · ' + b.client_email : ''}</small>${b.wetsuit_size||b.client_weight ? `<small style="color:var(--gold)">👕 ${b.wetsuit_size||'—'} · ${b.client_weight?b.client_weight+'kg':'—'} · ${b.client_height?b.client_height+'cm':'—'}</small>` : ''}${suspicious ? `<span class="audit-note" title="${auditLines}">⚠️ ${auditLines}</span>` : ''}</td>
         <td class="col-center">${b.num_people}</td>
         <td class="col-price">€${price.toFixed(2)}</td>
-        <td class="col-commission">€${com.toFixed(2)}</td>
-        <td><span class="status-badge ${s.cls}">${s.label}</span></td>
+        <td class="col-commission">${suspicious ? `<span style="color:#ef4444;font-weight:700" title="Comissão em risco">€${com.toFixed(2)} ⚠️</span>` : `€${com.toFixed(2)}`}</td>
+        <td><span class="status-badge ${suspicious ? 'status-suspicious' : s.cls}">${s.label}${suspicious ? ' ⚠️' : ''}</span></td>
       </tr>`;
     }).join('');
 
