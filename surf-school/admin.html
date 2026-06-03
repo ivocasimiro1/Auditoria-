@@ -855,9 +855,9 @@
         ? `<button class="act-btn act-complete" title="Marcar concluído"   onclick="updateStatus('${b.id}','completed')">★</button>
            <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`
         : b.status === 'completed'
-        ? `<button class="act-btn act-revert"   title="Reverter a confirmado" onclick="updateStatus('${b.id}','confirmed')">↩</button>`
+        ? `<button class="act-btn act-revert"   title="Reverter a confirmado" onclick="confirmRevert('${b.id}','confirmed','Reverter a Confirmado?')">↩</button>`
         : b.status === 'cancelled'
-        ? `<button class="act-btn act-revert"   title="Reativar (pendente)" onclick="updateStatus('${b.id}','pending')">↩</button>`
+        ? `<button class="act-btn act-revert"   title="Reativar (pendente)" onclick="confirmRevert('${b.id}','pending','Reativar marcação como Pendente?')">↩</button>`
         : '—';
 
       const schoolForRow = SCHOOLS.find(s => s.id === b.school_id) || SCHOOLS[0];
@@ -909,13 +909,18 @@
     tbody.innerHTML = html + summaryRow;
   }
 
-  async function updateStatus(id, newStatus) {
+  function confirmRevert(id, newStatus, msg) {
+    if (!confirm(msg + '\n\nNenhuma mensagem será enviada ao cliente.')) return;
+    updateStatus(id, newStatus, false);
+  }
+
+  async function updateStatus(id, newStatus, sendWA = true) {
     const { error } = await sb.from('bookings').update({ status: newStatus }).eq('id', id);
     if (error) { showToast('Erro ao atualizar estado', 'error'); return; }
-    const labels = { confirmed: 'Confirmado ✓', completed: 'Concluído ★', cancelled: 'Cancelado' };
+    const labels = { confirmed: 'Confirmado ✓', completed: 'Concluído ★', cancelled: 'Cancelado', pending: 'Pendente ↩' };
     showToast(`Estado atualizado: ${labels[newStatus] || newStatus}`, 'success');
 
-    if (newStatus === 'confirmed' || newStatus === 'cancelled') {
+    if (sendWA && (newStatus === 'confirmed' || newStatus === 'cancelled')) {
       const b = allBookings.find(bk => bk.id === id);
       if (b) {
         const school = SCHOOLS.find(s => s.id === b.school_id) || SCHOOLS[0];
@@ -1201,7 +1206,7 @@
                 ? `<button class="act-btn act-confirm" title="Confirmar" onclick="updateStatus('${b.id}','confirmed')" style="width:auto;padding:0 .5rem;font-size:.75rem">✓ Confirmar</button>
                    <button class="act-btn act-cancel"  title="Cancelar"  onclick="updateStatus('${b.id}','cancelled')"  style="width:auto;padding:0 .5rem;font-size:.75rem">✕</button>`
                 : b.status==='completed'
-                ? `<button class="act-btn act-revert" title="Reverter a confirmado" onclick="updateStatus('${b.id}','confirmed')" style="width:auto;padding:0 .5rem;font-size:.75rem">↩ Reverter</button>
+                ? `<button class="act-btn act-revert" title="Reverter a confirmado" onclick="confirmRevert('${b.id}','confirmed','Reverter a Confirmado?')" style="width:auto;padding:0 .5rem;font-size:.75rem">↩ Reverter</button>
                    <a href="https://wa.me/${phone}?text=${waMsg}" target="_blank" style="text-decoration:none"><button class="act-btn act-wa" style="width:auto;padding:0 .5rem;font-size:.75rem">💬 WA</button></a>`
                 : `<a href="https://wa.me/${phone}?text=${waMsg}" target="_blank" style="text-decoration:none"><button class="act-btn act-wa" style="width:auto;padding:0 .5rem;font-size:.75rem">💬 WA</button></a>`
               }

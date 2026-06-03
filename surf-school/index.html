@@ -1315,10 +1315,11 @@ function buildSlots(dateKey) {
   });
 }
 
-function selectSlot(el, time) {
+function selectSlot(el, time, freeSpots) {
   document.querySelectorAll('.slot-card').forEach(c=>c.classList.remove('selected'));
   el.classList.add('selected');
   booking.time = time;
+  booking.freeSlots = freeSpots || 6;
   const btn = document.getElementById('next-3');
   if (btn) btn.disabled = false;
 }
@@ -1537,8 +1538,20 @@ function updatePessoasVisibility() {
   const fp    = document.getElementById('fpessoas');
   const fpGrp = fp?.closest('.form-group');
   if (!fp || !fpGrp) return;
-  if (booking.lessonPrivate) { fp.value = '1'; fpGrp.style.opacity = '.4'; fpGrp.style.pointerEvents = 'none'; }
-  else { fpGrp.style.opacity = ''; fpGrp.style.pointerEvents = ''; }
+  if (booking.lessonPrivate) {
+    fp.value = '1'; fpGrp.style.opacity = '.4'; fpGrp.style.pointerEvents = 'none';
+  } else {
+    fpGrp.style.opacity = ''; fpGrp.style.pointerEvents = '';
+    const max = Math.min(6, booking.freeSlots || 6);
+    const prev = parseInt(fp.value) || 1;
+    fp.innerHTML = '';
+    for (let i = 1; i <= max; i++) {
+      const o = document.createElement('option');
+      o.value = i; o.textContent = i;
+      if (i === Math.min(prev, max)) o.selected = true;
+      fp.appendChild(o);
+    }
+  }
   buildEquipmentRows(parseInt(fp.value));
 }
 
