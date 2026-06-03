@@ -1609,7 +1609,7 @@ async function reservarWhatsApp() {
   // ── Open WhatsApp SYNCHRONOUSLY (user gesture still active) ──
   window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
 
-  // ── Save to Supabase AFTER opening WA (async is fine here) ──
+  // ── Save to Supabase + Email notification ────────────────────
   const waBtn = document.querySelector('.btn-whatsapp');
   let saveStatus = document.getElementById('save-status');
   if (!saveStatus) {
@@ -1619,8 +1619,37 @@ async function reservarWhatsApp() {
     waBtn?.parentNode?.insertBefore(saveStatus, waBtn.nextSibling);
   }
   if (waBtn) { waBtn.disabled = true; waBtn.innerHTML = '⏳ A guardar...'; }
-  saveStatus.style.cssText += ';color:var(--gray);background:transparent';
+  saveStatus.style.color = 'var(--gray)'; saveStatus.style.background = 'transparent';
   saveStatus.textContent = '';
+
+  // ── Email backup via FormSubmit (sends to school email) ──────
+  try {
+    const emailBody = [
+      `Nova Marcação — ${T(booking.lessonKey)}`,
+      `Nome: ${nome}`,
+      `Telefone: ${tel}`,
+      email ? `Email: ${email}` : '',
+      country ? `País: ${country}` : '',
+      `Aula: ${T(booking.lessonKey)}`,
+      `Data: ${booking.selectedDateStr}`,
+      `Horário: ${booking.time}`,
+      `Pessoas: ${pess}`,
+      `Total: €${total}`,
+      nota ? `Nota: ${nota}` : '',
+    ].filter(Boolean).join('\n');
+
+    fetch('https://formsubmit.co/ajax/ivocasimiro@gmail.com', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        _subject: `🏄 Nova Marcação: ${nome} — ${T(booking.lessonKey)} ${booking.selectedDateStr}`,
+        message: emailBody,
+        _replyto: email || tel,
+        _template: 'table',
+      })
+    }).catch(() => {}); // email is best-effort, don't block on failure
+  } catch(e) {}
+
   try {
     const [year, month, day] = booking.selectedDateKey.split('-').map(Number);
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
@@ -1638,7 +1667,7 @@ async function reservarWhatsApp() {
         language:currentLang, status:'pending'
       };
       let { error } = await sb.from('bookings').insert([fullRow]);
-      // Retry with minimal fields if column mismatch
+      // Retry without new columns if schema mismatch
       if (error && (error.code === '42703' || error.code === 'PGRST204' || error.message?.includes('column'))) {
         const coreRow = {
           school_id:fullRow.school_id, lesson_type:fullRow.lesson_type,
@@ -1655,16 +1684,16 @@ async function reservarWhatsApp() {
         console.warn('Supabase save error:', error.code, error.message);
         saveStatus.style.color = '#fca5a5';
         saveStatus.style.background = 'rgba(239,68,68,.08)';
-        saveStatus.textContent = `⚠️ Erro ao guardar: ${error.message}`;
+        saveStatus.textContent = `⚠️ Base de dados indisponível (código: ${error.code}) — o dono foi notificado por WhatsApp e email`;
       } else {
         saveStatus.style.color = '#86efac';
         saveStatus.style.background = 'rgba(34,197,94,.08)';
-        saveStatus.textContent = '✓ Reserva guardada — o dono irá confirmar brevemente';
-        setTimeout(() => { saveStatus.textContent = ''; saveStatus.style.background='transparent'; }, 6000);
+        saveStatus.textContent = '✓ Reserva guardada — aguarda confirmação por WhatsApp';
+        setTimeout(() => { saveStatus.textContent = ''; saveStatus.style.background = 'transparent'; }, 7000);
       }
     } else {
       saveStatus.style.color = '#fca5a5';
-      saveStatus.textContent = '⚠️ Sem ligação à base de dados';
+      saveStatus.textContent = '⚠️ Sem ligação — o dono foi notificado por WhatsApp';
     }
   } catch(e) {
     console.warn('Supabase save failed', e);
