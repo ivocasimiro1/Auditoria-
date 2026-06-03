@@ -1455,8 +1455,12 @@
         ? `<button class="act-btn act-confirm"  title="Confirmar"          onclick="updateStatus('${b.id}','confirmed')">✓</button>
            <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`
         : b.status === 'confirmed'
-        ? `<button class="act-btn act-complete" title="Marcar concluído + pedir avaliação" onclick="completeAndReview('${b.id}')">★</button>
-           <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`
+        ? (isLessonPast(b)
+            ? `<button class="act-btn act-complete" title="Marcar concluído + pedir avaliação" onclick="completeAndReview('${b.id}')">★</button>
+               <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`
+            : `<button class="act-btn act-complete" title="Aula ainda não aconteceu — disponível após a hora marcada" disabled style="opacity:.3;cursor:not-allowed">★</button>
+               <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`)
+
         : b.status === 'completed'
         ? `<span title="Concluído — bloqueado pelo sistema" style="font-size:.85rem;color:var(--gray);padding:.2rem .4rem;display:inline-block;line-height:1;cursor:default">🔒</span>`
         : b.status === 'cancelled'
@@ -1750,11 +1754,23 @@
     },
   };
 
+  function isLessonPast(b) {
+    if (!b?.booking_date || !b?.booking_time) return false;
+    const lessonEnd = new Date(`${b.booking_date}T${b.booking_time}:00`);
+    lessonEnd.setMinutes(lessonEnd.getMinutes() + 90); // assume 90min lesson before "past"
+    return lessonEnd < new Date();
+  }
+
   async function updateStatus(id, newStatus, sendWA = true) {
     const current = allBookings.find(bk => bk.id === id);
     // Fraud guard: completed lessons cannot be altered by school admin
     if (current?.status === 'completed') {
       showToast('⚠️ Aulas concluídas não podem ser alteradas. Contacta o super-administrador.', 'error');
+      return;
+    }
+    // Block completing a lesson that hasn't happened yet
+    if (newStatus === 'completed' && !isLessonPast(current)) {
+      showToast('⚠️ Não é possível concluir uma aula que ainda não aconteceu.', 'error');
       return;
     }
     // Append audit entry to notes
