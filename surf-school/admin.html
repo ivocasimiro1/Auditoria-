@@ -3196,7 +3196,6 @@
 <meta charset="UTF-8"/>
 <title>Cartão QR · ${school.name}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet"/>
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"><\/script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -3303,16 +3302,105 @@
     statusEl.textContent = msg; statusEl.style.display = 'block';
     if (duration) setTimeout(() => { statusEl.style.display = 'none'; }, duration);
   }
-  // Generate QR code onto canvas element — no external image, no CORS
+  // Generate QR onto canvas — client-side, no CORS
   QRCode.toCanvas(document.getElementById('qr-canvas'), '${bookingUrl}', {
     width: 200, margin: 1,
     color: { dark: '#050D1A', light: '#00CFFD' }
   });
+
+  // Draw the card directly with Canvas 2D API — avoids html2canvas/CORS issues entirely
   async function captureCard() {
-    return await html2canvas(document.querySelector('.card'), {
-      backgroundColor: '#050D1A', scale: 2, useCORS: false, logging: false
+    await document.fonts.ready;
+    const SC = 2, CW = 420, RADIUS = 24;
+    const txt = (sel, fb) => (document.querySelector(sel)?.textContent || fb || '').trim();
+    const schoolName = txt('.school-name', '');
+    const tagline    = txt('.tagline', '');
+    const address    = txt('.address', '');
+    const urlText    = txt('.url-text', '');
+    const photoImg   = document.getElementById('photo-img');
+    const hasPhoto   = photoImg && photoImg.style.display !== 'none' && photoImg.src;
+    const infoRows   = [...document.querySelectorAll('.info-row:not(.extra-field), .info-row.visible')];
+
+    // Calculate dynamic height
+    const CH = 80 + (hasPhoto?90:30) + 24+20+20+18+14+220+30+20+18 + infoRows.length*24 + 30;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = CW * SC; canvas.height = CH * SC;
+    const c = canvas.getContext('2d');
+    c.scale(SC, SC);
+
+    // ── Card background ──────────────────────────────────────────────
+    const bg = c.createLinearGradient(CW*0.4,0,0,CH);
+    bg.addColorStop(0,'#0A1A30'); bg.addColorStop(1,'#0D2040');
+    c.fillStyle = bg;
+    c.beginPath(); c.roundRect(0,0,CW,CH,RADIUS); c.fill();
+
+    // Top accent line
+    const tl = c.createLinearGradient(0,0,CW,0);
+    tl.addColorStop(0,'#0070F3'); tl.addColorStop(.5,'#00CFFD'); tl.addColorStop(1,'#0070F3');
+    c.fillStyle = tl; c.fillRect(0,0,CW,3);
+
+    let y = 40;
+
+    // ── Optional photo circle ────────────────────────────────────────
+    if (hasPhoto) {
+      c.save();
+      c.beginPath(); c.arc(CW/2, y+40, 40, 0, Math.PI*2); c.clip();
+      c.drawImage(photoImg, CW/2-40, y, 80, 80);
+      c.restore();
+      // ring
+      c.strokeStyle='rgba(0,207,253,.35)'; c.lineWidth=2;
+      c.beginPath(); c.arc(CW/2,y+40,41,0,Math.PI*2); c.stroke();
+      y += 100;
+    } else { y += 20; }
+
+    // ── School name ──────────────────────────────────────────────────
+    c.textAlign='center'; c.textBaseline='middle';
+    const grad = c.createLinearGradient(CW*.2,0,CW*.8,0);
+    grad.addColorStop(0,'#ffffff'); grad.addColorStop(1,'#00CFFD');
+    c.fillStyle=grad; c.font='900 22px Inter,system-ui,sans-serif';
+    c.fillText(schoolName, CW/2, y+12); y+=30;
+
+    // Tagline
+    c.fillStyle='rgba(255,255,255,.45)'; c.font='400 13px Inter,system-ui,sans-serif';
+    c.fillText(tagline, CW/2, y+8); y+=22;
+
+    // Address (only if edited)
+    if (address && !address.startsWith('📍 Clica')) {
+      c.fillStyle='rgba(255,255,255,.3)'; c.font='400 12px Inter,system-ui,sans-serif';
+      c.fillText(address, CW/2, y+8); y+=20;
+    }
+    y+=14;
+
+    // CTA text
+    c.fillStyle='#00CFFD'; c.font='700 10px Inter,system-ui,sans-serif';
+    c.fillText('APONTE A CÂMARA PARA RESERVAR', CW/2, y+7); y+=18;
+
+    // ── QR code ──────────────────────────────────────────────────────
+    const QS=200, qx=(CW-QS)/2, qy=y;
+    c.fillStyle='#ffffff';
+    c.beginPath(); c.roundRect(qx-7,qy-7,QS+14,QS+14,14); c.fill();
+    const qrCanvas=document.getElementById('qr-canvas');
+    if (qrCanvas) c.drawImage(qrCanvas, qx, qy, QS, QS);
+    y += QS+16;
+
+    // URL
+    c.fillStyle='rgba(255,255,255,.35)'; c.font='400 11px monospace,sans-serif';
+    c.fillText(urlText, CW/2, y+8); y+=24;
+
+    // Separator
+    c.strokeStyle='rgba(255,255,255,.08)'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(24,y); c.lineTo(CW-24,y); c.stroke(); y+=18;
+
+    // ── Contact rows ─────────────────────────────────────────────────
+    c.font='400 13px Inter,system-ui,sans-serif'; c.fillStyle='rgba(255,255,255,.7)';
+    infoRows.forEach(row => {
+      c.fillText(row.textContent.trim().replace(/\s+/g,' '), CW/2, y+8); y+=24;
     });
+
+    return canvas;
   }
+
   async function saveImage() {
     setStatus('A gerar imagem…');
     try {
@@ -3322,7 +3410,7 @@
       a.href = canvas.toDataURL('image/png');
       a.click();
       setStatus('✓ Imagem guardada!', 3000);
-    } catch(e) { setStatus('✗ Erro ao gerar imagem.', 4000); }
+    } catch(e) { console.error(e); setStatus('✗ Erro: ' + e.message, 4000); }
   }
   async function shareImage() {
     setStatus('A gerar imagem…');
@@ -3338,10 +3426,10 @@
           a.download = 'cartao-surf.png';
           a.href = canvas.toDataURL('image/png');
           a.click();
-          setStatus('✓ Imagem guardada! (partilha não suportada neste browser)', 4000);
+          setStatus('✓ Imagem guardada!', 4000);
         }
       }, 'image/png');
-    } catch(e) { setStatus('✗ Erro. Tenta "Guardar Imagem".', 4000); }
+    } catch(e) { console.error(e); setStatus('✗ Erro. Verifica consola.', 4000); }
   }
 <\/script>
 </body></html>`);

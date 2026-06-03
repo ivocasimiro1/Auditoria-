@@ -680,7 +680,7 @@
       id:    'escola-teste',
       name:  'Escola Surf Teste',
       region:'Site de Demonstração',
-      site:  '/index.html',
+      site:  '/surf',
       admin: '/admin.html',
       defaultCommission: 0.05,
     },
@@ -689,7 +689,7 @@
       name:  'Arrifana Surf School',
       region:'Arrifana, Aljezur',
       site:  '/surf?escola=surf-arrifana',
-      admin: '/admin.html',
+      admin: '/admin.html?escola=surf-arrifana',
       defaultCommission: 0.04,
     },
     {
@@ -697,7 +697,7 @@
       name:  'Nazaré Surf Experience',
       region:'Nazaré',
       site:  '/surf?escola=surf-nazare',
-      admin: '/admin.html',
+      admin: '/admin.html?escola=surf-nazare',
       defaultCommission: 0.04,
     },
     {
@@ -705,7 +705,7 @@
       name:  'Peniche Surf Academy',
       region:'Peniche',
       site:  '/surf?escola=surf-peniche',
-      admin: '/admin.html',
+      admin: '/admin.html?escola=surf-peniche',
       defaultCommission: 0.04,
     },
     {
@@ -713,7 +713,7 @@
       name:  'Lagos Surf Club',
       region:'Lagos, Algarve',
       site:  '/surf?escola=surf-lagos',
-      admin: '/admin.html',
+      admin: '/admin.html?escola=surf-lagos',
       defaultCommission: 0.04,
     },
     {
@@ -721,7 +721,7 @@
       name:  'Sagres Wild Surf',
       region:'Sagres, Algarve',
       site:  '/surf?escola=surf-sagres',
-      admin: '/admin.html',
+      admin: '/admin.html?escola=surf-sagres',
       defaultCommission: 0.04,
     },
   ];
@@ -734,8 +734,8 @@
           id:                s.id,
           name:              s.name,
           region:            s.city || '—',
-          site:              `/surf-school/?school=${s.id}`,
-          admin:             `/admin?school=${s.id}`,
+          site:              s.id === 'escola-teste' ? '/surf' : `/surf?escola=${s.id}`,
+          admin:             s.id === 'escola-teste' ? '/admin.html' : `/admin.html?escola=${s.id}`,
           defaultCommission: s.commission_rate || 0.04,
           commissionTiers:   s.commission_tiers || null,
           status:            s.status || 'active',
@@ -964,25 +964,33 @@
     const now = new Date();
     const pad = n => String(n).padStart(2,'0');
     const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    const fMonth = document.getElementById('f-month')?.value || '';
     let src, label;
 
-    if (saRevPeriod === 'today') {
-      src = allBookings.filter(b => b.booking_date === todayStr);
+    // Filter by selected school first
+    const base = activeSchool === 'all' ? allBookings : allBookings.filter(b => b.school_id === activeSchool);
+    const schoolLabel = activeSchool === 'all' ? '' : ` · ${SCHOOLS.find(s=>s.id===activeSchool)?.name||activeSchool}`;
+
+    // If a specific month is selected in f-month, use it for 'month' period
+    const activePeriod = fMonth ? 'month' : saRevPeriod;
+
+    if (activePeriod === 'today') {
+      src = base.filter(b => b.booking_date === todayStr);
       label = 'hoje';
-    } else if (saRevPeriod === 'week') {
+    } else if (activePeriod === 'week') {
       const d = new Date(now); d.setDate(d.getDate() - 6);
       const from = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-      src = allBookings.filter(b => b.booking_date >= from && b.booking_date <= todayStr);
+      src = base.filter(b => b.booking_date >= from && b.booking_date <= todayStr);
       label = 'últimos 7 dias';
-    } else if (saRevPeriod === 'month') {
-      const m = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
-      src = allBookings.filter(b => b.booking_date.startsWith(m));
-      label = 'este mês';
-    } else if (saRevPeriod === 'year') {
-      src = allBookings.filter(b => b.booking_date.startsWith(`${now.getFullYear()}`));
+    } else if (activePeriod === 'month') {
+      const m = fMonth || `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+      src = base.filter(b => b.booking_date.startsWith(m));
+      label = fMonth ? new Date(m+'-15').toLocaleString('pt-PT',{month:'long',year:'numeric'}) : 'este mês';
+    } else if (activePeriod === 'year') {
+      src = base.filter(b => b.booking_date.startsWith(`${now.getFullYear()}`));
       label = String(now.getFullYear());
     } else {
-      src = allBookings;
+      src = base;
       label = 'total histórico';
     }
 
@@ -992,8 +1000,12 @@
 
     document.getElementById('gs-revenue').textContent    = `€${rev.toFixed(2)}`;
     document.getElementById('gs-commission').textContent = `€${comm.toFixed(2)}`;
-    document.getElementById('gs-rev-label').textContent  = label;
-    document.getElementById('gs-comm-label').textContent = `${label} · a receber`;
+    document.getElementById('gs-rev-label').textContent  = label + schoolLabel;
+    document.getElementById('gs-comm-label').textContent = label + schoolLabel + ' · a receber';
+
+    // Update stat card label for bookings count
+    const bookLbl = document.getElementById('gs-month-label');
+    if (bookLbl && schoolLabel) bookLbl.textContent = (label + schoolLabel);
   }
 
   function renderGlobalStats(rows) {
