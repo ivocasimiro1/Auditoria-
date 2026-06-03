@@ -417,7 +417,6 @@
     <!-- Analytics Toggle + Tier Config -->
     <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap">
       <button class="btn-analytics-sa" onclick="toggleSAAnalytics()">📊 Análise Anual</button>
-      <button class="btn-analytics-sa" onclick="openTiersModal()" style="color:#a78bfa;border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)">⚙️ Patamares de Comissão</button>
       <button class="btn-reviews" id="sa-reviews-btn" onclick="toggleSAReviews()">⭐ Ver Avaliações</button>
     </div>
 
@@ -775,12 +774,26 @@
           <div class="sc-stat"><div class="sc-val sc-revenue" id="sc-revenue-${s.id}">—</div><div class="sc-lbl">Receita</div></div>
           <div class="sc-stat"><div class="sc-val sc-commission" id="sc-commission-${s.id}">—</div><div class="sc-lbl">Comissão</div></div>
         </div>
+        <div id="sc-tiers-sum-${s.id}" style="display:flex;flex-wrap:wrap;gap:.3rem .5rem;margin-bottom:.7rem;padding:.4rem .6rem;background:rgba(255,255,255,.03);border-radius:8px">
+          ${renderCardTierSummary(s.commissionTiers)}
+        </div>
         <div class="sc-links">
           <a href="${s.site}" target="_blank" class="sc-link site">🌊 Site</a>
           <a href="${s.admin}" target="_blank" class="sc-link">⚙️ Admin</a>
         </div>
         <button class="sc-edit-comm-btn" onclick="event.stopPropagation();editCommission('${s.id}')">⚙️ Ajustar Comissão</button>
       </div>`).join('');
+  }
+
+  function renderCardTierSummary(tiers) {
+    const colors = ['#86efac','#00CFFD','#F59E0B','#a78bfa','#f472b6'];
+    const src = tiers?.length ? tiers : getCommTiers().map(t => ({ ...t, max: t.max === Infinity ? null : t.max }));
+    return src.map((t, i) => {
+      const c    = colors[i % colors.length];
+      const rate = (t.rate * 100).toFixed(1);
+      const lbl  = t.max != null ? `até ${t.max}` : `${src[i-1]?.max ? src[i-1].max+'+' : '∞'}`;
+      return `<span style="font-size:.68rem;white-space:nowrap"><span style="color:${c};font-weight:700">${rate}%</span><span style="color:var(--gray)"> ${t.label} (${lbl})</span></span>`;
+    }).join('<span style="color:rgba(255,255,255,.18)"> · </span>');
   }
 
   function switchSchool(id) {
@@ -1199,9 +1212,13 @@
 
     if (error) { showToast('Erro ao guardar: ' + (error.message||error.code), 'error'); return; }
 
-    // Also update localStorage for immediate use in this session
+    // Update in-memory school + refresh card tier summary
     const school = SCHOOLS.find(s => s.id === schoolId);
-    if (school) school.commissionTiers = tiersForDB;
+    if (school) {
+      school.commissionTiers = tiersForDB;
+      const sumEl = document.getElementById(`sc-tiers-sum-${schoolId}`);
+      if (sumEl) sumEl.innerHTML = renderCardTierSummary(tiersForDB);
+    }
 
     showToast('Comissões guardadas no Supabase ✓', 'success');
     closeCommModal();
