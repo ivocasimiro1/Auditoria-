@@ -1637,16 +1637,25 @@ async function reservarWhatsApp() {
 
   // ── Save to Supabase + Email notification ────────────────────
   const waBtn = document.querySelector('.btn-whatsapp');
-  let saveStatus = document.getElementById('save-status');
-  if (!saveStatus) {
-    saveStatus = document.createElement('div');
-    saveStatus.id = 'save-status';
-    saveStatus.style.cssText = 'font-size:.78rem;margin-top:.5rem;text-align:center;padding:.35rem;border-radius:6px';
-    waBtn?.parentNode?.insertBefore(saveStatus, waBtn.nextSibling);
-  }
   if (waBtn) { waBtn.disabled = true; waBtn.innerHTML = '⏳ A guardar...'; }
-  saveStatus.style.color = 'var(--gray)'; saveStatus.style.background = 'transparent';
-  saveStatus.textContent = '';
+
+  // Fixed toast — always visible even if user switches tabs
+  let toast = document.getElementById('booking-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'booking-toast';
+    toast.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;padding:1rem 1.5rem;font-size:1rem;font-weight:600;text-align:center;display:none;transition:opacity .4s';
+    document.body.appendChild(toast);
+  }
+  function showToast(msg, ok) {
+    toast.textContent = msg;
+    toast.style.background = ok ? '#166534' : '#7f1d1d';
+    toast.style.color = ok ? '#bbf7d0' : '#fecaca';
+    toast.style.display = 'block';
+    toast.style.opacity = '1';
+    if (ok) setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => { toast.style.display = 'none'; }, 400); }, 5000);
+  }
+  showToast('⏳ A guardar reserva...', true);
 
   // ── Email backup via FormSubmit (sends to school email) ──────
   try {
@@ -1708,23 +1717,17 @@ async function reservarWhatsApp() {
       }
       if (error) {
         console.warn('Supabase save error:', error.code, error.message);
-        saveStatus.style.color = '#fca5a5';
-        saveStatus.style.background = 'rgba(239,68,68,.08)';
-        saveStatus.textContent = `⚠️ Base de dados indisponível (código: ${error.code}) — o dono foi notificado por WhatsApp e email`;
+        showToast(`⚠️ Erro ao guardar (${error.code}): ${error.message}`, false);
       } else {
-        saveStatus.style.color = '#86efac';
-        saveStatus.style.background = 'rgba(34,197,94,.08)';
-        saveStatus.textContent = '✓ Reserva guardada — aguarda confirmação por WhatsApp';
+        showToast('✅ Reserva guardada! Aguarda confirmação por WhatsApp.', true);
         setTimeout(() => resetBookingForm(), 3000);
       }
     } else {
-      saveStatus.style.color = '#fca5a5';
-      saveStatus.textContent = '⚠️ Sem ligação — o dono foi notificado por WhatsApp';
+      showToast('⚠️ Sem ligação à base de dados — o dono foi notificado por WhatsApp', false);
     }
   } catch(e) {
     console.warn('Supabase save failed', e);
-    saveStatus.style.color = '#fca5a5';
-    saveStatus.textContent = `⚠️ Erro: ${e.message}`;
+    showToast(`⚠️ Erro: ${e.message}`, false);
   }
   if (waBtn) { waBtn.disabled = false; waBtn.innerHTML = `📱 <span data-t="btn_whatsapp">${T('btn_whatsapp')}</span>`; }
 }
