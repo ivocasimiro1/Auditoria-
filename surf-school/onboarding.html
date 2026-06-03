@@ -229,6 +229,46 @@
       font-size: .82rem; color: #7dd3fc; line-height: 1.6;
     }
 
+    /* ── Templates picker ── */
+    #templates-screen { max-width: 960px; margin: 2rem auto; padding: 0 2rem 4rem; }
+    .tpl-title { font-size: 1.7rem; font-weight: 700; margin-bottom: .4rem; }
+    .tpl-title span { color: var(--cyan); }
+    .tpl-desc { color: var(--gray); font-size: .9rem; margin-bottom: 2rem; line-height: 1.5; }
+    .tpl-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1rem; margin-bottom: 1.25rem; }
+    .tpl-card {
+      background: rgba(255,255,255,.04); border: 1.5px solid var(--border);
+      border-radius: 16px; padding: 1.4rem; cursor: pointer;
+      transition: border-color .2s, background .2s, transform .15s;
+      position: relative; overflow: hidden;
+    }
+    .tpl-card:hover { border-color: var(--cyan); background: rgba(0,207,253,.06); transform: translateY(-2px); }
+    .tpl-card.selected { border-color: var(--cyan); background: rgba(0,207,253,.09); }
+    .tpl-badge {
+      display: inline-block; padding: .18rem .55rem; border-radius: 50px;
+      font-size: .67rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+      background: rgba(0,207,253,.15); color: var(--cyan); border: 1px solid rgba(0,207,253,.3);
+      margin-bottom: .75rem;
+    }
+    .tpl-badge.gold   { background: rgba(201,168,76,.15); color: var(--gold);   border-color: rgba(201,168,76,.3); }
+    .tpl-badge.purple { background: rgba(167,139,250,.14); color: #c4b5fd;      border-color: rgba(167,139,250,.3); }
+    .tpl-badge.green  { background: rgba(34,197,94,.12);  color: #86efac;       border-color: rgba(34,197,94,.3); }
+    .tpl-name { font-size: 1.05rem; font-weight: 700; margin-bottom: .35rem; }
+    .tpl-subdesc { font-size: .8rem; color: var(--gray); line-height: 1.5; margin-bottom: .9rem; }
+    .tpl-pills { display: flex; flex-wrap: wrap; gap: .3rem; }
+    .tpl-pill {
+      background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 6px; padding: .18rem .55rem; font-size: .72rem; font-weight: 600; color: #cbd5e1;
+    }
+    .tpl-scratch {
+      width: 100%; padding: .75rem; background: transparent; border: 1px dashed rgba(255,255,255,.15);
+      color: var(--gray); border-radius: 12px; font-family: 'Inter',sans-serif; font-size: .88rem;
+      cursor: pointer; transition: all .18s;
+    }
+    .tpl-scratch:hover { border-color: var(--gray); color: var(--white); }
+    .tpl-cta { width: 100%; padding: .85rem; margin-top: 1.25rem; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #05101e; border: none; border-radius: 12px; font-family: 'Inter',sans-serif; font-size: .95rem; font-weight: 700; cursor: pointer; transition: opacity .18s; }
+    .tpl-cta:hover { opacity: .9; }
+    .tpl-cta:disabled { opacity: .4; cursor: not-allowed; }
+
     /* ── Toast ── */
     .toast { position: fixed; bottom: 2rem; right: 2rem; z-index: 999; padding: .85rem 1.3rem; border-radius: 12px; font-size: .88rem; font-weight: 500; transform: translateY(100px); opacity: 0; transition: transform .3s, opacity .3s; max-width: 320px; }
     .toast.show { transform: translateY(0); opacity: 1; }
@@ -236,6 +276,7 @@
     .toast-success { background: rgba(34,197,94,.95); color: #fff; }
 
     @media (max-width: 640px) {
+      .tpl-grid { grid-template-columns: 1fr; }
       .form-grid, .form-grid.cols-3 { grid-template-columns: 1fr; }
       .form-group.span-2, .form-group.span-3 { grid-column: span 1; }
       .instr-grid { grid-template-columns: 1fr; }
@@ -252,6 +293,73 @@
   <div class="header-sub">Configuração da Escola</div>
 </header>
 
+<!-- ══ TEMPLATE PICKER (pré-ecrã) ══════════════════════════════════════ -->
+<div id="templates-screen">
+  <h1 class="tpl-title">Escolha um <span>Ponto de Partida</span></h1>
+  <p class="tpl-desc">Selecione o cenário mais próximo da sua escola — o formulário será pré-preenchido.<br>Pode personalizar tudo a seguir, campo a campo.</p>
+
+  <div class="tpl-grid">
+
+    <div class="tpl-card" onclick="selectTemplate('classica',this)">
+      <div class="tpl-badge">Mais escolhida</div>
+      <div class="tpl-name">Escola de Surf — Clássica</div>
+      <div class="tpl-subdesc">Setup completo para a maioria das escolas. Quatro tipos de aula, horários ao longo do dia.</div>
+      <div class="tpl-pills">
+        <span class="tpl-pill">Iniciante €35</span>
+        <span class="tpl-pill">Intermédio €35</span>
+        <span class="tpl-pill">Privada €65</span>
+        <span class="tpl-pill">Bodyboard €30</span>
+        <span class="tpl-pill">4 horários/dia</span>
+        <span class="tpl-pill">Máx 6/slot</span>
+      </div>
+    </div>
+
+    <div class="tpl-card" onclick="selectTemplate('minima',this)">
+      <div class="tpl-badge" style="background:rgba(34,197,94,.12);color:#86efac;border-color:rgba(34,197,94,.3)">Simples</div>
+      <div class="tpl-name">Escola Mínima</div>
+      <div class="tpl-subdesc">Para começar sem complicar. Apenas o essencial — cresce e adiciona mais depois à medida que precisar.</div>
+      <div class="tpl-pills">
+        <span class="tpl-pill">Aula de Surf €35</span>
+        <span class="tpl-pill">Privada €60</span>
+        <span class="tpl-pill">2 horários/dia</span>
+        <span class="tpl-pill">Máx 8/slot</span>
+      </div>
+    </div>
+
+    <div class="tpl-card" onclick="selectTemplate('premium',this)">
+      <div class="tpl-badge gold">Boutique</div>
+      <div class="tpl-name">Escola Premium</div>
+      <div class="tpl-subdesc">Grupos reduzidos, preços mais altos. Experiência exclusiva para clientes que procuram qualidade acima de tudo.</div>
+      <div class="tpl-pills">
+        <span class="tpl-pill">Privada €90</span>
+        <span class="tpl-pill">Semi-privada €60/p</span>
+        <span class="tpl-pill">Grupo (4pax) €50/p</span>
+        <span class="tpl-pill">Máx 4/slot</span>
+      </div>
+    </div>
+
+    <div class="tpl-card" onclick="selectTemplate('multi',this)">
+      <div class="tpl-badge purple">Multi-actividade</div>
+      <div class="tpl-name">Surf + SUP + Outros</div>
+      <div class="tpl-subdesc">Escola com várias modalidades aquáticas. Mais horários, mais opções, maior diversidade de clientes.</div>
+      <div class="tpl-pills">
+        <span class="tpl-pill">Surf €35</span>
+        <span class="tpl-pill">SUP €35</span>
+        <span class="tpl-pill">Bodyboard €30</span>
+        <span class="tpl-pill">Privada €65</span>
+        <span class="tpl-pill">4 horários/dia</span>
+        <span class="tpl-pill">Máx 8/slot</span>
+      </div>
+    </div>
+
+  </div>
+
+  <button class="tpl-scratch" onclick="startFromScratch()">✦ Começar do zero — preencher tudo manualmente</button>
+  <button class="tpl-cta" id="tpl-continue-btn" onclick="applyTemplateAndStart()" disabled>Continuar com este cenário →</button>
+</div>
+
+<!-- ══ WIZARD (inicialmente oculto) ════════════════════════════════════ -->
+<div id="wizard-wrap" style="display:none">
 <div class="progress-wrap">
   <div class="progress-steps" id="progress-steps">
     <div class="step-dot active"><span class="step-label">Identidade</span></div>
@@ -624,6 +732,7 @@
   </section>
 
 </main>
+</div><!-- /wizard-wrap -->
 
 <!-- SUCCESS -->
 <div id="success-screen">
@@ -648,6 +757,78 @@
     'https://ubeqidccuvsjhjphybxz.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U'
   );
+
+  // ── State ─────────────────────────────────────────────────
+  // ── Templates ─────────────────────────────────────────────
+  const TEMPLATES = {
+    classica: {
+      slots: ['08:00','10:30','14:00','16:30'], max_per_slot: 6,
+      lessons: [
+        { name:'Iniciante',    name_en:'Beginner',       price:35, per_person:true,  duration:90, min_pax:1, max_pax:6, description:'Para quem nunca surfou' },
+        { name:'Intermédio',   name_en:'Intermediate',   price:35, per_person:true,  duration:90, min_pax:1, max_pax:6, description:'' },
+        { name:'Aula Privada', name_en:'Private Lesson', price:65, per_person:false, duration:60, min_pax:1, max_pax:1, description:'' },
+        { name:'Bodyboard',    name_en:'Bodyboard',      price:30, per_person:true,  duration:90, min_pax:1, max_pax:6, description:'' },
+      ],
+    },
+    minima: {
+      slots: ['09:00','15:00'], max_per_slot: 8,
+      lessons: [
+        { name:'Aula de Surf', name_en:'Surf Lesson',    price:35, per_person:true,  duration:90, min_pax:1, max_pax:8, description:'' },
+        { name:'Aula Privada', name_en:'Private Lesson', price:60, per_person:false, duration:60, min_pax:1, max_pax:1, description:'' },
+      ],
+    },
+    premium: {
+      slots: ['08:00','11:00','15:00'], max_per_slot: 4,
+      lessons: [
+        { name:'Aula Privada',  name_en:'Private Lesson', price:90, per_person:false, duration:75, min_pax:1, max_pax:1, description:'Atenção total — só para si' },
+        { name:'Semi-privada',  name_en:'Semi-private',   price:60, per_person:true,  duration:75, min_pax:2, max_pax:2, description:'2 pessoas, preço por pessoa' },
+        { name:'Grupo Pequeno', name_en:'Small Group',    price:50, per_person:true,  duration:90, min_pax:2, max_pax:4, description:'Máximo 4 alunos' },
+      ],
+    },
+    multi: {
+      slots: ['08:00','10:30','13:30','15:30'], max_per_slot: 8,
+      lessons: [
+        { name:'Surf Iniciante',   name_en:'Surf Beginner',    price:35, per_person:true,  duration:90, min_pax:1, max_pax:6, description:'' },
+        { name:'Surf Intermédio',  name_en:'Surf Intermediate',price:35, per_person:true,  duration:90, min_pax:1, max_pax:6, description:'' },
+        { name:'Stand Up Paddle',  name_en:'Stand Up Paddle',  price:35, per_person:true,  duration:90, min_pax:1, max_pax:6, description:'' },
+        { name:'Bodyboard',        name_en:'Bodyboard',        price:30, per_person:true,  duration:90, min_pax:1, max_pax:6, description:'' },
+        { name:'Privada',          name_en:'Private',          price:65, per_person:false, duration:60, min_pax:1, max_pax:1, description:'' },
+      ],
+    },
+  };
+
+  let selectedTemplate = null;
+
+  function selectTemplate(key, cardEl) {
+    selectedTemplate = key;
+    document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('selected'));
+    cardEl.classList.add('selected');
+    document.getElementById('tpl-continue-btn').disabled = false;
+  }
+
+  function applyTemplateAndStart() {
+    if (!selectedTemplate) return;
+    const tpl = TEMPLATES[selectedTemplate];
+    // Apply template data
+    slots = [...tpl.slots];
+    lessonTypes = tpl.lessons.map(l => ({...l}));
+    document.getElementById('f-maxslot').value = tpl.max_per_slot;
+    // Show wizard
+    document.getElementById('templates-screen').style.display = 'none';
+    document.getElementById('wizard-wrap').style.display = 'block';
+    renderSlots();
+    renderLessonTable();
+  }
+
+  function startFromScratch() {
+    selectedTemplate = null;
+    lessonTypes = [];
+    slots = [];
+    document.getElementById('templates-screen').style.display = 'none';
+    document.getElementById('wizard-wrap').style.display = 'block';
+    renderSlots();
+    renderLessonTable();
+  }
 
   // ── State ─────────────────────────────────────────────────
   let currentStep = 1;
