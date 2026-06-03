@@ -1063,9 +1063,10 @@
       .order('booking_time',  { ascending: true  });
 
     if (error) {
-      const msg = error.code === '42P01'
-        ? 'A tabela de marcações ainda não foi criada no Supabase. Abre o SQL Editor e cria a tabela.'
-        : `Erro: ${error.message}`;
+      let msg = `Erro: ${error.message}`;
+      if (error.code === '42P01') msg = 'A tabela "bookings" não existe no Supabase. Cria a tabela no SQL Editor.';
+      else if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy'))
+        msg = 'Sem permissão para ler marcações. Verifica as políticas RLS no Supabase (necessário policy SELECT para role authenticated).';
       document.getElementById('bookings-tbody').innerHTML =
         `<tr><td colspan="9" style="text-align:center;padding:2.5rem;color:#fca5a5">⚠️ ${msg}</td></tr>`;
       return;
