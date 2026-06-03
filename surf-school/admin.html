@@ -107,7 +107,10 @@
     .stat-card {
       background: var(--card); border: 1px solid var(--border); border-radius: 16px;
       padding: 1.3rem 1.5rem; display: flex; align-items: center; gap: 1rem;
+      cursor: pointer; transition: border-color .2s, background .2s;
     }
+    .stat-card:hover { border-color: rgba(0,207,253,.4); background: rgba(0,207,253,.05); }
+    .stat-card.active { border-color: var(--cyan); background: rgba(0,207,253,.1); }
     .stat-icon {
       width: 48px; height: 48px; border-radius: 12px;
       display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;
@@ -422,9 +425,9 @@
 
   <div class="dash-content">
 
-    <!-- Stats -->
+    <!-- Stats (clicáveis como filtros rápidos) -->
     <div class="stats-grid">
-      <div class="stat-card">
+      <div class="stat-card" id="sc-all" onclick="statFilter('all')" title="Ver todas as marcações do mês">
         <div class="stat-icon si-blue">📋</div>
         <div class="stat-info">
           <div class="stat-label">Marcações</div>
@@ -432,28 +435,28 @@
           <div class="stat-sub" id="stat-month-label">este mês</div>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" id="sc-confirmed" onclick="statFilter('confirmed')" title="Ver confirmadas">
         <div class="stat-icon si-green">💶</div>
         <div class="stat-info">
           <div class="stat-label">Receita Escola</div>
           <div class="stat-value" id="stat-revenue">—</div>
-          <div class="stat-sub">valor total das aulas</div>
+          <div class="stat-sub">ver confirmadas</div>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" id="sc-today" onclick="statFilter('today')" title="Ver aulas de hoje">
         <div class="stat-icon si-teal">📅</div>
         <div class="stat-info">
           <div class="stat-label">Aulas Hoje</div>
           <div class="stat-value" id="stat-today">—</div>
-          <div class="stat-sub" id="stat-today-sub">marcações confirmadas</div>
+          <div class="stat-sub" id="stat-today-sub">clica para ver hoje</div>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" id="sc-pending" onclick="statFilter('pending')" title="Ver pendentes de confirmação">
         <div class="stat-icon si-yellow">⏳</div>
         <div class="stat-info">
           <div class="stat-label">Por Confirmar</div>
           <div class="stat-value" id="stat-pending">—</div>
-          <div class="stat-sub">aguardam confirmação</div>
+          <div class="stat-sub">clica para confirmar</div>
         </div>
       </div>
     </div>
@@ -761,6 +764,37 @@
 
   function clearDayFilter() {
     document.getElementById('f-date').value = '';
+  }
+
+  function statFilter(type) {
+    // Remove active highlight from all cards
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+
+    if (type === 'today') {
+      filterToday();
+      document.getElementById('sc-today').classList.add('active');
+    } else if (type === 'pending') {
+      clearDayFilter();
+      document.getElementById('f-status').value = 'pending';
+      document.getElementById('f-search').value = '';
+      applyFilters();
+      document.getElementById('sc-pending').classList.add('active');
+      document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (type === 'confirmed') {
+      clearDayFilter();
+      document.getElementById('f-status').value = 'confirmed';
+      document.getElementById('f-search').value = '';
+      applyFilters();
+      document.getElementById('sc-confirmed').classList.add('active');
+      document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      clearDayFilter();
+      document.getElementById('f-status').value = '';
+      document.getElementById('f-search').value = '';
+      applyFilters();
+      document.getElementById('sc-all').classList.add('active');
+      document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   function renderStats(monthFilter) {
