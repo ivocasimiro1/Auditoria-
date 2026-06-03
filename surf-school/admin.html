@@ -475,10 +475,56 @@
     .today-equip-person strong { color: var(--white); }
     .today-card-status { float: right; margin-top: -2.4rem; }
 
+    /* ── MOBILE ── */
     @media(max-width: 768px) {
-      .dash-content { padding: 1rem; }
-      .topbar { padding: .8rem 1rem; }
-      .filters-bar { gap: .6rem; }
+      .dash-content { padding: .75rem; }
+      .topbar { padding: .7rem 1rem; gap: .5rem; }
+      .topbar-right { gap: .5rem; flex-wrap: wrap; }
+      .user-info { display: none; }
+      .filters-bar { gap: .5rem; padding: .75rem 1rem; }
+      .filter-group { flex: 1 1 140px; }
+      .filter-group span.filter-label { display: none; }
+      .filter-select, .filter-input { width: 100%; font-size: .82rem; padding: .45rem .7rem; }
+      .btn-today, .btn-refresh { flex: 0 0 auto; padding: .45rem .8rem; font-size: .8rem; }
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: .6rem; margin-bottom: 1rem; }
+      .stat-card { padding: .9rem 1rem; gap: .7rem; }
+      .stat-icon { width: 38px; height: 38px; font-size: 1.1rem; }
+      .stat-value { font-size: 1.35rem; }
+      .rev-period-pills { gap: .25rem; }
+      .rev-pill { font-size: .62rem; padding: .18rem .45rem; }
+      .settings-grid { grid-template-columns: 1fr; }
+      .settings-grid .form-group[style*="span 2"] { grid-column: 1; }
+    }
+
+    /* ── MOBILE TABLE → CARDS ── */
+    @media(max-width: 640px) {
+      /* hide desktop table */
+      .table-scroll table thead { display: none; }
+      .table-scroll table { display: block; }
+      .table-scroll tbody { display: flex; flex-direction: column; gap: .55rem; padding: .6rem; }
+      .table-scroll tr { display: flex; flex-direction: column; background: rgba(255,255,255,.04);
+        border: 1px solid var(--border); border-radius: 14px; padding: .85rem 1rem; gap: .4rem; }
+      .table-scroll tr:hover td { background: none; }
+      .table-scroll td { display: flex; align-items: center; padding: 0; border: none;
+        font-size: .85rem; gap: .4rem; }
+      .table-scroll td small { display: inline; margin: 0; }
+      .table-scroll td:first-child { font-size: .72rem; color: var(--gray); }
+      .table-scroll td:nth-child(2) { font-size: .92rem; font-weight: 700; }
+      .table-scroll td:nth-child(2) small { color: var(--cyan); font-size: .82rem; font-weight: 400; margin-left: .35rem; }
+      .table-scroll td.col-price { color: var(--cyan); font-size: .92rem; }
+      .table-scroll td.col-commission { display: none; }
+      .table-scroll td:last-child { margin-top: .3rem; padding-top: .5rem;
+        border-top: 1px solid rgba(255,255,255,.07); gap: .35rem; flex-wrap: wrap; }
+      .table-scroll .summary-row { background: rgba(0,112,243,.08);
+        border-color: rgba(0,207,253,.25); }
+      .table-scroll .summary-row td:first-child { display: none; }
+      .table-scroll .summary-row td { font-size: .85rem; }
+      .col-center { justify-content: flex-start; }
+      .act-btn { width: 36px; height: 36px; font-size: 1rem; border-radius: 10px; }
+      .filters-bar { display: grid; grid-template-columns: 1fr 1fr; }
+      .filter-group { flex: unset; }
+      .btn-today { grid-column: 1; justify-self: start; }
+      .btn-refresh { grid-column: 2; justify-self: end; }
     }
 
     /* ── ANALYTICS ── */
@@ -2345,19 +2391,40 @@
     sel.innerHTML = `<option value="">—</option>` + sizes.map(s=>`<option value="${s}">${s}</option>`).join('');
   }
 
+  function refreshMBTimeSlots(selectedDate) {
+    const schoolSel = document.getElementById('f-school');
+    const school = SCHOOLS.find(s => s.id === (schoolSel ? schoolSel.value : '')) || SCHOOLS[0];
+    const allSlots = school.slots || ['08:00','10:30','14:00','16:30'];
+    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const nowM = now.getHours() * 60 + now.getMinutes();
+    const slots = (selectedDate === todayStr)
+      ? allSlots.filter(t => { const [h,m] = t.split(':').map(Number); return h*60+m > nowM; })
+      : allSlots;
+    const show = slots.length ? slots : allSlots;
+    const sel = document.getElementById('mb-time');
+    const cur = sel.value;
+    sel.innerHTML = show.map(t => `<option value="${t}" ${t===cur?'selected':''}>${t}</option>`).join('');
+    if (!show.includes(cur) && show.length) sel.value = show[0];
+  }
+
   async function checkMBAvailability() {
     const date = document.getElementById('mb-date')?.value;
+    refreshMBTimeSlots(date);
     const time = document.getElementById('mb-time')?.value;
     const avail = document.getElementById('mb-avail');
     if (!avail) return;
     if (!date || !time || !sb) { avail.textContent = '— escolhe data e hora —'; avail.style.color = 'var(--gray)'; return; }
     try {
+      const schoolSel = document.getElementById('f-school');
+      const school = SCHOOLS.find(s => s.id === (schoolSel ? schoolSel.value : '')) || SCHOOLS[0];
+      const maxSlot = school.max_per_slot || 6;
       const { data } = await sb.from('bookings')
         .select('num_people').eq('booking_date', date).eq('booking_time', time)
         .neq('status', 'cancelled');
       const used = (data || []).reduce((s, r) => s + (r.num_people || 1), 0);
-      const free = Math.max(0, 6 - used);
-      avail.textContent = free > 0 ? `✅ ${free} / 6 vagas disponíveis` : '❌ Hora esgotada';
+      const free = Math.max(0, maxSlot - used);
+      avail.textContent = free > 0 ? `✅ ${free} / ${maxSlot} vagas disponíveis` : '❌ Hora esgotada';
       avail.style.color = free > 0 ? '#86efac' : '#fca5a5';
     } catch(e) { avail.textContent = '⚠️ Erro ao verificar'; avail.style.color = '#fca5a5'; }
   }
@@ -2366,6 +2433,7 @@
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     document.getElementById('mb-date').value     = todayStr;
+    document.getElementById('mb-date').min       = todayStr; // block past dates
     document.getElementById('mb-lesson').value   = 'Iniciante';
     document.getElementById('mb-people').value   = '1';
     document.getElementById('mb-status').value   = 'confirmed';
@@ -2382,7 +2450,14 @@
     const schoolSel = document.getElementById('f-school');
     const school = SCHOOLS.find(s => s.id === (schoolSel ? schoolSel.value : '')) || SCHOOLS[0];
     const sel = document.getElementById('mb-time');
-    sel.innerHTML = (school.slots || ['09:00','11:00','14:00','16:00'])
+    // Only show future slots when booking is for today
+    const nowH = now.getHours() * 60 + now.getMinutes();
+    const availableSlots = (school.slots || ['09:00','11:00','14:00','16:00']).filter(t => {
+      const [h, m] = t.split(':').map(Number);
+      return (h * 60 + m) > nowH; // only future slots for today
+    });
+    const slotsToShow = availableSlots.length ? availableSlots : (school.slots || ['09:00','11:00','14:00','16:00']);
+    sel.innerHTML = slotsToShow
       .map((t, i) => `<option value="${t}" ${i === 0 ? 'selected' : ''}>${t}</option>`)
       .join('');
 

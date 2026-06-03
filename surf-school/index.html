@@ -1408,15 +1408,35 @@ function updateClock() {
 // ── BOOKING STATE ─────────────────────────────────────────────────────────────
 const booking = { lessonKey:null, lessonPrice:0, lessonPrivate:false, selectedDateKey:null, selectedDateStr:null, time:null };
 const SLOT_AVAIL = {};
+let SCHOOL_SLOTS     = ['08:00','10:30','14:00','16:30'];
+let SCHOOL_MAX_SLOT  = 6;
+let SCHOOL_ID_ACTIVE = 'escola-teste';
+
+async function loadSchoolConfig() {
+  if (!sb) return;
+  try {
+    const { data } = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number').eq('status','active').limit(1).single();
+    if (data) {
+      if (data.time_slots?.length)  SCHOOL_SLOTS    = data.time_slots;
+      if (data.max_per_slot)        SCHOOL_MAX_SLOT  = data.max_per_slot;
+      if (data.id)                  SCHOOL_ID_ACTIVE = data.id;
+    }
+  } catch(_) {}
+}
+
+function isPastSlot(timeStr, dateKey) {
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+  if (dateKey !== todayKey) return false;
+  const [h, m] = timeStr.split(':').map(Number);
+  const slotMs = h * 60 + m;
+  const nowMs  = now.getHours() * 60 + now.getMinutes();
+  return slotMs <= nowMs;
+}
 
 function getSlots(dateKey) {
   if (!SLOT_AVAIL[dateKey]) {
-    SLOT_AVAIL[dateKey] = [
-      {t:'08:00', used:0},
-      {t:'10:30', used:0},
-      {t:'14:00', used:0},
-      {t:'16:30', used:0},
-    ];
+    SLOT_AVAIL[dateKey] = SCHOOL_SLOTS.map(t => ({ t, used: 0 }));
   }
   return SLOT_AVAIL[dateKey];
 }
@@ -1478,14 +1498,17 @@ function buildSlots(dateKey) {
   const grid = document.getElementById('slots-grid');
   if (!grid) return;
   grid.innerHTML = '';
+  const maxSlot = SCHOOL_MAX_SLOT;
   getSlots(dateKey).forEach(s => {
-    const free = 6 - s.used, full = free === 0, sel = booking.time === s.t;
+    const past = isPastSlot(s.t, dateKey);
+    const free = maxSlot - s.used, full = free <= 0 || past, sel = booking.time === s.t;
     const cls = `slot-card ${full?'full':'available'}${sel?' selected':''}`;
+    const pastLabel = past ? `<div class="slot-badge-full" style="background:rgba(148,163,176,.12);color:var(--gray)">Encerrado</div>` : '';
     grid.innerHTML += `
-      <div class="${cls}" ${!full?`onclick="selectSlot(this,'${s.t}',${free})"`:''}>${full?`<div class="slot-badge-full">${T('slot_full')}</div>`:''}
+      <div class="${cls}" ${!full?`onclick="selectSlot(this,'${s.t}',${free})"`:''}>${full?`${pastLabel || `<div class="slot-badge-full">${T('slot_full')}</div>`}`:''}
         <div class="slot-time">${s.t}</div>
-        <div class="slot-status"><span class="adi"></span>${full?`<span style="color:var(--red)">${T('slot_full')}</span>`:`${free} ${T('slot_available')}`}</div>
-        <div class="slot-vagas">6 ${T('slot_spots')}</div>
+        <div class="slot-status"><span class="adi"></span>${full?(past?`<span style="color:var(--gray)">Encerrado</span>`:`<span style="color:var(--red)">${T('slot_full')}</span>`):`${free} ${T('slot_available')}`}</div>
+        <div class="slot-vagas">${maxSlot} ${T('slot_spots')}</div>
       </div>`;
   });
 }
@@ -1584,7 +1607,7 @@ async function loadSlotAvailability(dateKey) {
     const { data } = await sb.from('bookings')
       .select('booking_time, num_people')
       .eq('booking_date', dateStr)
-      .eq('school_id', 'escola-teste')
+      .eq('school_id', SCHOOL_ID_ACTIVE)
       .neq('status', 'cancelled');
     const used = {};
     (data || []).forEach(r => {
@@ -1725,7 +1748,7 @@ async function reservarWhatsApp() {
     const p0 = equipment[0] || {};
     if (sb) {
       const fullRow = {
-        school_id:'escola-teste', lesson_type:T(booking.lessonKey),
+        school_id: SCHOOL_ID_ACTIVE, lesson_type:T(booking.lessonKey),
         booking_date:dateStr, booking_time:booking.time, num_people:pess,
         client_name:nome, client_phone:tel, client_email:email||null,
         client_country: country || null,
@@ -1896,6 +1919,7 @@ setLang('pt');
 buildTideGrid();
 buildCalendar();
 updateNextTide();
+loadSchoolConfig(); // loads time_slots + max_per_slot from Supabase schools table
 updateClock();
 fetchConditions(getBeach());
 setInterval(updateClock, 1000);

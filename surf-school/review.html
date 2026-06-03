@@ -11,6 +11,7 @@
   <!--
   SQL — Executar UMA VEZ no Supabase SQL Editor:
 
+  -- Run this in Supabase SQL Editor if reviews aren't saving:
   create table if not exists reviews (
     id          uuid default gen_random_uuid() primary key,
     booking_id  uuid,
@@ -22,9 +23,12 @@
     created_at  timestamptz default now()
   );
   alter table reviews enable row level security;
-  create policy "reviews_insert" on reviews for insert with check (true);
-  create policy "reviews_select" on reviews for select using (true);
-  create policy "reviews_update" on reviews for update using (true) with check (true);
+  -- Drop & recreate policies to avoid duplicate errors:
+  drop policy if exists "reviews_insert" on reviews;
+  drop policy if exists "reviews_select" on reviews;
+  drop policy if exists "reviews_update" on reviews;
+  drop policy if exists "allow_all_reviews" on reviews;
+  create policy "allow_all_reviews" on reviews for all using (true) with check (true);
   -->
 
   <style>
@@ -129,7 +133,7 @@
 
   <div class="form-group">
     <label id="lbl-comment">Comentário <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
-    <textarea id="f-comment" rows="4" id="f-comment"></textarea>
+    <textarea id="f-comment" rows="4"></textarea>
   </div>
   <div class="form-group">
     <label id="lbl-name">O seu nome</label>
@@ -305,19 +309,25 @@
     if (!selectedRating || !bookingData) return;
     const btn = document.getElementById('btn-submit');
     btn.disabled = true; btn.textContent = '...';
-    const name    = document.getElementById('f-name').value.trim() || bookingData.client_name;
+    const name    = document.getElementById('f-name').value.trim() || bookingData.client_name || 'Anónimo';
     const comment = document.getElementById('f-comment').value.trim() || null;
+    const schoolId = bookingData.school_id || 'escola-teste';
 
     const { error } = await sb.from('reviews').insert({
       booking_id:  bookingData.id,
-      school_id:   bookingData.school_id,
+      school_id:   schoolId,
       client_name: name,
       rating:      selectedRating,
       comment:     comment,
       status:      'pending',
     });
 
-    if (error) { btn.disabled=false; btn.textContent=t('btn'); alert('Erro ao submeter. Tenta novamente.'); return; }
+    if (error) {
+      console.error('Review insert error:', error);
+      btn.disabled=false; btn.textContent=t('btn');
+      alert('Erro ao submeter (' + (error.code || error.message || 'unknown') + '). Tenta novamente.');
+      return;
+    }
 
     document.getElementById('review-card').style.display  = 'none';
     document.getElementById('success-screen').style.display = 'block';
