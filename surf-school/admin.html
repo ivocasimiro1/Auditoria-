@@ -546,6 +546,7 @@
     .btn-reviews.has-pending { animation: pulse-gold 1.8s ease infinite; border-color: #f59e0b; background: rgba(245,158,11,.2); }
     .btn-settings  { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15); color: var(--gray); border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; margin-left: .5rem; }
     .btn-settings:hover { border-color: var(--cyan); color: var(--white); }
+    .btn-qr { background: rgba(0,207,253,.1); border: 1px solid rgba(0,207,253,.3); color: var(--cyan); border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
     #settings-section { margin-bottom: 1.5rem; }
     .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .settings-slot-list { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: .6rem; }
@@ -714,6 +715,7 @@
       <button class="btn-settings"  id="btn-settings"  onclick="toggleSettings()">⚙️ Configurações</button>
       <button class="btn-reviews"   id="btn-reviews"   onclick="toggleReviews()">⭐ Avaliações</button>
       <button class="btn-analytics" onclick="toggleAnalytics()">📊 Ver Análise</button>
+      <button class="btn-qr" onclick="printQRCard()">🖨️ Cartão QR</button>
     </div>
 
     <!-- Settings Section -->
@@ -2722,6 +2724,70 @@
   }
 
   init();
+
+  // ── QR CARD ───────────────────────────────────────────────────────────────────
+  function printQRCard() {
+    const schoolId = document.getElementById('f-school')?.value || SCHOOLS[0]?.id || 'escola-teste';
+    const school   = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0] || { id: schoolId, name: 'Escola Surf', wa_number: '' };
+    const bookingUrl = `https://auditoria-25b.pages.dev/surf`;
+    const qrData     = encodeURIComponent(bookingUrl);
+    const qrSrc      = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&color=050D1A&bgcolor=00CFFD&data=${qrData}`;
+    const wa = school.wa_number ? '+' + school.wa_number.replace(/\D/g,'').replace(/^00/,'') : '';
+
+    const popup = window.open('', '_blank', 'width=540,height=800,scrollbars=yes');
+    if (!popup) { alert('Permite popups para imprimir o cartão QR.'); return; }
+    popup.document.write(`<!DOCTYPE html><html lang="pt"><head>
+<meta charset="UTF-8"/>
+<title>Cartão QR · ${school.name}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:#050D1A;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 16px 40px}
+  .bar{width:100%;max-width:460px;display:flex;justify-content:flex-end;margin-bottom:16px}
+  .btn{background:linear-gradient(135deg,#0070F3,#00CFFD);border:none;border-radius:10px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:10px 24px;cursor:pointer}
+  .card{width:100%;max-width:420px;background:linear-gradient(160deg,#0A1A30,#0D2040);border:1px solid rgba(0,207,253,.3);border-radius:24px;padding:36px 32px 32px;text-align:center;position:relative;overflow:hidden}
+  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#0070F3,#00CFFD,#0070F3)}
+  .emoji{font-size:44px;margin-bottom:10px;display:block}
+  .name{font-size:24px;font-weight:900;background:linear-gradient(135deg,#fff 30%,#00CFFD);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+  .tagline{font-size:.82rem;color:rgba(255,255,255,.5);margin-bottom:24px}
+  .cta{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#00CFFD;margin-bottom:12px}
+  .qr-wrap{display:inline-block;background:#fff;border-radius:16px;padding:8px;margin-bottom:18px}
+  .qr-wrap img{display:block;border-radius:8px}
+  .url{font-size:.72rem;color:rgba(255,255,255,.45);font-family:monospace;word-break:break-all;margin-bottom:20px;padding:8px 12px;background:rgba(255,255,255,.04);border-radius:8px}
+  .sep{width:100%;height:1px;background:rgba(255,255,255,.08);margin:16px 0}
+  .info{display:flex;flex-direction:column;gap:8px}
+  .info-row{display:flex;align-items:center;justify-content:center;gap:8px;font-size:.82rem;color:rgba(255,255,255,.65)}
+  .info-row strong{color:#fff}
+  @media print{
+    body{background:#fff;color:#000;padding:0}
+    .bar{display:none}
+    .card{border-radius:0;border-color:#ccc;background:#fff;color:#000;max-width:100%;box-shadow:none}
+    .card::before{display:none}
+    .name{-webkit-text-fill-color:#000;background:none;color:#000}
+    .tagline,.cta{color:#555}
+    .url{color:#777;background:#f5f5f5}
+    .info-row{color:#444}
+    .sep{background:#ddd}
+  }
+</style></head><body>
+<div class="bar"><button class="btn" onclick="window.print()">🖨️ Imprimir / PDF</button></div>
+<div class="card">
+  <span class="emoji">🏄</span>
+  <div class="name">${school.name}</div>
+  <div class="tagline">Reserve a sua aula de surf online — rápido e fácil</div>
+  <div class="cta">Aponte a câmara para reservar</div>
+  <div class="qr-wrap"><img src="${qrSrc}" width="220" height="220" alt="QR Code"/></div>
+  <div class="url">${bookingUrl}</div>
+  <div class="sep"></div>
+  <div class="info">
+    ${wa ? `<div class="info-row">📱 WhatsApp <strong>${wa}</strong></div>` : ''}
+    <div class="info-row">🌊 <strong>auditoria-25b.pages.dev</strong></div>
+  </div>
+</div>
+<script>setTimeout(()=>document.querySelector('img').complete||document.querySelector('img').addEventListener('load',()=>{}),500)<\/script>
+</body></html>`);
+    popup.document.close();
+  }
 </script>
 </body>
 </html>

@@ -295,6 +295,16 @@
     .tier-3 { background: rgba(201,168,76,.15); border: 1px solid rgba(201,168,76,.3); color: #F59E0B; }
     .btn-analytics-sa { background: rgba(201,168,76,.1); border: 1px solid rgba(201,168,76,.25); color: var(--gold); border-radius: 8px; padding: .45rem 1rem; font-size: .8rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
     .btn-reviews { background: rgba(201,168,76,.12); border: 1px solid rgba(201,168,76,.3); color: var(--gold); border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; margin-left: .5rem; }
+    .lead-filter-btn { background: transparent; border: 1px solid var(--border); color: var(--gray); border-radius: 50px; padding: .2rem .7rem; font-size: .72rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; }
+    .lead-filter-btn.active { background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.4); color: #86efac; }
+    .lead-card { background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: .75rem; }
+    .lead-card.new { border-color: rgba(34,197,94,.3); }
+    .lead-school { font-size:.95rem;font-weight:700;margin-bottom:.2rem }
+    .lead-meta { font-size:.75rem;color:var(--gray);margin-bottom:.7rem }
+    .lead-actions { display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.75rem }
+    .btn-lead-create { background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;border-radius:8px;padding:.3rem .9rem;font-size:.75rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif }
+    .btn-lead-review { background:rgba(0,207,253,.1);border:1px solid rgba(0,207,253,.3);color:var(--cyan);border-radius:8px;padding:.3rem .8rem;font-size:.75rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif }
+    .btn-lead-archive { background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5;border-radius:8px;padding:.3rem .7rem;font-size:.75rem;cursor:pointer;font-family:'Inter',sans-serif }
     .review-card { background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: .75rem; }
     .stars-display { color: #f59e0b; letter-spacing: .1rem; font-size: .95rem; }
     .stars-display .empty { color: rgba(255,255,255,.15); }
@@ -418,6 +428,22 @@
     <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap">
       <button class="btn-analytics-sa" onclick="toggleSAAnalytics()">📊 Análise Anual</button>
       <button class="btn-reviews" id="sa-reviews-btn" onclick="toggleSAReviews()">⭐ Ver Avaliações</button>
+      <button class="btn-analytics-sa" id="btn-leads" onclick="toggleLeads()" style="color:#86efac;border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.08)">📋 Candidaturas</button>
+    </div>
+
+    <!-- Leads / Candidaturas Section -->
+    <div id="leads-section" style="display:none;margin-bottom:1.5rem">
+      <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.5rem">
+          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#86efac">📋 Candidaturas de Escolas</div>
+          <div style="display:flex;gap:.4rem">
+            <button onclick="setLeadFilter('new',this)"    class="lead-filter-btn active">Novas</button>
+            <button onclick="setLeadFilter('review',this)" class="lead-filter-btn">Em análise</button>
+            <button onclick="setLeadFilter('all',this)"    class="lead-filter-btn">Todas</button>
+          </div>
+        </div>
+        <div id="leads-list"><div style="color:var(--gray);font-size:.85rem">A carregar candidaturas...</div></div>
+      </div>
     </div>
 
     <!-- Reviews Section -->
@@ -695,6 +721,7 @@
       if (session) { currentUser = session.user; checkAndShowDash(); }
       else         { currentUser = null; showLogin(); }
     });
+    checkLeadsBadge();
   }
 
   function checkAndShowDash() {
@@ -1423,6 +1450,122 @@
   }
 
   init();
+
+  // ── CANDIDATURAS (LEADS) ─────────────────────────────────────────────────────
+  let leadsOpen = false;
+  let leadsFilter = 'new';
+  let leadsData = [];
+
+  async function toggleLeads() {
+    leadsOpen = !leadsOpen;
+    const sec = document.getElementById('leads-section');
+    const btn = document.getElementById('btn-leads');
+    sec.style.display = leadsOpen ? 'block' : 'none';
+    btn.textContent   = leadsOpen ? '📋 Fechar Candidaturas' : '📋 Candidaturas';
+    if (leadsOpen) await loadLeads();
+  }
+
+  async function loadLeads() {
+    document.getElementById('leads-list').innerHTML = '<div style="color:var(--gray);font-size:.85rem">A carregar...</div>';
+    try {
+      const { data, error } = await sb.from('leads').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      leadsData = data || [];
+      renderLeads();
+      const newCount = leadsData.filter(l => l.status === 'new').length;
+      const btn = document.getElementById('btn-leads');
+      if (!leadsOpen && newCount > 0) btn.textContent = `📋 Candidaturas (${newCount})`;
+    } catch(e) {
+      document.getElementById('leads-list').innerHTML = `<p style="color:var(--gray);font-size:.85rem">Erro: ${e.message}</p>`;
+    }
+  }
+
+  function setLeadFilter(f, btn) {
+    leadsFilter = f;
+    document.querySelectorAll('.lead-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderLeads();
+  }
+
+  function renderLeads() {
+    const filtered = leadsFilter === 'all' ? leadsData
+      : leadsFilter === 'new'    ? leadsData.filter(l => l.status === 'new')
+      : leadsData.filter(l => l.status === 'review');
+
+    if (!filtered.length) {
+      document.getElementById('leads-list').innerHTML = '<p style="color:var(--gray);font-size:.85rem;padding:.5rem 0">Nenhuma candidatura.</p>';
+      return;
+    }
+    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    document.getElementById('leads-list').innerHTML = filtered.map(l => {
+      const d   = new Date(l.created_at);
+      const dt  = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+      const types = Array.isArray(l.lesson_types) ? l.lesson_types.join(', ') : (l.lesson_types || '—');
+      const statusColor = l.status === 'new' ? '#86efac' : l.status === 'review' ? '#00CFFD' : 'var(--gray)';
+      return `<div class="lead-card ${l.status === 'new' ? 'new' : ''}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.3rem">
+          <div class="lead-school">🏄 ${l.school_name}</div>
+          <span style="font-size:.67rem;font-weight:700;color:${statusColor};background:rgba(255,255,255,.05);border:1px solid currentColor;border-radius:50px;padding:.1rem .5rem">${l.status === 'new' ? 'Nova' : l.status === 'review' ? 'Em análise' : 'Arquivada'}</span>
+        </div>
+        <div class="lead-meta">
+          👤 ${l.contact_name} · 📧 ${l.email} · 📱 ${l.phone}
+          ${l.location ? ' · 📍 ' + l.location : ''}
+          · ${dt}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem .7rem;font-size:.78rem;margin-bottom:.4rem">
+          ${l.monthly_lessons ? `<span>📅 ~${l.monthly_lessons} aulas/mês</span>` : ''}
+          ${l.avg_price ? `<span>💶 ~€${l.avg_price}/pessoa</span>` : ''}
+          ${l.typical_hours ? `<span>🕐 ${l.typical_hours}</span>` : ''}
+          ${types !== '—' ? `<span>🎿 ${types}</span>` : ''}
+          ${l.website ? `<span><a href="${l.website}" target="_blank" style="color:var(--cyan)">${l.website}</a></span>` : ''}
+        </div>
+        ${l.notes ? `<div style="font-size:.8rem;color:rgba(255,255,255,.6);font-style:italic;padding:.5rem .7rem;background:rgba(255,255,255,.03);border-radius:7px;margin-bottom:.3rem">"${l.notes}"</div>` : ''}
+        <div class="lead-actions">
+          <button class="btn-lead-create" onclick="createSchoolFromLead('${l.id}','${l.school_name.replace(/'/g,"\\'")}','${l.email}','${l.phone}')">✅ Criar Escola</button>
+          ${l.status === 'new' ? `<button class="btn-lead-review" onclick="updateLeadStatus('${l.id}','review')">👁 Em análise</button>` : ''}
+          <button class="btn-lead-archive" onclick="updateLeadStatus('${l.id}','archived')">✕ Arquivar</button>
+          <a href="mailto:${l.email}?subject=SurfBook — A sua candidatura&body=Olá ${l.contact_name},%0A%0AObrigado pela sua candidatura para a ${l.school_name}!" class="btn-lead-review" style="text-decoration:none">✉️ Email</a>
+          ${l.phone ? `<a href="https://wa.me/${l.phone.replace(/\D/g,'')}" target="_blank" class="btn-lead-review" style="text-decoration:none">💬 WhatsApp</a>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function updateLeadStatus(id, status) {
+    const { error } = await sb.from('leads').update({ status }).eq('id', id);
+    if (error) { showToast('Erro: ' + error.message, 'error'); return; }
+    await loadLeads();
+  }
+
+  async function createSchoolFromLead(leadId, schoolName, email, phone) {
+    const schoolId = schoolName.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    const confirm = window.confirm(`Criar escola:\n\nNome: ${schoolName}\nID: ${schoolId}\n\nContinuar?`);
+    if (!confirm) return;
+    const { error } = await sb.from('schools').insert({
+      id:      schoolId,
+      name:    schoolName,
+      email:   email,
+      status:  'pending',
+      commission_rate: 0.04,
+    });
+    if (error) { showToast('Erro ao criar escola: ' + error.message, 'error'); return; }
+    await sb.from('leads').update({ status: 'archived' }).eq('id', leadId);
+    const onboardingUrl = `https://auditoria-25b.pages.dev/onboarding?school=${schoolId}`;
+    showToast(`Escola criada! Envia o link de onboarding.`, 'success');
+    await navigator.clipboard.writeText(onboardingUrl).catch(()=>{});
+    window.open(`mailto:${email}?subject=SurfBook — Acesso ao painel&body=Olá!%0A%0ABem-vindo ao SurfBook!%0A%0AO seu painel está pronto. Configure a sua escola aqui:%0A${onboardingUrl}%0A%0AQualquer dúvida estou disponível.%0A%0AIvo`, '_blank');
+    await loadLeads();
+    tryLoadSchools();
+  }
+
+  // Check for new leads on load (badge)
+  async function checkLeadsBadge() {
+    try {
+      const { count } = await sb.from('leads').select('id', { count: 'exact', head: true }).eq('status', 'new');
+      const btn = document.getElementById('btn-leads');
+      if (count > 0 && btn) btn.textContent = `📋 Candidaturas (${count} nova${count>1?'s':''})`;
+    } catch(_) {}
+  }
 </script>
 </body>
 </html>

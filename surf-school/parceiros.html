@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<!--
+  SQL para criar a tabela leads no Supabase:
+
+  CREATE TABLE IF NOT EXISTS public.leads (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    school_name     TEXT NOT NULL,
+    contact_name    TEXT NOT NULL,
+    email           TEXT NOT NULL,
+    phone           TEXT NOT NULL,
+    location        TEXT NOT NULL,
+    website         TEXT,
+    monthly_lessons INTEGER,
+    lesson_types    JSONB,
+    avg_price       NUMERIC,
+    typical_hours   TEXT,
+    notes           TEXT,
+    status          TEXT NOT NULL DEFAULT 'new',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+
+  ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
+
+  CREATE POLICY "allow_insert_leads" ON public.leads
+    FOR INSERT WITH CHECK (true);
+
+  CREATE POLICY "allow_select_leads" ON public.leads
+    FOR SELECT USING (true);
+-->
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SurfBook — Torne-se Parceiro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:      #050D1A;
+      --navy-mid:  #0A1A30;
+      --navy-card: #0D2040;
+      --ocean:     #0070F3;
+      --cyan:      #00CFFD;
+      --cyan-soft: #00b4d8;
+      --white:     #FFFFFF;
+      --gray-100:  #F0F4F8;
+      --gray-200:  #CBD5E1;
+      --gray-400:  #94A3B8;
+      --gold:      #F59E0B;
+      --green:     #10B981;
+      --red:       #EF4444;
+      --radius:    12px;
+      --shadow:    0 4px 24px rgba(0,0,0,0.35);
+      color-scheme: dark;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--navy);
+      color: var(--white);
+      line-height: 1.65;
+      font-size: 15px;
+    }
+
+    /* ── TOP NAV ── */
+    #top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      background: rgba(5,13,26,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(0,207,253,0.15);
+      padding: 12px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    #top-nav .brand {
+      font-weight: 900;
+      font-size: 16px;
+      color: var(--cyan);
+      letter-spacing: 0.05em;
+      text-decoration: none;
+    }
+    .nav-links { display: flex; align-items: center; gap: 20px; }
+    .nav-links a {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-400);
+      text-decoration: none;
+      transition: color .2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .nav-links a:hover { color: var(--white); }
+    .nav-links .cta-link {
+      color: var(--cyan);
+      border: 1px solid rgba(0,207,253,0.35);
+      padding: 6px 14px;
+      border-radius: 8px;
+      transition: background .2s, color .2s;
+    }
+    .nav-links .cta-link:hover { background: rgba(0,207,253,0.12); color: var(--white); }
+
+    /* ── LAYOUT ── */
+    .wrapper { max-width: 880px; margin: 0 auto; padding: 0 28px 80px; }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 72px 20px 60px;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,112,243,0.22) 0%, transparent 70%);
+      border-bottom: 1px solid rgba(0,207,253,0.10);
+      margin-bottom: 56px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(0,207,253,0.10);
+      border: 1px solid rgba(0,207,253,0.30);
+      color: var(--cyan);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 6px 18px;
+      border-radius: 999px;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: clamp(30px, 5.5vw, 50px);
+      font-weight: 900;
+      line-height: 1.1;
+      background: linear-gradient(135deg, var(--white) 20%, var(--cyan) 80%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 14px;
+      letter-spacing: -0.02em;
+    }
+    .hero-sub {
+      font-size: 16px;
+      color: var(--gray-200);
+      max-width: 560px;
+      margin: 0 auto 36px;
+      line-height: 1.75;
+    }
+    .hero-pills {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 0;
+    }
+    .hero-pill {
+      background: rgba(0,207,253,0.07);
+      border: 1px solid rgba(0,207,253,0.18);
+      color: var(--gray-200);
+      font-size: 12.5px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hero-pill strong { color: var(--white); }
+
+    /* ── SECTION ── */
+    .section { margin-bottom: 52px; }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(0,207,253,0.12);
+    }
+    .section-icon {
+      width: 36px; height: 36px;
+      background: rgba(0,207,253,0.12);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--white);
+    }
+    .section-subtitle {
+      font-size: 12px;
+      color: var(--gray-400);
+      margin-top: 1px;
+    }
+
+    /* ── FORM ── */
+    #parceiros-form {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 36px 40px;
+    }
+    @media (max-width: 600px) {
+      #parceiros-form { padding: 24px 20px; }
+      #top-nav { padding: 12px 20px; }
+      .wrapper { padding: 0 16px 60px; }
+      .hero { padding: 52px 16px 48px; }
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px 24px;
+    }
+    @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .form-label .req { color: var(--cyan); margin-left: 2px; }
+    .form-input, .form-textarea, .form-select {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      width: 100%;
+      color-scheme: dark;
+    }
+    .form-input::placeholder, .form-textarea::placeholder { color: #4a5a6e; }
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(0,207,253,0.10);
+    }
+    .form-textarea { resize: vertical; min-height: 100px; }
+
+    /* Checkboxes */
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px 12px;
+      margin-top: 2px;
+    }
+    @media (max-width: 480px) { .checkbox-grid { grid-template-columns: repeat(2, 1fr); } }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 13.5px;
+      color: var(--gray-200);
+      user-select: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      transition: background .15s, border-color .15s;
+    }
+    .checkbox-label:hover { background: rgba(0,207,253,0.07); border-color: rgba(0,207,253,0.3); }
+    .checkbox-label input[type="checkbox"] { accent-color: var(--cyan); width: 15px; height: 15px; cursor: pointer; }
+    .checkbox-label input[type="checkbox"]:checked + span { color: var(--white); font-weight: 600; }
+    .checkbox-label:has(input:checked) { background: rgba(0,207,253,0.10); border-color: rgba(0,207,253,0.35); }
+
+    /* Form divider */
+    .form-divider {
+      grid-column: 1 / -1;
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      margin: 8px 0 4px;
+    }
+    .form-section-label {
+      grid-column: 1 / -1;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.10em;
+      color: var(--cyan);
+      opacity: 0.8;
+      margin-bottom: -4px;
+    }
+
+    /* Submit button */
+    .btn-submit {
+      width: 100%;
+      padding: 15px;
+      margin-top: 28px;
+      background: linear-gradient(135deg, var(--ocean), var(--cyan));
+      border: none;
+      border-radius: 12px;
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .2s, box-shadow .2s, opacity .2s;
+      box-shadow: 0 4px 24px rgba(0,112,243,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-submit:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,112,243,0.50);
+    }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* Status messages */
+    #form-status {
+      display: none;
+      margin-top: 18px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    #form-status.success {
+      display: block;
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.35);
+      color: #6ee7b7;
+    }
+    #form-status.error {
+      display: block;
+      background: rgba(239,68,68,0.10);
+      border: 1px solid rgba(239,68,68,0.30);
+      color: #fca5a5;
+    }
+
+    /* ── INFO CARDS ── */
+    .info-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 52px;
+    }
+    @media (max-width: 640px) { .info-cards { grid-template-columns: 1fr; } }
+    .info-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 24px 20px;
+      text-align: center;
+      transition: border-color .2s, background .2s;
+    }
+    .info-card:hover { border-color: rgba(0,207,253,0.25); background: rgba(0,207,253,0.04); }
+    .info-card-icon { font-size: 30px; margin-bottom: 10px; }
+    .info-card-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--white); }
+    .info-card-body { font-size: 13px; color: var(--gray-400); line-height: 1.55; }
+    .info-card-body strong { color: var(--cyan); }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      padding: 32px 20px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 12px;
+      color: var(--gray-400);
+    }
+    .footer a { color: var(--cyan); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav id="top-nav">
+  <a class="brand" href="/proposta">🏄 SurfBook</a>
+  <div class="nav-links">
+    <a href="/proposta">← Proposta</a>
+    <a href="/admin" class="cta-link">Já é parceiro? Entrar →</a>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="wrapper">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">🌊 Programa de Parceiros 2025</div>
+    <h1>A sua escola de surf<br>no digital — sem esforço</h1>
+    <p class="hero-sub">
+      Junte-se à plataforma que automatiza as reservas, gere o equipamento
+      e traz mais clientes à sua escola. Zero custos fixos — só paga quando vende.
+    </p>
+    <div class="hero-pills">
+      <div class="hero-pill">✅ <strong>Sem mensalidade</strong></div>
+      <div class="hero-pill">📱 <strong>Reservas 24h</strong> via WhatsApp</div>
+      <div class="hero-pill">📊 <strong>Painel de gestão</strong> completo</div>
+      <div class="hero-pill">🌍 <strong>7 idiomas</strong> automáticos</div>
+      <div class="hero-pill">⚡ <strong>Ativo em 48h</strong></div>
+    </div>
+  </div>
+
+  <!-- WHY JOIN -->
+  <div class="section">
+    <div class="info-cards">
+      <div class="info-card">
+        <div class="info-card-icon">💶</div>
+        <div class="info-card-title">Sem custos fixos</div>
+        <div class="info-card-body">Comissão de apenas <strong>3%</strong> por aula concluída. Se não vender, não paga nada.</div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-icon">📲</div>
+        <div class="info-card-title">Reservas automáticas</div>
+        <div class="info-card-body">Clientes reservam online e recebem <strong>confirmação por WhatsApp</strong> automaticamente.</div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-icon">📊</div>
+        <div class="info-card-title">Gestão total</div>
+        <div class="info-card-body">Calendário, equipamento, fatos, relatórios e análise — tudo num <strong>painel simples</strong>.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION FORM -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">📋</div>
+      <div>
+        <div class="section-title">Candidatura de Parceiro</div>
+        <div class="section-subtitle">Preencha o formulário — respondemos em menos de 24h</div>
+      </div>
+    </div>
+
+    <form id="parceiros-form" onsubmit="submitForm(event)" novalidate>
+      <div class="form-grid">
+
+        <!-- Dados da Escola -->
+        <div class="form-section-label">Dados da Escola</div>
+
+        <div class="form-group">
+          <label class="form-label" for="f-school-name">Nome da Escola <span class="req">*</span></label>
+          <input class="form-input" id="f-school-name" type="text" placeholder="ex: Surf Arrifana" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="f-location">Localização / Praia <span class="req">*</span></label>
+          <input class="form-input" id="f-location" type="text" placeholder="ex: Praia de Arrifana, Aljezur" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="f-website">Website</label>
+          <input class="form-input" id="f-website" type="url" placeholder="https://www.minhaescola.pt" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="f-monthly-lessons">Aulas por mês (média)</label>
+          <input class="form-input" id="f-monthly-lessons" type="number" min="0" placeholder="ex: 80" />
+        </div>
+
+        <!-- Dados do Responsável -->
+        <hr class="form-divider" />
+        <div class="form-section-label">Dados do Responsável</div>
+
+        <div class="form-group">
+          <label class="form-label" for="f-contact-name">Nome do Responsável <span class="req">*</span></label>
+          <input class="form-input" id="f-contact-name" type="text" placeholder="ex: João Silva" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="f-phone">Telemóvel / WhatsApp <span class="req">*</span></label>
+          <input class="form-input" id="f-phone" type="tel" placeholder="ex: +351 912 345 678" required />
+        </div>
+
+        <div class="form-group full">
+          <label class="form-label" for="f-email">Email <span class="req">*</span></label>
+          <input class="form-input" id="f-email" type="email" placeholder="ex: joao@minhaescola.pt" required />
+        </div>
+
+        <!-- Oferta -->
+        <hr class="form-divider" />
+        <div class="form-section-label">Oferta de Aulas</div>
+
+        <div class="form-group full">
+          <label class="form-label">Tipos de Aulas Oferecidas</label>
+          <div class="checkbox-grid">
+            <label class="checkbox-label"><input type="checkbox" value="Iniciante" /><span>🔰 Iniciante</span></label>
+            <label class="checkbox-label"><input type="checkbox" value="Intermédio" /><span>🏄 Intermédio</span></label>
+            <label class="checkbox-label"><input type="checkbox" value="Avançado" /><span>⭐ Avançado</span></label>
+            <label class="checkbox-label"><input type="checkbox" value="Privada" /><span>🎯 Privada</span></label>
+            <label class="checkbox-label"><input type="checkbox" value="Bodyboard" /><span>🌊 Bodyboard</span></label>
+            <label class="checkbox-label"><input type="checkbox" value="SUP" /><span>🚣 SUP</span></label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="f-avg-price">Preço médio por pessoa (€)</label>
+          <input class="form-input" id="f-avg-price" type="number" min="0" step="0.01" placeholder="ex: 35" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="f-typical-hours">Horários habituais</label>
+          <input class="form-input" id="f-typical-hours" type="text" placeholder="ex: 8h, 10h30, 14h, 16h30" />
+        </div>
+
+        <!-- Notas -->
+        <div class="form-group full">
+          <label class="form-label" for="f-notes">Mensagem / Notas adicionais</label>
+          <textarea class="form-textarea" id="f-notes" placeholder="Conte-nos um pouco mais sobre a sua escola, dúvidas ou o que pretende..."></textarea>
+        </div>
+
+      </div><!-- /form-grid -->
+
+      <button type="submit" class="btn-submit" id="btn-submit">
+        <span id="btn-text">🚀 Enviar Candidatura</span>
+      </button>
+
+      <div id="form-status"></div>
+    </form>
+  </div>
+
+</div><!-- /wrapper -->
+
+<footer class="footer">
+  <p>SurfBook · <a href="/proposta">Ver Proposta Comercial</a> · <a href="/admin">Acesso Admin</a></p>
+  <p style="margin-top:6px">Para contacto direto: <a href="mailto:ivocasimiro@gmail.com">ivocasimiro@gmail.com</a></p>
+</footer>
+
+<script>
+  const SUPABASE_URL = 'https://ubeqidccuvsjhjphybxz.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U';
+  const ADMIN_EMAIL  = 'ivocasimiro@gmail.com';
+  const FORMSUBMIT_URL = `https://formsubmit.co/ajax/${ADMIN_EMAIL}`;
+
+  const { createClient } = supabase;
+  const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  async function submitForm(e) {
+    e.preventDefault();
+
+    const btn     = document.getElementById('btn-submit');
+    const btnText = document.getElementById('btn-text');
+    const status  = document.getElementById('form-status');
+
+    // Collect values
+    const schoolName    = document.getElementById('f-school-name').value.trim();
+    const contactName   = document.getElementById('f-contact-name').value.trim();
+    const email         = document.getElementById('f-email').value.trim();
+    const phone         = document.getElementById('f-phone').value.trim();
+    const location      = document.getElementById('f-location').value.trim();
+    const website       = document.getElementById('f-website').value.trim() || null;
+    const monthlyRaw    = document.getElementById('f-monthly-lessons').value.trim();
+    const avgPriceRaw   = document.getElementById('f-avg-price').value.trim();
+    const typicalHours  = document.getElementById('f-typical-hours').value.trim() || null;
+    const notes         = document.getElementById('f-notes').value.trim() || null;
+
+    // Checkboxes
+    const lessonTypes = Array.from(
+      document.querySelectorAll('#parceiros-form input[type="checkbox"]:checked')
+    ).map(cb => cb.value);
+
+    // Validate required fields
+    if (!schoolName || !contactName || !email || !phone || !location) {
+      status.className = 'error';
+      status.style.display = 'block';
+      status.textContent = '❌ Por favor preencha todos os campos obrigatórios (marcados com *).';
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      status.className = 'error';
+      status.style.display = 'block';
+      status.textContent = '❌ Por favor introduza um email válido.';
+      return;
+    }
+
+    // Disable button
+    btn.disabled = true;
+    btnText.textContent = '⏳ A enviar...';
+    status.style.display = 'none';
+
+    const payload = {
+      school_name:     schoolName,
+      contact_name:    contactName,
+      email:           email,
+      phone:           phone,
+      location:        location,
+      website:         website,
+      monthly_lessons: monthlyRaw ? parseInt(monthlyRaw) : null,
+      lesson_types:    lessonTypes.length ? lessonTypes : null,
+      avg_price:       avgPriceRaw ? parseFloat(avgPriceRaw) : null,
+      typical_hours:   typicalHours,
+      notes:           notes,
+      status:          'new',
+    };
+
+    // 1. Save to Supabase
+    let sbOk = false;
+    try {
+      const { error } = await sb.from('leads').insert([payload]);
+      if (error) {
+        console.error('Supabase leads error:', error);
+      } else {
+        sbOk = true;
+      }
+    } catch (err) {
+      console.error('Supabase leads exception:', err);
+    }
+
+    // 2. Send email via FormSubmit AJAX
+    let emailOk = false;
+    try {
+      const emailBody = [
+        `Nova candidatura de parceiro SurfBook`,
+        ``,
+        `Escola: ${schoolName}`,
+        `Responsável: ${contactName}`,
+        `Email: ${email}`,
+        `Telemóvel: ${phone}`,
+        `Localização: ${location}`,
+        `Website: ${website || '—'}`,
+        `Aulas/mês: ${monthlyRaw || '—'}`,
+        `Tipos de aulas: ${lessonTypes.length ? lessonTypes.join(', ') : '—'}`,
+        `Preço médio/pessoa: ${avgPriceRaw ? '€' + avgPriceRaw : '—'}`,
+        `Horários: ${typicalHours || '—'}`,
+        `Notas: ${notes || '—'}`,
+        ``,
+        `Guardado em Supabase: ${sbOk ? 'SIM' : 'NÃO (ver logs)'}`,
+        `Data: ${new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' })}`,
+      ].join('\n');
+
+      const resp = await fetch(FORMSUBMIT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          _subject: `🏄 Nova candidatura SurfBook — ${schoolName}`,
+          _template: 'box',
+          _captcha: 'false',
+          escola:        schoolName,
+          responsavel:   contactName,
+          email:         email,
+          telemovel:     phone,
+          localizacao:   location,
+          website:       website || '—',
+          aulas_mes:     monthlyRaw || '—',
+          tipos_aulas:   lessonTypes.length ? lessonTypes.join(', ') : '—',
+          preco_medio:   avgPriceRaw ? `€${avgPriceRaw}` : '—',
+          horarios:      typicalHours || '—',
+          notas:         notes || '—',
+          message:       emailBody,
+        }),
+      });
+      const respJson = await resp.json().catch(() => ({}));
+      emailOk = resp.ok && respJson.success !== false;
+    } catch (err) {
+      console.error('FormSubmit error:', err);
+    }
+
+    // 3. Show result
+    btn.disabled = false;
+    btnText.textContent = '🚀 Enviar Candidatura';
+
+    if (sbOk || emailOk) {
+      status.className = 'success';
+      status.style.display = 'block';
+      status.innerHTML = `
+        <strong>✅ Candidatura enviada com sucesso!</strong><br>
+        Obrigado, <strong>${contactName}</strong>! Recebemos a candidatura da <strong>${schoolName}</strong>
+        e entraremos em contacto em menos de 24 horas para agendar uma demonstração.<br><br>
+        Enquanto espera, pode ver a nossa <a href="/proposta" style="color:var(--cyan)">proposta comercial completa</a>.
+      `;
+      // Reset form
+      document.getElementById('parceiros-form').reset();
+    } else {
+      status.className = 'error';
+      status.style.display = 'block';
+      status.innerHTML = `
+        ❌ Ocorreu um erro ao enviar a candidatura. Por favor tente novamente ou contacte-nos
+        diretamente por email: <a href="mailto:${ADMIN_EMAIL}" style="color:var(--cyan)">${ADMIN_EMAIL}</a>
+      `;
+    }
+
+    // Scroll to status message
+    status.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+</script>
+</body>
+</html>
