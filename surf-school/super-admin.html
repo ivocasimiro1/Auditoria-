@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -260,6 +261,19 @@
       .filters-bar { gap: .6rem; }
       .schools-row { grid-template-columns: 1fr; }
     }
+
+    /* Commission edit button */
+    .sc-edit-comm-btn { margin-top:.8rem; width:100%; padding:.45rem; background:rgba(201,168,76,.08); border:1px solid rgba(201,168,76,.2); border-radius:8px; color:var(--gold); font-size:.75rem; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; transition:background .2s; }
+    .sc-edit-comm-btn:hover { background:rgba(201,168,76,.18); }
+
+    /* Analytics charts */
+    .sa-chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 1rem; }
+    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.2rem; }
+    .chart-card-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--gold); margin-bottom: .8rem; }
+    .chart-year-btns { display: flex; gap: .4rem; }
+    .sa-year-btn { padding: .3rem .8rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--gray); font-size: .78rem; cursor: pointer; font-family: 'Inter',sans-serif; }
+    .sa-year-btn.active { background: var(--gold); border-color: var(--gold); color: var(--navy); font-weight: 700; }
+    .btn-analytics-sa { background: rgba(201,168,76,.1); border: 1px solid rgba(201,168,76,.25); color: var(--gold); border-radius: 8px; padding: .45rem 1rem; font-size: .8rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
   </style>
 </head>
 <body>
@@ -340,7 +354,7 @@
       <div class="stat-card">
         <div class="stat-icon si-orange">🤙</div>
         <div class="stat-info">
-          <div class="stat-label">Comissões (5%)</div>
+          <div class="stat-label">As Minhas Comissões</div>
           <div class="stat-value" id="gs-commission">—</div>
           <div class="stat-sub">a receber</div>
         </div>
@@ -352,6 +366,25 @@
 
     <!-- School Tabs -->
     <div class="school-tabs" id="school-tabs"></div>
+
+    <!-- Analytics Toggle -->
+    <div style="margin-bottom:1rem;display:flex;align-items:center;gap:.7rem">
+      <button class="btn-analytics-sa" onclick="toggleSAAnalytics()">📊 Análise Anual</button>
+    </div>
+
+    <!-- Analytics Section -->
+    <div id="sa-analytics" style="display:none;margin-bottom:1.5rem">
+      <div class="chart-year-btns" style="margin-bottom:1rem">
+        <button class="sa-year-btn active" data-year="2026" onclick="setSAChartYear(2026)">2026</button>
+        <button class="sa-year-btn" data-year="2025" onclick="setSAChartYear(2025)">2025</button>
+      </div>
+      <div class="sa-chart-grid">
+        <div class="chart-card"><div class="chart-card-title">Marcações por Mês</div><canvas id="sa-chart-monthly" style="max-height:180px"></canvas></div>
+        <div class="chart-card"><div class="chart-card-title">Receita por Mês (€)</div><canvas id="sa-chart-revenue" style="max-height:180px"></canvas></div>
+        <div class="chart-card"><div class="chart-card-title">Por Escola</div><canvas id="sa-chart-schools" style="max-height:180px"></canvas></div>
+        <div class="chart-card"><div class="chart-card-title">Por Nacionalidade</div><canvas id="sa-chart-nationality" style="max-height:220px"></canvas></div>
+      </div>
+    </div>
 
     <!-- Filters -->
     <div class="filters-bar">
@@ -395,7 +428,7 @@
               <th>Cliente</th>
               <th class="col-center">Pess.</th>
               <th>Preço</th>
-              <th>Comissão 5%</th>
+              <th>Comissão %</th>
               <th>Estado</th>
             </tr>
           </thead>
@@ -411,11 +444,40 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Commission Edit Modal -->
+<div id="comm-modal-bg" style="display:none;position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.7);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)closeCommModal()">
+  <div style="background:#0A1929;border:1px solid rgba(201,168,76,.2);border-radius:20px;padding:1.8rem;width:100%;max-width:380px">
+    <h3 style="font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:1.2rem">⚙️ Ajustar Comissão</h3>
+    <div id="comm-school-name" style="font-size:.85rem;color:var(--gray);margin-bottom:1rem"></div>
+    <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);display:block;margin-bottom:.4rem">Taxa de Comissão (%)</label>
+    <input type="number" id="comm-input" min="0" max="30" step="0.5" style="width:100%;padding:.7rem 1rem;background:#0d1f3c;border:1px solid rgba(201,168,76,.3);border-radius:9px;color:#fff;font-size:1.1rem;font-family:Inter,sans-serif;color-scheme:dark" />
+    <div style="font-size:.75rem;color:var(--gray);margin-top:.4rem;margin-bottom:1.2rem">Aplicada sobre o valor das aulas concluídas. Ex: 5 = 5%</div>
+    <div style="display:flex;gap:.7rem">
+      <button onclick="saveCommRate()" style="flex:1;padding:.7rem;background:var(--gold);border:none;border-radius:10px;color:#050D1A;font-weight:700;font-size:.9rem;cursor:pointer;font-family:Inter,sans-serif">Guardar</button>
+      <button onclick="closeCommModal()" style="padding:.7rem 1.2rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-family:Inter,sans-serif">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <script>
   const SUPABASE_URL  = 'https://ubeqidccuvsjhjphybxz.supabase.co';
   const SUPABASE_KEY  = 'sb_publishable_X0-ZNy93MbCR-cXSdi4tRg_dpITamQj';
   const ADMIN_EMAIL   = 'ivocasimiro@gmail.com';
-  const COMMISSION    = 0.05;
+
+  const COMM_KEY = 'surfbook_comm_rates';
+  function getCommRates() {
+    try { return JSON.parse(localStorage.getItem(COMM_KEY)) || {}; } catch { return {}; }
+  }
+  function getCommRate(schoolId) {
+    const r = getCommRates();
+    const school = SCHOOLS.find(s => s.id === schoolId);
+    return r[schoolId] ?? (school?.defaultCommission ?? 0.05);
+  }
+  function setCommRate(schoolId, rate) {
+    const r = getCommRates();
+    r[schoolId] = rate;
+    localStorage.setItem(COMM_KEY, JSON.stringify(r));
+  }
 
   const { createClient } = supabase;
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -433,6 +495,7 @@
       region:'Site de Demonstração',
       site:  '/index.html',
       admin: '/admin.html',
+      defaultCommission: 0.05,
     },
   ];
 
@@ -533,6 +596,7 @@
           <a href="${s.site}" target="_blank" class="sc-link site">🌊 Site</a>
           <a href="${s.admin}" target="_blank" class="sc-link">⚙️ Admin</a>
         </div>
+        <button class="sc-edit-comm-btn" onclick="event.stopPropagation();editCommission('${s.id}')">⚙️ Ajustar Comissão</button>
       </div>`).join('');
   }
 
@@ -571,7 +635,7 @@
     SCHOOLS.forEach(s => {
       const sBookings = allBookings.filter(b => b.school_id === s.id && b.status !== 'cancelled' && b.booking_date.startsWith(monthKey));
       const rev = sBookings.reduce((sum, b) => sum + parseFloat(b.total_price||0), 0);
-      const com = rev * COMMISSION;
+      const com = rev * getCommRate(s.id);
       const bEl = document.getElementById(`sc-bookings-${s.id}`);
       const rEl = document.getElementById(`sc-revenue-${s.id}`);
       const cEl = document.getElementById(`sc-commission-${s.id}`);
@@ -603,7 +667,7 @@
   function renderGlobalStats(rows) {
     const active   = rows.filter(b => b.status !== 'cancelled');
     const revenue  = active.reduce((s, b) => s + parseFloat(b.total_price||0), 0);
-    const commission = revenue * COMMISSION;
+    const commission = active.reduce((s, b) => s + parseFloat(b.total_price||0) * getCommRate(b.school_id), 0);
     const month    = document.getElementById('f-month').value;
 
     document.getElementById('gs-bookings').textContent   = active.length;
@@ -634,7 +698,7 @@
     const html = rows.map((b, i) => {
       const s     = STATUS[b.status] || STATUS.pending;
       const price = parseFloat(b.total_price||0);
-      const com   = price * COMMISSION;
+      const com   = price * getCommRate(b.school_id);
       if (b.status !== 'cancelled') { totalRev += price; totalCom += com; }
 
       const [y, m, d] = b.booking_date.split('-');
@@ -678,6 +742,98 @@
     t.textContent = msg;
     t.className = `toast toast-${type} show`;
     setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  // ── COMMISSION EDITING ────────────────────────────────────────────────────────
+  let editingCommSchoolId = null;
+  function editCommission(schoolId) {
+    editingCommSchoolId = schoolId;
+    const school = SCHOOLS.find(s => s.id === schoolId);
+    document.getElementById('comm-school-name').textContent = school?.name || schoolId;
+    document.getElementById('comm-input').value = (getCommRate(schoolId) * 100).toFixed(1);
+    const modal = document.getElementById('comm-modal-bg');
+    modal.style.display = 'flex';
+  }
+  function closeCommModal() {
+    document.getElementById('comm-modal-bg').style.display = 'none';
+    editingCommSchoolId = null;
+  }
+  function saveCommRate() {
+    const val = parseFloat(document.getElementById('comm-input').value);
+    if (isNaN(val) || val < 0 || val > 30) { alert('Taxa inválida (0-30%)'); return; }
+    setCommRate(editingCommSchoolId, val / 100);
+    closeCommModal();
+    applyFilters(); // refresh calculations
+    showToast(`Comissão atualizada: ${val}%`, 'success');
+  }
+
+  // ── ANNUAL ANALYTICS CHARTS ───────────────────────────────────────────────────
+  let saChartYear = new Date().getFullYear();
+  let saChartInstances = {};
+
+  function toggleSAAnalytics() {
+    const el = document.getElementById('sa-analytics');
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    if (el.style.display === 'block') buildSACharts();
+  }
+
+  function buildSACharts() {
+    const yr = saChartYear;
+    const data = allBookings.filter(b => b.booking_date?.startsWith(yr) && b.status !== 'cancelled');
+
+    const monthly = Array(12).fill(0);
+    const monthlyRev = Array(12).fill(0);
+    data.forEach(b => {
+      const m = parseInt(b.booking_date.split('-')[1]) - 1;
+      monthly[m]++;
+      monthlyRev[m] += parseFloat(b.total_price) || 0;
+    });
+
+    const natMap = {};
+    data.forEach(b => { const n = (b.client_country||'').replace(/^\S+\s/,'') || 'N/A'; natMap[n] = (natMap[n]||0) + 1; });
+    const topNat = Object.entries(natMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+    const schoolMap = {};
+    SCHOOLS.forEach(s => { schoolMap[s.id] = { name: s.name.replace(' Surf Academy','').replace(' Surf School',''), count: 0 }; });
+    data.forEach(b => { if (schoolMap[b.school_id]) schoolMap[b.school_id].count++; });
+
+    Object.values(saChartInstances).forEach(c => c.destroy());
+    saChartInstances = {};
+
+    const ticks = { color: '#8B9AB0' };
+    const grid  = { color: 'rgba(255,255,255,0.05)' };
+    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    saChartInstances.monthly = new Chart(document.getElementById('sa-chart-monthly'), {
+      type: 'bar',
+      data: { labels: months, datasets: [{ label: 'Marcações', data: monthly, backgroundColor: 'rgba(0,207,253,.6)', borderRadius: 4 }] },
+      options: { plugins:{legend:{display:false}}, scales:{x:{ticks,grid},y:{ticks,grid}} }
+    });
+
+    saChartInstances.revenue = new Chart(document.getElementById('sa-chart-revenue'), {
+      type: 'line',
+      data: { labels: months, datasets: [{ label: '€', data: monthlyRev.map(v=>+v.toFixed(0)), borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.1)', tension: .3, fill: true, pointRadius: 3 }] },
+      options: { plugins:{legend:{display:false}}, scales:{x:{ticks,grid},y:{ticks,grid}} }
+    });
+
+    saChartInstances.nationality = new Chart(document.getElementById('sa-chart-nationality'), {
+      type: 'bar',
+      data: { labels: topNat.map(([k])=>k), datasets: [{ data: topNat.map(([,v])=>v), backgroundColor: 'rgba(167,139,250,.7)', borderRadius: 4 }] },
+      options: { indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{ticks,grid},y:{ticks,grid}} }
+    });
+
+    const schEntries = Object.values(schoolMap);
+    saChartInstances.schools = new Chart(document.getElementById('sa-chart-schools'), {
+      type: 'bar',
+      data: { labels: schEntries.map(s=>s.name), datasets: [{ data: schEntries.map(s=>s.count), backgroundColor: 'rgba(201,168,76,.6)', borderRadius: 4 }] },
+      options: { plugins:{legend:{display:false}}, scales:{x:{ticks,grid},y:{ticks,grid}} }
+    });
+  }
+
+  function setSAChartYear(y) {
+    saChartYear = y;
+    document.querySelectorAll('.sa-year-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.year) === y));
+    buildSACharts();
   }
 
   init();
