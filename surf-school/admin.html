@@ -869,7 +869,7 @@
           <option value="🇧🇪 Belgium">🇧🇪 Belgium</option>
           <option value="🇨🇭 Switzerland">🇨🇭 Switzerland</option>
           <option value="🇮🇹 Italy">🇮🇹 Italy</option>
-          <option value="🇧🇷 Brazil">🇧🇷 Brazil</option>
+          <option value="🇧🇷 Brasil">🇧🇷 Brasil</option>
           <option value="🇦🇺 Australia">🇦🇺 Australia</option>
           <option value="🇸🇪 Sweden">🇸🇪 Sweden</option>
           <option value="🇩🇰 Denmark">🇩🇰 Denmark</option>
@@ -880,6 +880,7 @@
         <label>Idioma</label>
         <select id="mb-language">
           <option value="pt" selected>🇵🇹 Português</option>
+          <option value="pt-br">🇧🇷 Brasileiro</option>
           <option value="en">🇬🇧 English</option>
           <option value="fr">🇫🇷 Français</option>
           <option value="de">🇩🇪 Deutsch</option>
@@ -1198,7 +1199,7 @@
       const [y, m, d] = b.booking_date.split('-');
       const dateStr = `${d}/${m}/${y}`;
 
-      const langFlag = { pt:'🇵🇹', en:'🇬🇧', fr:'🇫🇷', de:'🇩🇪', es:'🇪🇸', nl:'🇳🇱' }[b.language] || '';
+      const langFlag = { pt:'🇵🇹', 'pt-br':'🇧🇷', en:'🇬🇧', fr:'🇫🇷', de:'🇩🇪', es:'🇪🇸', nl:'🇳🇱' }[b.language] || '';
 
       const actions = b.status === 'pending'
         ? `<button class="act-btn act-confirm"  title="Confirmar"          onclick="updateStatus('${b.id}','confirmed')">✓</button>
@@ -1281,6 +1282,8 @@
         `*${school} — Clase Confirmada*\n\nHola ${name},\n\nTu clase de surf esta *confirmada*.\n\n*Fecha:* ${date}\n*Hora:* ${time}\n*Actividad:* ${lesson}\n*Personas:* ${people}\n*Total:* €${price}\n\n*Punto de encuentro:*\n${meet}\n\nViste el banador debajo del traje de neopreno. Trae una toalla y protector solar.\n\n¡Hasta pronto!`,
       nl: (name, school, date, time, lesson, people, price, meet) =>
         `*${school} — Les Bevestigd*\n\nHoi ${name},\n\nJe surfles is *bevestigd*.\n\n*Datum:* ${date}\n*Tijd:* ${time}\n*Activiteit:* ${lesson}\n*Personen:* ${people}\n*Totaal:* €${price}\n\n*Ontmoetingspunt:*\n${meet}\n\nDraag je zwemkleding onder het wetsuit. Breng een handdoek en zonnebrand mee.\n\nTot snel!`,
+      'pt-br': (name, school, date, time, lesson, people, price, meet) =>
+        `*${school} — Aula Confirmada*\n\nOi ${name},\n\nSua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Horario:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\n\nVista o sunga ou maio por baixo do wetsuit. Traga toalha e protetor solar.\n\nAte logo!`,
     },
     cancelled: {
       pt: (name, school, date, time) =>
@@ -1295,6 +1298,8 @@
         `*${school}*\n\nHola ${name},\n\nLamentablemente no pudimos confirmar tu reserva para el ${date} a las ${time}.\n\nPedimos disculpas por los inconvenientes. Contactanos para reprogramar.\n\nGracias por tu comprension.`,
       nl: (name, school, date, time) =>
         `*${school}*\n\nHoi ${name},\n\nHelaas konden we je reservering voor ${date} om ${time} niet bevestigen.\n\nOns excuses voor het ongemak. Neem contact met ons op om opnieuw in te plannen.\n\nBedankt voor je begrip.`,
+      'pt-br': (name, school, date, time) =>
+        `*${school}*\n\nOi ${name},\n\nInfelizmente nao conseguimos confirmar sua reserva para ${date} as ${time}.\n\nPedimos desculpas pelo inconveniente. Entre em contato para remarcar.\n\nObrigado pela compreensao.`,
     },
   };
 
@@ -1318,7 +1323,7 @@
           const COUNTRY_LANG = { 'United Kingdom':'en', 'USA':'en', 'Canada':'en', 'Ireland':'en',
             'France':'fr', 'Belgium':'fr', 'Switzerland':'fr',
             'Germany':'de', 'Austria':'de',
-            'Spain':'es', 'Netherlands':'nl' };
+            'Spain':'es', 'Netherlands':'nl', 'Brasil':'pt-br', 'Brazil':'pt-br' };
           if (COUNTRY_LANG[cn]) lang = COUNTRY_LANG[cn];
         }
         const msgs    = WA_MSGS[newStatus];
@@ -1757,7 +1762,7 @@
           const COUNTRY_LANG = { 'United Kingdom':'en', 'USA':'en', 'Canada':'en', 'Ireland':'en',
             'France':'fr', 'Belgium':'fr', 'Switzerland':'fr',
             'Germany':'de', 'Austria':'de',
-            'Spain':'es', 'Netherlands':'nl' };
+            'Spain':'es', 'Netherlands':'nl', 'Brasil':'pt-br', 'Brazil':'pt-br' };
           if (COUNTRY_LANG[cn]) lang = COUNTRY_LANG[cn];
         }
         const rschMsgs = {
@@ -2036,7 +2041,20 @@
       status:         status,
     };
 
-    const { error } = await sb.from('bookings').insert([record]);
+    let { error } = await sb.from('bookings').insert([record]);
+    // Retry without optional columns if schema mismatch
+    if (error && (error.code === '42703' || error.code === 'PGRST204' || error.message?.includes('column'))) {
+      const coreRecord = {
+        school_id: record.school_id, lesson_type: record.lesson_type,
+        booking_date: record.booking_date, booking_time: record.booking_time,
+        num_people: record.num_people, client_name: record.client_name,
+        client_phone: record.client_phone, client_email: record.client_email,
+        client_country: record.client_country, equipment_list: record.equipment_list,
+        total_price: record.total_price, notes: record.notes,
+        language: record.language, status: record.status,
+      };
+      ({ error } = await sb.from('bookings').insert([coreRecord]));
+    }
     if (error) { showToast('Erro ao guardar: ' + error.message, 'error'); return; }
 
     showToast('✅ Marcação registada com sucesso!', 'success');

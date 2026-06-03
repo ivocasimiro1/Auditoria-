@@ -697,6 +697,13 @@
         <button class="btn-whatsapp" onclick="reservarWhatsApp()">📱 <span data-t="btn_whatsapp"></span></button>
         <div class="nav-btns" style="margin-top:1rem"><button class="btn-back" onclick="goToStep(3)" data-t="btn_back"></button><div></div></div>
       </div>
+      <!-- Confirmation overlay (shown after WA button click) -->
+      <div id="booking-confirm" style="display:none;text-align:center;padding:2.5rem 1rem">
+        <div id="booking-confirm-icon" style="font-size:3rem;margin-bottom:1rem">⏳</div>
+        <div id="booking-confirm-title" style="font-size:1.3rem;font-weight:700;margin-bottom:.5rem"></div>
+        <div id="booking-confirm-msg" style="font-size:.9rem;color:var(--gray);margin-bottom:1.5rem"></div>
+        <button id="booking-confirm-btn" style="display:none;padding:.8rem 2rem;background:var(--gold);border:none;border-radius:10px;color:var(--navy);font-weight:700;cursor:pointer;font-size:.95rem" onclick="resetBookingForm()">➕ Nova Marcação</button>
+      </div>
     </div>
   </div>
 </section>
@@ -1535,8 +1542,10 @@ function resetBookingForm() {
   // Reset calendar to current month
   calYear = TODAY.getFullYear(); calMonth = TODAY.getMonth();
   renderCalendar();
-  // Clear save status
-  const ss = document.getElementById('save-status'); if (ss) { ss.textContent = ''; ss.style.background = 'transparent'; }
+  // Hide confirmation overlay and restore form elements
+  const cd = document.getElementById('booking-confirm'); if (cd) cd.style.display = 'none';
+  const s4 = document.getElementById('step-4');
+  if (s4) s4.querySelectorAll('.booking-summary,.form-grid,#equipment-rows,.btn-whatsapp,.nav-btns').forEach(el => el.style.display = '');
   goToStep(1);
 }
 
@@ -1638,30 +1647,48 @@ async function reservarWhatsApp() {
   if (nota) msg += `\n*${T('wa_note')}:* ${nota}\n`;
   msg += `\n${T('wa_closing')}`;
 
+  // ── Show confirmation screen (replaces form content) ──
+  const step4 = document.getElementById('step-4');
+  const confirmDiv = document.getElementById('booking-confirm');
+  const formEls = step4 ? [...step4.querySelectorAll('.booking-summary,.form-grid,#equipment-rows,.btn-whatsapp,.nav-btns')] : [];
+  formEls.forEach(el => el.style.display = 'none');
+  if (confirmDiv) {
+    confirmDiv.style.display = 'block';
+    document.getElementById('booking-confirm-icon').textContent = '⏳';
+    document.getElementById('booking-confirm-title').textContent = 'A guardar reserva...';
+    document.getElementById('booking-confirm-msg').textContent = 'O WhatsApp abriu numa nova aba. Volta aqui para ver o resultado.';
+    document.getElementById('booking-confirm-btn').style.display = 'none';
+    const wrap = document.querySelector('.booking-wrap');
+    if (wrap) wrap.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  function showConfirm(ok, title, msg) {
+    if (!confirmDiv) return;
+    document.getElementById('booking-confirm-icon').textContent = ok ? '✅' : '❌';
+    document.getElementById('booking-confirm-title').style.color = ok ? '#86efac' : '#fca5a5';
+    document.getElementById('booking-confirm-title').textContent = title;
+    document.getElementById('booking-confirm-msg').textContent = msg;
+    document.getElementById('booking-confirm-btn').style.display = ok ? 'inline-block' : 'none';
+    if (!ok) {
+      // Show back button on error so user can try again
+      const backBtn = document.createElement('button');
+      backBtn.textContent = '← Tentar novamente';
+      backBtn.style.cssText = 'margin-left:.7rem;padding:.8rem 1.5rem;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-size:.9rem';
+      backBtn.onclick = () => {
+        formEls.forEach(el => el.style.display = '');
+        confirmDiv.style.display = 'none';
+        const waBtn2 = document.querySelector('.btn-whatsapp');
+        if (waBtn2) { waBtn2.disabled = false; waBtn2.innerHTML = `📱 <span data-t="btn_whatsapp">${T('btn_whatsapp')}</span>`; }
+      };
+      document.getElementById('booking-confirm-btn').after(backBtn);
+    }
+  }
+
   // ── Open WhatsApp SYNCHRONOUSLY (user gesture still active) ──
   window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
 
   // ── Save to Supabase + Email notification ────────────────────
   const waBtn = document.querySelector('.btn-whatsapp');
-  if (waBtn) { waBtn.disabled = true; waBtn.innerHTML = '⏳ A guardar...'; }
-
-  // Fixed toast — always visible even if user switches tabs
-  let toast = document.getElementById('booking-toast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'booking-toast';
-    toast.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;padding:1rem 1.5rem;font-size:1rem;font-weight:600;text-align:center;display:none;transition:opacity .4s';
-    document.body.appendChild(toast);
-  }
-  function showToast(msg, ok) {
-    toast.textContent = msg;
-    toast.style.background = ok ? '#166534' : '#7f1d1d';
-    toast.style.color = ok ? '#bbf7d0' : '#fecaca';
-    toast.style.display = 'block';
-    toast.style.opacity = '1';
-    if (ok) setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => { toast.style.display = 'none'; }, 400); }, 5000);
-  }
-  showToast('⏳ A guardar reserva...', true);
 
   // ── Email backup via FormSubmit (sends to school email) ──────
   try {
@@ -1723,17 +1750,17 @@ async function reservarWhatsApp() {
       }
       if (error) {
         console.warn('Supabase save error:', error.code, error.message);
-        showToast(`⚠️ Erro ao guardar (${error.code}): ${error.message}`, false);
+        showConfirm(false, 'Erro ao guardar', `Código: ${error.code} — ${error.message}\n\nO WhatsApp foi aberto. O dono foi notificado.`);
       } else {
-        showToast('✅ Reserva guardada! Aguarda confirmação por WhatsApp.', true);
-        setTimeout(() => resetBookingForm(), 3000);
+        showConfirm(true, 'Reserva guardada!', 'Aguarda confirmação por WhatsApp. O formulário vai reiniciar em 4 segundos.');
+        setTimeout(() => resetBookingForm(), 4000);
       }
     } else {
-      showToast('⚠️ Sem ligação à base de dados — o dono foi notificado por WhatsApp', false);
+      showConfirm(false, 'Sem ligação à base de dados', 'O WhatsApp foi aberto. O dono foi notificado por WhatsApp.');
     }
   } catch(e) {
     console.warn('Supabase save failed', e);
-    showToast(`⚠️ Erro: ${e.message}`, false);
+    showConfirm(false, 'Erro inesperado', e.message);
   }
   if (waBtn) { waBtn.disabled = false; waBtn.innerHTML = `📱 <span data-t="btn_whatsapp">${T('btn_whatsapp')}</span>`; }
 }
