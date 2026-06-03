@@ -219,6 +219,8 @@
     .act-wa:hover { background: rgba(37,211,102,.15); border-color: #25D366; }
     .act-detail { color: var(--cyan); border-color: rgba(0,207,253,.3); font-size: .8rem; }
     .act-detail:hover { background: rgba(0,207,253,.1); border-color: var(--cyan); }
+    .act-revert { color: var(--gray); border-color: rgba(139,154,176,.3); font-size: .85rem; }
+    .act-revert:hover { background: rgba(139,154,176,.15); border-color: var(--gray); color: var(--white); }
 
     /* Detail Modal */
     .detail-modal-bg {
@@ -847,11 +849,15 @@
       const langFlag = { pt:'🇵🇹', en:'🇬🇧', fr:'🇫🇷', de:'🇩🇪' }[b.language] || '';
 
       const actions = b.status === 'pending'
-        ? `<button class="act-btn act-confirm" title="Confirmar" onclick="updateStatus('${b.id}','confirmed')">✓</button>
-           <button class="act-btn act-cancel"  title="Cancelar"  onclick="updateStatus('${b.id}','cancelled')">✕</button>`
+        ? `<button class="act-btn act-confirm"  title="Confirmar"          onclick="updateStatus('${b.id}','confirmed')">✓</button>
+           <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`
         : b.status === 'confirmed'
-        ? `<button class="act-btn act-complete" title="Concluído" onclick="updateStatus('${b.id}','completed')">★</button>
-           <button class="act-btn act-cancel"   title="Cancelar"  onclick="updateStatus('${b.id}','cancelled')">✕</button>`
+        ? `<button class="act-btn act-complete" title="Marcar concluído"   onclick="updateStatus('${b.id}','completed')">★</button>
+           <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`
+        : b.status === 'completed'
+        ? `<button class="act-btn act-revert"   title="Reverter a confirmado" onclick="updateStatus('${b.id}','confirmed')">↩</button>`
+        : b.status === 'cancelled'
+        ? `<button class="act-btn act-revert"   title="Reativar (pendente)" onclick="updateStatus('${b.id}','pending')">↩</button>`
         : '—';
 
       const schoolForRow = SCHOOLS.find(s => s.id === b.school_id) || SCHOOLS[0];
@@ -1194,6 +1200,9 @@
               ${b.status==='pending'
                 ? `<button class="act-btn act-confirm" title="Confirmar" onclick="updateStatus('${b.id}','confirmed')" style="width:auto;padding:0 .5rem;font-size:.75rem">✓ Confirmar</button>
                    <button class="act-btn act-cancel"  title="Cancelar"  onclick="updateStatus('${b.id}','cancelled')"  style="width:auto;padding:0 .5rem;font-size:.75rem">✕</button>`
+                : b.status==='completed'
+                ? `<button class="act-btn act-revert" title="Reverter a confirmado" onclick="updateStatus('${b.id}','confirmed')" style="width:auto;padding:0 .5rem;font-size:.75rem">↩ Reverter</button>
+                   <a href="https://wa.me/${phone}?text=${waMsg}" target="_blank" style="text-decoration:none"><button class="act-btn act-wa" style="width:auto;padding:0 .5rem;font-size:.75rem">💬 WA</button></a>`
                 : `<a href="https://wa.me/${phone}?text=${waMsg}" target="_blank" style="text-decoration:none"><button class="act-btn act-wa" style="width:auto;padding:0 .5rem;font-size:.75rem">💬 WA</button></a>`
               }
             </div>
