@@ -1405,21 +1405,65 @@ function updateClock() {
   if (el) el.textContent = pt;
 }
 
+// ── DEMO THEMES ───────────────────────────────────────────────────────────────
+const DEMO_THEMES = {
+  'escola-teste':  { name:'Escola Surf Teste',        shortName:'Surf',     gold:'#C9A84C', rgb:'201,168,76',  navy:'#060D1B', ocean:'#0A2540', tagline:'A sua aventura começa aqui' },
+  'surf-arrifana': { name:'Arrifana Surf School',     shortName:'Arrifana', gold:'#10B981', rgb:'16,185,129',  navy:'#020E0C', ocean:'#063323', tagline:'Onde o Atlântico encontra a perfeição' },
+  'surf-nazare':   { name:'Nazaré Surf Experience',   shortName:'Nazaré',   gold:'#F59E0B', rgb:'245,158,11',  navy:'#0D0900', ocean:'#1A1000', tagline:'Sente o poder das maiores ondas do mundo' },
+  'surf-peniche':  { name:'Peniche Surf Academy',     shortName:'Peniche',  gold:'#818CF8', rgb:'129,140,248', navy:'#04040F', ocean:'#0A0A24', tagline:'Técnica e paixão pelo surf' },
+  'surf-lagos':    { name:'Lagos Surf Club',          shortName:'Lagos',    gold:'#FB923C', rgb:'251,146,60',  navy:'#0D0600', ocean:'#1A0D00', tagline:'Ondas douradas no Algarve' },
+  'surf-sagres':   { name:'Sagres Wild Surf',         shortName:'Sagres',   gold:'#C084FC', rgb:'192,132,252', navy:'#06030E', ocean:'#0F0820', tagline:'A ponta mais selvagem de Portugal' },
+};
+const _escolaParam = new URLSearchParams(window.location.search).get('escola') || 'escola-teste';
+const _theme = DEMO_THEMES[_escolaParam] || DEMO_THEMES['escola-teste'];
+// Apply CSS custom properties
+const _root = document.documentElement;
+_root.style.setProperty('--gold', _theme.gold);
+_root.style.setProperty('--navy', _theme.navy);
+_root.style.setProperty('--ocean', _theme.ocean);
+// Inject targeted overrides for hardcoded rgba(gold) values in CSS
+(function(){
+  const s = document.createElement('style');
+  const g = _theme.gold, r = _theme.rgb, n = _theme.navy;
+  s.textContent = `
+    .lb.active,.lb:hover{border-color:${g}!important;color:${g}!important;background:rgba(${r},.08)!important}
+    .btn-primary{background:${g}!important;box-shadow:0 4px 24px rgba(${r},.35)!important;color:${n}!important}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(${r},.5)!important}
+    .nav-cta{background:${g}!important;color:${n}!important}
+    .nav-cta:hover,.nav-cta.active{box-shadow:0 4px 20px rgba(${r},.4)!important;color:${n}!important}
+    .hero-badge{background:rgba(${r},.12)!important;border-color:rgba(${r},.3)!important;color:${g}!important}
+    .hero h1 em{color:${g}!important}
+    .section-tag{color:${g}!important}
+    .stat-num{color:${g}!important}
+    .cb{border-bottom-color:rgba(${r},.15)!important}
+    .about-badge{background:${g}!important;color:${n}!important}
+    .price-card.featured{border-color:rgba(${r},.4)!important}
+    .tag-all{background:rgba(${r},.18)!important;color:${g}!important;border-color:rgba(${r},.3)!important}
+    .footer-logo span,.logo span{color:${g}!important}
+  `;
+  document.head.appendChild(s);
+})();
+// Update school name in nav logo and footer
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.logo, .footer-logo').forEach(el => {
+    el.innerHTML = `${_theme.name.split(' ').slice(0,-1).join(' ')} <span>${_theme.name.split(' ').pop()}</span>`;
+  });
+});
+
 // ── BOOKING STATE ─────────────────────────────────────────────────────────────
 const booking = { lessonKey:null, lessonPrice:0, lessonPrivate:false, selectedDateKey:null, selectedDateStr:null, time:null };
 const SLOT_AVAIL = {};
 let SCHOOL_SLOTS     = ['08:00','10:30','14:00','16:30'];
 let SCHOOL_MAX_SLOT  = 6;
-let SCHOOL_ID_ACTIVE = 'escola-teste';
+let SCHOOL_ID_ACTIVE = _escolaParam;
 
 async function loadSchoolConfig() {
   if (!sb) return;
   try {
-    const { data } = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number').eq('status','active').limit(1).single();
+    const { data } = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
     if (data) {
       if (data.time_slots?.length)  SCHOOL_SLOTS    = data.time_slots;
       if (data.max_per_slot)        SCHOOL_MAX_SLOT  = data.max_per_slot;
-      if (data.id)                  SCHOOL_ID_ACTIVE = data.id;
     }
   } catch(_) {}
   await loadPublicReviews();

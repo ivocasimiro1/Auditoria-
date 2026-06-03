@@ -1157,6 +1157,46 @@
       max_per_slot:  6,   // max alunos por slot horário
       slots:         ['08:00','10:30','14:00','16:30'],
     },
+    {
+      id:            'surf-arrifana',
+      name:          'Arrifana Surf School',
+      wa_number:     '351911000001',
+      meeting_point: 'Praia de Arrifana, junto ao acesso principal.',
+      max_per_slot:  8,
+      slots:         ['08:00','10:00','14:00','16:00'],
+    },
+    {
+      id:            'surf-nazare',
+      name:          'Nazaré Surf Experience',
+      wa_number:     '351911000002',
+      meeting_point: 'Praia da Nazaré Norte, junto ao posto de socorros.',
+      max_per_slot:  8,
+      slots:         ['08:00','10:30','14:00','16:30'],
+    },
+    {
+      id:            'surf-peniche',
+      name:          'Peniche Surf Academy',
+      wa_number:     '351911000003',
+      meeting_point: 'Praia de Peniche de Cima, junto à escola.',
+      max_per_slot:  10,
+      slots:         ['09:00','11:00','14:00','16:00'],
+    },
+    {
+      id:            'surf-lagos',
+      name:          'Lagos Surf Club',
+      wa_number:     '351911000004',
+      meeting_point: 'Praia de Meia Praia, junto ao bar de apoio.',
+      max_per_slot:  6,
+      slots:         ['08:30','10:30','14:30','16:30'],
+    },
+    {
+      id:            'surf-sagres',
+      name:          'Sagres Wild Surf',
+      wa_number:     '351911000005',
+      meeting_point: 'Praia do Tonel, Sagres, junto ao estacionamento.',
+      max_per_slot:  6,
+      slots:         ['08:00','10:00','14:00','16:00'],
+    },
   ];
 
   // Preço base por modalidade (private = preço fixo, restantes = por pessoa)
@@ -3114,8 +3154,9 @@
   function printQRCard() {
     const schoolId   = document.getElementById('f-school')?.value || SCHOOLS[0]?.id || 'escola-teste';
     const school     = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0] || { id: schoolId, name: 'Escola Surf', wa_number: '' };
-    const bookingUrl = `https://auditoria-25b.pages.dev/surf`;
-    const qrSrc      = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&color=050D1A&bgcolor=00CFFD&data=${encodeURIComponent(bookingUrl)}`;
+    const bookingUrl = schoolId === 'escola-teste'
+      ? `https://auditoria-25b.pages.dev/surf`
+      : `https://auditoria-25b.pages.dev/surf?escola=${encodeURIComponent(schoolId)}`;
     const wa         = school.wa_number ? '+' + school.wa_number.replace(/\D/g,'').replace(/^00/,'') : '';
 
     const popup = window.open('', '_blank', 'width=580,height=920,scrollbars=yes');
@@ -3125,6 +3166,7 @@
 <title>Cartão QR · ${school.name}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet"/>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Inter',sans-serif;background:#050D1A;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 16px 40px}
@@ -3155,7 +3197,7 @@
   .address{font-size:.75rem;color:rgba(255,255,255,.35);margin-bottom:20px;min-height:1em}
   .cta{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#00CFFD;margin-bottom:10px}
   .qr-wrap{display:inline-block;background:#fff;border-radius:14px;padding:7px;margin-bottom:16px}
-  .qr-wrap img{display:block;border-radius:7px}
+  .qr-wrap canvas{display:block;border-radius:7px}
   .url-text{font-size:.68rem;color:rgba(255,255,255,.4);font-family:monospace;margin-bottom:18px;padding:6px 10px;background:rgba(255,255,255,.04);border-radius:7px}
   .sep{width:100%;height:1px;background:rgba(255,255,255,.08);margin:14px 0}
   .info{display:flex;flex-direction:column;gap:7px}
@@ -3200,7 +3242,7 @@
   <div class="address" contenteditable="true" placeholder="Morada / Praia">📍 Clica para adicionar morada</div>
   <!-- QR -->
   <div class="cta">Aponte a câmara para reservar</div>
-  <div class="qr-wrap"><img src="${qrSrc}" width="200" height="200" alt="QR Code"/></div>
+  <div class="qr-wrap"><canvas id="qr-canvas"></canvas></div>
   <div class="url-text">${bookingUrl}</div>
   <div class="sep"></div>
   <!-- Contacts -->
@@ -3230,22 +3272,14 @@
     statusEl.textContent = msg; statusEl.style.display = 'block';
     if (duration) setTimeout(() => { statusEl.style.display = 'none'; }, duration);
   }
+  // Generate QR code onto canvas element — no external image, no CORS
+  QRCode.toCanvas(document.getElementById('qr-canvas'), '${bookingUrl}', {
+    width: 200, margin: 1,
+    color: { dark: '#050D1A', light: '#00CFFD' }
+  });
   async function captureCard() {
-    // html2canvas can't load cross-origin images; convert the QR img to data URL first
-    const qrImg = document.querySelector('.qr-wrap img');
-    if (qrImg && qrImg.src && !qrImg.src.startsWith('data:')) {
-      try {
-        const resp = await fetch(qrImg.src, { mode: 'cors' });
-        const blob = await resp.blob();
-        await new Promise(resolve => {
-          const reader = new FileReader();
-          reader.onload = e => { qrImg.src = e.target.result; qrImg.onload = resolve; qrImg.onerror = resolve; };
-          reader.readAsDataURL(blob);
-        });
-      } catch(_) {}
-    }
     return await html2canvas(document.querySelector('.card'), {
-      backgroundColor: '#050D1A', scale: 2, useCORS: true, logging: false
+      backgroundColor: '#050D1A', scale: 2, useCORS: false, logging: false
     });
   }
   async function saveImage() {
