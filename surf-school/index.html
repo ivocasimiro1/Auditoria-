@@ -1616,17 +1616,34 @@ async function reservarWhatsApp() {
     const [year, month, day] = booking.selectedDateKey.split('-').map(Number);
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const p0 = equipment[0] || {};
-    if (sb) await sb.from('bookings').insert([{
-      school_id:'escola-teste', lesson_type:T(booking.lessonKey),
-      booking_date:dateStr, booking_time:booking.time, num_people:pess,
-      client_name:nome, client_phone:tel, client_email:email||null,
-      client_country: country || null,
-      client_weight:p0.weight, client_height:p0.height,
-      client_gender:p0.gender, wetsuit_size:p0.size,
-      equipment_list: equipment,
-      notes:nota||null, total_price:total,
-      language:currentLang, status:'pending'
-    }]);
+    if (sb) {
+      const fullRow = {
+        school_id:'escola-teste', lesson_type:T(booking.lessonKey),
+        booking_date:dateStr, booking_time:booking.time, num_people:pess,
+        client_name:nome, client_phone:tel, client_email:email||null,
+        client_country: country || null,
+        client_weight:p0.weight, client_height:p0.height,
+        client_gender:p0.gender, wetsuit_size:p0.size,
+        equipment_list: equipment,
+        notes:nota||null, total_price:total,
+        language:currentLang, status:'pending'
+      };
+      let { error } = await sb.from('bookings').insert([fullRow]);
+      // If columns missing (42703 / PGRST204), retry with core fields only
+      if (error && (error.code === '42703' || error.code === 'PGRST204' || error.message?.includes('column'))) {
+        const coreRow = {
+          school_id:fullRow.school_id, lesson_type:fullRow.lesson_type,
+          booking_date:fullRow.booking_date, booking_time:fullRow.booking_time,
+          num_people:fullRow.num_people, client_name:fullRow.client_name,
+          client_phone:fullRow.client_phone, client_email:fullRow.client_email,
+          client_weight:fullRow.client_weight, client_height:fullRow.client_height,
+          client_gender:fullRow.client_gender, wetsuit_size:fullRow.wetsuit_size,
+          notes:fullRow.notes, total_price:fullRow.total_price, status:'pending'
+        };
+        ({ error } = await sb.from('bookings').insert([coreRow]));
+      }
+      if (error) console.warn('Supabase save error:', error.message);
+    }
   } catch(e) { console.warn('Supabase save failed', e); }
   if (waBtn) { waBtn.disabled = false; waBtn.innerHTML = `📱 <span data-t="btn_whatsapp">${T('btn_whatsapp')}</span>`; }
 }
