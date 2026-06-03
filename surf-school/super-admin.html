@@ -526,10 +526,11 @@
 <div class="toast" id="toast"></div>
 
 <!-- Tiers Config Modal -->
+<!-- Global Tiers Modal (defaults) -->
 <div id="tiers-modal-bg" style="display:none;position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.7);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)closeTiersModal()">
   <div style="background:#0A1929;border:1px solid rgba(167,139,250,.25);border-radius:20px;padding:1.8rem;width:100%;max-width:460px">
-    <h3 style="font-size:1rem;font-weight:700;color:#a78bfa;margin-bottom:.4rem">⚙️ Patamares de Comissão</h3>
-    <p style="font-size:.8rem;color:var(--gray);margin-bottom:1.2rem">Mais aulas por mês = taxa menor. Ajusta os limites e taxas conforme o combinado com cada escola.</p>
+    <h3 style="font-size:1rem;font-weight:700;color:#a78bfa;margin-bottom:.4rem">⚙️ Patamares Globais (Default)</h3>
+    <p style="font-size:.8rem;color:var(--gray);margin-bottom:1.2rem">Aplicados a escolas sem patamares personalizados. Ajusta por escola no botão ⚙️ de cada escola.</p>
     <div id="tiers-rows" style="display:flex;flex-direction:column;gap:.8rem"></div>
     <div style="display:flex;gap:.7rem;margin-top:1.4rem">
       <button onclick="saveTiers()" style="flex:1;padding:.7rem;background:#a78bfa;border:none;border-radius:10px;color:#050D1A;font-weight:700;font-size:.9rem;cursor:pointer;font-family:Inter,sans-serif">Guardar</button>
@@ -539,18 +540,29 @@
   </div>
 </div>
 
-<!-- Commission Edit Modal -->
+<!-- Commission Edit Modal — per school, saves to Supabase -->
 <div id="comm-modal-bg" style="display:none;position:fixed;inset:0;z-index:950;background:rgba(0,0,0,.7);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)closeCommModal()">
-  <div style="background:#0A1929;border:1px solid rgba(201,168,76,.2);border-radius:20px;padding:1.8rem;width:100%;max-width:380px">
-    <h3 style="font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:1.2rem">⚙️ Ajustar Comissão</h3>
-    <div id="comm-school-name" style="font-size:.85rem;color:var(--gray);margin-bottom:.7rem"></div>
-    <div id="comm-tier-info" style="font-size:.8rem;margin-bottom:1rem;padding:.6rem .8rem;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:8px;line-height:1.6;color:var(--gray-200)"></div>
-    <label style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);display:block;margin-bottom:.4rem">Substituição Manual (%)</label>
-    <input type="number" id="comm-input" min="0" max="30" step="0.5" style="width:100%;padding:.7rem 1rem;background:#0d1f3c;border:1px solid rgba(201,168,76,.3);border-radius:9px;color:#fff;font-size:1.1rem;font-family:Inter,sans-serif;color-scheme:dark" />
-    <div style="font-size:.75rem;color:var(--gray);margin-top:.4rem;margin-bottom:1.2rem">Deixa em branco para usar a taxa automática por patamares. Ex: 3.5 = 3.5%</div>
+  <div style="background:#0A1929;border:1px solid rgba(201,168,76,.2);border-radius:20px;padding:1.8rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">
+    <h3 style="font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:.3rem">⚙️ Comissões da Escola</h3>
+    <div id="comm-school-name" style="font-size:.95rem;font-weight:600;color:var(--white);margin-bottom:1.2rem"></div>
+
+    <!-- Month stats -->
+    <div id="comm-month-stats" style="font-size:.8rem;padding:.6rem .9rem;background:rgba(0,207,253,.07);border:1px solid rgba(0,207,253,.2);border-radius:9px;color:var(--gray);margin-bottom:1.2rem;line-height:1.7"></div>
+
+    <!-- Per-school tiers -->
+    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin-bottom:.65rem">Patamares desta escola</div>
+    <div id="comm-tiers-rows" style="display:flex;flex-direction:column;gap:.7rem;margin-bottom:1.2rem"></div>
+    <button onclick="addCommTier()" style="width:100%;padding:.45rem;background:rgba(201,168,76,.07);border:1px dashed rgba(201,168,76,.3);border-radius:8px;color:var(--gold);font-size:.8rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;margin-bottom:1.2rem">+ Adicionar patamar</button>
+
+    <!-- Proposta link -->
+    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--cyan);margin-bottom:.5rem">Link da Proposta</div>
+    <div style="display:flex;gap:.5rem;margin-bottom:1.3rem">
+      <input id="comm-proposta-link" readonly style="flex:1;padding:.55rem .8rem;background:#0d1f3c;border:1px solid var(--border);border-radius:8px;color:var(--gray);font-size:.78rem;font-family:Inter,sans-serif;color-scheme:dark" />
+      <button onclick="copyPropostaLink()" style="padding:.55rem .9rem;background:rgba(0,207,253,.1);border:1px solid rgba(0,207,253,.3);border-radius:8px;color:var(--cyan);font-size:.8rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap">📋 Copiar</button>
+    </div>
+
     <div style="display:flex;gap:.7rem">
-      <button onclick="saveCommRate()" style="flex:1;padding:.7rem;background:var(--gold);border:none;border-radius:10px;color:#050D1A;font-weight:700;font-size:.9rem;cursor:pointer;font-family:Inter,sans-serif">Guardar</button>
-      <button onclick="resetCommRate()" style="padding:.7rem 1rem;background:transparent;border:1px solid rgba(34,197,94,.4);border-radius:10px;color:#86efac;cursor:pointer;font-size:.82rem;font-family:Inter,sans-serif">↺ Auto</button>
+      <button onclick="saveCommTiers()" style="flex:1;padding:.7rem;background:var(--gold);border:none;border-radius:10px;color:#050D1A;font-weight:700;font-size:.9rem;cursor:pointer;font-family:Inter,sans-serif">💾 Guardar no Supabase</button>
       <button onclick="closeCommModal()" style="padding:.7rem 1rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-family:Inter,sans-serif">Cancelar</button>
     </div>
   </div>
