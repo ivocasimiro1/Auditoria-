@@ -804,7 +804,7 @@
       </div>
       <div class="mb-field">
         <label>Modalidade *</label>
-        <select id="mb-lesson">
+        <select id="mb-lesson" onchange="updateMBTotal()">
           <option value="Iniciante">Iniciante</option>
           <option value="Intermédio">Intermédio</option>
           <option value="Aula Privada">Aula Privada</option>
@@ -814,7 +814,7 @@
       </div>
       <div class="mb-field">
         <label>Nº Pessoas *</label>
-        <select id="mb-people" onchange="buildMBEquipRows()">
+        <select id="mb-people" onchange="buildMBEquipRows();updateMBTotal()">
           <option value="1" selected>1</option>
           <option value="2">2</option>
           <option value="3">3</option>
@@ -935,6 +935,15 @@
       slots:         ['09:00','11:00','14:00','16:00'],
     },
   ];
+
+  // Preço base por modalidade (private = preço fixo, restantes = por pessoa)
+  const LESSON_PRICES = {
+    'Iniciante':        { price: 35, perPerson: true  },
+    'Intermédio':       { price: 35, perPerson: true  },
+    'Aula Privada':     { price: 65, perPerson: false },
+    'Bodyboard':        { price: 30, perPerson: true  },
+    'Stand Up Paddle':  { price: 35, perPerson: true  },
+  };
 
   const STATUS = {
     pending:   { label: 'Pendente',   cls: 'status-pending'   },
@@ -1900,6 +1909,16 @@
     container.innerHTML = html;
   }
 
+  function updateMBTotal() {
+    const lesson  = document.getElementById('mb-lesson')?.value;
+    const people  = parseInt(document.getElementById('mb-people')?.value || '1');
+    const lp      = LESSON_PRICES[lesson];
+    if (!lp) return;
+    const total   = lp.perPerson ? lp.price * people : lp.price;
+    const el      = document.getElementById('mb-total');
+    if (el) el.value = total.toFixed(2);
+  }
+
   const MB_WETSUIT = { H:['XS','S','SM','M','MT','ML','L','XL','XXL'], M:['6','8','10','12','14','S','M','L','XL'], C:['8','10','12','14','16','18','20','22','24'] };
   function updateMBFato(i) {
     const gen = document.getElementById(`mbeq-gen-${i}`)?.value;
@@ -1951,6 +1970,7 @@
       .join('');
 
     buildMBEquipRows();
+    updateMBTotal();
     document.getElementById('manual-booking-modal-bg').classList.add('open');
     setTimeout(() => document.getElementById('mb-name').focus(), 100);
     checkMBAvailability();
