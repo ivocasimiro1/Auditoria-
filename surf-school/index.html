@@ -1713,6 +1713,7 @@ async function reservarWhatsApp() {
         _subject: `🏄 Nova Marcação: ${nome} — ${T(booking.lessonKey)} ${booking.selectedDateStr}`,
         message: emailBody,
         _replyto: email || tel,
+        _cc: email || undefined,
         _template: 'table',
       })
     }).catch(() => {}); // email is best-effort, don't block on failure
