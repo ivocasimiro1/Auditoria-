@@ -1422,6 +1422,47 @@ async function loadSchoolConfig() {
       if (data.id)                  SCHOOL_ID_ACTIVE = data.id;
     }
   } catch(_) {}
+  await loadPublicReviews();
+}
+
+async function loadPublicReviews() {
+  if (!sb) return;
+  try {
+    const { data } = await sb.from('reviews')
+      .select('client_name,rating,comment,created_at,school_id')
+      .eq('school_id', SCHOOL_ID_ACTIVE)
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(6);
+    if (!data || data.length === 0) return;
+
+    const grid = document.querySelector('.reviews-grid');
+    if (!grid) return;
+
+    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    grid.innerHTML = data.map(r => {
+      const initial = (r.client_name || '?')[0].toUpperCase();
+      const stars   = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
+      const d       = r.created_at ? new Date(r.created_at) : null;
+      const dateLbl = d ? `${months[d.getMonth()]} ${d.getFullYear()}` : '';
+      const comment = r.comment ? `"${r.comment}"` : '';
+      return `
+        <div class="review-card">
+          <div class="rq">"</div>
+          <div class="review-stars">${stars}</div>
+          <p class="review-text">${comment}</p>
+          <div class="review-author">
+            <div class="review-avatar">${initial}</div>
+            <div><div class="review-name">${r.client_name || 'Cliente'}</div><div class="review-loc">${dateLbl}</div></div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Update average badge
+    const avg = (data.reduce((s, r) => s + (r.rating || 5), 0) / data.length).toFixed(1);
+    const badge = document.querySelector('.about-badge strong');
+    if (badge) badge.textContent = `⭐ ${avg}`;
+  } catch(_) {}
 }
 
 function isPastSlot(timeStr, dateKey) {
@@ -1919,7 +1960,7 @@ setLang('pt');
 buildTideGrid();
 buildCalendar();
 updateNextTide();
-loadSchoolConfig(); // loads time_slots + max_per_slot from Supabase schools table
+loadSchoolConfig(); // loads time_slots + max_per_slot from Supabase, then loadPublicReviews
 updateClock();
 fetchConditions(getBeach());
 setInterval(updateClock, 1000);
