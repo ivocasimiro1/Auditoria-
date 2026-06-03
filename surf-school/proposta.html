@@ -1400,6 +1400,15 @@
   const escola = p.get('escola');
   const nomeP  = p.get('nome');
 
+  // Tiers encoded directly in the URL (from super-admin modal link)
+  const tiersEncoded = p.get('t');
+  if (tiersEncoded) {
+    try {
+      const tiers = JSON.parse(atob(tiersEncoded));
+      if (tiers?.length) renderTiers(tiers, nomeP);
+    } catch(_) {}
+  }
+
   // Personalise hero name (from URL param first, will be overridden by Supabase if available)
   function setHeroName(n) {
     const el = document.getElementById('hero-escola');
