@@ -316,19 +316,76 @@
     .cal-dot-completed { background: var(--green); }
     .cal-count { font-size: .6rem; color: var(--gray); font-weight: 600; }
 
-    /* Slot availability */
+    /* Slot availability — redesigned */
     .slot-avail-card {
-      border-radius: 10px; padding: .7rem .9rem; border: 1px solid var(--border);
-      text-align: center;
+      border-radius: 12px; padding: 1rem 1.1rem; border: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: .55rem;
     }
-    .slot-avail-time { font-size: .95rem; font-weight: 700; margin-bottom: .3rem; }
-    .slot-avail-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); margin: .35rem 0; overflow: hidden; }
-    .slot-avail-fill { height: 100%; border-radius: 3px; transition: width .3s; }
-    .slot-avail-info { font-size: .72rem; color: var(--gray); }
-    .slot-avail-card.slot-free   { border-color: rgba(34,197,94,.3);  background: rgba(34,197,94,.05); }
-    .slot-avail-card.slot-warn   { border-color: rgba(234,179,8,.3);  background: rgba(234,179,8,.05); }
-    .slot-avail-card.slot-full   { border-color: rgba(239,68,68,.3);  background: rgba(239,68,68,.05); opacity: .7; }
-    .slot-avail-card.slot-empty  { border-color: var(--border); }
+    .slot-avail-card.slot-free { border-color: rgba(34,197,94,.3); background: rgba(34,197,94,.04); }
+    .slot-avail-card.slot-warn { border-color: rgba(234,179,8,.3); background: rgba(234,179,8,.04); }
+    .slot-avail-card.slot-full { border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.06); }
+    .slot-avail-card.slot-empty{ border-color: var(--border); }
+
+    .slot-avail-header { display: flex; align-items: center; justify-content: space-between; }
+    .slot-avail-time { font-size: 1.05rem; font-weight: 700; }
+    .slot-avail-badge {
+      font-size: .68rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .badge-free  { background: rgba(34,197,94,.15); color: #22c55e; }
+    .badge-warn  { background: rgba(234,179,8,.15);  color: #eab308; }
+    .badge-full  { background: rgba(239,68,68,.15);  color: #ef4444; }
+    .badge-empty { background: rgba(148,163,176,.12); color: var(--gray); }
+
+    .slot-avail-summary {
+      font-size: .8rem; color: var(--gray);
+      display: flex; align-items: center; gap: .4rem;
+    }
+    .slot-avail-summary strong { color: var(--white); font-size: .9rem; }
+
+    /* Seat dots grid */
+    .slot-seats { display: flex; flex-wrap: wrap; gap: 5px; }
+    .seat {
+      width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid;
+      display: flex; align-items: center; justify-content: center; font-size: 9px;
+      font-weight: 700; cursor: default; position: relative;
+    }
+    .seat.confirmed { background: rgba(34,197,94,.25);  border-color: #22c55e;  color: #22c55e; }
+    .seat.pending   { background: rgba(234,179,8,.2);   border-color: #eab308;  color: #eab308; }
+    .seat.empty     { background: transparent;           border-color: rgba(148,163,176,.25); color: transparent; }
+    .seat[title]:hover::after {
+      content: attr(title); position: absolute; bottom: 125%; left: 50%;
+      transform: translateX(-50%); background: #1a2744; color: var(--white);
+      font-size: 10px; padding: 3px 7px; border-radius: 5px; white-space: nowrap;
+      pointer-events: none; z-index: 10;
+    }
+
+    /* Client list per slot */
+    .slot-clients { display: flex; flex-direction: column; gap: 3px; }
+    .slot-client-row {
+      display: flex; align-items: center; gap: 6px;
+      font-size: .75rem; color: var(--gray-light);
+    }
+    .slot-client-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .dot-confirmed { background: #22c55e; }
+    .dot-pending   { background: #eab308; }
+
+    /* Capacity control */
+    .slot-cap-ctrl {
+      display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid var(--border); padding-top: .55rem; margin-top: .1rem;
+    }
+    .slot-cap-label { font-size: .7rem; color: var(--gray); }
+    .slot-cap-btns { display: flex; align-items: center; gap: 6px; }
+    .cap-btn {
+      width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--card2); color: var(--white); font-size: 14px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      line-height: 1; transition: background .15s, border-color .15s;
+    }
+    .cap-btn:hover { background: var(--cyan); border-color: var(--cyan); color: var(--navy); }
+    .cap-btn:disabled { opacity: .3; cursor: not-allowed; }
+    .cap-val { font-size: .85rem; font-weight: 700; min-width: 28px; text-align: center; }
 
     /* Today's briefing */
     .today-brief {
@@ -488,10 +545,13 @@
     <!-- Slot availability for selected day -->
     <div id="slots-avail-wrap" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.2rem 1.5rem;margin-bottom:1.5rem">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
-        <div style="font-size:.95rem;font-weight:700">Disponibilidade — <span id="slots-avail-date"></span></div>
-        <button onclick="document.getElementById('f-date').value='';document.getElementById('slots-avail-wrap').style.display='none';applyFilters();buildCalendar()" style="font-size:.75rem;color:var(--gray);background:transparent;border:none;cursor:pointer">✕ Fechar</button>
+        <div>
+          <div style="font-size:.95rem;font-weight:700">Ocupacao por Horario — <span id="slots-avail-date"></span></div>
+          <div style="font-size:.72rem;color:var(--gray);margin-top:2px">Clique em + / − para ajustar vagas neste dia</div>
+        </div>
+        <button onclick="closeSlotAvail()" style="font-size:.75rem;color:var(--gray);background:transparent;border:none;cursor:pointer">✕ Fechar</button>
       </div>
-      <div id="slots-avail-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.6rem"></div>
+      <div id="slots-avail-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem"></div>
     </div>
 
     <!-- Filters -->
@@ -743,6 +803,9 @@
     applyFilters();
     buildCalendar();
     buildTodayBriefing();
+    // Refresh slot availability if a day is currently selected
+    const selDay = document.getElementById('f-date').value;
+    if (selDay) buildSlotAvailability(selDay);
   }
 
   function applyFilters() {
@@ -1027,35 +1090,122 @@
     document.getElementById('slots-avail-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  // ── SLOT CAPACITY OVERRIDES (per day, stored in localStorage) ─────────────
+  const CAP_KEY = 'surfbook_cap_overrides';
+  function getCapOverrides() {
+    try { return JSON.parse(localStorage.getItem(CAP_KEY) || '{}'); } catch { return {}; }
+  }
+  function getSlotMax(dateStr, time, defaultMax) {
+    const k = `${dateStr}_${time}`;
+    return getCapOverrides()[k] ?? defaultMax;
+  }
+  function setSlotMax(dateStr, time, newMax) {
+    const overrides = getCapOverrides();
+    const k = `${dateStr}_${time}`;
+    overrides[k] = newMax;
+    localStorage.setItem(CAP_KEY, JSON.stringify(overrides));
+  }
+  function adjustSlotCap(dateStr, time, defaultMax, delta) {
+    const cur = getSlotMax(dateStr, time, defaultMax);
+    // Count used seats so we never go below what's already booked
+    const used = countSlotUsed(dateStr, time);
+    const next = cur + delta;
+    if (next < used || next < 1) return;
+    setSlotMax(dateStr, time, next);
+    buildSlotAvailability(dateStr);
+  }
+  function countSlotUsed(dateStr, time) {
+    let n = 0;
+    allBookings.forEach(b => {
+      if (b.booking_date === dateStr && b.booking_time === time && b.status !== 'cancelled')
+        n += (b.num_people || 1);
+    });
+    return n;
+  }
+  function closeSlotAvail() {
+    document.getElementById('f-date').value = '';
+    document.getElementById('slots-avail-wrap').style.display = 'none';
+    applyFilters();
+    buildCalendar();
+  }
+
   function buildSlotAvailability(dateStr) {
     const schoolSel = document.getElementById('f-school');
     const schoolId  = schoolSel ? schoolSel.value : '';
     const school    = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0];
-    const maxPerSlot = school.max_per_slot || 6;
+    const defaultMax = school.max_per_slot || 6;
     const timeSlots  = school.slots || ['09:00','11:00','14:00','16:00'];
 
-    // Count booked people per slot for this date (non-cancelled)
-    const slotUsed = {};
+    // Group bookings by slot time for this date (non-cancelled)
+    const slotBooks = {};
     allBookings.forEach(b => {
       if (b.booking_date !== dateStr || b.status === 'cancelled') return;
-      slotUsed[b.booking_time] = (slotUsed[b.booking_time] || 0) + (b.num_people || 1);
+      if (!slotBooks[b.booking_time]) slotBooks[b.booking_time] = [];
+      slotBooks[b.booking_time].push(b);
     });
 
     const [y, m, d] = dateStr.split('-');
     document.getElementById('slots-avail-date').textContent = `${d}/${m}/${y}`;
 
     const cards = timeSlots.map(t => {
-      const used  = slotUsed[t] || 0;
-      const free  = Math.max(0, maxPerSlot - used);
-      const pct   = Math.min(100, Math.round(used / maxPerSlot * 100));
-      const cls   = free === 0 ? 'slot-full' : pct >= 50 ? 'slot-warn' : used === 0 ? 'slot-empty' : 'slot-free';
-      const fillColor = free === 0 ? 'var(--red)' : pct >= 50 ? 'var(--yellow)' : 'var(--green)';
-      const label = free === 0 ? '<span style="color:var(--red);font-weight:700">Esgotado</span>'
-                  : `<span style="color:var(--green)">${free} vaga${free!==1?'s':''}</span> / ${maxPerSlot}`;
+      const books   = slotBooks[t] || [];
+      const maxCap  = getSlotMax(dateStr, t, defaultMax);
+      const used    = books.reduce((s, b) => s + (b.num_people || 1), 0);
+      const free    = Math.max(0, maxCap - used);
+      const pct     = Math.min(100, maxCap > 0 ? Math.round(used / maxCap * 100) : 0);
+      const isEmpty = used === 0;
+      const isFull  = free === 0;
+      const isWarn  = !isFull && pct >= 50;
+      const cls     = isFull ? 'slot-full' : isWarn ? 'slot-warn' : isEmpty ? 'slot-empty' : 'slot-free';
+      const badge   = isFull ? '<span class="slot-avail-badge badge-full">Esgotado</span>'
+                    : isWarn ? '<span class="slot-avail-badge badge-warn">Quase cheio</span>'
+                    : isEmpty? '<span class="slot-avail-badge badge-empty">Sem marcacoes</span>'
+                    :          '<span class="slot-avail-badge badge-free">Com vagas</span>';
+
+      // Seat dots
+      const dots = [];
+      let seatIdx = 0;
+      books.forEach(b => {
+        const n = b.num_people || 1;
+        const dotCls = b.status === 'confirmed' ? 'confirmed' : 'pending';
+        const dotLetter = b.status === 'confirmed' ? 'C' : 'P';
+        for (let i = 0; i < n; i++) {
+          dots.push(`<div class="seat ${dotCls}" title="${b.client_name}${n>1?' ('+(i+1)+'/'+n+')':''}">${dotLetter}</div>`);
+          seatIdx++;
+        }
+      });
+      for (let i = seatIdx; i < maxCap; i++) {
+        dots.push(`<div class="seat empty"></div>`);
+      }
+
+      // Client list
+      const clientRows = books.map(b => {
+        const np = b.num_people > 1 ? ` (${b.num_people} pess.)` : '';
+        const dotCls = b.status === 'confirmed' ? 'dot-confirmed' : 'dot-pending';
+        return `<div class="slot-client-row"><div class="slot-client-dot ${dotCls}"></div><span>${b.client_name}${np}</span></div>`;
+      }).join('');
+
+      const dStr = JSON.stringify(dateStr).replace(/"/g,"'");
+      const tStr = JSON.stringify(t).replace(/"/g,"'");
+
       return `<div class="slot-avail-card ${cls}">
-        <div class="slot-avail-time">${t}</div>
-        <div class="slot-avail-bar"><div class="slot-avail-fill" style="width:${pct}%;background:${fillColor}"></div></div>
-        <div class="slot-avail-info">${label}</div>
+        <div class="slot-avail-header">
+          <div class="slot-avail-time">${t}</div>
+          ${badge}
+        </div>
+        <div class="slot-avail-summary">
+          <strong>${used}</strong> marcad${used!==1?'os':'o'}&nbsp;·&nbsp;<strong style="color:${isFull?'var(--red)':free===1?'var(--yellow)':'var(--green)'}">${free} vaga${free!==1?'s':''}</strong>
+        </div>
+        <div class="slot-seats">${dots.join('')}</div>
+        ${clientRows ? `<div class="slot-clients">${clientRows}</div>` : ''}
+        <div class="slot-cap-ctrl">
+          <span class="slot-cap-label">Capacidade maxima</span>
+          <div class="slot-cap-btns">
+            <button class="cap-btn" title="Reduzir vagas" onclick="adjustSlotCap('${dateStr}','${t}',${defaultMax},-1)" ${used>=maxCap?'disabled':''}>−</button>
+            <span class="cap-val">${maxCap}</span>
+            <button class="cap-btn" title="Adicionar vaga" onclick="adjustSlotCap('${dateStr}','${t}',${defaultMax},+1)">+</button>
+          </div>
+        </div>
       </div>`;
     }).join('');
 
