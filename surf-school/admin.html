@@ -2725,16 +2725,15 @@
 
   init();
 
-  // ── QR CARD ───────────────────────────────────────────────────────────────────
+  // ── QR CARD (editable before print) ─────────────────────────────────────────
   function printQRCard() {
-    const schoolId = document.getElementById('f-school')?.value || SCHOOLS[0]?.id || 'escola-teste';
-    const school   = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0] || { id: schoolId, name: 'Escola Surf', wa_number: '' };
+    const schoolId   = document.getElementById('f-school')?.value || SCHOOLS[0]?.id || 'escola-teste';
+    const school     = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0] || { id: schoolId, name: 'Escola Surf', wa_number: '' };
     const bookingUrl = `https://auditoria-25b.pages.dev/surf`;
-    const qrData     = encodeURIComponent(bookingUrl);
-    const qrSrc      = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&color=050D1A&bgcolor=00CFFD&data=${qrData}`;
-    const wa = school.wa_number ? '+' + school.wa_number.replace(/\D/g,'').replace(/^00/,'') : '';
+    const qrSrc      = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&color=050D1A&bgcolor=00CFFD&data=${encodeURIComponent(bookingUrl)}`;
+    const wa         = school.wa_number ? '+' + school.wa_number.replace(/\D/g,'').replace(/^00/,'') : '';
 
-    const popup = window.open('', '_blank', 'width=540,height=800,scrollbars=yes');
+    const popup = window.open('', '_blank', 'width=580,height=920,scrollbars=yes');
     if (!popup) { alert('Permite popups para imprimir o cartão QR.'); return; }
     popup.document.write(`<!DOCTYPE html><html lang="pt"><head>
 <meta charset="UTF-8"/>
@@ -2742,49 +2741,98 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Inter',sans-serif;background:#050D1A;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 16px 40px}
-  .bar{width:100%;max-width:460px;display:flex;justify-content:flex-end;margin-bottom:16px}
-  .btn{background:linear-gradient(135deg,#0070F3,#00CFFD);border:none;border-radius:10px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:10px 24px;cursor:pointer}
-  .card{width:100%;max-width:420px;background:linear-gradient(160deg,#0A1A30,#0D2040);border:1px solid rgba(0,207,253,.3);border-radius:24px;padding:36px 32px 32px;text-align:center;position:relative;overflow:hidden}
+  body{font-family:'Inter',sans-serif;background:#050D1A;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 16px 40px}
+  .toolbar{width:100%;max-width:460px;display:flex;gap:.5rem;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+  .btn{background:linear-gradient(135deg,#0070F3,#00CFFD);border:none;border-radius:9px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 22px;cursor:pointer;flex-shrink:0}
+  .btn-sec{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:9px;color:#94a3b8;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:8px 16px;cursor:pointer;flex-shrink:0}
+  .hint{font-size:.7rem;color:rgba(255,255,255,.35);flex:1;text-align:right}
+  /* CARD */
+  .card{width:100%;max-width:420px;background:linear-gradient(160deg,#0A1A30,#0D2040);border:1px solid rgba(0,207,253,.3);border-radius:24px;padding:32px 28px 28px;text-align:center;position:relative;overflow:hidden}
   .card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#0070F3,#00CFFD,#0070F3)}
-  .emoji{font-size:44px;margin-bottom:10px;display:block}
-  .name{font-size:24px;font-weight:900;background:linear-gradient(135deg,#fff 30%,#00CFFD);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
-  .tagline{font-size:.82rem;color:rgba(255,255,255,.5);margin-bottom:24px}
-  .cta{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#00CFFD;margin-bottom:12px}
-  .qr-wrap{display:inline-block;background:#fff;border-radius:16px;padding:8px;margin-bottom:18px}
-  .qr-wrap img{display:block;border-radius:8px}
-  .url{font-size:.72rem;color:rgba(255,255,255,.45);font-family:monospace;word-break:break-all;margin-bottom:20px;padding:8px 12px;background:rgba(255,255,255,.04);border-radius:8px}
-  .sep{width:100%;height:1px;background:rgba(255,255,255,.08);margin:16px 0}
-  .info{display:flex;flex-direction:column;gap:8px}
-  .info-row{display:flex;align-items:center;justify-content:center;gap:8px;font-size:.82rem;color:rgba(255,255,255,.65)}
-  .info-row strong{color:#fff}
+  /* Photo area */
+  .photo-wrap{width:80px;height:80px;border-radius:50%;margin:0 auto 14px;overflow:hidden;border:2px solid rgba(0,207,253,.35);cursor:pointer;position:relative;background:rgba(255,255,255,.05)}
+  .photo-wrap img{width:100%;height:100%;object-fit:cover}
+  .photo-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;font-size:.6rem;color:rgba(255,255,255,.3);gap:3px}
+  .photo-placeholder span{font-size:22px}
+  /* Editable fields */
+  [contenteditable]{outline:none;cursor:text;border-radius:6px;transition:background .15s}
+  [contenteditable]:hover{background:rgba(255,255,255,.06)}
+  [contenteditable]:focus{background:rgba(0,207,253,.08);outline:1px dashed rgba(0,207,253,.4)}
+  .school-name{font-size:22px;font-weight:900;background:linear-gradient(135deg,#fff 30%,#00CFFD);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;min-height:1.2em}
+  .school-name:focus{-webkit-text-fill-color:#fff}
+  .tagline{font-size:.8rem;color:rgba(255,255,255,.45);margin-bottom:6px;min-height:1.1em}
+  .address{font-size:.75rem;color:rgba(255,255,255,.35);margin-bottom:20px;min-height:1em}
+  .cta{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#00CFFD;margin-bottom:10px}
+  .qr-wrap{display:inline-block;background:#fff;border-radius:14px;padding:7px;margin-bottom:16px}
+  .qr-wrap img{display:block;border-radius:7px}
+  .url-text{font-size:.68rem;color:rgba(255,255,255,.4);font-family:monospace;margin-bottom:18px;padding:6px 10px;background:rgba(255,255,255,.04);border-radius:7px}
+  .sep{width:100%;height:1px;background:rgba(255,255,255,.08);margin:14px 0}
+  .info{display:flex;flex-direction:column;gap:7px}
+  .info-row{display:flex;align-items:center;justify-content:center;gap:7px;font-size:.8rem;color:rgba(255,255,255,.6)}
+  .info-row strong,[contenteditable]{color:#fff}
+  .info-row .icon{flex-shrink:0;width:18px;text-align:center}
+  /* Hidden file input */
+  #photo-input{display:none}
+  /* Extra fields toggled by toolbar */
+  .extra-field{display:none}
+  .extra-field.visible{display:flex}
   @media print{
-    body{background:#fff;color:#000;padding:0}
-    .bar{display:none}
-    .card{border-radius:0;border-color:#ccc;background:#fff;color:#000;max-width:100%;box-shadow:none}
-    .card::before{display:none}
-    .name{-webkit-text-fill-color:#000;background:none;color:#000}
-    .tagline,.cta{color:#555}
-    .url{color:#777;background:#f5f5f5}
-    .info-row{color:#444}
+    body{background:#fff;color:#000;padding:0;margin:0}
+    .toolbar{display:none}
+    .card{border:1.5px solid #ccc;background:#fff;color:#000;max-width:none;border-radius:12px;padding:28px 24px}
+    .card::before{background:linear-gradient(90deg,#0070F3,#00CFFD)}
+    .school-name{-webkit-text-fill-color:#050D1A;background:none;color:#050D1A}
+    .tagline,.address,.cta,.url-text,.info-row{color:#444}
+    .info-row strong,[contenteditable]{color:#111}
     .sep{background:#ddd}
+    .photo-placeholder{display:none}
+    [contenteditable]{outline:none;background:none !important}
   }
 </style></head><body>
-<div class="bar"><button class="btn" onclick="window.print()">🖨️ Imprimir / PDF</button></div>
+<input type="file" id="photo-input" accept="image/*"/>
+<div class="toolbar">
+  <button class="btn" onclick="window.print()">🖨️ Imprimir / PDF</button>
+  <button class="btn-sec" onclick="toggleExtra()">+ Morada / Redes</button>
+  <span class="hint">Clica em qualquer texto para editar</span>
+</div>
 <div class="card">
-  <span class="emoji">🏄</span>
-  <div class="name">${school.name}</div>
-  <div class="tagline">Reserve a sua aula de surf online — rápido e fácil</div>
+  <!-- Photo -->
+  <div class="photo-wrap" onclick="document.getElementById('photo-input').click()" title="Clica para adicionar foto ou logo">
+    <div class="photo-placeholder" id="photo-ph"><span>📷</span>Foto / Logo</div>
+    <img id="photo-img" src="" style="display:none" alt=""/>
+  </div>
+  <!-- Name & tagline -->
+  <div class="school-name" contenteditable="true">${school.name}</div>
+  <div class="tagline" contenteditable="true">Reserve a sua aula de surf online</div>
+  <div class="address" contenteditable="true" placeholder="Morada / Praia">📍 Clica para adicionar morada</div>
+  <!-- QR -->
   <div class="cta">Aponte a câmara para reservar</div>
-  <div class="qr-wrap"><img src="${qrSrc}" width="220" height="220" alt="QR Code"/></div>
-  <div class="url">${bookingUrl}</div>
+  <div class="qr-wrap"><img src="${qrSrc}" width="200" height="200" alt="QR Code"/></div>
+  <div class="url-text">${bookingUrl}</div>
   <div class="sep"></div>
+  <!-- Contacts -->
   <div class="info">
-    ${wa ? `<div class="info-row">📱 WhatsApp <strong>${wa}</strong></div>` : ''}
-    <div class="info-row">🌊 <strong>auditoria-25b.pages.dev</strong></div>
+    ${wa ? `<div class="info-row"><span class="icon">📱</span>WhatsApp <strong contenteditable="true">${wa}</strong></div>` : `<div class="info-row"><span class="icon">📱</span>WhatsApp <strong contenteditable="true">+351 ...</strong></div>`}
+    <div class="info-row extra-field" id="row-email"><span class="icon">✉️</span>Email <strong contenteditable="true">email@escola.pt</strong></div>
+    <div class="info-row extra-field" id="row-insta"><span class="icon">📸</span>Instagram <strong contenteditable="true">@escola</strong></div>
+    <div class="info-row"><span class="icon">🌊</span><strong contenteditable="true">auditoria-25b.pages.dev</strong></div>
   </div>
 </div>
-<script>setTimeout(()=>document.querySelector('img').complete||document.querySelector('img').addEventListener('load',()=>{}),500)<\/script>
+<script>
+  document.getElementById('photo-input').addEventListener('change', function() {
+    const file = this.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('photo-img').src = e.target.result;
+      document.getElementById('photo-img').style.display = 'block';
+      document.getElementById('photo-ph').style.display  = 'none';
+    };
+    reader.readAsDataURL(file);
+  });
+  function toggleExtra() {
+    document.querySelectorAll('.extra-field').forEach(el => el.classList.toggle('visible'));
+  }
+<\/script>
 </body></html>`);
     popup.document.close();
   }
