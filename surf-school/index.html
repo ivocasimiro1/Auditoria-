@@ -656,7 +656,7 @@
         <div class="booking-summary" id="booking-summary"></div>
         <div class="form-grid">
           <div class="form-group"><label data-t="f_name"></label><input type="text" id="fname" data-placeholder="f_name_ph" /></div>
-          <div class="form-group"><label data-t="f_phone"></label><input type="tel" id="fphone" placeholder="+351 9XX XXX XXX" /></div>
+          <div class="form-group"><label data-t="f_phone"></label><input type="tel" id="fphone" data-placeholder="f_phone_ph" /></div>
           <div class="form-group"><label data-t="f_email"></label><input type="email" id="femail" data-placeholder="f_email_ph" /></div>
           <div class="form-group"><label data-t="f_pessoas"></label>
             <select id="fpessoas" onchange="onPessoasChange()">
@@ -774,7 +774,7 @@ const LANGS = {
     s2_title:'Escolhe o dia', s2_desc:'Seleciona uma data disponível no calendário.',
     s3_title:'Escolhe o horário', s3_desc:'Vagas disponíveis para o dia selecionado.',
     s4_title:'Os teus dados', s4_desc:'Preenche para confirmarmos a reserva via WhatsApp.',
-    f_name:'Nome completo *', f_name_ph:'Ex: João Silva', f_phone:'Telemóvel *',
+    f_name:'Nome completo *', f_name_ph:'Ex: João Silva', f_phone:'Telemóvel *', f_phone_ph:'+351 912 345 678',
     f_email:'Email', f_email_ph:'joao@email.com', f_pessoas:'Nº de pessoas',
     f_peso:'Peso (kg)', f_altura:'Altura (cm)', f_genero:'Género', f_fato:'Tamanho do fato',
     f_exp:'Experiência', exp_nunca:'Nunca surfei', exp_ja:'Já surfei', exp_inter:'Intermédio', exp_avanc:'Avançado',
@@ -839,7 +839,7 @@ const LANGS = {
     s2_title:'Choose a day', s2_desc:'Select an available date on the calendar.',
     s3_title:'Choose a time', s3_desc:'Available slots for the selected day.',
     s4_title:'Your details', s4_desc:'Fill in to confirm your booking via WhatsApp.',
-    f_name:'Full name *', f_name_ph:'Ex: John Smith', f_phone:'Mobile *',
+    f_name:'Full name *', f_name_ph:'Ex: John Smith', f_phone:'Mobile *', f_phone_ph:'+44 7911 123456',
     f_email:'Email', f_email_ph:'john@email.com', f_pessoas:'Number of people',
     f_peso:'Weight (kg)', f_altura:'Height (cm)', f_genero:'Gender', f_fato:'Wetsuit size',
     f_exp:'Experience', exp_nunca:'Never surfed', exp_ja:'Surfed before', exp_inter:'Intermediate', exp_avanc:'Advanced',
@@ -904,7 +904,7 @@ const LANGS = {
     s2_title:'Choisissez un jour', s2_desc:'Sélectionnez une date disponible dans le calendrier.',
     s3_title:'Choisissez un horaire', s3_desc:'Créneaux disponibles pour le jour sélectionné.',
     s4_title:'Vos coordonnées', s4_desc:'Remplissez pour confirmer votre réservation via WhatsApp.',
-    f_name:'Nom complet *', f_name_ph:'Ex: Jean Dupont', f_phone:'Téléphone *',
+    f_name:'Nom complet *', f_name_ph:'Ex: Jean Dupont', f_phone:'Téléphone *', f_phone_ph:'+33 6 12 34 56 78',
     f_email:'Email', f_email_ph:'jean@email.com', f_pessoas:'Nombre de personnes',
     f_peso:'Poids (kg)', f_altura:'Taille (cm)', f_genero:'Genre', f_fato:'Taille combinaison',
     f_exp:'Expérience', exp_nunca:'Jamais surfé', exp_ja:'Déjà surfé', exp_inter:'Intermédiaire', exp_avanc:'Avancé',
@@ -969,7 +969,7 @@ const LANGS = {
     s2_title:'Wähle einen Tag', s2_desc:'Wähle ein verfügbares Datum im Kalender.',
     s3_title:'Wähle eine Uhrzeit', s3_desc:'Verfügbare Plätze für den ausgewählten Tag.',
     s4_title:'Deine Daten', s4_desc:'Ausfüllen zur Buchungsbestätigung per WhatsApp.',
-    f_name:'Vollständiger Name *', f_name_ph:'z.B. Hans Müller', f_phone:'Handy *',
+    f_name:'Vollständiger Name *', f_name_ph:'z.B. Hans Müller', f_phone:'Handy *', f_phone_ph:'+49 151 12345678',
     f_email:'E-Mail', f_email_ph:'hans@email.com', f_pessoas:'Personenanzahl',
     f_peso:'Gewicht (kg)', f_altura:'Größe (cm)', f_genero:'Typ', f_fato:'Neoprenanzuggröße',
     f_exp:'Erfahrung', exp_nunca:'Noch nie gesurft', exp_ja:'Schon gesurft', exp_inter:'Mittelstufe', exp_avanc:'Fortgeschritten',

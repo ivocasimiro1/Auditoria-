@@ -1062,6 +1062,30 @@
     updateStatus(id, newStatus, false);
   }
 
+  // WA messages per client language — school owner always sees PT dashboard
+  const WA_MSGS = {
+    confirmed: {
+      pt: (name, school, date, time, lesson, people, price, meet) =>
+        `*${school} — Aula Confirmada*\n\nOla ${name},\n\nA sua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Hora:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\n\nVista o fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAte ja!`,
+      en: (name, school, date, time, lesson, people, price, meet) =>
+        `*${school} — Lesson Confirmed*\n\nHi ${name},\n\nYour surf lesson is *confirmed*.\n\n*Date:* ${date}\n*Time:* ${time}\n*Activity:* ${lesson}\n*People:* ${people}\n*Total:* €${price}\n\n*Meeting point:*\n${meet}\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!`,
+      fr: (name, school, date, time, lesson, people, price, meet) =>
+        `*${school} — Cours Confirme*\n\nBonjour ${name},\n\nVotre cours de surf est *confirme*.\n\n*Date:* ${date}\n*Heure:* ${time}\n*Activite:* ${lesson}\n*Personnes:* ${people}\n*Total:* €${price}\n\n*Point de rendez-vous:*\n${meet}\n\nPortez votre maillot sous la combinaison. Apportez une serviette et de la creme solaire.\n\nA bientot!`,
+      de: (name, school, date, time, lesson, people, price, meet) =>
+        `*${school} — Kurs Bestatigt*\n\nHallo ${name},\n\nDein Surfkurs ist *bestatigt*.\n\n*Datum:* ${date}\n*Uhrzeit:* ${time}\n*Aktivitat:* ${lesson}\n*Personen:* ${people}\n*Gesamt:* €${price}\n\n*Treffpunkt:*\n${meet}\n\nTrage deinen Badeanzug unter dem Neoprenanzug. Bring ein Handtuch und Sonnencreme mit.\n\nBis bald!`,
+    },
+    cancelled: {
+      pt: (name, school, date, time) =>
+        `*${school}*\n\nOla ${name},\n\nInfelizmente nao foi possivel confirmar a sua marcacao para ${date} as ${time}.\n\nPedimos desculpa pelo inconveniente. Contacte-nos para remarcar.\n\nObrigado pela compreensao.`,
+      en: (name, school, date, time) =>
+        `*${school}*\n\nHi ${name},\n\nUnfortunately we were unable to confirm your booking for ${date} at ${time}.\n\nWe apologise for the inconvenience. Please contact us to reschedule.\n\nThank you for your understanding.`,
+      fr: (name, school, date, time) =>
+        `*${school}*\n\nBonjour ${name},\n\nNous n'avons malheureusement pas pu confirmer votre reservation pour le ${date} a ${time}.\n\nNous nous excusons pour la gene occasionnee. Contactez-nous pour reprogrammer.\n\nMerci de votre comprehension.`,
+      de: (name, school, date, time) =>
+        `*${school}*\n\nHallo ${name},\n\nLeider konnten wir deine Buchung fur den ${date} um ${time} nicht bestatigen.\n\nWir entschuldigen uns fur die Unannehmlichkeiten. Bitte kontaktiere uns fur eine Umbuchung.\n\nVielen Dank fur dein Verstandnis.`,
+    },
+  };
+
   async function updateStatus(id, newStatus, sendWA = true) {
     const { error } = await sb.from('bookings').update({ status: newStatus }).eq('id', id);
     if (error) { showToast('Erro ao atualizar estado', 'error'); return; }
@@ -1074,30 +1098,13 @@
         const school = SCHOOLS.find(s => s.id === b.school_id) || SCHOOLS[0];
         const [y, m, d] = b.booking_date.split('-');
         const dateStr = `${d}/${m}/${y}`;
-        const price = parseFloat(b.total_price).toFixed(2);
-        let msg;
-        if (newStatus === 'confirmed') {
-          msg =
-            `*${school.name} — Aula Confirmada*\n\n` +
-            `Olá ${b.client_name},\n\n` +
-            `A sua aula de surf está *confirmada*.\n\n` +
-            `*Data:* ${dateStr}\n` +
-            `*Hora:* ${b.booking_time}\n` +
-            `*Modalidade:* ${b.lesson_type}\n` +
-            `*Pessoas:* ${b.num_people}\n` +
-            `*Total:* €${price}\n\n` +
-            `*Ponto de encontro:*\n${school.meeting_point}\n\n` +
-            `Vista o fato de banho por baixo do fato de surf.\n` +
-            `Traga toalha e protetor solar.\n\n` +
-            `Ate ja!`;
-        } else {
-          msg =
-            `*${school.name}*\n\n` +
-            `Ola ${b.client_name},\n\n` +
-            `Infelizmente nao conseguimos confirmar a sua marcacao para ${dateStr} as ${b.booking_time}.\n\n` +
-            `Pedimos desculpa pelo inconveniente. Por favor contacte-nos para remarcar.\n\n` +
-            `Obrigado pela compreensao.`;
-        }
+        const price   = parseFloat(b.total_price).toFixed(2);
+        const lang    = (b.language || 'pt').toLowerCase();
+        const msgs    = WA_MSGS[newStatus];
+        const fn      = msgs[lang] || msgs['pt'];
+        const msg     = newStatus === 'confirmed'
+          ? fn(b.client_name, school.name, dateStr, b.booking_time, b.lesson_type, b.num_people, price, school.meeting_point)
+          : fn(b.client_name, school.name, dateStr, b.booking_time);
         const phone = b.client_phone.replace(/\D/g, '');
         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
       }
@@ -1520,11 +1527,17 @@
     if (sendWA) {
       const b = allBookings.find(bk => bk.id === rschBookingId);
       if (b) {
-        const sch = SCHOOLS.find(s => s.id === b.school_id) || SCHOOLS[0];
+        const sch  = SCHOOLS.find(s => s.id === b.school_id) || SCHOOLS[0];
         const [y,m,d] = newDate.split('-');
-        const msg = encodeURIComponent(
-          `*${sch.name} — Aula Remarcada*\n\nOla ${b.client_name},\n\nA sua aula foi remarcada para:\n\n*Nova data:* ${d}/${m}/${y}\n*Novo horario:* ${newTime}\n*Modalidade:* ${b.lesson_type}\n\n*Ponto de encontro:*\n${sch.meeting_point}\n\nQualquer duvida estamos disponiveis. Ate ja!`
-        );
+        const dateStr = `${d}/${m}/${y}`;
+        const lang = (b.language || 'pt').toLowerCase();
+        const rschMsgs = {
+          pt: `*${sch.name} — Aula Remarcada*\n\nOla ${b.client_name},\n\nA sua aula foi remarcada:\n\n*Nova data:* ${dateStr}\n*Novo horario:* ${newTime}\n*Modalidade:* ${b.lesson_type}\n\n*Ponto de encontro:*\n${sch.meeting_point}\n\nQualquer duvida estamos disponiveis. Ate ja!`,
+          en: `*${sch.name} — Lesson Rescheduled*\n\nHi ${b.client_name},\n\nYour lesson has been rescheduled:\n\n*New date:* ${dateStr}\n*New time:* ${newTime}\n*Activity:* ${b.lesson_type}\n\n*Meeting point:*\n${sch.meeting_point}\n\nAny questions, we are available. See you soon!`,
+          fr: `*${sch.name} — Cours Reprogramme*\n\nBonjour ${b.client_name},\n\nVotre cours a ete reprogramme:\n\n*Nouvelle date:* ${dateStr}\n*Nouvel horaire:* ${newTime}\n*Activite:* ${b.lesson_type}\n\n*Point de rendez-vous:*\n${sch.meeting_point}\n\nPour toute question, nous sommes disponibles. A bientot!`,
+          de: `*${sch.name} — Kurs Umgebucht*\n\nHallo ${b.client_name},\n\nDein Kurs wurde umgebucht:\n\n*Neues Datum:* ${dateStr}\n*Neue Uhrzeit:* ${newTime}\n*Aktivitat:* ${b.lesson_type}\n\n*Treffpunkt:*\n${sch.meeting_point}\n\nBei Fragen stehen wir zur Verfugung. Bis bald!`,
+        };
+        const msg = encodeURIComponent(rschMsgs[lang] || rschMsgs['pt']);
         const phone = b.client_phone.replace(/\D/g,'');
         window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
       }
