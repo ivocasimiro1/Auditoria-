@@ -792,7 +792,7 @@
 
       const schoolForRow = SCHOOLS.find(s => s.id === b.school_id) || SCHOOLS[0];
       const waMsg = encodeURIComponent(
-        `🏄 *${schoolForRow.name}*\n✅ Marcação confirmada!\n\n📅 ${dateStr} às ${b.booking_time}\n🌊 ${b.lesson_type}\n👥 ${b.num_people} pessoa(s)\n💰 €${price.toFixed(2)}\n\nAté já na praia! 🤙`
+        `*${schoolForRow.name} — Aula Confirmada*\n\n*Data:* ${dateStr}\n*Hora:* ${b.booking_time}\n*Modalidade:* ${b.lesson_type}\n*Pessoas:* ${b.num_people}\n*Total:* €${price.toFixed(2)}\n\nAte ja!`
       );
 
       // Equipment summary for table row
@@ -855,25 +855,25 @@
         let msg;
         if (newStatus === 'confirmed') {
           msg =
-            `🏄 *${school.name}*\n\n` +
-            `Olá ${b.client_name}! ✅\n\n` +
-            `A sua aula de surf está *confirmada*!\n\n` +
-            `📅 *Data:* ${dateStr}\n` +
-            `⏰ *Hora:* ${b.booking_time}\n` +
-            `🌊 *Modalidade:* ${b.lesson_type}\n` +
-            `👥 *Pessoas:* ${b.num_people}\n` +
-            `💰 *Total:* €${price}\n\n` +
-            `📍 *Ponto de encontro:*\n${school.meeting_point}\n\n` +
-            `🩱 Vista o fato de banho por baixo do fato de surf.\n` +
-            `🚿 Traga toalha e protetor solar.\n\n` +
-            `Até já! 🤙`;
+            `*${school.name} — Aula Confirmada*\n\n` +
+            `Olá ${b.client_name},\n\n` +
+            `A sua aula de surf está *confirmada*.\n\n` +
+            `*Data:* ${dateStr}\n` +
+            `*Hora:* ${b.booking_time}\n` +
+            `*Modalidade:* ${b.lesson_type}\n` +
+            `*Pessoas:* ${b.num_people}\n` +
+            `*Total:* €${price}\n\n` +
+            `*Ponto de encontro:*\n${school.meeting_point}\n\n` +
+            `Vista o fato de banho por baixo do fato de surf.\n` +
+            `Traga toalha e protetor solar.\n\n` +
+            `Ate ja!`;
         } else {
           msg =
-            `🏄 *${school.name}*\n\n` +
-            `Olá ${b.client_name},\n\n` +
-            `Infelizmente não conseguimos confirmar a sua marcação para ${dateStr} às ${b.booking_time}.\n\n` +
+            `*${school.name}*\n\n` +
+            `Ola ${b.client_name},\n\n` +
+            `Infelizmente nao conseguimos confirmar a sua marcacao para ${dateStr} as ${b.booking_time}.\n\n` +
             `Pedimos desculpa pelo inconveniente. Por favor contacte-nos para remarcar.\n\n` +
-            `Obrigado pela compreensão 🙏`;
+            `Obrigado pela compreensao.`;
         }
         const phone = b.client_phone.replace(/\D/g, '');
         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
@@ -1062,7 +1062,7 @@
         const sch   = SCHOOLS.find(sc => sc.id === b.school_id) || SCHOOLS[0];
         const phone = b.client_phone.replace(/\D/g,'');
         const waMsg = encodeURIComponent(
-          `🏄 *${sch.name}*\n\nOlá ${b.client_name}! ✅\n\nA sua aula está *confirmada*!\n\n📅 ${isToday2?'Hoje':date.getDate()+'/'+(date.getMonth()+1)} às ${b.booking_time}\n🌊 ${b.lesson_type}\n👥 ${b.num_people} pessoa(s)\n💰 €${price}\n\n📍 ${sch.meeting_point}\n\n🩱 Vista o fato de banho por baixo do fato de surf.\n🚿 Traga toalha e protetor solar.\n\nAté já! 🤙`
+          `*${sch.name} — Aula Confirmada*\n\nOla ${b.client_name},\n\nA sua aula esta confirmada.\n\n*Data:* ${isToday2?'Hoje':date.getDate()+'/'+(date.getMonth()+1)}\n*Hora:* ${b.booking_time}\n*Modalidade:* ${b.lesson_type}\n*Pessoas:* ${b.num_people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${sch.meeting_point}\n\nVista o fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAte ja!`
         );
 
         // Equipment

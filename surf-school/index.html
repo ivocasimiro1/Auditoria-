@@ -1411,24 +1411,28 @@ async function reservarWhatsApp() {
 
   // ── Build WA message BEFORE any await (mobile browsers block popup after async) ──
   const genLabel = g => g==='H'?T('g_homem'):g==='M'?T('g_mulher'):g==='C'?T('g_crianca'):'—';
-  let msg = `🏄 *${T('wa_header')}*\n\n`;
-  msg += `👤 *${T('wa_name')}:* ${nome}\n📞 *${T('wa_phone')}:* ${tel}\n`;
-  if (email) msg += `📧 *${T('wa_email')}:* ${email}\n`;
-  msg += `\n🌊 *${T('wa_lesson')}:* ${T(booking.lessonKey)}\n`;
-  msg += `📅 *${T('wa_date')}:* ${booking.selectedDateStr}\n`;
-  msg += `⏰ *${T('wa_time')}:* ${booking.time}\n`;
-  msg += `👥 *${T('wa_people')}:* ${pess}\n💰 *${T('wa_total')}:* €${total}\n`;
+  const expMap   = { nunca: T('exp_nunca'), ja_surfei: T('exp_ja'), intermedio: T('exp_inter'), avancado: T('exp_avanc') };
+
+  let msg = `*${T('wa_header')}*\n\n`;
+  msg += `*${T('wa_name')}:* ${nome}\n`;
+  msg += `*${T('wa_phone')}:* ${tel}\n`;
+  if (email) msg += `*${T('wa_email')}:* ${email}\n`;
+  msg += `\n*${T('wa_lesson')}:* ${T(booking.lessonKey)}\n`;
+  msg += `*${T('wa_date')}:* ${booking.selectedDateStr}\n`;
+  msg += `*${T('wa_time')}:* ${booking.time}\n`;
+  msg += `*${T('wa_people')}:* ${pess}\n`;
+  msg += `*${T('wa_total')}:* €${total}\n`;
 
   const hasEquip = equipment.some(p => p.weight || p.gender || p.size);
   if (hasEquip) {
-    msg += `\n👕 *Equipamento:*\n`;
+    msg += `\n*Equipamento:*\n`;
     equipment.forEach((p, i) => {
       const label = PERSON_LABELS[currentLang] || 'Pessoa';
-      const expStr = p.experience ? ` · ${p.experience}` : '';
+      const expStr = p.experience ? ` · ${expMap[p.experience] || p.experience}` : '';
       msg += `  ${label} ${i+1}: ${genLabel(p.gender)} · ${p.weight?p.weight+'kg':'—'} · ${p.height?p.height+'cm':'—'} · ${p.size||'—'}${expStr}\n`;
     });
   }
-  if (nota) msg += `\n📝 *${T('wa_note')}:* ${nota}\n`;
+  if (nota) msg += `\n*${T('wa_note')}:* ${nota}\n`;
   msg += `\n${T('wa_closing')}`;
 
   // ── Open WhatsApp SYNCHRONOUSLY (user gesture still active) ──
