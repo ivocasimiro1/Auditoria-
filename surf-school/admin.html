@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -485,9 +486,14 @@
     .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
     .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.2rem; }
     .chart-card-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--cyan); margin-bottom: .8rem; display: flex; align-items: center; justify-content: space-between; }
-    .chart-year-btns { display: flex; gap: .4rem; margin-bottom: 1rem; }
-    .chart-year-btn { padding: .3rem .8rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--gray); font-size: .78rem; cursor: pointer; font-family: 'Inter',sans-serif; }
+    .chart-period-bar { margin-bottom: 1rem; }
+    .chart-year-btns { display: flex; gap: .4rem; margin-bottom: .6rem; flex-wrap: wrap; }
+    .chart-year-btn { padding: .3rem .8rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--gray); font-size: .78rem; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; }
     .chart-year-btn.active { background: var(--cyan); border-color: var(--cyan); color: var(--navy); font-weight: 700; }
+    .chart-month-btns { display: flex; gap: .35rem; flex-wrap: wrap; padding-top: .55rem; border-top: 1px solid rgba(255,255,255,.06); }
+    .chart-month-btn { padding: .22rem .6rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--gray); font-size: .72rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; }
+    .chart-month-btn:hover { border-color: var(--cyan); color: var(--white); }
+    .chart-month-btn.active { background: rgba(0,207,253,.15); border-color: var(--cyan); color: var(--cyan); }
     .btn-analytics { background: rgba(167,139,250,.12); border: 1px solid rgba(167,139,250,.3); color: #a78bfa; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
 
     /* ── MANUAL BOOKING MODAL ── */
@@ -641,13 +647,31 @@
 
     <!-- Analytics Section -->
     <div id="analytics-section" style="display:none">
-      <div class="chart-year-btns">
-        <button class="chart-year-btn active" id="chart-year-cur" data-year="" onclick="setChartYear(new Date().getFullYear())"></button>
-        <button class="chart-year-btn" id="chart-year-prev" data-year="" onclick="setChartYear(new Date().getFullYear()-1)"></button>
+      <div class="chart-period-bar">
+        <div class="chart-year-btns">
+          <button class="chart-year-btn active" id="chart-year-cur" data-year="" onclick="setChartYear(new Date().getFullYear())"></button>
+          <button class="chart-year-btn" id="chart-year-prev" data-year="" onclick="setChartYear(new Date().getFullYear()-1)"></button>
+          <button class="chart-year-btn" id="chart-year-all" onclick="setChartYear('all')">Tudo</button>
+        </div>
+        <div class="chart-month-btns" id="chart-month-btns">
+          <button class="chart-month-btn active" onclick="setChartMonth(null,this)">Todos os meses</button>
+          <button class="chart-month-btn" onclick="setChartMonth(1,this)">Jan</button>
+          <button class="chart-month-btn" onclick="setChartMonth(2,this)">Fev</button>
+          <button class="chart-month-btn" onclick="setChartMonth(3,this)">Mar</button>
+          <button class="chart-month-btn" onclick="setChartMonth(4,this)">Abr</button>
+          <button class="chart-month-btn" onclick="setChartMonth(5,this)">Mai</button>
+          <button class="chart-month-btn" onclick="setChartMonth(6,this)">Jun</button>
+          <button class="chart-month-btn" onclick="setChartMonth(7,this)">Jul</button>
+          <button class="chart-month-btn" onclick="setChartMonth(8,this)">Ago</button>
+          <button class="chart-month-btn" onclick="setChartMonth(9,this)">Set</button>
+          <button class="chart-month-btn" onclick="setChartMonth(10,this)">Out</button>
+          <button class="chart-month-btn" onclick="setChartMonth(11,this)">Nov</button>
+          <button class="chart-month-btn" onclick="setChartMonth(12,this)">Dez</button>
+        </div>
       </div>
       <div class="chart-grid">
         <div class="chart-card">
-          <div class="chart-card-title">Marcações por Mês</div>
+          <div class="chart-card-title"><span id="chart-monthly-title">Marcações por Mês</span></div>
           <canvas id="chart-monthly" style="max-height:200px"></canvas>
         </div>
         <div class="chart-card">
@@ -2153,14 +2177,17 @@
 
   // ── ANALYTICS ─────────────────────────────────────────────────
   let chartYear = new Date().getFullYear();
+  let chartMonth = null; // null = all months
   let chartInstances = {};
+
+  // Register datalabels plugin globally
+  if (typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
 
   function toggleAnalytics() {
     const el = document.getElementById('analytics-section');
     const isHidden = el.style.display === 'none' || el.style.display === '';
     el.style.display = isHidden ? 'block' : 'none';
     if (isHidden) {
-      // Set year button labels now that we know the year
       const curY = new Date().getFullYear();
       const curBtn  = document.getElementById('chart-year-cur');
       const prevBtn = document.getElementById('chart-year-prev');
@@ -2170,13 +2197,55 @@
     }
   }
 
-  function buildCharts() {
-    const year = chartYear;
-    const data = allBookings.filter(b => b.booking_date?.startsWith(year) && b.status !== 'cancelled');
+  function setChartYear(y) {
+    chartYear = y;
+    chartMonth = null;
+    document.querySelectorAll('.chart-month-btn').forEach((b,i) => b.classList.toggle('active', i === 0));
+    document.querySelectorAll('.chart-year-btn').forEach(b => {
+      const isAll = y === 'all' && b.id === 'chart-year-all';
+      const isYear = y !== 'all' && parseInt(b.dataset.year) === y;
+      b.classList.toggle('active', isAll || isYear);
+    });
+    buildCharts();
+  }
 
-    // Monthly chart — 12 months
-    const monthly = Array(12).fill(0);
-    data.forEach(b => { const m = parseInt(b.booking_date.split('-')[1]) - 1; monthly[m]++; });
+  function setChartMonth(m, btn) {
+    chartMonth = m;
+    document.querySelectorAll('.chart-month-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    buildCharts();
+  }
+
+  function buildCharts() {
+    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    // Filter by year
+    let data = allBookings.filter(b => b.status !== 'cancelled' && b.booking_date);
+    if (chartYear !== 'all') data = data.filter(b => b.booking_date.startsWith(String(chartYear)));
+
+    // Filter by month
+    if (chartMonth !== null) {
+      const mm = String(chartMonth).padStart(2,'0');
+      data = data.filter(b => b.booking_date.split('-')[1] === mm);
+    }
+
+    // ── First chart: monthly OR daily depending on selection ──
+    let timeLabels, timeData, timeTitle;
+    if (chartMonth !== null) {
+      // Daily breakdown for selected month
+      const daysInMonth = new Date(chartYear === 'all' ? new Date().getFullYear() : chartYear, chartMonth, 0).getDate();
+      timeData  = Array(daysInMonth).fill(0);
+      data.forEach(b => { const d = parseInt(b.booking_date.split('-')[2]) - 1; timeData[d]++; });
+      timeLabels = Array.from({length: daysInMonth}, (_, i) => i + 1);
+      timeTitle  = `Dias — ${months[chartMonth - 1]}`;
+    } else {
+      timeData  = Array(12).fill(0);
+      data.forEach(b => { const m = parseInt(b.booking_date.split('-')[1]) - 1; timeData[m]++; });
+      timeLabels = months;
+      timeTitle  = chartYear === 'all' ? 'Marcações por Mês (Histórico)' : `Marcações por Mês — ${chartYear}`;
+    }
+    const titleEl = document.getElementById('chart-monthly-title');
+    if (titleEl) titleEl.textContent = timeTitle;
 
     // Gender chart
     const genderMap = {};
@@ -2199,44 +2268,49 @@
     Object.values(chartInstances).forEach(c => c.destroy());
     chartInstances = {};
 
-    const chartDefaults = {
-      plugins: { legend: { labels: { color: '#8B9AB0', font: { size: 11 } } } },
-      scales: { x: { ticks: { color: '#8B9AB0' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                y: { ticks: { color: '#8B9AB0' }, grid: { color: 'rgba(255,255,255,0.05)' } } }
+    const scaleOpts = {
+      x: { ticks: { color: '#8B9AB0', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      y: { ticks: { color: '#8B9AB0', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+    };
+    const barDL = { // datalabels for bar charts
+      color: '#CBD5E1', font: { size: 10, weight: '600' },
+      anchor: 'end', align: 'top', offset: 2,
+      formatter: v => v > 0 ? v : ''
     };
 
     chartInstances.monthly = new Chart(document.getElementById('chart-monthly'), {
       type: 'bar',
-      data: { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
-              datasets: [{ label: 'Marcações', data: monthly, backgroundColor: 'rgba(0,207,253,.6)', borderRadius: 5 }] },
-      options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false } } }
+      data: { labels: timeLabels, datasets: [{ label: 'Marcações', data: timeData, backgroundColor: 'rgba(0,207,253,.6)', borderRadius: 4 }] },
+      options: { scales: scaleOpts, layout: { padding: { top: 18 } },
+        plugins: { legend: { display: false }, datalabels: barDL } }
     });
 
     const gLabels = { H:'Homem', M:'Mulher', C:'Criança', 'N/A':'N/D' };
+    const total = Object.values(genderMap).reduce((a,b)=>a+b,0);
     chartInstances.gender = new Chart(document.getElementById('chart-gender'), {
       type: 'doughnut',
       data: { labels: Object.keys(genderMap).map(g=>gLabels[g]||g),
               datasets: [{ data: Object.values(genderMap), backgroundColor: ['#00CFFD','#a78bfa','#22c55e','#eab308'] }] },
-      options: { plugins: { legend: { labels: { color: '#8B9AB0', font: { size: 11 } } } } }
+      options: { plugins: {
+        legend: { labels: { color: '#8B9AB0', font: { size: 11 } } },
+        datalabels: { color: '#fff', font: { size: 11, weight: '700' },
+          formatter: (v) => total ? `${Math.round(v/total*100)}%\n(${v})` : '' }
+      }}
     });
 
     chartInstances.nationality = new Chart(document.getElementById('chart-nationality'), {
       type: 'bar',
-      data: { labels: topNat.map(([k])=>k), datasets: [{ label: 'Clientes', data: topNat.map(([,v])=>v), backgroundColor: 'rgba(167,139,250,.7)', borderRadius: 5 }] },
-      options: { indexAxis: 'y', ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false } } }
+      data: { labels: topNat.map(([k])=>k), datasets: [{ label: 'Clientes', data: topNat.map(([,v])=>v), backgroundColor: 'rgba(167,139,250,.7)', borderRadius: 4 }] },
+      options: { indexAxis: 'y', scales: scaleOpts, layout: { padding: { right: 28 } },
+        plugins: { legend: { display: false }, datalabels: { ...barDL, anchor: 'end', align: 'right' } } }
     });
 
     chartInstances.wetsuit = new Chart(document.getElementById('chart-wetsuit'), {
       type: 'bar',
-      data: { labels: sortedWs.map(([k])=>k), datasets: [{ label: 'Fatos', data: sortedWs.map(([,v])=>v), backgroundColor: 'rgba(34,197,94,.6)', borderRadius: 5 }] },
-      options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false } } }
+      data: { labels: sortedWs.map(([k])=>k), datasets: [{ label: 'Fatos', data: sortedWs.map(([,v])=>v), backgroundColor: 'rgba(34,197,94,.6)', borderRadius: 4 }] },
+      options: { scales: scaleOpts, layout: { padding: { top: 18 } },
+        plugins: { legend: { display: false }, datalabels: barDL } }
     });
-  }
-
-  function setChartYear(y) {
-    chartYear = y;
-    document.querySelectorAll('.chart-year-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.year) === y));
-    buildCharts();
   }
 
   init();
