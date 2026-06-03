@@ -2822,7 +2822,7 @@
     reportPeriod = period;
     document.querySelectorAll('.rpb').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    const labels = { today:'Relatório — Hoje', tomorrow:'Relatório — Amanhã', week:'Relatório — Esta Semana' };
+    const labels = { today:'Relatório — Hoje', tomorrow:'Relatório — Amanhã', week:'Relatório — Esta Semana (Seg–Dom)' };
     document.getElementById('report-title-label').textContent = labels[period] || 'Relatório';
     buildReport();
   }
@@ -2832,9 +2832,11 @@
     const fmt = d => d.toISOString().slice(0,10);
     if (reportPeriod === 'today')    return [fmt(today)];
     if (reportPeriod === 'tomorrow') { const t = new Date(today); t.setDate(t.getDate()+1); return [fmt(t)]; }
-    // week: today + next 6 days
+    // week: Monday–Sunday of current week
     const days = [];
-    for (let i = 0; i < 7; i++) { const d = new Date(today); d.setDate(d.getDate()+i); days.push(fmt(d)); }
+    const dow = today.getDay(); // 0=Sun,1=Mon,...
+    const monday = new Date(today); monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+    for (let i = 0; i < 7; i++) { const d = new Date(monday); d.setDate(monday.getDate()+i); days.push(fmt(d)); }
     return days;
   }
 
@@ -2899,12 +2901,13 @@
         // Student rows
         const studentRows = blist.flatMap(b => {
           const rows = [];
+          const countryName = (b.client_country||'').replace(/^\S+\s*/,'');
           if (b.equipment_list?.length) {
             b.equipment_list.forEach((p,pi) => {
-              rows.push({ name: pi===0 ? b.client_name : `  └ ${p.name||'P'+(pi+1)}`, wetsuit: p.wetsuit||p.wetsuit_size||'?', weight: p.weight||'?', height: p.height||'?', gender: p.gender==='M'||p.gender==='H'?'♂':'♀', type: b.lesson_type });
+              rows.push({ name: pi===0 ? b.client_name : `  └ ${p.name||'P'+(pi+1)}`, wetsuit: p.wetsuit||p.wetsuit_size||'?', weight: p.weight||'?', height: p.height||'?', gender: p.gender==='M'||p.gender==='H'?'♂':'♀', type: b.lesson_type, country: pi===0?countryName:'', phone: pi===0?(b.client_phone||''):'' });
             });
           } else {
-            rows.push({ name: b.client_name, wetsuit: b.wetsuit_size||'?', weight: b.client_weight||'?', height: b.client_height||'?', gender: b.client_gender==='M'||b.client_gender==='H'?'♂':'♀', type: b.lesson_type });
+            rows.push({ name: b.client_name, wetsuit: b.wetsuit_size||'?', weight: b.client_weight||'?', height: b.client_height||'?', gender: b.client_gender==='M'||b.client_gender==='H'?'♂':'♀', type: b.lesson_type, country: countryName, phone: b.client_phone||'' });
           }
           return rows;
         });
@@ -2918,9 +2921,9 @@
                 oninput="reportInstructors['${key}']=this.value;updateReportText()" />
             </div>
             <table class="rp-table">
-              <thead><tr><th>#</th><th>Nome</th><th>Tipo</th><th>Fato</th><th>Peso</th><th>Alt.</th><th>Gén.</th></tr></thead>
+              <thead><tr><th>#</th><th>Nome</th><th>Tipo</th><th>Fato</th><th>Peso</th><th>Alt.</th><th>Gén.</th><th>País</th><th>Contacto</th></tr></thead>
               <tbody>
-                ${studentRows.map((r,i) => `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.type}</td><td style="color:var(--cyan);font-weight:700">${r.wetsuit}</td><td>${r.weight}kg</td><td>${r.height}cm</td><td>${r.gender}</td></tr>`).join('')}
+                ${studentRows.map((r,i) => `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.type}</td><td style="color:var(--cyan);font-weight:700">${r.wetsuit}</td><td>${r.weight}kg</td><td>${r.height}cm</td><td>${r.gender}</td><td style="font-size:.72rem;color:rgba(255,255,255,.6)">${r.country}</td><td style="font-size:.72rem;color:rgba(255,255,255,.6)">${r.phone}</td></tr>`).join('')}
               </tbody>
             </table>
             <div class="rp-equip-summary">🏊 Fatos necessários: <strong>${wsSummary}</strong></div>
@@ -2974,13 +2977,18 @@
         txt += '\n';
         // Student list
         blist.forEach(b => {
+          const cn = (b.client_country||'').replace(/^\S+\s*/,'');
           if (b.equipment_list?.length) {
             b.equipment_list.forEach((p,pi) => {
               const nm = pi===0 ? b.client_name : (p.name||'P'+(pi+1));
-              txt += `  • ${nm} — Fato ${p.wetsuit||p.wetsuit_size||'?'} · ${p.weight||'?'}kg · ${p.gender==='M'||p.gender==='H'?'♂':'♀'}\n`;
+              let line = `  • ${nm} — Fato ${p.wetsuit||p.wetsuit_size||'?'} · ${p.weight||'?'}kg · ${p.gender==='M'||p.gender==='H'?'♂':'♀'}`;
+              if (pi===0) { if (cn) line += ` · ${cn}`; if (b.client_phone) line += ` · ${b.client_phone}`; }
+              txt += line + '\n';
             });
           } else {
-            txt += `  • ${b.client_name} — Fato ${b.wetsuit_size||'?'} · ${b.client_weight||'?'}kg · ${b.client_gender==='M'||b.client_gender==='H'?'♂':'♀'}\n`;
+            let line = `  • ${b.client_name} — Fato ${b.wetsuit_size||'?'} · ${b.client_weight||'?'}kg · ${b.client_gender==='M'||b.client_gender==='H'?'♂':'♀'}`;
+            if (cn) line += ` · ${cn}`; if (b.client_phone) line += ` · ${b.client_phone}`;
+            txt += line + '\n';
           }
         });
         // Wetsuit summary
@@ -3079,19 +3087,21 @@
         const wsSummary = Object.entries(wsCount).map(([k,v])=>`${k}×${v}`).join(' · ')||'—';
 
         const rows = blist.flatMap(b => {
+          const cn = (b.client_country||'').replace(/^\S+\s*/,'');
           if (b.equipment_list?.length) return b.equipment_list.map((p,pi)=>({
             name: pi===0?b.client_name:(p.name||'P'+(pi+1)), wetsuit:p.wetsuit||p.wetsuit_size||'?',
-            weight:p.weight||'?', height:p.height||'?', gender:p.gender==='M'||p.gender==='H'?'♂':'♀', type:b.lesson_type
+            weight:p.weight||'?', height:p.height||'?', gender:p.gender==='M'||p.gender==='H'?'♂':'♀', type:b.lesson_type,
+            country:pi===0?cn:'', phone:pi===0?(b.client_phone||''):''
           }));
-          return [{ name:b.client_name, wetsuit:b.wetsuit_size||'?', weight:b.client_weight||'?', height:b.client_height||'?', gender:b.client_gender==='M'||b.client_gender==='H'?'♂':'♀', type:b.lesson_type }];
+          return [{ name:b.client_name, wetsuit:b.wetsuit_size||'?', weight:b.client_weight||'?', height:b.client_height||'?', gender:b.client_gender==='M'||b.client_gender==='H'?'♂':'♀', type:b.lesson_type, country:cn, phone:b.client_phone||'' }];
         });
 
         html += `<div class="slot-block">
           <div class="slot-title">${slot} — ${tipos} (${alunos} aluno${alunos!==1?'s':''})</div>
           <div class="instructor">Instrutor: <strong>${inst}</strong></div>
           <table>
-            <thead><tr><th>#</th><th>Nome</th><th>Modalidade</th><th>Fato</th><th>Peso</th><th>Alt.</th><th>Gén.</th></tr></thead>
-            <tbody>${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.type}</td><td class="ws">${r.wetsuit}</td><td>${r.weight}kg</td><td>${r.height}cm</td><td>${r.gender}</td></tr>`).join('')}</tbody>
+            <thead><tr><th>#</th><th>Nome</th><th>Modalidade</th><th>Fato</th><th>Peso</th><th>Alt.</th><th>Gén.</th><th>País</th><th>Contacto</th></tr></thead>
+            <tbody>${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.type}</td><td class="ws">${r.wetsuit}</td><td>${r.weight}kg</td><td>${r.height}cm</td><td>${r.gender}</td><td>${r.country}</td><td>${r.phone}</td></tr>`).join('')}</tbody>
           </table>
           <div class="equip-row">🏊 Fatos: ${wsSummary}</div>
         </div>`;
@@ -3114,16 +3124,19 @@
 <meta charset="UTF-8"/>
 <title>Cartão QR · ${school.name}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet"/>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"><\/script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Inter',sans-serif;background:#050D1A;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 16px 40px}
   .toolbar{width:100%;max-width:460px;display:flex;gap:.5rem;margin-bottom:14px;flex-wrap:wrap;align-items:center}
   .btn{background:linear-gradient(135deg,#0070F3,#00CFFD);border:none;border-radius:9px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 22px;cursor:pointer;flex-shrink:0}
-  .btn-wa{background:#25D366;border:none;border-radius:9px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 18px;cursor:pointer;flex-shrink:0;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+  .btn-img{background:rgba(134,239,172,.15);border:1px solid rgba(134,239,172,.35);border-radius:9px;color:#86efac;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 16px;cursor:pointer;flex-shrink:0}
+  .btn-wa{background:#25D366;border:none;border-radius:9px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 18px;cursor:pointer;flex-shrink:0;text-decoration:none;display:inline-flex;align-items:center;gap:5px;border:none}
   .btn-mail{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:9px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:9px 18px;cursor:pointer;flex-shrink:0;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
   .btn-share{background:rgba(167,139,250,.18);border:1px solid rgba(167,139,250,.35);border-radius:9px;color:#c4b5fd;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:9px 16px;cursor:pointer;flex-shrink:0}
   .btn-sec{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:9px;color:#94a3b8;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:8px 16px;cursor:pointer;flex-shrink:0}
   .hint{font-size:.7rem;color:rgba(255,255,255,.35);width:100%;text-align:center;margin-top:2px}
+  #capture-status{font-size:.72rem;color:#86efac;margin-top:4px;display:none;width:100%;text-align:center}
   /* CARD */
   .card{width:100%;max-width:420px;background:linear-gradient(160deg,#0A1A30,#0D2040);border:1px solid rgba(0,207,253,.3);border-radius:24px;padding:32px 28px 28px;text-align:center;position:relative;overflow:hidden}
   .card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#0070F3,#00CFFD,#0070F3)}
