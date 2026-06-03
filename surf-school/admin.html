@@ -796,11 +796,11 @@
     <div class="mb-grid">
       <div class="mb-field">
         <label>Data *</label>
-        <input type="date" id="mb-date" required />
+        <input type="date" id="mb-date" required onchange="checkMBAvailability()" />
       </div>
       <div class="mb-field">
         <label>Horário *</label>
-        <select id="mb-time"></select>
+        <select id="mb-time" onchange="checkMBAvailability()"></select>
       </div>
       <div class="mb-field">
         <label>Modalidade *</label>
@@ -814,7 +814,7 @@
       </div>
       <div class="mb-field">
         <label>Nº Pessoas *</label>
-        <select id="mb-people">
+        <select id="mb-people" onchange="buildMBEquipRows()">
           <option value="1" selected>1</option>
           <option value="2">2</option>
           <option value="3">3</option>
@@ -824,6 +824,10 @@
           <option value="7">7</option>
           <option value="8">8</option>
         </select>
+      </div>
+      <div class="mb-field">
+        <label>Disponibilidade</label>
+        <div id="mb-avail" style="padding:.45rem .6rem;border-radius:8px;background:rgba(255,255,255,.05);font-size:.82rem;color:var(--gray)">— escolhe data e hora —</div>
       </div>
       <div class="mb-field">
         <label>Estado</label>
@@ -882,6 +886,10 @@
           <option value="es">🇪🇸 Español</option>
           <option value="nl">🇳🇱 Nederlands</option>
         </select>
+      </div>
+      <div class="mb-field full" id="mb-equip-section">
+        <label>Equipamento por Pessoa</label>
+        <div id="mb-equip-rows"></div>
       </div>
       <div class="mb-field full">
         <label>Nota</label>
@@ -1861,8 +1869,64 @@
   }
 
   // ── MANUAL BOOKING ────────────────────────────────────────────
+  function buildMBEquipRows() {
+    const n = parseInt(document.getElementById('mb-people')?.value || '1');
+    const container = document.getElementById('mb-equip-rows');
+    if (!container) return;
+    let html = '';
+    for (let i = 0; i < n; i++) {
+      html += `<div style="border:1px solid var(--border);border-radius:8px;padding:.7rem;margin-bottom:.5rem">
+        <div style="font-size:.75rem;font-weight:700;color:var(--cyan);margin-bottom:.5rem">Pessoa ${i+1}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.5rem">
+          <div><label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:.2rem">Peso (kg)</label>
+            <input type="number" id="mbeq-peso-${i}" min="20" max="200" placeholder="kg" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;color:var(--white);padding:.35rem .5rem;font-size:.82rem" /></div>
+          <div><label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:.2rem">Altura (cm)</label>
+            <input type="number" id="mbeq-alt-${i}" min="80" max="220" placeholder="cm" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;color:var(--white);padding:.35rem .5rem;font-size:.82rem" /></div>
+          <div><label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:.2rem">Género</label>
+            <select id="mbeq-gen-${i}" onchange="updateMBFato(${i})" style="width:100%;background:#1a2332;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:.35rem .5rem;font-size:.82rem">
+              <option value="">—</option><option value="H">Homem</option><option value="M">Mulher</option><option value="C">Criança</option>
+            </select></div>
+          <div><label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:.2rem">Fato</label>
+            <select id="mbeq-fato-${i}" style="width:100%;background:#1a2332;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:.35rem .5rem;font-size:.82rem">
+              <option value="">—</option>
+            </select></div>
+          <div><label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:.2rem">Experiência</label>
+            <select id="mbeq-exp-${i}" style="width:100%;background:#1a2332;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:.35rem .5rem;font-size:.82rem">
+              <option value="">—</option><option value="nunca">Nunca surfei</option><option value="ja_surfei">Já surfei</option><option value="intermedio">Intermédio</option><option value="avancado">Avançado</option>
+            </select></div>
+        </div>
+      </div>`;
+    }
+    container.innerHTML = html;
+  }
+
+  const MB_WETSUIT = { H:['XS','S','SM','M','MT','ML','L','XL','XXL'], M:['6','8','10','12','14','S','M','L','XL'], C:['8','10','12','14','16','18','20','22','24'] };
+  function updateMBFato(i) {
+    const gen = document.getElementById(`mbeq-gen-${i}`)?.value;
+    const sel = document.getElementById(`mbeq-fato-${i}`);
+    if (!sel) return;
+    const sizes = MB_WETSUIT[gen] || [];
+    sel.innerHTML = `<option value="">—</option>` + sizes.map(s=>`<option value="${s}">${s}</option>`).join('');
+  }
+
+  async function checkMBAvailability() {
+    const date = document.getElementById('mb-date')?.value;
+    const time = document.getElementById('mb-time')?.value;
+    const avail = document.getElementById('mb-avail');
+    if (!avail) return;
+    if (!date || !time || !sb) { avail.textContent = '— escolhe data e hora —'; avail.style.color = 'var(--gray)'; return; }
+    try {
+      const { data } = await sb.from('bookings')
+        .select('num_people').eq('booking_date', date).eq('booking_time', time)
+        .neq('status', 'cancelled');
+      const used = (data || []).reduce((s, r) => s + (r.num_people || 1), 0);
+      const free = Math.max(0, 6 - used);
+      avail.textContent = free > 0 ? `✅ ${free} / 6 vagas disponíveis` : '❌ Hora esgotada';
+      avail.style.color = free > 0 ? '#86efac' : '#fca5a5';
+    } catch(e) { avail.textContent = '⚠️ Erro ao verificar'; avail.style.color = '#fca5a5'; }
+  }
+
   function openManualBooking() {
-    // Reset form
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     document.getElementById('mb-date').value     = todayStr;
@@ -1876,8 +1940,9 @@
     document.getElementById('mb-language').value = 'pt';
     document.getElementById('mb-total').value    = '';
     document.getElementById('mb-notes').value    = '';
+    const avail = document.getElementById('mb-avail');
+    if (avail) { avail.textContent = '— escolhe data e hora —'; avail.style.color = 'var(--gray)'; }
 
-    // Populate time slots from school config
     const schoolSel = document.getElementById('f-school');
     const school = SCHOOLS.find(s => s.id === (schoolSel ? schoolSel.value : '')) || SCHOOLS[0];
     const sel = document.getElementById('mb-time');
@@ -1885,8 +1950,10 @@
       .map((t, i) => `<option value="${t}" ${i === 0 ? 'selected' : ''}>${t}</option>`)
       .join('');
 
+    buildMBEquipRows();
     document.getElementById('manual-booking-modal-bg').classList.add('open');
     setTimeout(() => document.getElementById('mb-name').focus(), 100);
+    checkMBAvailability();
   }
 
   function closeManualBooking() {
@@ -1912,23 +1979,41 @@
     if (!name)  { showToast('Preenche o nome do cliente', 'error'); return; }
     if (!phone) { showToast('Preenche o telemóvel do cliente', 'error'); return; }
 
+    // Collect per-person equipment
+    const equipment = [];
+    for (let i = 0; i < people; i++) {
+      equipment.push({
+        weight:     parseInt(document.getElementById(`mbeq-peso-${i}`)?.value) || null,
+        height:     parseInt(document.getElementById(`mbeq-alt-${i}`)?.value) || null,
+        gender:     document.getElementById(`mbeq-gen-${i}`)?.value || null,
+        size:       document.getElementById(`mbeq-fato-${i}`)?.value || null,
+        experience: document.getElementById(`mbeq-exp-${i}`)?.value || null,
+      });
+    }
+    const p0 = equipment[0] || {};
+
     const schoolSel = document.getElementById('f-school');
     const schoolId  = (schoolSel ? schoolSel.value : '') || SCHOOLS[0].id;
 
     const record = {
-      school_id:     schoolId,
-      lesson_type:   lesson,
-      booking_date:  date,
-      booking_time:  time,
-      num_people:    people,
-      client_name:   name,
-      client_phone:  phone,
-      client_email:  email || null,
+      school_id:      schoolId,
+      lesson_type:    lesson,
+      booking_date:   date,
+      booking_time:   time,
+      num_people:     people,
+      client_name:    name,
+      client_phone:   phone,
+      client_email:   email || null,
       client_country: country || null,
-      total_price:   total,
-      notes:         notes || null,
-      language:      lang,
-      status:        status,
+      client_weight:  p0.weight || null,
+      client_height:  p0.height || null,
+      client_gender:  p0.gender || null,
+      wetsuit_size:   p0.size || null,
+      equipment_list: equipment,
+      total_price:    total,
+      notes:          notes || null,
+      language:       lang,
+      status:         status,
     };
 
     const { error } = await sb.from('bookings').insert([record]);

@@ -1405,10 +1405,10 @@ const SLOT_AVAIL = {};
 function getSlots(dateKey) {
   if (!SLOT_AVAIL[dateKey]) {
     SLOT_AVAIL[dateKey] = [
-      {t:'08:00', used:Math.floor(Math.random()*5)},
-      {t:'10:30', used:Math.floor(Math.random()*5)},
-      {t:'14:00', used:Math.floor(Math.random()*5)},
-      {t:'16:30', used:Math.floor(Math.random()*5)},
+      {t:'08:00', used:0},
+      {t:'10:30', used:0},
+      {t:'14:00', used:0},
+      {t:'16:30', used:0},
     ];
   }
   return SLOT_AVAIL[dateKey];
@@ -1572,11 +1572,17 @@ async function loadSlotAvailability(dateKey) {
   try {
     const [year, month, day] = dateKey.split('-').map(Number);
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    const { data } = await sb.rpc('get_slot_availability', { p_date: dateStr });
+    const { data } = await sb.from('bookings')
+      .select('booking_time, num_people')
+      .eq('booking_date', dateStr)
+      .eq('school_id', 'escola-teste')
+      .neq('status', 'cancelled');
     const used = {};
-    (data || []).forEach(r => { used[r.slot_time] = r.booked_people; });
+    (data || []).forEach(r => {
+      used[r.booking_time] = (used[r.booking_time] || 0) + (r.num_people || 1);
+    });
     return used;
-  } catch { return {}; }
+  } catch(e) { return {}; }
 }
 
 // ── WHATSAPP ──────────────────────────────────────────────────────────────────
