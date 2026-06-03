@@ -1189,12 +1189,13 @@
     }));
     const startRate = commTiersWorking[0]?.rate || 0.04;
 
-    const { error } = await sb.from('schools').upsert({
-      id:                schoolId,
-      commission_tiers:  tiersForDB,
-      commission_rate:   startRate,
-      updated_at:        new Date().toISOString(),
-    }, { onConflict: 'id' });
+    const { error } = await sb.from('schools')
+      .update({
+        commission_tiers: tiersForDB,
+        commission_rate:  startRate,
+        updated_at:       new Date().toISOString(),
+      })
+      .eq('id', schoolId);
 
     if (error) { showToast('Erro ao guardar: ' + (error.message||error.code), 'error'); return; }
 
