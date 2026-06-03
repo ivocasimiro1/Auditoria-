@@ -599,7 +599,7 @@
 
   // ── SCHOOL REGISTRY ──────────────────────────────────────────────────────────
   // Add new schools here when onboarded
-  const SCHOOLS = [
+  let SCHOOLS = [
     {
       id:    'escola-teste',
       name:  'Escola Surf Teste',
@@ -610,6 +610,24 @@
     },
   ];
 
+  async function tryLoadSchools() {
+    try {
+      const { data, error } = await sb.from('schools').select('id,name,city,wa_number,email,status,commission_rate,created_at,onboarding_completed_at');
+      if (!error && data && data.length) {
+        SCHOOLS = data.map(s => ({
+          id:                s.id,
+          name:              s.name,
+          region:            s.city || '—',
+          site:              `/surf-school/?school=${s.id}`,
+          admin:             `/admin?school=${s.id}`,
+          defaultCommission: s.commission_rate || 0.04,
+          status:            s.status || 'active',
+          email:             s.email,
+        }));
+      }
+    } catch(_) { /* table not yet created, use hardcoded fallback */ }
+  }
+
   const STATUS = {
     pending:   { label: 'Pendente',   cls: 'status-pending'   },
     confirmed: { label: 'Confirmado', cls: 'status-confirmed' },
@@ -619,6 +637,7 @@
 
   // ── AUTH ──────────────────────────────────────────────────────────────────────
   async function init() {
+    await tryLoadSchools();
     const { data: { session } } = await sb.auth.getSession();
     if (session) { currentUser = session.user; checkAndShowDash(); }
     sb.auth.onAuthStateChange((_e, session) => {

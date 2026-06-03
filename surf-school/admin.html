@@ -964,7 +964,7 @@
   let allBookings = [];
 
   // Adicionar novas escolas aqui quando forem integradas
-  const SCHOOLS = [
+  let SCHOOLS = [
     {
       id:            'escola-teste',
       name:          'Escola Surf Teste',
@@ -983,6 +983,29 @@
     'Bodyboard':        { price: 30, perPerson: true  },
     'Stand Up Paddle':  { price: 35, perPerson: true  },
   };
+
+  async function tryLoadSchoolConfig() {
+    try {
+      const { data, error } = await sb.from('schools').select('id,name,wa_number,meeting_point,max_per_slot,time_slots,lesson_types,status').eq('status','active');
+      if (!error && data && data.length) {
+        SCHOOLS = data.map(s => ({
+          id:            s.id,
+          name:          s.name,
+          wa_number:     s.wa_number || '',
+          meeting_point: s.meeting_point || '',
+          max_per_slot:  s.max_per_slot  || 6,
+          slots:         s.time_slots    || ['08:00','10:30','14:00','16:30'],
+        }));
+        // Also refresh LESSON_PRICES from first school's lesson_types if available
+        const school = data.find(s => s.id === (SCHOOLS[0]?.id)) || data[0];
+        if (school?.lesson_types?.length) {
+          for (const lt of school.lesson_types) {
+            LESSON_PRICES[lt.name] = { price: lt.price, perPerson: lt.max_pax !== 1 };
+          }
+        }
+      }
+    } catch(_) { /* table not yet created, use hardcoded fallback */ }
+  }
 
   const STATUS = {
     pending:   { label: 'Pendente',   cls: 'status-pending'   },
@@ -1063,7 +1086,8 @@
     document.getElementById('dash-wrap').style.display  = 'none';
   }
 
-  function showDashboard() {
+  async function showDashboard() {
+    await tryLoadSchoolConfig();
     document.getElementById('login-wrap').style.display = 'none';
     document.getElementById('dash-wrap').style.display  = 'block';
     document.getElementById('user-email').textContent   = currentUser.email;
