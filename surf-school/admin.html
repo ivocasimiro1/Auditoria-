@@ -102,6 +102,28 @@
     /* Main content */
     .dash-content { flex: 1; padding: 2rem; max-width: 1400px; width: 100%; margin: 0 auto; }
 
+    /* Two-column layout: calendar left, briefing right */
+    .dash-top-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      align-items: start;
+    }
+    .dash-left { display: flex; flex-direction: column; gap: 1rem; }
+    .dash-right {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 1.2rem 1.3rem; max-height: 700px; overflow-y: auto;
+    }
+    .dash-right-title {
+      font-size: .85rem; font-weight: 700; color: var(--cyan); margin-bottom: 1rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    @media (max-width: 900px) {
+      .dash-top-grid { grid-template-columns: 1fr; }
+      .dash-right { max-height: none; }
+    }
+
     /* Stats */
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
     .stat-card {
@@ -229,6 +251,35 @@
       align-items: center; justify-content: center; padding: 1rem;
     }
     .detail-modal-bg.open { display: flex; }
+
+    /* Reschedule modal */
+    #reschedule-modal-bg {
+      display: none; position: fixed; inset: 0; z-index: 950;
+      background: rgba(0,0,0,.7); backdrop-filter: blur(5px);
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    #reschedule-modal-bg.open { display: flex; }
+    #reschedule-modal {
+      background: #0A1929; border: 1px solid var(--border); border-radius: 20px;
+      padding: 1.8rem; width: 100%; max-width: 420px;
+    }
+    #reschedule-modal h3 { font-size: 1rem; font-weight: 700; color: var(--cyan); margin-bottom: 1.2rem; }
+    .rsch-info { background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 10px; padding: .75rem 1rem; margin-bottom: 1.2rem; font-size: .83rem; color: var(--gray); }
+    .rsch-info strong { color: var(--white); }
+    .rsch-fields { display: flex; flex-direction: column; gap: .8rem; margin-bottom: 1.2rem; }
+    .rsch-field label { display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--cyan); margin-bottom: .4rem; }
+    .rsch-field input, .rsch-field select {
+      width: 100%; padding: .6rem .85rem; background: rgba(255,255,255,.05);
+      border: 1px solid var(--border); border-radius: 9px; color: var(--white);
+      font-size: .9rem; font-family: 'Inter',sans-serif;
+    }
+    .rsch-field input:focus, .rsch-field select:focus { outline: none; border-color: var(--cyan); }
+    .rsch-actions { display: flex; gap: .7rem; }
+    .rsch-send-wa { display: flex; align-items: center; gap: .5rem; font-size: .78rem; color: var(--gray); margin-bottom: 1rem; cursor: pointer; }
+    .rsch-send-wa input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--green); }
+
+    /* Briefing action row */
+    .brief-actions { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .5rem; }
     .detail-modal {
       background: #0A1929; border: 1px solid var(--border); border-radius: 22px;
       padding: 2rem; width: 100%; max-width: 520px; max-height: 85vh; overflow-y: auto;
@@ -520,38 +571,46 @@
       </div>
     </div>
 
-    <!-- Today's Briefing -->
-    <div class="today-brief" id="today-brief" style="display:none">
-      <div class="today-brief-header">
-        <span class="today-brief-title">📅 Hoje — <span id="today-brief-date"></span></span>
-        <span class="today-brief-sub" id="today-brief-sub"></span>
-      </div>
-      <div id="today-cards"></div>
-    </div>
+    <!-- TOP: two-column grid — calendar+vagas left, briefing right -->
+    <div class="dash-top-grid">
 
-    <!-- Calendar -->
-    <div class="calendar-wrap">
-      <div class="cal-header">
-        <div class="cal-title" id="cal-title">—</div>
-        <div class="cal-nav">
-          <button class="cal-nav-btn" onclick="calNavigate(-1)">‹</button>
-          <button class="cal-nav-btn cal-nav-today" onclick="calGoToday()">📅 Hoje</button>
-          <button class="cal-nav-btn" onclick="calNavigate(1)">›</button>
+      <!-- LEFT: calendar + slot availability -->
+      <div class="dash-left">
+        <div class="calendar-wrap">
+          <div class="cal-header">
+            <div class="cal-title" id="cal-title">—</div>
+            <div class="cal-nav">
+              <button class="cal-nav-btn" onclick="calNavigate(-1)">‹</button>
+              <button class="cal-nav-btn cal-nav-today" onclick="calGoToday()">📅 Hoje</button>
+              <button class="cal-nav-btn" onclick="calNavigate(1)">›</button>
+            </div>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+
+        <!-- Slot availability for selected day -->
+        <div id="slots-avail-wrap" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.2rem 1.5rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+            <div>
+              <div style="font-size:.95rem;font-weight:700">Ocupacao por Horario — <span id="slots-avail-date"></span></div>
+              <div style="font-size:.72rem;color:var(--gray);margin-top:2px">Clique em + / − para ajustar vagas neste dia</div>
+            </div>
+            <button onclick="closeSlotAvail()" style="font-size:.75rem;color:var(--gray);background:transparent;border:none;cursor:pointer">✕ Fechar</button>
+          </div>
+          <div id="slots-avail-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem"></div>
         </div>
       </div>
-      <div class="cal-grid" id="cal-grid"></div>
-    </div>
 
-    <!-- Slot availability for selected day -->
-    <div id="slots-avail-wrap" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.2rem 1.5rem;margin-bottom:1.5rem">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
-        <div>
-          <div style="font-size:.95rem;font-weight:700">Ocupacao por Horario — <span id="slots-avail-date"></span></div>
-          <div style="font-size:.72rem;color:var(--gray);margin-top:2px">Clique em + / − para ajustar vagas neste dia</div>
+      <!-- RIGHT: upcoming briefing sidebar -->
+      <div class="dash-right" id="today-brief" style="display:none">
+        <div class="dash-right-title">
+          <span>Proximas Aulas</span>
+          <span class="today-brief-sub" id="today-brief-sub" style="font-size:.7rem"></span>
         </div>
-        <button onclick="closeSlotAvail()" style="font-size:.75rem;color:var(--gray);background:transparent;border:none;cursor:pointer">✕ Fechar</button>
+        <div id="today-brief-date" style="display:none"></div>
+        <div id="today-cards"></div>
       </div>
-      <div id="slots-avail-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem"></div>
+
     </div>
 
     <!-- Filters -->
@@ -623,6 +682,32 @@
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- Reschedule Modal -->
+<div id="reschedule-modal-bg" onclick="if(event.target===this)closeReschedule()">
+  <div id="reschedule-modal">
+    <h3>📅 Remarcar Aula</h3>
+    <div class="rsch-info" id="rsch-info">—</div>
+    <div class="rsch-fields">
+      <div class="rsch-field">
+        <label>Nova Data</label>
+        <input type="date" id="rsch-date" />
+      </div>
+      <div class="rsch-field">
+        <label>Novo Horário</label>
+        <select id="rsch-time"></select>
+      </div>
+    </div>
+    <label class="rsch-send-wa">
+      <input type="checkbox" id="rsch-send-wa" checked />
+      Enviar WhatsApp ao cliente com a nova data
+    </label>
+    <div class="rsch-actions">
+      <button onclick="saveReschedule()" style="flex:1;padding:.7rem;background:linear-gradient(135deg,var(--ocean),var(--cyan));border:none;border-radius:10px;color:var(--white);font-weight:700;cursor:pointer;font-size:.9rem">Confirmar Remarcação</button>
+      <button onclick="closeReschedule()" style="padding:.7rem 1.1rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-size:.9rem">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <!-- Detail Modal -->
 <div class="detail-modal-bg" id="detail-modal-bg" onclick="closeDetail(event)">
@@ -1087,7 +1172,6 @@
     applyFilters();
     buildCalendar();
     buildSlotAvailability(dateStr);
-    document.getElementById('slots-avail-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   // ── SLOT CAPACITY OVERRIDES (per day, stored in localStorage) ─────────────
@@ -1127,6 +1211,8 @@
     document.getElementById('slots-avail-wrap').style.display = 'none';
     applyFilters();
     buildCalendar();
+    // Re-align grid when slot panel closes
+    document.getElementById('dash-top-grid-inner') && null;
   }
 
   function buildSlotAvailability(dateStr) {
@@ -1342,6 +1428,20 @@
           equipHtml = `<div class="today-card-equip"><div class="today-equip-title">👕 Equipamento</div>${rows}</div>`;
         }
 
+        const briefActions = b.status === 'pending'
+          ? `<button class="act-btn act-confirm" title="Confirmar" onclick="updateStatus('${b.id}','confirmed')" style="width:auto;padding:0 .5rem;font-size:.75rem">✓ Confirmar</button>
+             <button class="act-btn" title="Remarcar" onclick="openReschedule('${b.id}')" style="width:auto;padding:0 .5rem;font-size:.75rem;color:var(--cyan);border-color:rgba(0,207,253,.3)">📅 Remarcar</button>
+             <button class="act-btn act-cancel" title="Cancelar" onclick="updateStatus('${b.id}','cancelled')" style="width:auto;padding:0 .5rem;font-size:.75rem">✕ Cancelar</button>
+             <a href="https://wa.me/${phone}?text=${waMsg}" target="_blank" style="text-decoration:none"><button class="act-btn act-wa" style="width:auto;padding:0 .5rem;font-size:.75rem">💬 WA</button></a>`
+          : b.status === 'confirmed'
+          ? `<button class="act-btn" title="Remarcar" onclick="openReschedule('${b.id}')" style="width:auto;padding:0 .5rem;font-size:.75rem;color:var(--cyan);border-color:rgba(0,207,253,.3)">📅 Remarcar</button>
+             <button class="act-btn act-cancel" title="Cancelar" onclick="updateStatus('${b.id}','cancelled')" style="width:auto;padding:0 .5rem;font-size:.75rem">✕ Cancelar</button>
+             <a href="https://wa.me/${phone}?text=${waMsg}" target="_blank" style="text-decoration:none"><button class="act-btn act-wa" style="width:auto;padding:0 .5rem;font-size:.75rem">💬 WA</button></a>`
+          : b.status === 'completed'
+          ? `<button class="act-btn act-revert" title="Reverter" onclick="confirmRevert('${b.id}','confirmed','Reverter a Confirmado?')" style="width:auto;padding:0 .5rem;font-size:.75rem">↩ Reverter</button>
+             <a href="https://wa.me/${phone}?text=${waMsg}" target="_blank" style="text-decoration:none"><button class="act-btn act-wa" style="width:auto;padding:0 .5rem;font-size:.75rem">💬 WA</button></a>`
+          : '';
+
         return `<div class="today-card">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
             <div>
@@ -1350,19 +1450,10 @@
               <div class="today-card-lesson">${b.lesson_type} · ${b.num_people} pess. · €${price}</div>
               <div style="font-size:.73rem;color:var(--gray);margin-top:.2rem">📞 ${b.client_phone}${b.client_email?' · '+b.client_email:''}</div>
             </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.35rem;flex-shrink:0">
-              <span class="status-badge ${s.cls}" style="font-size:.65rem">${s.label}</span>
-              ${b.status==='pending'
-                ? `<button class="act-btn act-confirm" title="Confirmar" onclick="updateStatus('${b.id}','confirmed')" style="width:auto;padding:0 .5rem;font-size:.75rem">✓ Confirmar</button>
-                   <button class="act-btn act-cancel"  title="Cancelar"  onclick="updateStatus('${b.id}','cancelled')"  style="width:auto;padding:0 .5rem;font-size:.75rem">✕</button>`
-                : b.status==='completed'
-                ? `<button class="act-btn act-revert" title="Reverter a confirmado" onclick="confirmRevert('${b.id}','confirmed','Reverter a Confirmado?')" style="width:auto;padding:0 .5rem;font-size:.75rem">↩ Reverter</button>
-                   <a href="https://wa.me/${phone}?text=${waMsg}" target="_blank" style="text-decoration:none"><button class="act-btn act-wa" style="width:auto;padding:0 .5rem;font-size:.75rem">💬 WA</button></a>`
-                : `<a href="https://wa.me/${phone}?text=${waMsg}" target="_blank" style="text-decoration:none"><button class="act-btn act-wa" style="width:auto;padding:0 .5rem;font-size:.75rem">💬 WA</button></a>`
-              }
-            </div>
+            <span class="status-badge ${s.cls}" style="font-size:.65rem;flex-shrink:0">${s.label}</span>
           </div>
           ${equipHtml}
+          <div class="brief-actions">${briefActions}</div>
         </div>`;
       }).join('');
 
@@ -1380,6 +1471,67 @@
     t.textContent = msg;
     t.className = `toast toast-${type} show`;
     setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  // ── RESCHEDULE ────────────────────────────────────────────────
+  let rschBookingId = null;
+
+  function openReschedule(id) {
+    const b = allBookings.find(bk => bk.id === id);
+    if (!b) return;
+    rschBookingId = id;
+
+    // Info box
+    const [y,m,d] = b.booking_date.split('-');
+    document.getElementById('rsch-info').innerHTML =
+      `<strong>${b.client_name}</strong> · ${b.lesson_type}<br>Atual: <strong>${d}/${m}/${y} às ${b.booking_time}</strong>`;
+
+    // Date input — default to current date
+    document.getElementById('rsch-date').value = b.booking_date;
+    document.getElementById('rsch-date').min = new Date().toISOString().split('T')[0];
+
+    // Time slots from school config
+    const schoolSel = document.getElementById('f-school');
+    const school = SCHOOLS.find(s => s.id === (schoolSel ? schoolSel.value : '')) || SCHOOLS[0];
+    const sel = document.getElementById('rsch-time');
+    sel.innerHTML = (school.slots || ['09:00','11:00','14:00','16:00'])
+      .map(t => `<option value="${t}" ${t === b.booking_time ? 'selected' : ''}>${t}</option>`)
+      .join('');
+
+    document.getElementById('reschedule-modal-bg').classList.add('open');
+  }
+
+  function closeReschedule() {
+    document.getElementById('reschedule-modal-bg').classList.remove('open');
+    rschBookingId = null;
+  }
+
+  async function saveReschedule() {
+    if (!rschBookingId) return;
+    const newDate = document.getElementById('rsch-date').value;
+    const newTime = document.getElementById('rsch-time').value;
+    if (!newDate || !newTime) { showToast('Escolhe a data e o horário', 'error'); return; }
+
+    const { error } = await sb.from('bookings').update({ booking_date: newDate, booking_time: newTime }).eq('id', rschBookingId);
+    if (error) { showToast('Erro ao remarcar', 'error'); return; }
+    showToast('Aula remarcada com sucesso', 'success');
+
+    const sendWA = document.getElementById('rsch-send-wa').checked;
+    if (sendWA) {
+      const b = allBookings.find(bk => bk.id === rschBookingId);
+      if (b) {
+        const sch = SCHOOLS.find(s => s.id === b.school_id) || SCHOOLS[0];
+        const [y,m,d] = newDate.split('-');
+        const msg = encodeURIComponent(
+          `*${sch.name} — Aula Remarcada*\n\nOla ${b.client_name},\n\nA sua aula foi remarcada para:\n\n*Nova data:* ${d}/${m}/${y}\n*Novo horario:* ${newTime}\n*Modalidade:* ${b.lesson_type}\n\n*Ponto de encontro:*\n${sch.meeting_point}\n\nQualquer duvida estamos disponiveis. Ate ja!`
+        );
+        const phone = b.client_phone.replace(/\D/g,'');
+        window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+      }
+    }
+
+    closeReschedule();
+    await loadBookings();
   }
 
   // ── PASSWORD CHANGE ───────────────────────────────────────────
