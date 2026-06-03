@@ -147,6 +147,11 @@
     .stat-label { font-size: .75rem; color: var(--gray); text-transform: uppercase; letter-spacing: .07em; }
     .stat-value { font-size: 1.7rem; font-weight: 700; line-height: 1.2; }
     .stat-sub { font-size: .72rem; color: var(--gray); margin-top: .2rem; }
+    .rev-card { flex-direction: column !important; align-items: stretch !important; cursor: default !important; }
+    .rev-period-pills { display: flex; gap: .35rem; flex-wrap: wrap; margin-top: .6rem; padding-top: .55rem; border-top: 1px solid rgba(255,255,255,.06); }
+    .rev-pill { background: transparent; border: 1px solid var(--border); color: var(--gray); font-size: .68rem; font-weight: 600; padding: .22rem .6rem; border-radius: 999px; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; line-height: 1.5; }
+    .rev-pill:hover { border-color: var(--cyan); color: var(--white); }
+    .rev-pill.active { background: rgba(0,207,253,.15); border-color: var(--cyan); color: var(--cyan); }
 
     /* Filters */
     .filters-bar {
@@ -594,12 +599,21 @@
           <div class="stat-sub" id="stat-month-label">este mês</div>
         </div>
       </div>
-      <div class="stat-card" id="sc-confirmed" onclick="statFilter('confirmed')" title="Ver confirmadas">
-        <div class="stat-icon si-green">💶</div>
-        <div class="stat-info">
-          <div class="stat-label">Receita Escola</div>
-          <div class="stat-value" id="stat-revenue">—</div>
-          <div class="stat-sub">ver confirmadas</div>
+      <div class="stat-card rev-card" id="sc-confirmed" onclick="statFilter('confirmed')" title="Ver confirmadas">
+        <div style="display:flex;align-items:center;gap:1rem;width:100%">
+          <div class="stat-icon si-green">💶</div>
+          <div class="stat-info">
+            <div class="stat-label">Receita Escola</div>
+            <div class="stat-value" id="stat-revenue">—</div>
+            <div class="stat-sub" id="stat-rev-label">este mês</div>
+          </div>
+        </div>
+        <div class="rev-period-pills" onclick="event.stopPropagation()">
+          <button class="rev-pill active" onclick="setRevPeriod('month',this)">Mês</button>
+          <button class="rev-pill" onclick="setRevPeriod('week',this)">Semana</button>
+          <button class="rev-pill" onclick="setRevPeriod('today',this)">Hoje</button>
+          <button class="rev-pill" onclick="setRevPeriod('year',this)">Ano</button>
+          <button class="rev-pill" onclick="setRevPeriod('all',this)">Total</button>
         </div>
       </div>
       <div class="stat-card" id="sc-today" onclick="statFilter('today')" title="Ver aulas de hoje">
@@ -1152,25 +1166,64 @@
     }
   }
 
+  let revPeriod = 'month';
+
+  function setRevPeriod(period, btn) {
+    revPeriod = period;
+    document.querySelectorAll('.rev-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    updateRevCard();
+  }
+
+  function updateRevCard() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    let src, label;
+
+    if (revPeriod === 'today') {
+      src = allBookings.filter(b => b.booking_date === todayStr);
+      label = 'hoje';
+    } else if (revPeriod === 'week') {
+      const d = new Date(now); d.setDate(d.getDate() - 6);
+      const from = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      src = allBookings.filter(b => b.booking_date >= from && b.booking_date <= todayStr);
+      label = 'últimos 7 dias';
+    } else if (revPeriod === 'month') {
+      const m = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+      src = allBookings.filter(b => b.booking_date.startsWith(m));
+      label = 'este mês';
+    } else if (revPeriod === 'year') {
+      src = allBookings.filter(b => b.booking_date.startsWith(`${now.getFullYear()}`));
+      label = String(now.getFullYear());
+    } else {
+      src = allBookings;
+      label = 'total histórico';
+    }
+
+    const rev = src.filter(b => b.status !== 'cancelled')
+                   .reduce((s, b) => s + parseFloat(b.total_price||0), 0);
+    document.getElementById('stat-revenue').textContent = `€${rev.toFixed(2)}`;
+    document.getElementById('stat-rev-label').textContent = label;
+  }
+
   function renderStats(monthFilter) {
     const src = monthFilter
       ? allBookings.filter(b => b.booking_date.startsWith(monthFilter))
       : allBookings;
 
     const active  = src.filter(b => b.status !== 'cancelled');
-    const revenue = active.reduce((s, b) => s + parseFloat(b.total_price || 0), 0);
     const pending = allBookings.filter(b => b.status === 'pending').length;
 
-    // Today's bookings
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const todayActive = allBookings.filter(b => b.booking_date === todayStr && b.status !== 'cancelled');
 
-    document.getElementById('stat-bookings').textContent   = active.length;
-    document.getElementById('stat-revenue').textContent    = `€${revenue.toFixed(2)}`;
-    document.getElementById('stat-today').textContent      = todayActive.length;
-    document.getElementById('stat-today-sub').textContent  = todayActive.length === 1 ? 'aula hoje' : 'aulas hoje';
-    document.getElementById('stat-pending').textContent    = pending;
+    document.getElementById('stat-bookings').textContent  = active.length;
+    document.getElementById('stat-today').textContent     = todayActive.length;
+    document.getElementById('stat-today-sub').textContent = todayActive.length === 1 ? 'aula hoje' : 'aulas hoje';
+    document.getElementById('stat-pending').textContent   = pending;
+    updateRevCard();
 
     if (monthFilter) {
       const [y, m] = monthFilter.split('-');

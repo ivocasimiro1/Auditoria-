@@ -122,6 +122,11 @@
     .stat-label { font-size: .75rem; color: var(--gray); text-transform: uppercase; letter-spacing: .07em; }
     .stat-value { font-size: 1.7rem; font-weight: 700; line-height: 1.2; }
     .stat-sub { font-size: .72rem; color: var(--gray); margin-top: .2rem; }
+    .rev-card { flex-direction: column !important; align-items: stretch !important; }
+    .rev-period-pills { display: flex; gap: .35rem; flex-wrap: wrap; margin-top: .6rem; padding-top: .55rem; border-top: 1px solid rgba(255,255,255,.06); }
+    .rev-pill { background: transparent; border: 1px solid var(--border); color: var(--gray); font-size: .68rem; font-weight: 600; padding: .22rem .6rem; border-radius: 999px; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; line-height: 1.5; }
+    .rev-pill:hover { border-color: var(--cyan); color: var(--white); }
+    .rev-pill.active { background: rgba(0,207,253,.15); border-color: var(--cyan); color: var(--cyan); }
 
     /* School tabs */
     .school-tabs { display: flex; gap: .5rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
@@ -343,12 +348,21 @@
           <div class="stat-sub" id="gs-month-label">este mês</div>
         </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon si-green">💶</div>
-        <div class="stat-info">
-          <div class="stat-label">Receita Total</div>
-          <div class="stat-value" id="gs-revenue">—</div>
-          <div class="stat-sub">todas as escolas</div>
+      <div class="stat-card rev-card">
+        <div style="display:flex;align-items:center;gap:1rem;width:100%">
+          <div class="stat-icon si-green">💶</div>
+          <div class="stat-info">
+            <div class="stat-label">Receita Total</div>
+            <div class="stat-value" id="gs-revenue">—</div>
+            <div class="stat-sub" id="gs-rev-label">este mês</div>
+          </div>
+        </div>
+        <div class="rev-period-pills">
+          <button class="rev-pill active" onclick="setSARevPeriod('month',this)">Mês</button>
+          <button class="rev-pill" onclick="setSARevPeriod('week',this)">Semana</button>
+          <button class="rev-pill" onclick="setSARevPeriod('today',this)">Hoje</button>
+          <button class="rev-pill" onclick="setSARevPeriod('year',this)">Ano</button>
+          <button class="rev-pill" onclick="setSARevPeriod('all',this)">Total</button>
         </div>
       </div>
       <div class="stat-card">
@@ -356,7 +370,7 @@
         <div class="stat-info">
           <div class="stat-label">As Minhas Comissões</div>
           <div class="stat-value" id="gs-commission">—</div>
-          <div class="stat-sub">a receber</div>
+          <div class="stat-sub" id="gs-comm-label">este mês · a receber</div>
         </div>
       </div>
     </div>
@@ -664,15 +678,57 @@
     renderTable(filtered);
   }
 
-  function renderGlobalStats(rows) {
-    const active   = rows.filter(b => b.status !== 'cancelled');
-    const revenue  = active.reduce((s, b) => s + parseFloat(b.total_price||0), 0);
-    const commission = active.reduce((s, b) => s + parseFloat(b.total_price||0) * getCommRate(b.school_id), 0);
-    const month    = document.getElementById('f-month').value;
+  let saRevPeriod = 'month';
 
-    document.getElementById('gs-bookings').textContent   = active.length;
-    document.getElementById('gs-revenue').textContent    = `€${revenue.toFixed(2)}`;
-    document.getElementById('gs-commission').textContent = `€${commission.toFixed(2)}`;
+  function setSARevPeriod(period, btn) {
+    saRevPeriod = period;
+    document.querySelectorAll('.rev-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    updateSARevCards();
+  }
+
+  function updateSARevCards() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    let src, label;
+
+    if (saRevPeriod === 'today') {
+      src = allBookings.filter(b => b.booking_date === todayStr);
+      label = 'hoje';
+    } else if (saRevPeriod === 'week') {
+      const d = new Date(now); d.setDate(d.getDate() - 6);
+      const from = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      src = allBookings.filter(b => b.booking_date >= from && b.booking_date <= todayStr);
+      label = 'últimos 7 dias';
+    } else if (saRevPeriod === 'month') {
+      const m = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+      src = allBookings.filter(b => b.booking_date.startsWith(m));
+      label = 'este mês';
+    } else if (saRevPeriod === 'year') {
+      src = allBookings.filter(b => b.booking_date.startsWith(`${now.getFullYear()}`));
+      label = String(now.getFullYear());
+    } else {
+      src = allBookings;
+      label = 'total histórico';
+    }
+
+    const active = src.filter(b => b.status !== 'cancelled');
+    const rev  = active.reduce((s, b) => s + parseFloat(b.total_price||0), 0);
+    const comm = active.reduce((s, b) => s + parseFloat(b.total_price||0) * getCommRate(b.school_id), 0);
+
+    document.getElementById('gs-revenue').textContent    = `€${rev.toFixed(2)}`;
+    document.getElementById('gs-commission').textContent = `€${comm.toFixed(2)}`;
+    document.getElementById('gs-rev-label').textContent  = label;
+    document.getElementById('gs-comm-label').textContent = `${label} · a receber`;
+  }
+
+  function renderGlobalStats(rows) {
+    const active = rows.filter(b => b.status !== 'cancelled');
+    const month  = document.getElementById('f-month').value;
+
+    document.getElementById('gs-bookings').textContent = active.length;
+    updateSARevCards();
 
     if (month) {
       const [y, m] = month.split('-');
