@@ -1386,6 +1386,42 @@
           : fn(b.client_name, school.name, dateStr, b.booking_time);
         const phone = b.client_phone.replace(/\D/g, '');
         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+
+        // Email to client (if email provided)
+        if (b.client_email) {
+          const isConf = newStatus === 'confirmed';
+          const subjectPT = isConf
+            ? `✅ Reserva Confirmada — ${b.lesson_type} ${dateStr}`
+            : `❌ Reserva Cancelada — ${b.lesson_type} ${dateStr}`;
+          const subjectEN = isConf
+            ? `✅ Booking Confirmed — ${b.lesson_type} ${dateStr}`
+            : `❌ Booking Cancelled — ${b.lesson_type} ${dateStr}`;
+          const useEN = ['en','fr','de','es','nl'].includes(lang);
+          const emailSubject = useEN ? subjectEN : subjectPT;
+
+          let emailBody;
+          if (isConf) {
+            emailBody = useEN
+              ? `Hi ${b.client_name},\n\nYour surf lesson is confirmed!\n\nLesson: ${b.lesson_type}\nDate: ${dateStr}\nTime: ${b.booking_time}\nPeople: ${b.num_people}\nTotal: €${price}\n\nMeeting point:\n${school.meeting_point}\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!\n${school.name}`
+              : `Olá ${b.client_name},\n\nA sua reserva está confirmada!\n\nAula: ${b.lesson_type}\nData: ${dateStr}\nHorário: ${b.booking_time}\nPessoas: ${b.num_people}\nTotal: €${price}\n\nPonto de encontro:\n${school.meeting_point}\n\nUse fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAté breve!\n${school.name}`;
+          } else {
+            emailBody = useEN
+              ? `Hi ${b.client_name},\n\nUnfortunately your booking has been cancelled.\n\nLesson: ${b.lesson_type}\nDate: ${dateStr}\nTime: ${b.booking_time}\n\nWe apologise for the inconvenience. Please contact us to reschedule.\n\n${school.name}`
+              : `Olá ${b.client_name},\n\nInfelizmente a sua reserva foi cancelada.\n\nAula: ${b.lesson_type}\nData: ${dateStr}\nHorário: ${b.booking_time}\n\nPedimos desculpa pelo inconveniente. Contacte-nos para reagendar.\n\n${school.name}`;
+          }
+
+          fetch('https://formsubmit.co/ajax/ivocasimiro@gmail.com', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+              _subject: emailSubject,
+              message: emailBody,
+              _replyto: 'ivocasimiro@gmail.com',
+              _cc: b.client_email,
+              _template: 'table',
+            })
+          }).catch(() => {});
+        }
       }
     }
 
