@@ -1514,6 +1514,32 @@ function goToStep(n) {
   if (wrap) wrap.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
+function resetBookingForm() {
+  // Reset booking state
+  booking.lessonKey = null; booking.lessonPrice = 0; booking.lessonPrivate = false;
+  booking.selectedDateKey = null; booking.selectedDateStr = null; booking.time = null;
+  // Deselect lessons, calendar cells, time slots
+  document.querySelectorAll('.lesson-option').forEach(o => o.classList.remove('selected'));
+  document.querySelectorAll('.cal-cell').forEach(o => o.classList.remove('selected'));
+  document.querySelectorAll('.slot-card').forEach(o => o.classList.remove('selected'));
+  // Disable next buttons
+  ['next-1','next-2','next-3'].forEach(id => { const b = document.getElementById(id); if (b) b.disabled = true; });
+  // Clear form fields
+  ['fname','fphone','femail','fnota'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const fpessoas = document.getElementById('fpessoas'); if (fpessoas) fpessoas.value = '1';
+  // Reset country to default for current lang
+  const defCountry = LANG_DEFAULT_COUNTRY[currentLang] || '🇵🇹 Portugal';
+  const fcountry = document.getElementById('fcountry'); if (fcountry) fcountry.value = defCountry;
+  // Rebuild equipment for 1 person
+  buildEquipmentRows(1);
+  // Reset calendar to current month
+  calYear = TODAY.getFullYear(); calMonth = TODAY.getMonth();
+  renderCalendar();
+  // Clear save status
+  const ss = document.getElementById('save-status'); if (ss) { ss.textContent = ''; ss.style.background = 'transparent'; }
+  goToStep(1);
+}
+
 function buildSummary() {
   const p = parseInt(document.getElementById('fpessoas')?.value||'1');
   const total = booking.lessonPrivate ? booking.lessonPrice : booking.lessonPrice * p;
@@ -1689,7 +1715,7 @@ async function reservarWhatsApp() {
         saveStatus.style.color = '#86efac';
         saveStatus.style.background = 'rgba(34,197,94,.08)';
         saveStatus.textContent = '✓ Reserva guardada — aguarda confirmação por WhatsApp';
-        setTimeout(() => { saveStatus.textContent = ''; saveStatus.style.background = 'transparent'; }, 7000);
+        setTimeout(() => resetBookingForm(), 3000);
       }
     } else {
       saveStatus.style.color = '#fca5a5';
