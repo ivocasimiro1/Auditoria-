@@ -1,5 +1,9 @@
-# Surf School shortcuts
+# Surf School shortcuts — with and without .html
+/admin              /surf-school/admin.html         301
 /admin.html         /surf-school/admin.html         301
+/super-admin        /surf-school/super-admin.html   301
 /super-admin.html   /surf-school/super-admin.html   301
+/proposta           /surf-school/proposta.html      301
 /proposta.html      /surf-school/proposta.html      301
-/surf              /surf-school/                    301
+/surf               /surf-school/                   301
+/reservar           /surf-school/                   301
