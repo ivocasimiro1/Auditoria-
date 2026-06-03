@@ -2894,7 +2894,7 @@
         // Equipment summary
         const wsCount = {};
         blist.forEach(b => {
-          (b.equipment_list||[]).forEach(p => { const sz = p.wetsuit||p.wetsuit_size||'?'; wsCount[sz] = (wsCount[sz]||0)+1; });
+          (b.equipment_list||[]).forEach(p => { const sz = p.wetsuit||p.wetsuit_size||p.size||'?'; wsCount[sz] = (wsCount[sz]||0)+1; });
         });
         const wsSummary = Object.entries(wsCount).map(([k,v]) => `${k}×${v}`).join(' · ') || '—';
 
@@ -2904,7 +2904,7 @@
           const countryName = (b.client_country||'').replace(/^\S+\s*/,'');
           if (b.equipment_list?.length) {
             b.equipment_list.forEach((p,pi) => {
-              rows.push({ name: pi===0 ? b.client_name : `  └ ${p.name||'P'+(pi+1)}`, wetsuit: p.wetsuit||p.wetsuit_size||'?', weight: p.weight||'?', height: p.height||'?', gender: p.gender==='M'||p.gender==='H'?'♂':'♀', type: b.lesson_type, country: pi===0?countryName:'', phone: pi===0?(b.client_phone||''):'' });
+              rows.push({ name: pi===0 ? b.client_name : `  └ ${p.name||'P'+(pi+1)}`, wetsuit: p.wetsuit||p.wetsuit_size||p.size||'?', weight: p.weight||'?', height: p.height||'?', gender: p.gender==='M'||p.gender==='H'?'♂':'♀', type: b.lesson_type, country: pi===0?countryName:'', phone: pi===0?(b.client_phone||''):'' });
             });
           } else {
             rows.push({ name: b.client_name, wetsuit: b.wetsuit_size||'?', weight: b.client_weight||'?', height: b.client_height||'?', gender: b.client_gender==='M'||b.client_gender==='H'?'♂':'♀', type: b.lesson_type, country: countryName, phone: b.client_phone||'' });
@@ -2981,7 +2981,7 @@
           if (b.equipment_list?.length) {
             b.equipment_list.forEach((p,pi) => {
               const nm = pi===0 ? b.client_name : (p.name||'P'+(pi+1));
-              let line = `  • ${nm} — Fato ${p.wetsuit||p.wetsuit_size||'?'} · ${p.weight||'?'}kg · ${p.gender==='M'||p.gender==='H'?'♂':'♀'}`;
+              let line = `  • ${nm} — Fato ${p.wetsuit||p.wetsuit_size||p.size||'?'} · ${p.weight||'?'}kg · ${p.gender==='M'||p.gender==='H'?'♂':'♀'}`;
               if (pi===0) { if (cn) line += ` · ${cn}`; if (b.client_phone) line += ` · ${b.client_phone}`; }
               txt += line + '\n';
             });
@@ -2993,7 +2993,7 @@
         });
         // Wetsuit summary
         const wsCount = {};
-        blist.forEach(b => { (b.equipment_list||[]).forEach(p => { const sz=p.wetsuit||p.wetsuit_size||'?'; wsCount[sz]=(wsCount[sz]||0)+1; }); });
+        blist.forEach(b => { (b.equipment_list||[]).forEach(p => { const sz=p.wetsuit||p.wetsuit_size||p.size||'?'; wsCount[sz]=(wsCount[sz]||0)+1; }); });
         const wsSummary = Object.entries(wsCount).map(([k,v])=>`${k}×${v}`).join(' ');
         if (wsSummary) txt += `  🏊 Fatos: ${wsSummary}\n`;
         txt += '\n';
@@ -3083,13 +3083,13 @@
         const tipos  = [...new Set(blist.map(b=>b.lesson_type))].join(', ');
         const inst   = reportInstructors[key] || '—';
         const wsCount = {};
-        blist.forEach(b => { (b.equipment_list||[]).forEach(p=>{ const sz=p.wetsuit||p.wetsuit_size||'?'; wsCount[sz]=(wsCount[sz]||0)+1; }); });
+        blist.forEach(b => { (b.equipment_list||[]).forEach(p=>{ const sz=p.wetsuit||p.wetsuit_size||p.size||'?'; wsCount[sz]=(wsCount[sz]||0)+1; }); });
         const wsSummary = Object.entries(wsCount).map(([k,v])=>`${k}×${v}`).join(' · ')||'—';
 
         const rows = blist.flatMap(b => {
           const cn = (b.client_country||'').replace(/^\S+\s*/,'');
           if (b.equipment_list?.length) return b.equipment_list.map((p,pi)=>({
-            name: pi===0?b.client_name:(p.name||'P'+(pi+1)), wetsuit:p.wetsuit||p.wetsuit_size||'?',
+            name: pi===0?b.client_name:(p.name||'P'+(pi+1)), wetsuit:p.wetsuit||p.wetsuit_size||p.size||'?',
             weight:p.weight||'?', height:p.height||'?', gender:p.gender==='M'||p.gender==='H'?'♂':'♀', type:b.lesson_type,
             country:pi===0?cn:'', phone:pi===0?(b.client_phone||''):''
           }));
@@ -3182,13 +3182,12 @@
 </style></head><body>
 <input type="file" id="photo-input" accept="image/*"/>
 <div class="toolbar">
-  <button class="btn" onclick="window.print()">🖨️ Imprimir / PDF</button>
-  <a class="btn-wa" id="btn-wa" href="${`https://wa.me/?text=${encodeURIComponent('Reserve a sua aula de surf 🏄\n' + bookingUrl)}`}" target="_blank">💬 WhatsApp</a>
-  <a class="btn-mail" id="btn-mail" href="${`mailto:?subject=${encodeURIComponent('Reserve a sua aula de surf — ' + school.name)}&body=${encodeURIComponent('Olá!\n\nReserve a sua aula de surf online, rápido e fácil:\n\n' + bookingUrl + '\n\nAté já! 🌊')}`}">✉️ Email</a>
-  ${`<button class="btn-share" id="btn-share" style="display:none" onclick="shareCard()">📤 Partilhar</button>`}
+  <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
+  <button class="btn-img" onclick="saveImage()">💾 Guardar Imagem</button>
+  <button class="btn-share" onclick="shareImage()">📤 Partilhar</button>
   <button class="btn-sec" onclick="toggleExtra()">+ Morada / Redes</button>
-  <span class="hint">Clica em qualquer texto para editar</span>
 </div>
+<div id="capture-status"></div>
 <div class="card">
   <!-- Photo -->
   <div class="photo-wrap" onclick="document.getElementById('photo-input').click()" title="Clica para adicionar foto ou logo">
@@ -3213,7 +3212,6 @@
   </div>
 </div>
 <script>
-  // Photo upload
   document.getElementById('photo-input').addEventListener('change', function() {
     const file = this.files[0]; if (!file) return;
     const reader = new FileReader();
@@ -3224,20 +3222,48 @@
     };
     reader.readAsDataURL(file);
   });
-  // Toggle extra contact rows
   function toggleExtra() {
     document.querySelectorAll('.extra-field').forEach(el => el.classList.toggle('visible'));
   }
-  // Show native share button on supported devices (mobile)
-  if (navigator.share) {
-    document.getElementById('btn-share').style.display = 'inline-flex';
+  const statusEl = document.getElementById('capture-status');
+  function setStatus(msg, duration) {
+    statusEl.textContent = msg; statusEl.style.display = 'block';
+    if (duration) setTimeout(() => { statusEl.style.display = 'none'; }, duration);
   }
-  function shareCard() {
-    navigator.share({
-      title: document.querySelector('.school-name').textContent,
-      text:  'Reserve a sua aula de surf 🏄',
-      url:   '${bookingUrl}',
-    }).catch(()=>{});
+  async function captureCard() {
+    return await html2canvas(document.querySelector('.card'), {
+      backgroundColor: '#050D1A', scale: 2, useCORS: true, logging: false
+    });
+  }
+  async function saveImage() {
+    setStatus('A gerar imagem…');
+    try {
+      const canvas = await captureCard();
+      const a = document.createElement('a');
+      a.download = 'cartao-surf.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+      setStatus('✓ Imagem guardada!', 3000);
+    } catch(e) { setStatus('✗ Erro ao gerar imagem.', 4000); }
+  }
+  async function shareImage() {
+    setStatus('A gerar imagem…');
+    try {
+      const canvas = await captureCard();
+      canvas.toBlob(async blob => {
+        const file = new File([blob], 'cartao-surf.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: document.querySelector('.school-name').textContent });
+          statusEl.style.display = 'none';
+        } else {
+          const a = document.createElement('a');
+          a.download = 'cartao-surf.png';
+          a.href = canvas.toDataURL('image/png');
+          a.click();
+          setStatus('✓ Imagem guardada! (partilha não suportada neste browser)', 4000);
+        }
+      }, 'image/png');
+    } catch(e) { setStatus('✗ Erro. Tenta "Guardar Imagem".', 4000); }
   }
 <\/script>
 </body></html>`);
