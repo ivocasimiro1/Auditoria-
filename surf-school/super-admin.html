@@ -91,6 +91,14 @@
       font-family: 'Inter', sans-serif; transition: all .2s;
     }
     .btn-logout:hover { border-color: var(--red); color: var(--red); }
+    .btn-proposta {
+      padding: .45rem 1rem; background: rgba(201,168,76,.12);
+      border: 1px solid rgba(201,168,76,.35); border-radius: 8px;
+      color: var(--gold); font-size: .82rem; font-weight: 600; cursor: pointer;
+      font-family: 'Inter', sans-serif; transition: all .2s;
+      text-decoration: none; display: flex; align-items: center; gap: .4rem;
+    }
+    .btn-proposta:hover { background: rgba(201,168,76,.22); border-color: var(--gold); }
 
     /* Main content */
     .dash-content { flex: 1; padding: 2rem; max-width: 1500px; width: 100%; margin: 0 auto; }
@@ -290,6 +298,9 @@
       <span class="crown-badge">👑 Super Admin</span>
     </div>
     <div class="topbar-right">
+      <a class="btn-proposta" href="https://auditoria-25b.pages.dev/surf-school/proposta.html" target="_blank">
+        📄 Proposta Comercial
+      </a>
       <div class="user-info">
         <div class="user-email" id="user-email"></div>
         <div class="user-role">Super Administrador</div>
