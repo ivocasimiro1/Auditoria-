@@ -311,6 +311,20 @@
     .cal-dot-completed { background: var(--green); }
     .cal-count { font-size: .6rem; color: var(--gray); font-weight: 600; }
 
+    /* Slot availability */
+    .slot-avail-card {
+      border-radius: 10px; padding: .7rem .9rem; border: 1px solid var(--border);
+      text-align: center;
+    }
+    .slot-avail-time { font-size: .95rem; font-weight: 700; margin-bottom: .3rem; }
+    .slot-avail-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); margin: .35rem 0; overflow: hidden; }
+    .slot-avail-fill { height: 100%; border-radius: 3px; transition: width .3s; }
+    .slot-avail-info { font-size: .72rem; color: var(--gray); }
+    .slot-avail-card.slot-free   { border-color: rgba(34,197,94,.3);  background: rgba(34,197,94,.05); }
+    .slot-avail-card.slot-warn   { border-color: rgba(234,179,8,.3);  background: rgba(234,179,8,.05); }
+    .slot-avail-card.slot-full   { border-color: rgba(239,68,68,.3);  background: rgba(239,68,68,.05); opacity: .7; }
+    .slot-avail-card.slot-empty  { border-color: var(--border); }
+
     /* Today's briefing */
     .today-brief {
       background: linear-gradient(135deg, rgba(0,112,243,.12), rgba(0,207,253,.08));
@@ -426,12 +440,12 @@
           <div class="stat-sub">valor total das aulas</div>
         </div>
       </div>
-      <div class="stat-card admin-only">
-        <div class="stat-icon si-teal">🤙</div>
+      <div class="stat-card">
+        <div class="stat-icon si-teal">📅</div>
         <div class="stat-info">
-          <div class="stat-label">Minha Comissão (5%)</div>
-          <div class="stat-value" id="stat-commission">—</div>
-          <div class="stat-sub">a receber da escola</div>
+          <div class="stat-label">Aulas Hoje</div>
+          <div class="stat-value" id="stat-today">—</div>
+          <div class="stat-sub" id="stat-today-sub">marcações confirmadas</div>
         </div>
       </div>
       <div class="stat-card">
@@ -464,6 +478,15 @@
         </div>
       </div>
       <div class="cal-grid" id="cal-grid"></div>
+    </div>
+
+    <!-- Slot availability for selected day -->
+    <div id="slots-avail-wrap" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.2rem 1.5rem;margin-bottom:1.5rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+        <div style="font-size:.95rem;font-weight:700">Disponibilidade — <span id="slots-avail-date"></span></div>
+        <button onclick="document.getElementById('f-date').value='';document.getElementById('slots-avail-wrap').style.display='none';applyFilters();buildCalendar()" style="font-size:.75rem;color:var(--gray);background:transparent;border:none;cursor:pointer">✕ Fechar</button>
+      </div>
+      <div id="slots-avail-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.6rem"></div>
     </div>
 
     <!-- Filters -->
@@ -564,6 +587,8 @@
       name:          'Escola Surf Teste',
       wa_number:     '351962800400',
       meeting_point: 'Encontramo-nos na Praia de Arrifana, junto ao acesso principal às escadas, 15 minutos antes da aula.',
+      max_per_slot:  6,   // max alunos por slot horário
+      slots:         ['09:00','11:00','14:00','16:00'],
     },
   ];
 
@@ -743,14 +768,19 @@
       ? allBookings.filter(b => b.booking_date.startsWith(monthFilter))
       : allBookings;
 
-    const active = src.filter(b => b.status !== 'cancelled');
+    const active  = src.filter(b => b.status !== 'cancelled');
     const revenue = active.reduce((s, b) => s + parseFloat(b.total_price || 0), 0);
-    const commission = revenue * COMMISSION;
     const pending = allBookings.filter(b => b.status === 'pending').length;
+
+    // Today's bookings
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const todayActive = allBookings.filter(b => b.booking_date === todayStr && b.status !== 'cancelled');
 
     document.getElementById('stat-bookings').textContent   = active.length;
     document.getElementById('stat-revenue').textContent    = `€${revenue.toFixed(2)}`;
-    document.getElementById('stat-commission').textContent = `€${commission.toFixed(2)}`;
+    document.getElementById('stat-today').textContent      = todayActive.length;
+    document.getElementById('stat-today-sub').textContent  = todayActive.length === 1 ? 'aula hoje' : 'aulas hoje';
     document.getElementById('stat-pending').textContent    = pending;
 
     if (monthFilter) {
@@ -821,7 +851,7 @@
         <td><span class="status-badge ${s.cls}">${s.label}</span></td>
         <td style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
           ${actions}
-          <button class="act-btn act-detail" title="Ver detalhes" onclick="openDetail(${JSON.stringify(bJson)})">👁</button>
+          <button class="act-btn act-detail" title="Ver detalhes" onclick="openDetail('${bJson}')">👁</button>
           <a href="https://wa.me/${b.client_phone.replace(/\D/g,'')}?text=${waMsg}" target="_blank">
             <button class="act-btn act-wa" title="WhatsApp">💬</button>
           </a>
@@ -942,15 +972,50 @@
 
   function selectCalDay(dateStr) {
     document.getElementById('f-date').value = dateStr;
-    // Sync month if needed
     const [y, m] = dateStr.split('-');
     calYear  = parseInt(y);
     calMonth = parseInt(m) - 1;
     document.getElementById('f-month').value = `${y}-${m}`;
     applyFilters();
     buildCalendar();
-    // Scroll to table
-    document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    buildSlotAvailability(dateStr);
+    document.getElementById('slots-avail-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function buildSlotAvailability(dateStr) {
+    const schoolSel = document.getElementById('f-school');
+    const schoolId  = schoolSel ? schoolSel.value : '';
+    const school    = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0];
+    const maxPerSlot = school.max_per_slot || 6;
+    const timeSlots  = school.slots || ['09:00','11:00','14:00','16:00'];
+
+    // Count booked people per slot for this date (non-cancelled)
+    const slotUsed = {};
+    allBookings.forEach(b => {
+      if (b.booking_date !== dateStr || b.status === 'cancelled') return;
+      slotUsed[b.booking_time] = (slotUsed[b.booking_time] || 0) + (b.num_people || 1);
+    });
+
+    const [y, m, d] = dateStr.split('-');
+    document.getElementById('slots-avail-date').textContent = `${d}/${m}/${y}`;
+
+    const cards = timeSlots.map(t => {
+      const used  = slotUsed[t] || 0;
+      const free  = Math.max(0, maxPerSlot - used);
+      const pct   = Math.min(100, Math.round(used / maxPerSlot * 100));
+      const cls   = free === 0 ? 'slot-full' : pct >= 50 ? 'slot-warn' : used === 0 ? 'slot-empty' : 'slot-free';
+      const fillColor = free === 0 ? 'var(--red)' : pct >= 50 ? 'var(--yellow)' : 'var(--green)';
+      const label = free === 0 ? '<span style="color:var(--red);font-weight:700">Esgotado</span>'
+                  : `<span style="color:var(--green)">${free} vaga${free!==1?'s':''}</span> / ${maxPerSlot}`;
+      return `<div class="slot-avail-card ${cls}">
+        <div class="slot-avail-time">${t}</div>
+        <div class="slot-avail-bar"><div class="slot-avail-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+        <div class="slot-avail-info">${label}</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('slots-avail-grid').innerHTML = cards;
+    document.getElementById('slots-avail-wrap').style.display = 'block';
   }
 
   function buildCalendar() {
