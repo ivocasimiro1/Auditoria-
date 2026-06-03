@@ -1541,7 +1541,7 @@ function resetBookingForm() {
   buildEquipmentRows(1);
   // Reset calendar to current month
   calYear = TODAY.getFullYear(); calMonth = TODAY.getMonth();
-  renderCalendar();
+  buildCalendar();
   // Hide confirmation overlay and restore form elements
   const cd = document.getElementById('booking-confirm'); if (cd) cd.style.display = 'none';
   const s4 = document.getElementById('step-4');
