@@ -1149,12 +1149,21 @@
 
   function startRealtime() {
     if (realtimeChannel) return; // already subscribed
+    const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
     realtimeChannel = sb
-      .channel('admin-bookings')
+      .channel('admin-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings' }, payload => {
         const b = payload.new;
+        if (school && b.school_id !== school.id) return;
         showToast(`🔔 Nova marcação: ${b.client_name} · ${b.booking_date} ${b.booking_time}`, 'success');
         loadBookings();
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reviews' }, payload => {
+        const r = payload.new;
+        if (school && r.school_id !== school.id) return;
+        const stars = '★'.repeat(r.rating || 0) + '☆'.repeat(5 - (r.rating || 0));
+        showToast(`⭐ Nova avaliação de ${r.client_name}: ${stars}`, 'success');
+        updateReviewsBadge();
       })
       .subscribe();
   }

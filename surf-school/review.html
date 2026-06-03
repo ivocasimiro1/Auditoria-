@@ -29,6 +29,13 @@
   drop policy if exists "reviews_update" on reviews;
   drop policy if exists "allow_all_reviews" on reviews;
   create policy "allow_all_reviews" on reviews for all using (true) with check (true);
+
+  -- Grant anon access (fixes 42501)
+  grant all on table reviews to anon;
+  grant all on table reviews to authenticated;
+
+  -- Enable Realtime for live admin notifications
+  alter publication supabase_realtime add table reviews;
   -->
 
   <style>
@@ -273,11 +280,12 @@
     if (!STRINGS[detectedLang]) detectedLang = 'pt';
     document.getElementById('html-root').lang = detectedLang;
 
-    // Load school name
-    let schoolName = booking.school_id;
+    // Load school name + email for notification
+    let schoolName  = booking.school_id;
+    let schoolEmail = 'ivocasimiro@gmail.com';
     try {
-      const { data: school } = await sb.from('schools').select('name').eq('id', booking.school_id).single();
-      if (school) schoolName = school.name;
+      const { data: school } = await sb.from('schools').select('name,email').eq('id', booking.school_id).single();
+      if (school) { schoolName = school.name || schoolName; schoolEmail = school.email || schoolEmail; }
     } catch(_) {}
 
     // Render
@@ -309,8 +317,8 @@
     if (!selectedRating || !bookingData) return;
     const btn = document.getElementById('btn-submit');
     btn.disabled = true; btn.textContent = '...';
-    const name    = document.getElementById('f-name').value.trim() || bookingData.client_name || 'Anónimo';
-    const comment = document.getElementById('f-comment').value.trim() || null;
+    const name     = document.getElementById('f-name').value.trim() || bookingData.client_name || 'Anónimo';
+    const comment  = document.getElementById('f-comment').value.trim() || null;
     const schoolId = bookingData.school_id || 'escola-teste';
 
     const { error } = await sb.from('reviews').insert({
@@ -329,11 +337,40 @@
       return;
     }
 
-    document.getElementById('review-card').style.display  = 'none';
+    // Email notification to school owner (fire-and-forget)
+    try {
+      const stars   = '★'.repeat(selectedRating) + '☆'.repeat(5 - selectedRating);
+      const [y,m,d] = (bookingData.booking_date || '').split('-');
+      const dateStr = d && m && y ? `${d}/${m}/${y}` : bookingData.booking_date || '';
+      const msgBody = [
+        `Nova avaliação recebida em ${schoolName}!`,
+        ``,
+        `Cliente: ${name}`,
+        `Aula: ${bookingData.lesson_type || ''} · ${dateStr} ${bookingData.booking_time || ''}`,
+        `Avaliação: ${stars} (${selectedRating}/5)`,
+        comment ? `Comentário: "${comment}"` : '',
+        ``,
+        `Ver no painel: https://auditoria-25b.pages.dev/admin`,
+      ].filter(Boolean).join('\n');
+
+      await fetch(`https://formsubmit.co/ajax/${schoolEmail}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          _subject: `⭐ Nova avaliação de ${name} — ${schoolName}`,
+          _template: 'box',
+          name: 'SurfBook Avaliações',
+          email: 'noreply@surfbook.com',
+          message: msgBody,
+        }),
+      });
+    } catch(_) {}
+
+    document.getElementById('review-card').style.display    = 'none';
     document.getElementById('success-screen').style.display = 'block';
-    document.getElementById('success-title').textContent  = t('success_title');
-    document.getElementById('success-sub').textContent    = t('success_sub');
-    document.getElementById('success-stars').textContent  = '★'.repeat(selectedRating) + '☆'.repeat(5-selectedRating);
+    document.getElementById('success-title').textContent    = t('success_title');
+    document.getElementById('success-sub').textContent      = t('success_sub');
+    document.getElementById('success-stars').textContent    = '★'.repeat(selectedRating) + '☆'.repeat(5-selectedRating);
   }
 
   function showError() {
