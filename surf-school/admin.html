@@ -3231,6 +3231,19 @@
     if (duration) setTimeout(() => { statusEl.style.display = 'none'; }, duration);
   }
   async function captureCard() {
+    // html2canvas can't load cross-origin images; convert the QR img to data URL first
+    const qrImg = document.querySelector('.qr-wrap img');
+    if (qrImg && qrImg.src && !qrImg.src.startsWith('data:')) {
+      try {
+        const resp = await fetch(qrImg.src, { mode: 'cors' });
+        const blob = await resp.blob();
+        await new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = e => { qrImg.src = e.target.result; qrImg.onload = resolve; qrImg.onerror = resolve; };
+          reader.readAsDataURL(blob);
+        });
+      } catch(_) {}
+    }
     return await html2canvas(document.querySelector('.card'), {
       backgroundColor: '#050D1A', scale: 2, useCORS: true, logging: false
     });
