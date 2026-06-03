@@ -1407,21 +1407,114 @@ function updateClock() {
 
 // ── DEMO THEMES ───────────────────────────────────────────────────────────────
 const DEMO_THEMES = {
-  'escola-teste':  { name:'Escola Surf Teste',        shortName:'Surf',     gold:'#C9A84C', rgb:'201,168,76',  navy:'#060D1B', ocean:'#0A2540', tagline:'A sua aventura começa aqui' },
-  'surf-arrifana': { name:'Arrifana Surf School',     shortName:'Arrifana', gold:'#10B981', rgb:'16,185,129',  navy:'#020E0C', ocean:'#063323', tagline:'Onde o Atlântico encontra a perfeição' },
-  'surf-nazare':   { name:'Nazaré Surf Experience',   shortName:'Nazaré',   gold:'#F59E0B', rgb:'245,158,11',  navy:'#0D0900', ocean:'#1A1000', tagline:'Sente o poder das maiores ondas do mundo' },
-  'surf-peniche':  { name:'Peniche Surf Academy',     shortName:'Peniche',  gold:'#818CF8', rgb:'129,140,248', navy:'#04040F', ocean:'#0A0A24', tagline:'Técnica e paixão pelo surf' },
-  'surf-lagos':    { name:'Lagos Surf Club',          shortName:'Lagos',    gold:'#FB923C', rgb:'251,146,60',  navy:'#0D0600', ocean:'#1A0D00', tagline:'Ondas douradas no Algarve' },
-  'surf-sagres':   { name:'Sagres Wild Surf',         shortName:'Sagres',   gold:'#C084FC', rgb:'192,132,252', navy:'#06030E', ocean:'#0F0820', tagline:'A ponta mais selvagem de Portugal' },
+  'escola-teste': {
+    name:'Escola Surf Teste', logo:'Escola <span>Surf</span> Teste',
+    gold:'#C9A84C', rgb:'201,168,76', navy:'#060D1B', ocean:'#0A2540',
+    heroImg:'https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=1920&q=85',
+    heroOverlay:'linear-gradient(150deg,rgba(6,13,27,.82) 0%,rgba(6,13,27,.45) 55%,rgba(6,13,27,.72) 100%)',
+    badge:'🌊 Escola de Surf · Site de Demonstração',
+    h1:'Aprenda a <em>surfar</em><br>com confiança',
+    sub:'Experimente a adrenalina das ondas com instrutores certificados ISA. Aulas para todos os níveis na mais bela costa portuguesa.',
+    stats:[['500+','Surfistas'],['12','Anos'],['98%','Satisfação'],['ISA','Certificado']],
+    aboutImg:'https://images.unsplash.com/photo-1505459668311-8dfac7952bf0?auto=format&fit=crop&w=800&q=80',
+    aboutBadge:'⭐ 4.9 · +200 avaliações',
+    aboutTag:'A nossa escola',
+    aboutTitle:'A aventura do surf começa aqui',
+    aboutSub:'Com anos de experiência nas melhores praias do Alentejo, oferecemos aulas personalizadas, equipamento premium e instrutores com certificação internacional.',
+    feat:[['🎓','Instrutores ISA','Certificados pela federação internacional de surf com anos de experiência.'],['🏄','Para todos os níveis','Do zero absoluto ao surfista que quer evoluir a técnica.'],['📍','Localização perfeita','Praia tranquila, ondas consistentes e fácil acesso.']],
+  },
+  'surf-arrifana': {
+    name:'Arrifana Surf School', logo:'Arrifana <span>Surf</span> School',
+    gold:'#10B981', rgb:'16,185,129', navy:'#020E0C', ocean:'#041A12',
+    heroImg:'https://images.unsplash.com/photo-1476158085676-e67f57ed9ed7?auto=format&fit=crop&w=1920&q=85',
+    heroOverlay:'linear-gradient(150deg,rgba(2,14,12,.88) 0%,rgba(2,14,12,.38) 55%,rgba(2,14,12,.78) 100%)',
+    badge:'🌿 Escola Boutique · Arrifana · Costa Vicentina',
+    h1:'Conquiste as ondas<br>do <em>Atlântico</em> selvagem',
+    sub:'Arrifana é uma das praias mais dramáticas e preservadas de Portugal. Falésias de 100 metros, ondas consistentes e grupos de máximo 6 pessoas para atenção real.',
+    stats:[['350+','Surfistas'],['8','Anos'],['99%','Satisfação'],['ISA','Certificado']],
+    aboutImg:'https://images.unsplash.com/photo-1506477331477-33d5d8b3dc85?auto=format&fit=crop&w=800&q=80',
+    aboutBadge:'⭐ 5.0 · +130 avaliações',
+    aboutTag:'A nossa filosofia',
+    aboutTitle:'Pequenos grupos, experiência única',
+    aboutSub:'Na Arrifana não há turismo de massas. Há autenticidade, silêncio e ondas perfeitas. Grupos máximo de 6 surfistas garantem a atenção que mereces para evoluíres rápido.',
+    feat:[['🌿','Máximo 6 pessoas','Atenção total do instrutor — nunca te perdemos no meio da turma.'],['🏔️','Cenário dramático','Falésias de 100m, Costa Vicentina virgem, sem multidões.'],['🐬','Mar Limpo','Parque Natural da Costa Vicentina — as águas mais puras de Portugal.']],
+  },
+  'surf-nazare': {
+    name:'Nazaré Surf Experience', logo:'Nazaré <span>Surf</span> Experience',
+    gold:'#F59E0B', rgb:'245,158,11', navy:'#0D0900', ocean:'#1C1100',
+    heroImg:'https://images.unsplash.com/photo-1444120775320-d20350f7f0f5?auto=format&fit=crop&w=1920&q=85',
+    heroOverlay:'linear-gradient(150deg,rgba(13,9,0,.90) 0%,rgba(13,9,0,.42) 55%,rgba(13,9,0,.82) 100%)',
+    badge:'⚡ Capital das Ondas Gigantes · Nazaré · Portugal',
+    h1:'Onde as lendas<br>do <em>surf</em> nascem',
+    sub:'Nazaré é o berço das maiores ondas do mundo. Garrett McNamara. Records mundiais. E agora, as tuas primeiras ondas neste lugar mágico — a emoção é a mesma.',
+    stats:[['800+','Surfistas'],['15','Anos'],['97%','Satisfação'],['ISA','Certificado']],
+    aboutImg:'https://images.unsplash.com/photo-1531722569936-825d4eaf4d8a?auto=format&fit=crop&w=800&q=80',
+    aboutBadge:'⭐ 4.8 · +350 avaliações',
+    aboutTag:'A nossa história',
+    aboutTitle:'A adrenalina pura de Nazaré',
+    aboutSub:'A Praia Norte recebe recordes mundiais todos os invernos. Mas temos também spots perfeitos para iniciantes. Venha descobrir por que Nazaré atrai surfistas do mundo inteiro.',
+    feat:[['⚡','Ondas lendárias','O mesmo oceano que produziu as maiores ondas do mundo está aqui.'],['📸','Fotografia incluída','Imortalizamos o teu primeiro momento a surfar em Nazaré.'],['🏨','Pacotes completos','Surf + alojamento + transfer desde Lisboa disponíveis.']],
+  },
+  'surf-peniche': {
+    name:'Peniche Surf Academy', logo:'Peniche <span>Surf</span> Academy',
+    gold:'#818CF8', rgb:'129,140,248', navy:'#04040F', ocean:'#080818',
+    heroImg:'https://images.unsplash.com/photo-1465919292275-c60ba49da6ae?auto=format&fit=crop&w=1920&q=85',
+    heroOverlay:'linear-gradient(150deg,rgba(4,4,15,.92) 0%,rgba(4,4,15,.40) 55%,rgba(4,4,15,.80) 100%)',
+    badge:'🎓 Academia ISA · Peniche · Capital Europeia do Surf',
+    h1:'Progressão técnica<br>sem <em>compromissos</em>',
+    sub:'Peniche acolhe o WSL Championship Tour todos os anos — as melhores ondas do circuito mundial. A nossa academia garante evolução real, com análise de vídeo em cada sessão.',
+    stats:[['1.2k+','Alunos'],['20','Anos'],['96%','Progressão'],['WSL','Parceiro']],
+    aboutImg:'https://images.unsplash.com/photo-1516939884836-3b6239a55eda?auto=format&fit=crop&w=800&q=80',
+    aboutBadge:'⭐ 4.9 · +520 avaliações',
+    aboutTag:'Metodologia',
+    aboutTitle:'Academia de alto rendimento',
+    aboutSub:'Análise de vídeo após cada sessão, planos de treino personalizados e instrutores que já formaram campeões nacionais. Peniche não é só uma praia — é o seu laboratório de surf.',
+    feat:[['📹','Análise de vídeo','Gravamos cada sessão e analisamos a tua técnica frame a frame.'],['📋','Plano de treino','Programa individualizado para atingir os teus objetivos.'],['🏆','Instrutores de elite','Formados pelo WSL e pela FPS — a elite do ensino do surf em Portugal.']],
+  },
+  'surf-lagos': {
+    name:'Lagos Surf Club', logo:'Lagos <span>Surf</span> Club',
+    gold:'#FB923C', rgb:'251,146,60', navy:'#0D0600', ocean:'#1A0D00',
+    heroImg:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=85',
+    heroOverlay:'linear-gradient(150deg,rgba(13,6,0,.86) 0%,rgba(13,6,0,.38) 55%,rgba(13,6,0,.76) 100%)',
+    badge:'☀️ Surf & Lifestyle · Lagos · Algarve Dourado',
+    h1:'Sol, ondas e surf<br>no <em>Algarve</em> perfeito',
+    sub:'Lagos combina falésias douradas, águas turquesa e o melhor clima de Portugal. Aprende a surfar com o cenário mais deslumbrante da Europa como pano de fundo.',
+    stats:[['600+','Surfistas'],['10','Anos'],['99%','Satisfação'],['ISA','Certificado']],
+    aboutImg:'https://images.unsplash.com/photo-1559827291-3cd07d93ce11?auto=format&fit=crop&w=800&q=80',
+    aboutBadge:'⭐ 5.0 · +280 avaliações',
+    aboutTag:'Bem-vindo ao Algarve',
+    aboutTitle:'O surf que o Algarve merecia',
+    aboutSub:'Além das praias de turismo, Lagos tem spots de surf incríveis e pouco conhecidos. Grupos familiares, casais e amigos — o pacote perfeito para a vossa aventura algarviana.',
+    feat:[['🌅','Clima perfeito','300 dias de sol por ano e águas até 22°C no verão.'],['👨‍👩‍👧','Para a família toda','Programas para crianças a partir dos 7 anos e adultos de todas as idades.'],['🍹','Lifestyle completo','Yoga ao nascer do sol, SUP ao pôr-do-sol e jantar na praia após a aula.']],
+  },
+  'surf-sagres': {
+    name:'Sagres Wild Surf', logo:'Sagres <span>Wild</span> Surf',
+    gold:'#C084FC', rgb:'192,132,252', navy:'#06030E', ocean:'#0F0820',
+    heroImg:'https://images.unsplash.com/photo-1527089930014-f4ba4ff9c82f?auto=format&fit=crop&w=1920&q=85',
+    heroOverlay:'linear-gradient(150deg,rgba(6,3,14,.92) 0%,rgba(6,3,14,.38) 55%,rgba(6,3,14,.84) 100%)',
+    badge:'🌑 Wild Surf · Sagres · Fim do Mundo',
+    h1:'No fim do mundo<br><em>começa</em> tudo',
+    sub:'Sagres é o ponto mais a sudoeste da Europa. Cabo de São Vicente. Onde os ventos da Costa Vicentina encontram o Atlântico aberto e criam as ondas mais selvagens e autênticas do país.',
+    stats:[['400+','Surfistas'],['7','Anos'],['98%','Satisfação'],['ISA','Certificado']],
+    aboutImg:'https://images.unsplash.com/photo-1484291470158-b8f8d608850d?auto=format&fit=crop&w=800&q=80',
+    aboutBadge:'⭐ 4.9 · +170 avaliações',
+    aboutTag:'A nossa essência',
+    aboutTitle:'Autêntico. Selvagem. Inesquecível.',
+    aboutSub:'Em Sagres não há resorts nem turismo de massa. Há autenticidade pura, por do sol mais dramático da Europa e ondas que te fazem sentir verdadeiramente vivo. Surf como foi inventado.',
+    feat:[['🌑','Fim do mundo real','Cabo de São Vicente — o farol que guiou os navegadores portugueses.'],['🌊','Ondas consistentes','Exposição total ao Atlântico Norte garante surf 350 dias por ano.'],['🔇','Zero turismo de massa','Sagres ainda é um segredo. Partilhamo-lo contigo com orgulho.']],
+  },
 };
+
 const _escolaParam = new URLSearchParams(window.location.search).get('escola') || 'escola-teste';
 const _theme = DEMO_THEMES[_escolaParam] || DEMO_THEMES['escola-teste'];
-// Apply CSS custom properties
+
+// ── Apply CSS custom properties immediately ──────────────────────────────────
 const _root = document.documentElement;
 _root.style.setProperty('--gold', _theme.gold);
 _root.style.setProperty('--navy', _theme.navy);
 _root.style.setProperty('--ocean', _theme.ocean);
-// Inject targeted overrides for hardcoded rgba(gold) values in CSS
+
+// Inject targeted CSS overrides for hardcoded rgba(gold) values
 (function(){
   const s = document.createElement('style');
   const g = _theme.gold, r = _theme.rgb, n = _theme.navy;
@@ -1440,14 +1533,73 @@ _root.style.setProperty('--ocean', _theme.ocean);
     .price-card.featured{border-color:rgba(${r},.4)!important}
     .tag-all{background:rgba(${r},.18)!important;color:${g}!important;border-color:rgba(${r},.3)!important}
     .footer-logo span,.logo span{color:${g}!important}
+    .hero-ov{background:${_theme.heroOverlay}!important}
   `;
   document.head.appendChild(s);
 })();
-// Update school name in nav logo and footer
+
+// ── Apply hero background image immediately ──────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.logo, .footer-logo').forEach(el => {
-    el.innerHTML = `${_theme.name.split(' ').slice(0,-1).join(' ')} <span>${_theme.name.split(' ').pop()}</span>`;
-  });
+  // Logo & footer school name
+  document.querySelectorAll('.logo, .footer-logo').forEach(el => { el.innerHTML = _theme.logo; });
+
+  // Hero background
+  const hp = document.getElementById('hero-photo');
+  if (hp) hp.style.backgroundImage = `url('${_theme.heroImg}')`;
+
+  // Hero badge
+  const badge = document.querySelector('.hero-badge');
+  if (badge) badge.textContent = _theme.badge;
+
+  // Apply all text overrides AFTER translations have run
+  setTimeout(() => {
+    // Hero H1 (override data-t content)
+    const h1 = document.querySelector('.hero h1');
+    if (h1) h1.innerHTML = _theme.h1;
+
+    // Hero subtitle
+    const sub = document.querySelector('.hero > .hero-content > p, .hero-content > p');
+    if (sub) sub.textContent = _theme.sub;
+
+    // Hero stats
+    const statNums = document.querySelectorAll('.stat-num');
+    const statLabels = document.querySelectorAll('.stat-label');
+    _theme.stats.forEach(([n,l], i) => {
+      if (statNums[i]) statNums[i].textContent = n;
+      if (statLabels[i]) statLabels[i].textContent = l;
+    });
+
+    // About photo
+    const aboutImg = document.querySelector('.about-photo-wrap img');
+    if (aboutImg) aboutImg.src = _theme.aboutImg;
+
+    // About badge
+    const ab = document.querySelector('.about-badge');
+    if (ab) ab.innerHTML = `<strong>${_theme.aboutBadge.split('·')[0].trim()}</strong><span>${_theme.aboutBadge.split('·')[1]?.trim()||''}</span>`;
+
+    // About section tag, title, subtitle
+    const aboutSection = document.getElementById('sobre');
+    if (aboutSection) {
+      const tag = aboutSection.querySelector('.section-tag');
+      const title = aboutSection.querySelector('.section-title, h2');
+      const desc = aboutSection.querySelector('.section-sub');
+      if (tag) tag.textContent = _theme.aboutTag;
+      if (title) title.textContent = _theme.aboutTitle;
+      if (desc) desc.textContent = _theme.aboutSub;
+
+      // Feature blocks
+      const feats = aboutSection.querySelectorAll('.feature');
+      _theme.feat.forEach(([icon, title, desc], i) => {
+        if (!feats[i]) return;
+        const fi = feats[i].querySelector('.feature-icon');
+        const fh = feats[i].querySelector('h4');
+        const fp = feats[i].querySelector('p');
+        if (fi) fi.textContent = icon;
+        if (fh) fh.textContent = title;
+        if (fp) fp.textContent = desc;
+      });
+    }
+  }, 80);
 });
 
 // ── BOOKING STATE ─────────────────────────────────────────────────────────────

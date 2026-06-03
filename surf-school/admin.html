@@ -1141,6 +1141,36 @@
   const ADMIN_EMAIL  = 'ivocasimiro@gmail.com';
   const COMMISSION   = 0.05;
 
+  // ── School accent themes (mirrors the public booking site colours) ────────
+  const SCHOOL_THEMES = {
+    'escola-teste':  { cyan:'#00CFFD', blue:'#0070F3', rgb:'0,207,253' },
+    'surf-arrifana': { cyan:'#10B981', blue:'#059669', rgb:'16,185,129' },
+    'surf-nazare':   { cyan:'#F59E0B', blue:'#D97706', rgb:'245,158,11' },
+    'surf-peniche':  { cyan:'#818CF8', blue:'#6366F1', rgb:'129,140,248' },
+    'surf-lagos':    { cyan:'#FB923C', blue:'#EA580C', rgb:'251,146,60' },
+    'surf-sagres':   { cyan:'#C084FC', blue:'#A855F7', rgb:'192,132,252' },
+  };
+  function applyAdminTheme(schoolId) {
+    const t = SCHOOL_THEMES[schoolId] || SCHOOL_THEMES['escola-teste'];
+    const r = document.documentElement;
+    r.style.setProperty('--cyan', t.cyan);
+    r.style.setProperty('--blue', t.blue);
+    // Override hardcoded rgba(0,207,253,...) usages
+    let s = document.getElementById('_admin_theme_style');
+    if (!s) { s = document.createElement('style'); s.id = '_admin_theme_style'; document.head.appendChild(s); }
+    s.textContent = `
+      .status-confirmed{background:rgba(${t.rgb},.15)!important;color:${t.cyan}!important;border-color:rgba(${t.rgb},.3)!important}
+      .btn-login,.btn-action,.btn-primary-sm{background:linear-gradient(135deg,${t.blue},${t.cyan})!important}
+      .btn-confirm{background:rgba(${t.rgb},.15)!important;border-color:rgba(${t.rgb},.35)!important;color:${t.cyan}!important}
+      input:focus,select:focus{border-color:${t.cyan}!important}
+      .stat-card.active{border-color:${t.cyan}!important;background:rgba(${t.rgb},.1)!important}
+      .topbar-logo span{color:${t.cyan}!important}
+      .booking-row:hover{border-color:rgba(${t.rgb},.2)!important}
+    `;
+  }
+  // Apply on load from URL param (pre-login branding) and on school switch
+  applyAdminTheme(new URLSearchParams(window.location.search).get('escola') || 'escola-teste');
+
   const { createClient } = supabase;
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1357,6 +1387,7 @@
     const last  = parts[parts.length - 1];
     document.getElementById('topbar-logo').innerHTML =
       schoolId ? `${first} <span>${last}</span>` : `<span>Todas</span> as Escolas`;
+    applyAdminTheme(schoolId || 'escola-teste');
   }
 
   // ── DATA ──────────────────────────────────────────────────────

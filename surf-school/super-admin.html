@@ -835,7 +835,7 @@
           <div class="sc-id">${s.id}</div>
         </div>
         <div style="font-size:.78rem;color:var(--gray);margin-bottom:.9rem">📍 ${s.region}</div>
-        <div style="margin-bottom:.6rem;font-size:.72rem;color:var(--gray)">Este mês <span id="sc-tier-${s.id}"></span></div>
+        <div style="margin-bottom:.6rem;font-size:.72rem;color:var(--gray)"><span class="sc-month-label">Este mês</span> <span id="sc-tier-${s.id}"></span></div>
         <div class="sc-stats">
           <div class="sc-stat"><div class="sc-val" id="sc-bookings-${s.id}">—</div><div class="sc-lbl">Aulas</div></div>
           <div class="sc-stat"><div class="sc-val sc-revenue" id="sc-revenue-${s.id}">—</div><div class="sc-lbl">Receita</div></div>
@@ -893,7 +893,13 @@
 
   function updateSchoolCards() {
     const now = new Date();
-    const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const defaultMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const fMonthEl = document.getElementById('f-month');
+    const monthKey = fMonthEl?.value || defaultMonth;
+    const monthLabel = fMonthEl?.value
+      ? new Date(monthKey + '-15').toLocaleString('pt-PT', { month: 'long', year: 'numeric' })
+      : 'Este mês';
+    document.querySelectorAll('.sc-month-label').forEach(el => { el.textContent = monthLabel; });
 
     SCHOOLS.forEach(s => {
       const sBookings = allBookings.filter(b => b.school_id === s.id && b.status !== 'cancelled' && b.booking_date.startsWith(monthKey));
@@ -942,6 +948,7 @@
 
     renderGlobalStats(filtered);
     renderTable(filtered);
+    updateSchoolCards();
   }
 
   let saRevPeriod = 'month';
