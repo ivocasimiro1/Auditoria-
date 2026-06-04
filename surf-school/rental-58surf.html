@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>58 Surf — Alugueres</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ===== RESET & VARIABLES ===== */
+    :root {
+      --bg:      #080e1c;
+      --bg2:     #0d1528;
+      --card:    #131e30;
+      --card2:   #182438;
+      --border:  #1a2e48;
+      --border2: #24405e;
+      --amber:   #f59e0b;
+      --amber2:  #d97706;
+      --ocean:   #0ea5e9;
+      --cyan:    #22d3ee;
+      --green:   #10b981;
+      --green2:  #059669;
+      --red:     #ef4444;
+      --red2:    #dc2626;
+      --orange:  #f97316;
+      --white:   #dde8ff;
+      --muted:   #4e6280;
+      --muted2:  #7a93b5;
+      color-scheme: dark;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--white); min-height: 100vh; }
+    a { color: inherit; text-decoration: none; }
+
+    /* ===== SCREENS ===== */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ===== TYPOGRAPHY ===== */
+    .logo-58 { font-size: 3rem; font-weight: 900; color: var(--amber); letter-spacing: -3px; line-height: 1; }
+    .logo-surf { font-size: 0.7rem; font-weight: 700; letter-spacing: 6px; color: var(--muted2); text-transform: uppercase; margin-top: 2px; }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 10px 20px; border-radius: 9px; border: none; cursor: pointer;
+      font-family: inherit; font-size: 0.88rem; font-weight: 600;
+      transition: all 0.18s; white-space: nowrap;
+    }
+    .btn-amber  { background: var(--amber);  color: #000; }
+    .btn-amber:hover { background: var(--amber2); }
+    .btn-ocean  { background: var(--ocean);  color: #fff; }
+    .btn-ocean:hover { background: #0284c7; }
+    .btn-green  { background: var(--green);  color: #fff; }
+    .btn-green:hover { background: var(--green2); }
+    .btn-red    { background: var(--red);    color: #fff; }
+    .btn-red:hover { background: var(--red2); }
+    .btn-ghost  { background: transparent; border: 1px solid var(--border2); color: var(--white); }
+    .btn-ghost:hover { background: var(--card2); }
+    .btn-sm { padding: 6px 13px; font-size: 0.8rem; }
+    .btn-full { width: 100%; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ===== FORMS ===== */
+    .fgroup { margin-bottom: 15px; }
+    .fgroup label { display: block; font-size: 0.76rem; color: var(--muted2); margin-bottom: 5px; font-weight: 600; letter-spacing: 0.3px; }
+    .finput {
+      width: 100%; background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 13px; color: var(--white);
+      font-size: 0.88rem; font-family: inherit; outline: none;
+      transition: border-color 0.2s;
+    }
+    .finput:focus { border-color: var(--amber); }
+    textarea.finput { resize: vertical; min-height: 72px; }
+    .finput-row { display: grid; gap: 12px; }
+    .finput-row.cols2 { grid-template-columns: 1fr 1fr; }
+
+    /* ===== LOGIN SCREEN ===== */
+    .login-wrap {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at 60% 40%, #0d2040 0%, var(--bg) 70%);
+      padding: 20px;
+    }
+    .login-box {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 18px; padding: 40px 36px; width: 100%; max-width: 400px;
+    }
+    .login-brand { text-align: center; margin-bottom: 32px; }
+    .login-brand img { height: 56px; object-fit: contain; display: none; }
+    .login-brand img.loaded { display: block; margin: 0 auto; }
+    .login-err { color: var(--red); font-size: 0.82rem; margin-bottom: 12px; display: none; }
+
+    /* ===== STORE SELECT SCREEN ===== */
+    .store-wrap {
+      min-height: 100vh; display: flex; align-items: flex-start; justify-content: center;
+      padding: 60px 20px 40px;
+    }
+    .store-wrap-inner { width: 100%; max-width: 640px; }
+    .store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 24px; }
+    .store-card {
+      background: var(--card2); border: 1.5px solid var(--border); border-radius: 13px;
+      padding: 22px 16px; cursor: pointer; text-align: center; transition: all 0.2s;
+    }
+    .store-card:hover { border-color: var(--amber); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(245,158,11,0.12); }
+    .store-card-icon { font-size: 2rem; margin-bottom: 8px; }
+    .store-card-name { font-weight: 700; font-size: 0.9rem; }
+    .store-card-loc { font-size: 0.75rem; color: var(--muted2); margin-top: 3px; }
+
+    /* ===== DASHBOARD HEADER ===== */
+    .app-header {
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      padding: 0 20px; height: 58px; display: flex; align-items: center; gap: 14px;
+      position: sticky; top: 0; z-index: 200;
+    }
+    .hdr-logo { display: flex; flex-direction: column; align-items: flex-start; line-height: 1; }
+    .hdr-logo .logo-58 { font-size: 1.6rem; letter-spacing: -1.5px; }
+    .hdr-logo .logo-surf { font-size: 0.55rem; letter-spacing: 4px; margin-top: 1px; }
+    .hdr-divider { width: 1px; height: 28px; background: var(--border2); }
+    .hdr-store {
+      background: var(--card); border: 1px solid var(--border); border-radius: 7px;
+      padding: 4px 12px; font-size: 0.8rem; color: var(--muted2);
+    }
+    .hdr-store strong { color: var(--white); }
+    .hdr-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .hdr-time { font-size: 0.78rem; color: var(--muted); }
+    .overdue-banner {
+      background: linear-gradient(90deg, rgba(239,68,68,0.18) 0%, rgba(239,68,68,0.05) 100%);
+      border-bottom: 1px solid rgba(239,68,68,0.3);
+      padding: 8px 20px; display: none; align-items: center; gap: 10px;
+      font-size: 0.85rem; color: var(--red);
+    }
+    .overdue-banner.visible { display: flex; }
+    .overdue-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--red); animation: pulse 1.5s infinite; flex-shrink: 0; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }
+
+    /* ===== STATS BAR ===== */
+    .stats-bar {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;
+      padding: 14px 20px; background: var(--bg2); border-bottom: 1px solid var(--border);
+    }
+    .scard { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; }
+    .scard-label { font-size: 0.72rem; color: var(--muted2); margin-bottom: 3px; font-weight: 600; }
+    .scard-val { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+    .scard-val.c-active  { color: var(--cyan); }
+    .scard-val.c-overdue { color: var(--red); }
+    .scard-val.c-today   { color: var(--amber); }
+    .scard-val.c-month   { color: var(--green); }
+
+    /* ===== MAIN CONTENT ===== */
+    .main { padding: 18px 20px; max-width: 1280px; margin: 0 auto; }
+
+    /* ===== TABS ===== */
+    .tabs { display: flex; gap: 4px; background: var(--card); border-radius: 10px; padding: 4px; width: fit-content; margin-bottom: 18px; }
+    .tab-btn {
+      padding: 7px 18px; border-radius: 7px; border: none; background: transparent;
+      color: var(--muted2); cursor: pointer; font-family: inherit; font-size: 0.84rem; font-weight: 600;
+      transition: all 0.18s;
+    }
+    .tab-btn.active { background: var(--ocean); color: #fff; }
+    .tab-btn.tab-overdue.has-overdue { background: rgba(239,68,68,0.12); color: var(--red); }
+    .tab-btn.tab-overdue.has-overdue.active { background: var(--red); color: #fff; }
+
+    /* ===== ACTION BAR ===== */
+    .abar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+    .abar-title { font-size: 0.9rem; font-weight: 600; color: var(--muted2); }
+
+    /* ===== RENTAL CARDS (ACTIVE) ===== */
+    .rental-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+    .rental-card {
+      background: var(--card); border: 1.5px solid var(--border);
+      border-radius: 13px; padding: 16px; position: relative; overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .rental-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--green); transition: background 0.3s; }
+    .rental-card.overdue { border-color: rgba(239,68,68,0.4); }
+    .rental-card.overdue::before { background: var(--red); }
+    .rc-client { font-size: 1rem; font-weight: 700; margin-bottom: 3px; display: flex; align-items: center; gap: 8px; }
+    .rc-phone { font-size: 0.78rem; color: var(--muted2); margin-bottom: 10px; }
+    .rc-items { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+    .item-chip {
+      background: var(--bg2); border: 1px solid var(--border2); border-radius: 6px;
+      padding: 3px 9px; font-size: 0.74rem; color: var(--white);
+    }
+    .rc-timing {
+      background: var(--bg2); border-radius: 9px; padding: 9px 12px;
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 11px;
+    }
+    .rc-timer { font-size: 1rem; font-weight: 800; color: var(--cyan); font-variant-numeric: tabular-nums; }
+    .rc-timer.overdue-time { color: var(--red); }
+    .rc-dates { font-size: 0.72rem; color: var(--muted2); text-align: right; }
+    .rc-days-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 700; background: rgba(245,158,11,0.12); color: var(--amber);
+    }
+    .rc-actions { display: flex; gap: 7px; }
+
+    /* ===== HISTORY TABLE ===== */
+    .hist-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .hist-filters .finput { width: auto; min-width: 150px; padding: 8px 11px; font-size: 0.83rem; }
+    .tbl-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+    thead th {
+      background: var(--card2); padding: 10px 13px; text-align: left;
+      color: var(--muted2); font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.14s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--card); }
+    tbody td { padding: 10px 13px; vertical-align: middle; }
+    .status-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px; font-size: 0.74rem; font-weight: 700;
+    }
+    .sc-active   { background: rgba(34,211,238,0.1);  color: var(--cyan); }
+    .sc-returned { background: rgba(100,116,139,0.18); color: var(--muted2); }
+    .sc-overdue  { background: rgba(239,68,68,0.15);  color: var(--red); }
+
+    /* ===== ANALYTICS TAB ===== */
+    .analytics-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+    .analytics-grid .analytics-full { grid-column: 1 / -1; }
+    .an-card { background: var(--card); border: 1px solid var(--border); border-radius: 13px; padding: 18px; }
+    .an-title { font-size: 0.82rem; font-weight: 700; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
+    .chart-container { position: relative; height: 220px; }
+    .an-list-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.84rem;
+    }
+    .an-list-item:last-child { border-bottom: none; }
+    .an-bar-wrap { flex: 1; margin: 0 12px; background: var(--border); border-radius: 3px; height: 6px; overflow: hidden; }
+    .an-bar { height: 100%; background: var(--amber); border-radius: 3px; transition: width 0.4s; }
+    .overdue-list-card {
+      background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+    }
+    .overdue-list-card .client-name { font-weight: 700; }
+    .overdue-list-card .overdue-meta { font-size: 0.76rem; color: var(--red); margin-top: 3px; }
+
+    /* ===== MODALS ===== */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.72);
+      z-index: 500; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card); border: 1px solid var(--border2);
+      border-radius: 16px; width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto;
+    }
+    .modal-hdr {
+      padding: 18px 22px 14px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0;
+      background: var(--card); z-index: 1;
+    }
+    .modal-title { font-size: 1.05rem; font-weight: 700; }
+    .modal-close { background: none; border: none; color: var(--muted2); cursor: pointer; font-size: 1.1rem; padding: 4px; }
+    .modal-close:hover { color: var(--white); }
+    .modal-body { padding: 18px 22px; }
+    .modal-footer { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* ===== STEP INDICATOR ===== */
+    .steps-row { display: flex; gap: 6px; margin-bottom: 20px; }
+    .step-seg { height: 3px; flex: 1; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+    .step-seg.active { background: var(--ocean); }
+    .step-seg.done   { background: var(--green); }
+    .mstep { display: none; }
+    .mstep.active { display: block; }
+    .step-label { font-size: 0.78rem; font-weight: 700; color: var(--muted2); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ===== ITEM PICKER ===== */
+    .item-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 14px; }
+    .ipc {
+      background: var(--bg2); border: 2px solid var(--border); border-radius: 10px;
+      padding: 11px 10px; cursor: pointer; text-align: center; transition: all 0.18s;
+    }
+    .ipc:hover { border-color: var(--ocean); }
+    .ipc.sel { border-color: var(--amber); background: rgba(245,158,11,0.08); }
+    .ipc-icon { font-size: 1.5rem; margin-bottom: 4px; }
+    .ipc-name { font-size: 0.78rem; font-weight: 700; }
+    .selected-items-list { margin: 0 0 16px; }
+    .sil-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 0; border-bottom: 1px solid var(--border);
+    }
+    .sil-row:last-child { border-bottom: none; }
+    .sil-name { flex: 1; font-size: 0.86rem; font-weight: 600; }
+    .sil-size select {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+      padding: 4px 8px; color: var(--white); font-size: 0.78rem; font-family: inherit; outline: none;
+    }
+    .sil-qty { display: flex; align-items: center; gap: 5px; }
+    .qty-btn {
+      width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border2);
+      background: var(--bg2); color: var(--white); cursor: pointer; font-size: 0.85rem;
+      display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+    }
+    .qty-btn:hover { border-color: var(--amber); color: var(--amber); }
+    .qty-num { font-size: 0.86rem; font-weight: 700; min-width: 18px; text-align: center; }
+    .rm-item { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 3px; }
+    .rm-item:hover { color: var(--red); }
+
+    /* ===== DURATION PICKER ===== */
+    .dur-row { display: flex; gap: 10px; margin-bottom: 16px; }
+    .dur-btn {
+      flex: 1; background: var(--bg2); border: 2px solid var(--border); border-radius: 9px;
+      padding: 12px 8px; cursor: pointer; text-align: center; color: var(--white);
+      font-family: inherit; font-weight: 700; font-size: 0.9rem; transition: all 0.18s;
+    }
+    .dur-btn:hover { border-color: var(--ocean); }
+    .dur-btn.sel { border-color: var(--amber); background: rgba(245,158,11,0.08); color: var(--amber); }
+    .dur-sub { font-size: 0.7rem; color: var(--muted2); font-weight: 500; margin-top: 3px; }
+
+    /* ===== SUMMARY ===== */
+    .rental-summary {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px;
+    }
+    .rs-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 0.84rem; }
+    .rs-row:last-child { border-bottom: none; }
+    .rs-label { color: var(--muted2); }
+    .rs-value { font-weight: 600; }
+
+    /* ===== RETURN MODAL ===== */
+    .return-hero { text-align: center; padding: 20px 0 16px; }
+    .ret-elapsed { font-size: 2.8rem; font-weight: 900; color: var(--cyan); font-variant-numeric: tabular-nums; line-height: 1; }
+    .ret-elapsed.overdue-time { color: var(--red); }
+    .ret-sub { font-size: 0.82rem; color: var(--muted2); margin-top: 5px; }
+
+    /* ===== CLIENT SEARCH ===== */
+    .client-results { margin-top: 6px; max-height: 160px; overflow-y: auto; }
+    .cr { padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; margin-bottom: 5px; transition: all 0.15s; }
+    .cr:hover { border-color: var(--amber); background: rgba(245,158,11,0.04); }
+    .cr-name { font-weight: 700; font-size: 0.86rem; }
+    .cr-meta { font-size: 0.74rem; color: var(--muted2); }
+
+    /* ===== SETUP NOTICE ===== */
+    .setup-notice {
+      background: rgba(249,115,22,0.08); border: 1px solid rgba(249,115,22,0.3);
+      border-radius: 12px; padding: 16px; margin: 16px 20px; display: none;
+    }
+    .setup-notice.visible { display: block; }
+
+    /* ===== EMPTY STATE ===== */
+    .empty { text-align: center; padding: 56px 20px; color: var(--muted); }
+    .empty-icon { font-size: 3rem; margin-bottom: 14px; }
+    .empty-title { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .empty-text { font-size: 0.82rem; }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed; bottom: 22px; right: 22px; z-index: 9999;
+      background: var(--card2); border: 1px solid var(--border2); border-radius: 10px;
+      padding: 11px 18px; display: flex; align-items: center; gap: 9px;
+      font-size: 0.88rem; max-width: 320px;
+      transform: translateY(70px); transition: transform 0.28s; pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); }
+    .toast.success { border-left: 3px solid var(--green); }
+    .toast.error   { border-left: 3px solid var(--red); }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      .analytics-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .stats-bar { grid-template-columns: repeat(2,1fr); padding: 10px 12px; }
+      .main { padding: 12px; }
+      .rental-grid { grid-template-columns: 1fr; }
+      .finput-row.cols2 { grid-template-columns: 1fr; }
+      .hdr-time { display: none; }
+      .col-hide { display: none; }
+      .hist-filters .finput { min-width: 120px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- =====================================================
+     SETUP NOTICE (shown if table doesn't exist)
+===================================================== -->
+<div id="setup-notice" class="setup-notice" style="display:none;">
+  <strong style="color:var(--orange);">⚙️ Configuração inicial necessária</strong>
+  <p style="font-size:0.82rem;margin-top:8px;color:var(--muted2);">
+    Cria a tabela <code style="color:var(--amber);">surf_rentals</code> no Supabase executando o SQL abaixo:
+  </p>
+  <pre style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:10px;font-size:0.76rem;overflow-x:auto;color:var(--cyan);">CREATE TABLE surf_rentals (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  store_id TEXT NOT NULL,
+  client_name TEXT NOT NULL,
+  client_phone TEXT,
+  client_email TEXT,
+  client_id_doc TEXT,
+  items JSONB NOT NULL DEFAULT '[]',
+  rental_start TIMESTAMPTZ NOT NULL DEFAULT now(),
+  rental_days INTEGER NOT NULL DEFAULT 1,
+  expected_return TIMESTAMPTZ NOT NULL,
+  actual_return TIMESTAMPTZ,
+  status TEXT NOT NULL DEFAULT 'active',
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE surf_rentals ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "allow_all" ON surf_rentals FOR ALL USING (true) WITH CHECK (true);</pre>
+</div>
+
+<!-- =====================================================
+     SCREEN: LOGIN
+===================================================== -->
+<div id="screen-login" class="screen active">
+  <div class="login-wrap">
+    <div class="login-box">
+      <div class="login-brand">
+        <div class="logo-58">58</div>
+        <div class="logo-surf">Surf</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:10px;">Gestão de Alugueres</div>
+      </div>
+      <div class="fgroup">
+        <label>Email</label>
+        <input id="l-email" class="finput" type="email" placeholder="staff@despomar.com" autocomplete="email">
+      </div>
+      <div class="fgroup">
+        <label>Password</label>
+        <input id="l-pass" class="finput" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div id="l-err" class="login-err"></div>
+      <button class="btn btn-amber btn-full" onclick="doLogin()">Entrar</button>
+      <div style="text-align:center;margin-top:14px;font-size:0.76rem;color:var(--muted);">Grupo Despomar · Portugal</div>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================
+     SCREEN: STORE SELECT
+===================================================== -->
+<div id="screen-store-select" class="screen">
+  <div class="store-wrap">
+    <div class="store-wrap-inner">
+      <div style="text-align:center;margin-bottom:4px;">
+        <div class="logo-58">58</div>
+        <div class="logo-surf" style="text-align:center;">Surf</div>
+        <div style="font-size:0.85rem;color:var(--muted2);margin-top:10px;">Selecciona a loja para esta sessão</div>
+      </div>
+      <div id="store-grid" class="store-grid"></div>
+      <div style="text-align:center;margin-top:20px;">
+        <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sair</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================
+     SCREEN: DASHBOARD
+===================================================== -->
+<div id="screen-dashboard" class="screen">
+
+  <!-- Header -->
+  <div class="app-header">
+    <div class="hdr-logo">
+      <div class="logo-58">58</div>
+      <div class="logo-surf">Surf</div>
+    </div>
+    <div class="hdr-divider"></div>
+    <div class="hdr-store">🏪 <strong id="hdr-store-name">–</strong></div>
+    <div class="hdr-right">
+      <div class="hdr-time" id="hdr-time">–</div>
+      <button class="btn btn-ghost btn-sm" onclick="changeStore()">Trocar loja</button>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <!-- Overdue banner -->
+  <div id="overdue-banner" class="overdue-banner">
+    <div class="overdue-pulse"></div>
+    <span id="overdue-banner-text">Alugueres em atraso</span>
+    <button class="btn btn-red btn-sm" style="margin-left:auto;" onclick="switchTab('overdue')">Ver agora</button>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="scard">
+      <div class="scard-label">Em aluguer</div>
+      <div class="scard-val c-active" id="s-active">0</div>
+    </div>
+    <div class="scard">
+      <div class="scard-label">Em atraso</div>
+      <div class="scard-val c-overdue" id="s-overdue">0</div>
+    </div>
+    <div class="scard">
+      <div class="scard-label">Devolvidos hoje</div>
+      <div class="scard-val c-today" id="s-today">0</div>
+    </div>
+    <div class="scard">
+      <div class="scard-label">Total este mês</div>
+      <div class="scard-val c-month" id="s-month">0</div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('active')" id="tb-active">Activos</button>
+      <button class="tab-btn tab-overdue" onclick="switchTab('overdue')" id="tb-overdue">🚨 Em Atraso</button>
+      <button class="tab-btn" onclick="switchTab('history')" id="tb-history">Histórico</button>
+      <button class="tab-btn" onclick="switchTab('analytics')" id="tb-analytics">📊 Dashboard</button>
+    </div>
+
+    <!-- TAB: ACTIVE -->
+    <div id="tab-active">
+      <div class="abar">
+        <div class="abar-title">Alugueres activos</div>
+        <button class="btn btn-amber" onclick="openNewRental()">+ Novo Aluguer</button>
+      </div>
+      <div id="active-grid" class="rental-grid"></div>
+      <div id="active-empty" class="empty" style="display:none;">
+        <div class="empty-icon">🏄</div>
+        <div class="empty-title">Sem alugueres activos</div>
+        <div class="empty-text">Clica em "Novo Aluguer" para começar.</div>
+      </div>
+    </div>
+
+    <!-- TAB: OVERDUE -->
+    <div id="tab-overdue" style="display:none;">
+      <div class="abar">
+        <div class="abar-title" style="color:var(--red);">🚨 Em atraso — material não devolvido</div>
+        <button class="btn btn-amber" onclick="openNewRental()">+ Novo Aluguer</button>
+      </div>
+      <div id="overdue-grid" class="rental-grid"></div>
+      <div id="overdue-empty" class="empty" style="display:none;">
+        <div class="empty-icon">✅</div>
+        <div class="empty-title">Sem atrasos</div>
+        <div class="empty-text">Todo o material foi devolvido dentro do prazo.</div>
+      </div>
+    </div>
+
+    <!-- TAB: HISTORY -->
+    <div id="tab-history" style="display:none;">
+      <div class="abar">
+        <div class="abar-title">Histórico de alugueres</div>
+        <button class="btn btn-amber" onclick="openNewRental()">+ Novo Aluguer</button>
+      </div>
+      <div class="hist-filters">
+        <input type="date" id="f-date" class="finput" oninput="renderHistory()">
+        <select id="f-status" class="finput" onchange="renderHistory()">
+          <option value="">Todos os estados</option>
+          <option value="returned">Devolvido</option>
+          <option value="overdue">Em atraso</option>
+        </select>
+        <input type="text" id="f-search" class="finput" placeholder="Nome / telefone..." oninput="renderHistory()">
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Material</th>
+              <th class="col-hide">Início</th>
+              <th>Dias</th>
+              <th class="col-hide">Devolução prev.</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="hist-tbody"></tbody>
+        </table>
+      </div>
+      <div id="hist-empty" class="empty" style="display:none;">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">Sem registos</div>
+        <div class="empty-text">O histórico aparece aqui após a devolução.</div>
+      </div>
+    </div>
+
+    <!-- TAB: ANALYTICS -->
+    <div id="tab-analytics" style="display:none;">
+      <div id="overdue-alert-list" style="margin-bottom:16px;display:none;">
+        <div style="font-size:0.82rem;font-weight:700;color:var(--red);margin-bottom:8px;">🚨 Em atraso agora</div>
+        <div id="overdue-alert-items"></div>
+      </div>
+      <div class="analytics-grid">
+        <div class="an-card">
+          <div class="an-title">Alugueres — Últimos 30 dias</div>
+          <div class="chart-container"><canvas id="chart-daily"></canvas></div>
+        </div>
+        <div class="an-card">
+          <div class="an-title">Items mais alugados</div>
+          <div id="items-ranking"></div>
+        </div>
+        <div class="an-card">
+          <div class="an-title">Alugueres por duração</div>
+          <div class="chart-container" style="height:180px;"><canvas id="chart-duration"></canvas></div>
+        </div>
+        <div class="an-card">
+          <div class="an-title">Actividade por dia da semana</div>
+          <div class="chart-container" style="height:180px;"><canvas id="chart-weekday"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /screen-dashboard -->
+
+
+<!-- =====================================================
+     MODAL: NEW RENTAL
+===================================================== -->
+<div id="modal-new" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="nr-title">Novo Aluguer</div>
+      <button class="modal-close" onclick="closeModal('modal-new')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="steps-row">
+        <div class="step-seg active" id="ss1"></div>
+        <div class="step-seg" id="ss2"></div>
+        <div class="step-seg" id="ss3"></div>
+      </div>
+
+      <!-- STEP 1: Client -->
+      <div class="mstep active" id="ms1">
+        <div class="step-label">1 — Cliente</div>
+        <div class="fgroup">
+          <label>Telefone (pesquisa cliente existente)</label>
+          <input id="nr-phone" class="finput" type="tel" placeholder="+351 9XX XXX XXX" oninput="searchClients()">
+          <div id="client-results" class="client-results"></div>
+        </div>
+        <div class="fgroup">
+          <label>Nome *</label>
+          <input id="nr-name" class="finput" type="text" placeholder="Nome completo do cliente">
+        </div>
+        <div class="finput-row cols2">
+          <div class="fgroup">
+            <label>Email</label>
+            <input id="nr-email" class="finput" type="email" placeholder="email@exemplo.com">
+          </div>
+          <div class="fgroup">
+            <label>Doc. Identidade</label>
+            <input id="nr-iddoc" class="finput" type="text" placeholder="CC / Passaporte">
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: Items + Duration -->
+      <div class="mstep" id="ms2">
+        <div class="step-label">2 — Material e duração</div>
+        <div class="item-picker-grid" id="item-picker"></div>
+        <div id="selected-items" class="selected-items-list"></div>
+        <div style="font-size:0.8rem;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Duração do aluguer</div>
+        <div class="dur-row" id="dur-row"></div>
+      </div>
+
+      <!-- STEP 3: Confirm -->
+      <div class="mstep" id="ms3">
+        <div class="step-label">3 — Confirmar</div>
+        <div id="nr-summary" class="rental-summary"></div>
+        <div class="fgroup" style="margin-top:14px;">
+          <label>Notas (estado do material, observações...)</label>
+          <textarea id="nr-notes" class="finput" placeholder="Opcional"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" id="nr-footer"></div>
+  </div>
+</div>
+
+<!-- =====================================================
+     MODAL: RETURN
+===================================================== -->
+<div id="modal-return" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">Devolução de Material</div>
+      <button class="modal-close" onclick="closeModal('modal-return')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="return-hero">
+        <div class="ret-elapsed" id="ret-elapsed">–</div>
+        <div class="ret-sub" id="ret-sub">tempo de aluguer</div>
+      </div>
+      <div id="ret-summary" class="rental-summary" style="margin-bottom:14px;"></div>
+      <div class="fgroup">
+        <label>Notas de devolução (danos, observações...)</label>
+        <textarea id="ret-notes" class="finput" placeholder="Opcional"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-return')">Cancelar</button>
+      <button class="btn btn-green" onclick="confirmReturn()">✓ Confirmar Devolução</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast">
+  <span id="toast-icon">✓</span>
+  <span id="toast-msg">–</span>
+</div>
+
+<!-- =====================================================
+     SCRIPTS
+===================================================== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+'use strict';
+
+/* =====================================================
+   CONFIG
+===================================================== */
+const SUPA_URL = 'https://ubeqidccuvsjhjphybxz.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U';
+
+const STORES = [
+  { id: '58surf-peniche',    name: '58 Peniche',   location: 'Peniche'           },
+  { id: '58surf-ericeira',   name: '58 Ericeira',  location: 'Ericeira'          },
+  { id: '58surf-matosinhos', name: '58 Matosinhos', location: 'Matosinhos'       },
+  { id: '58surf-caparica',   name: '58 Caparica',  location: 'Costa da Caparica' },
+  { id: '58surf-obidos',     name: '58 Óbidos',    location: 'Óbidos (em breve)' },
+];
+
+/* Items catalog — actualizar conforme necessário */
+const CATALOG = [
+  { id: 'prancha-soft',  name: 'Prancha Soft',   icon: '🏄',  sizes: ["5'6\"","6'0\"","7'0\"","8'0\"","9'0\""] },
+  { id: 'prancha-mini',  name: 'Mini-Malibu',    icon: '🏄',  sizes: ["7'0\"","7'6\"","8'0\"","8'6\""] },
+  { id: 'prancha-long',  name: 'Longboard',      icon: '🏄',  sizes: ["9'0\"","9'6\"","10'0\""] },
+  { id: 'bodyboard',     name: 'Bodyboard',      icon: '🌊',  sizes: ['XS','S','M','L'] },
+  { id: 'fato',          name: 'Fato de Surf',   icon: '🤿',  sizes: ['XS','S','M','L','XL','XXL'] },
+  { id: 'poncho',        name: 'Poncho',         icon: '🧥',  sizes: ['Único'] },
+  { id: 'leash',         name: 'Leash',          icon: '🪢',  sizes: ["6ft","7ft","8ft","9ft"] },
+];
+
+const DURATIONS = [
+  { label: '1 Dia',  days: 1, sub: 'até às 18h' },
+  { label: '2 Dias', days: 2, sub: '48 horas'   },
+  { label: '3 Dias', days: 3, sub: '72 horas'   },
+  { label: '1 Semana', days: 7, sub: '7 dias'   },
+];
+
+/* =====================================================
+   STATE
+===================================================== */
+let sb, currentUser, currentStore;
+let allRentals = [];
+let newRentalStep = 1;
+let returnRentalId = null;
+let timerLoop = null;
+let charts = {};
+
+let nr = { client_name:'', client_phone:'', client_email:'', client_id_doc:'', items:[], rental_days:1, notes:'' };
+
+/* =====================================================
+   INIT
+===================================================== */
+async function init() {
+  sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    renderStoreSelect();
+    showScreen('screen-store-select');
+  }
+
+  document.getElementById('l-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+}
+
+/* =====================================================
+   AUTH
+===================================================== */
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  const err   = document.getElementById('l-err');
+  err.style.display = 'none';
+
+  if (!email || !pass) { showErr('Preenche email e password.'); return; }
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { showErr('Credenciais inválidas. Tenta outra vez.'); return; }
+
+  currentUser = data.user;
+  renderStoreSelect();
+  showScreen('screen-store-select');
+
+  function showErr(msg) { err.textContent = msg; err.style.display = 'block'; }
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  currentUser = null; currentStore = null;
+  if (timerLoop) clearInterval(timerLoop);
+  showScreen('screen-login');
+}
+
+function changeStore() {
+  renderStoreSelect();
+  showScreen('screen-store-select');
+}
+
+/* =====================================================
+   SCREENS
+===================================================== */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function renderStoreSelect() {
+  document.getElementById('store-grid').innerHTML = STORES.map(s => `
+    <div class="store-card" onclick="selectStore('${s.id}')">
+      <div class="store-card-icon">🏪</div>
+      <div class="store-card-name">${s.name}</div>
+      <div class="store-card-loc">${s.location}</div>
+    </div>
+  `).join('');
+}
+
+async function selectStore(storeId) {
+  currentStore = STORES.find(s => s.id === storeId);
+  document.getElementById('hdr-store-name').textContent = currentStore.name;
+  showScreen('screen-dashboard');
+  startClock();
+  await loadRentals();
+  startTimerLoop();
+}
+
+function startClock() {
+  const tick = () => {
+    const n = new Date();
+    document.getElementById('hdr-time').textContent =
+      n.toLocaleDateString('pt-PT', { weekday:'short', day:'numeric', month:'short' }) + ' · ' +
+      n.toLocaleTimeString('pt-PT', { hour:'2-digit', minute:'2-digit' });
+  };
+  tick();
+  setInterval(tick, 30000);
+}
+
+/* =====================================================
+   DATA
+===================================================== */
+async function loadRentals() {
+  const { data, error } = await sb
+    .from('surf_rentals')
+    .select('*')
+    .eq('store_id', currentStore.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    if (error.code === '42P01') {
+      document.getElementById('setup-notice').style.display = 'block';
+      document.getElementById('setup-notice').classList.add('visible');
+    } else {
+      toast('Erro ao carregar dados', 'error');
+    }
+    return;
+  }
+
+  allRentals = data || [];
+  checkOverdueStatus();
+  renderAll();
+}
+
+function checkOverdueStatus() {
+  const now = new Date();
+  allRentals.forEach(r => {
+    if (r.status === 'active' && new Date(r.expected_return) < now) {
+      r._overdue = true;
+    }
+  });
+}
+
+function renderAll() {
+  updateStats();
+  renderActiveTab();
+  renderOverdueTab();
+  renderHistory();
+  updateOverdueBanner();
+}
+
+/* =====================================================
+   STATS
+===================================================== */
+function updateStats() {
+  const now = new Date();
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+
+  const active  = allRentals.filter(r => r.status === 'active');
+  const overdue = active.filter(r => r._overdue);
+  const retToday = allRentals.filter(r => r.status === 'returned' && r.actual_return && new Date(r.actual_return) >= todayStart);
+  const thisMonth = allRentals.filter(r => new Date(r.created_at) >= monthStart);
+
+  document.getElementById('s-active').textContent  = active.length;
+  document.getElementById('s-overdue').textContent = overdue.length;
+  document.getElementById('s-today').textContent   = retToday.length;
+  document.getElementById('s-month').textContent   = thisMonth.length;
+
+  const tbOverdue = document.getElementById('tb-overdue');
+  tbOverdue.classList.toggle('has-overdue', overdue.length > 0);
+}
+
+function updateOverdueBanner() {
+  const overdue = allRentals.filter(r => r.status === 'active' && r._overdue);
+  const banner = document.getElementById('overdue-banner');
+  if (overdue.length > 0) {
+    banner.classList.add('visible');
+    document.getElementById('overdue-banner-text').textContent =
+      `⚠️  ${overdue.length} aluguer${overdue.length > 1 ? 'es' : ''} em atraso — material não devolvido`;
+  } else {
+    banner.classList.remove('visible');
+  }
+}
+
+/* =====================================================
+   ACTIVE TAB
+===================================================== */
+function renderActiveTab() {
+  const active = allRentals.filter(r => r.status === 'active' && !r._overdue);
+  const grid = document.getElementById('active-grid');
+  const empty = document.getElementById('active-empty');
+  if (active.length === 0) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  grid.innerHTML = active.map(r => rentalCard(r)).join('');
+}
+
+function renderOverdueTab() {
+  const overdue = allRentals.filter(r => r.status === 'active' && r._overdue);
+  const grid = document.getElementById('overdue-grid');
+  const empty = document.getElementById('overdue-empty');
+  if (overdue.length === 0) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  grid.innerHTML = overdue.map(r => rentalCard(r)).join('');
+}
+
+function rentalCard(rental) {
+  const now = new Date();
+  const start = new Date(rental.rental_start);
+  const expected = new Date(rental.expected_return);
+  const isOverdue = rental._overdue;
+
+  const elapsed = now - start;
+  const elH = Math.floor(elapsed / 3600000);
+  const elM = Math.floor((elapsed % 3600000) / 60000);
+
+  const overdueDiff = isOverdue ? now - expected : 0;
+  const odH = Math.floor(overdueDiff / 3600000);
+  const odM = Math.floor((overdueDiff % 3600000) / 60000);
+
+  const items = (rental.items || []).map(i =>
+    `<span class="item-chip">${i.name}${i.size && i.size !== 'Único' ? ' '+i.size : ''}${i.qty > 1 ? ' ×'+i.qty : ''}</span>`
+  ).join('');
+
+  const timerClass = isOverdue ? 'rc-timer overdue-time' : 'rc-timer';
+  const timerText  = isOverdue
+    ? `+${odH}h ${String(odM).padStart(2,'0')}m atraso`
+    : `${elH}h ${String(elM).padStart(2,'0')}m`;
+
+  return `
+    <div class="rental-card ${isOverdue ? 'overdue' : ''}" id="card-${rental.id}">
+      <div class="rc-client">
+        ${rental.client_name}
+        ${isOverdue ? '<span style="font-size:0.68rem;background:rgba(239,68,68,0.18);color:var(--red);padding:2px 8px;border-radius:12px;font-weight:700;">ATRASO</span>' : ''}
+      </div>
+      <div class="rc-phone">${rental.client_phone || ''}</div>
+      <div class="rc-items">${items || '<span style="color:var(--muted);font-size:0.76rem;">sem items registados</span>'}</div>
+      <div class="rc-timing">
+        <div>
+          <div class="${timerClass}" id="timer-${rental.id}">${timerText}</div>
+          <div style="font-size:0.7rem;color:var(--muted2);">desde ${new Date(rental.rental_start).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+        <div>
+          <div class="rc-days-badge">${rental.rental_days} dia${rental.rental_days > 1 ? 's' : ''}</div>
+          <div class="rc-dates">Prev. ${new Date(rental.expected_return).toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'})}</div>
+        </div>
+      </div>
+      <div class="rc-actions">
+        <button class="btn btn-green btn-sm" style="flex:1;" onclick="openReturn('${rental.id}')">↩ Devolver</button>
+        <button class="btn btn-ghost btn-sm" onclick="detailAlert('${rental.id}')">⋯</button>
+      </div>
+    </div>
+  `;
+}
+
+/* =====================================================
+   TIMER LOOP
+===================================================== */
+function startTimerLoop() {
+  if (timerLoop) clearInterval(timerLoop);
+  timerLoop = setInterval(() => {
+    const now = new Date();
+    allRentals.filter(r => r.status === 'active').forEach(r => {
+      const wasOverdue = r._overdue;
+      r._overdue = new Date(r.expected_return) < now;
+
+      const timerEl = document.getElementById(`timer-${r.id}`);
+      if (!timerEl) return;
+
+      if (r._overdue) {
+        const diff = now - new Date(r.expected_return);
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        timerEl.textContent = `+${h}h ${String(m).padStart(2,'0')}m atraso`;
+        timerEl.className = 'rc-timer overdue-time';
+      } else {
+        const elapsed = now - new Date(r.rental_start);
+        const h = Math.floor(elapsed / 3600000);
+        const m = Math.floor((elapsed % 3600000) / 60000);
+        timerEl.textContent = `${h}h ${String(m).padStart(2,'0')}m`;
+        timerEl.className = 'rc-timer';
+      }
+
+      if (!wasOverdue && r._overdue) {
+        updateStats();
+        updateOverdueBanner();
+        renderActiveTab();
+        renderOverdueTab();
+      }
+    });
+  }, 60000);
+}
+
+/* =====================================================
+   HISTORY
+===================================================== */
+function renderHistory() {
+  const tbody   = document.getElementById('hist-tbody');
+  const empty   = document.getElementById('hist-empty');
+  const dateF   = document.getElementById('f-date').value;
+  const statusF = document.getElementById('f-status').value;
+  const searchF = document.getElementById('f-search').value.toLowerCase().trim();
+
+  let rows = allRentals.filter(r => r.status !== 'active');
+
+  if (dateF)   rows = rows.filter(r => r.created_at && r.created_at.startsWith(dateF));
+  if (statusF) rows = rows.filter(r => r.status === statusF);
+  if (searchF) rows = rows.filter(r =>
+    (r.client_name || '').toLowerCase().includes(searchF) ||
+    (r.client_phone || '').includes(searchF)
+  );
+
+  if (rows.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = rows.map(r => {
+    const items = (r.items || []).map(i => `${i.name}${i.size && i.size !== 'Único' ? ' '+i.size : ''}${i.qty>1?'×'+i.qty:''}`).join(', ');
+    const sMap  = { returned:['sc-returned','Devolvido'], overdue:['sc-overdue','Atraso'] };
+    const [cls, label] = sMap[r.status] || ['sc-returned','–'];
+    return `<tr>
+      <td>
+        <div style="font-weight:700;">${r.client_name}</div>
+        <div style="font-size:0.74rem;color:var(--muted2);">${r.client_phone || ''}</div>
+      </td>
+      <td style="max-width:200px;"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${items}">${items||'–'}</div></td>
+      <td class="col-hide" style="color:var(--muted2);font-size:0.8rem;">${r.rental_start?new Date(r.rental_start).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'–'}</td>
+      <td>${r.rental_days} dia${r.rental_days>1?'s':''}</td>
+      <td class="col-hide" style="color:var(--muted2);font-size:0.8rem;">${r.expected_return?new Date(r.expected_return).toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'}):'–'}</td>
+      <td><span class="status-chip ${cls}">${label}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="detailAlert('${r.id}')">Ver</button></td>
+    </tr>`;
+  }).join('');
+}
+
+/* =====================================================
+   ANALYTICS
+===================================================== */
+function renderAnalytics() {
+  renderOverdueAlertList();
+  renderDailyChart();
+  renderItemsRanking();
+  renderDurationChart();
+  renderWeekdayChart();
+}
+
+function renderOverdueAlertList() {
+  const overdue = allRentals.filter(r => r.status === 'active' && r._overdue);
+  const wrap = document.getElementById('overdue-alert-list');
+  const list = document.getElementById('overdue-alert-items');
+  if (overdue.length === 0) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  list.innerHTML = overdue.map(r => {
+    const diff = new Date() - new Date(r.expected_return);
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const items = (r.items || []).map(i => i.name).join(', ');
+    return `<div class="overdue-list-card">
+      <div class="client-name">${r.client_name} ${r.client_phone ? '· '+r.client_phone : ''}</div>
+      <div class="overdue-meta">Em atraso há ${h}h ${m}m · ${items} · ${r.rental_days} dia${r.rental_days>1?'s':''}</div>
+    </div>`;
+  }).join('');
+}
+
+function getLast30Days() {
+  const days = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
+    days.push(d);
+  }
+  return days;
+}
+
+function renderDailyChart() {
+  const days = getLast30Days();
+  const counts = days.map(d => {
+    const next = new Date(d); next.setDate(next.getDate() + 1);
+    return allRentals.filter(r => {
+      const cd = new Date(r.created_at);
+      return cd >= d && cd < next;
+    }).length;
+  });
+  const labels = days.map(d => d.toLocaleDateString('pt-PT', { day:'2-digit', month:'2-digit' }));
+
+  if (charts.daily) charts.daily.destroy();
+  const ctx = document.getElementById('chart-daily').getContext('2d');
+  charts.daily = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data: counts, backgroundColor: 'rgba(245,158,11,0.7)', borderColor: '#f59e0b', borderWidth: 1, borderRadius: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#64748b', maxTicksLimit: 10, font: { size: 11 } }, grid: { color: '#1a2e48' } },
+        y: { ticks: { color: '#64748b', stepSize: 1, font: { size: 11 } }, grid: { color: '#1a2e48' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+function renderItemsRanking() {
+  const counts = {};
+  allRentals.forEach(r => {
+    (r.items || []).forEach(i => { counts[i.name] = (counts[i.name] || 0) + (i.qty || 1); });
+  });
+  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+  const max = sorted[0]?.[1] || 1;
+  const list = document.getElementById('items-ranking');
+  if (sorted.length === 0) { list.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">Sem dados ainda.</div>'; return; }
+  list.innerHTML = sorted.map(([name, count]) => `
+    <div class="an-list-item">
+      <span style="font-weight:600;min-width:100px;">${name}</span>
+      <div class="an-bar-wrap"><div class="an-bar" style="width:${Math.round(count/max*100)}%"></div></div>
+      <span style="font-weight:700;color:var(--amber);min-width:28px;text-align:right;">${count}</span>
+    </div>
+  `).join('');
+}
+
+function renderDurationChart() {
+  const dc = {};
+  allRentals.forEach(r => {
+    const k = r.rental_days + ' dia' + (r.rental_days > 1 ? 's' : '');
+    dc[k] = (dc[k] || 0) + 1;
+  });
+  if (charts.duration) charts.duration.destroy();
+  const ctx = document.getElementById('chart-duration').getContext('2d');
+  const COLORS = ['#f59e0b','#0ea5e9','#10b981','#ef4444','#8b5cf6'];
+  charts.duration = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(dc),
+      datasets: [{ data: Object.values(dc), backgroundColor: COLORS, borderColor: '#131e30', borderWidth: 2 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 12 }, padding: 12 } }
+      }
+    }
+  });
+}
+
+function renderWeekdayChart() {
+  const DAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const counts = new Array(7).fill(0);
+  allRentals.forEach(r => { counts[new Date(r.created_at).getDay()]++; });
+  if (charts.weekday) charts.weekday.destroy();
+  const ctx = document.getElementById('chart-weekday').getContext('2d');
+  charts.weekday = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: DAYS,
+      datasets: [{ data: counts, backgroundColor: 'rgba(14,165,233,0.7)', borderColor: '#0ea5e9', borderWidth: 1, borderRadius: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: '#1a2e48' } },
+        y: { ticks: { color: '#64748b', stepSize: 1, font: { size: 11 } }, grid: { color: '#1a2e48' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+/* =====================================================
+   TABS
+===================================================== */
+function switchTab(tab) {
+  const tabs = ['active','overdue','history','analytics'];
+  tabs.forEach(t => {
+    const el = document.getElementById('tab-'+t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', tabs[i] === tab);
+  });
+  if (tab === 'analytics') renderAnalytics();
+}
+
+/* =====================================================
+   NEW RENTAL MODAL
+===================================================== */
+function openNewRental() {
+  nr = { client_name:'', client_phone:'', client_email:'', client_id_doc:'', items:[], rental_days:1, notes:'' };
+  newRentalStep = 1;
+  clearField('nr-name'); clearField('nr-phone'); clearField('nr-email');
+  clearField('nr-iddoc'); clearField('nr-notes');
+  document.getElementById('client-results').innerHTML = '';
+  renderItemPicker();
+  renderDurationPicker();
+  setStep(1);
+  openModal('modal-new');
+}
+
+function clearField(id) { const el = document.getElementById(id); if (el) el.value = ''; }
+
+function renderItemPicker() {
+  document.getElementById('item-picker').innerHTML = CATALOG.map(item => `
+    <div class="ipc ${nr.items.find(i => i.catalog_id === item.id) ? 'sel' : ''}" onclick="toggleItem('${item.id}')">
+      <div class="ipc-icon">${item.icon}</div>
+      <div class="ipc-name">${item.name}</div>
+    </div>
+  `).join('');
+  renderSelectedItems();
+}
+
+function toggleItem(catalogId) {
+  const cat = CATALOG.find(c => c.id === catalogId);
+  const idx = nr.items.findIndex(i => i.catalog_id === catalogId);
+  if (idx >= 0) {
+    nr.items.splice(idx, 1);
+  } else {
+    nr.items.push({ catalog_id: catalogId, name: cat.name, size: cat.sizes[0], qty: 1 });
+  }
+  renderItemPicker();
+}
+
+function renderSelectedItems() {
+  const list = document.getElementById('selected-items');
+  if (nr.items.length === 0) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;padding:6px 0;">Selecciona o material acima.</div>';
+    return;
+  }
+  list.innerHTML = nr.items.map((item, i) => {
+    const cat = CATALOG.find(c => c.id === item.catalog_id);
+    const opts = cat.sizes.map(s => `<option value="${s}" ${s===item.size?'selected':''}>${s}</option>`).join('');
+    return `<div class="sil-row">
+      <div class="sil-name">${item.name}</div>
+      <div class="sil-size">
+        <select onchange="updateSize(${i},this.value)">${opts}</select>
+      </div>
+      <div class="sil-qty">
+        <button class="qty-btn" onclick="changeQty(${i},-1)">−</button>
+        <span class="qty-num">${item.qty}</span>
+        <button class="qty-btn" onclick="changeQty(${i},+1)">+</button>
+      </div>
+      <button class="rm-item" onclick="removeItem(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function updateSize(i, v) { nr.items[i].size = v; }
+function changeQty(i, d)  { nr.items[i].qty = Math.max(1, (nr.items[i].qty || 1) + d); renderSelectedItems(); }
+function removeItem(i)    { nr.items.splice(i, 1); renderItemPicker(); }
+
+function renderDurationPicker() {
+  document.getElementById('dur-row').innerHTML = DURATIONS.map(d => `
+    <button class="dur-btn ${nr.rental_days === d.days ? 'sel' : ''}" onclick="selectDuration(${d.days})">
+      ${d.label}
+      <div class="dur-sub">${d.sub}</div>
+    </button>
+  `).join('');
+}
+
+function selectDuration(days) {
+  nr.rental_days = days;
+  renderDurationPicker();
+}
+
+function setStep(s) {
+  newRentalStep = s;
+  [1,2,3].forEach(n => {
+    document.getElementById('ms'+n).classList.toggle('active', n === s);
+    const seg = document.getElementById('ss'+n);
+    seg.classList.toggle('active', n === s);
+    seg.classList.toggle('done',   n < s);
+  });
+  const footer = document.getElementById('nr-footer');
+  if (s === 1) {
+    footer.innerHTML = `
+      <button class="btn btn-ghost" onclick="closeModal('modal-new')">Cancelar</button>
+      <button class="btn btn-ocean" onclick="stepTo(2)">Seguinte →</button>`;
+  } else if (s === 2) {
+    footer.innerHTML = `
+      <button class="btn btn-ghost" onclick="stepTo(1)">← Voltar</button>
+      <button class="btn btn-ocean" onclick="stepTo(3)">Seguinte →</button>`;
+  } else {
+    footer.innerHTML = `
+      <button class="btn btn-ghost" onclick="stepTo(2)">← Voltar</button>
+      <button class="btn btn-amber" onclick="startRental()">🏄 Iniciar Aluguer</button>`;
+    renderNrSummary();
+  }
+}
+
+function stepTo(s) {
+  if (s === 2) {
+    nr.client_name  = document.getElementById('nr-name').value.trim();
+    nr.client_phone = document.getElementById('nr-phone').value.trim();
+    nr.client_email = document.getElementById('nr-email').value.trim();
+    nr.client_id_doc = document.getElementById('nr-iddoc').value.trim();
+    if (!nr.client_name) { toast('Introduz o nome do cliente', 'error'); document.getElementById('nr-name').focus(); return; }
+  }
+  if (s === 3) {
+    nr.client_name  = document.getElementById('nr-name').value.trim();
+    nr.client_phone = document.getElementById('nr-phone').value.trim();
+    if (nr.items.length === 0) { toast('Selecciona pelo menos um item', 'error'); return; }
+  }
+  setStep(s);
+}
+
+function renderNrSummary() {
+  const expReturn = new Date();
+  expReturn.setDate(expReturn.getDate() + nr.rental_days);
+  expReturn.setHours(18, 0, 0, 0);
+
+  const itemsHtml = nr.items.map(i =>
+    `<div class="rs-row"><span class="rs-label">${i.name}</span><span class="rs-value">${i.size !== 'Único' ? i.size : ''}${i.qty > 1 ? ' ×'+i.qty : ''}</span></div>`
+  ).join('');
+
+  document.getElementById('nr-summary').innerHTML = `
+    <div class="rs-row"><span class="rs-label">Cliente</span><span class="rs-value">${nr.client_name}</span></div>
+    ${nr.client_phone ? `<div class="rs-row"><span class="rs-label">Telefone</span><span class="rs-value">${nr.client_phone}</span></div>` : ''}
+    ${itemsHtml}
+    <div class="rs-row"><span class="rs-label">Duração</span><span class="rs-value">${nr.rental_days} dia${nr.rental_days > 1 ? 's' : ''}</span></div>
+    <div class="rs-row"><span class="rs-label" style="color:var(--amber);">Devolução prevista</span><span class="rs-value" style="color:var(--amber);">${expReturn.toLocaleString('pt-PT',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span></div>
+  `;
+}
+
+async function startRental() {
+  nr.notes = document.getElementById('nr-notes').value.trim();
+
+  const expReturn = new Date();
+  expReturn.setDate(expReturn.getDate() + nr.rental_days);
+  expReturn.setHours(18, 0, 0, 0);
+
+  const record = {
+    store_id: currentStore.id,
+    client_name: nr.client_name,
+    client_phone: nr.client_phone || null,
+    client_email: nr.client_email || null,
+    client_id_doc: nr.client_id_doc || null,
+    items: nr.items,
+    rental_start: new Date().toISOString(),
+    rental_days: nr.rental_days,
+    expected_return: expReturn.toISOString(),
+    actual_return: null,
+    status: 'active',
+    notes: nr.notes || null,
+  };
+
+  const { data, error } = await sb.from('surf_rentals').insert([record]).select().single();
+  if (error) { toast('Erro ao guardar aluguer', 'error'); console.error(error); return; }
+
+  allRentals.unshift(data);
+  checkOverdueStatus();
+  closeModal('modal-new');
+  renderAll();
+  toast(`Aluguer iniciado para ${nr.client_name}!`, 'success');
+}
+
+/* =====================================================
+   CLIENT SEARCH
+===================================================== */
+function searchClients() {
+  const q = document.getElementById('nr-phone').value.trim();
+  const res = document.getElementById('client-results');
+  if (q.length < 3) { res.innerHTML = ''; return; }
+
+  const seen = new Set(), matches = [];
+  allRentals.forEach(r => {
+    if (!r.client_phone || seen.has(r.client_phone)) return;
+    if (r.client_phone.includes(q)) {
+      seen.add(r.client_phone);
+      matches.push({ name: r.client_name, phone: r.client_phone, email: r.client_email || '' });
+    }
+  });
+
+  if (matches.length === 0) { res.innerHTML = ''; return; }
+  res.innerHTML = matches.slice(0, 4).map(m => `
+    <div class="cr" onclick="fillClient(${JSON.stringify(m).replace(/"/g,"&quot;")})">
+      <div class="cr-name">${m.name}</div>
+      <div class="cr-meta">${m.phone}${m.email ? ' · '+m.email : ''}</div>
+    </div>
+  `).join('');
+}
+
+function fillClient(c) {
+  document.getElementById('nr-name').value  = c.name  || '';
+  document.getElementById('nr-phone').value = c.phone || '';
+  document.getElementById('nr-email').value = c.email || '';
+  document.getElementById('client-results').innerHTML = '';
+}
+
+/* =====================================================
+   RETURN MODAL
+===================================================== */
+function openReturn(rentalId) {
+  returnRentalId = rentalId;
+  const r = allRentals.find(x => x.id === rentalId);
+  if (!r) return;
+
+  const now = new Date();
+  const start = new Date(r.rental_start);
+  const expected = new Date(r.expected_return);
+  const elapsed = now - start;
+  const h = Math.floor(elapsed / 3600000);
+  const m = Math.floor((elapsed % 3600000) / 60000);
+  const isOverdue = r._overdue;
+
+  const elEl = document.getElementById('ret-elapsed');
+  elEl.textContent = `${h}h ${String(m).padStart(2,'0')}m`;
+  elEl.className   = 'ret-elapsed' + (isOverdue ? ' overdue-time' : '');
+  document.getElementById('ret-sub').textContent = isOverdue
+    ? `⚠️ Em atraso ${Math.floor((now - expected) / 3600000)}h`
+    : 'tempo total de aluguer';
+
+  const items = (r.items || []).map(i => `${i.name}${i.size && i.size !== 'Único' ? ' '+i.size : ''}${i.qty > 1 ? ' ×'+i.qty : ''}`).join(', ');
+  document.getElementById('ret-summary').innerHTML = `
+    <div class="rs-row"><span class="rs-label">Cliente</span><span class="rs-value">${r.client_name}</span></div>
+    ${r.client_phone ? `<div class="rs-row"><span class="rs-label">Tel.</span><span class="rs-value">${r.client_phone}</span></div>` : ''}
+    <div class="rs-row"><span class="rs-label">Material</span><span class="rs-value" style="text-align:right;max-width:200px;">${items||'–'}</span></div>
+    <div class="rs-row"><span class="rs-label">Início</span><span class="rs-value">${new Date(r.rental_start).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span></div>
+    <div class="rs-row"><span class="rs-label">Previsto</span><span class="rs-value ${isOverdue ? 'c-overdue' : ''}">${expected.toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span></div>
+  `;
+  document.getElementById('ret-notes').value = '';
+  openModal('modal-return');
+}
+
+async function confirmReturn() {
+  const r = allRentals.find(x => x.id === returnRentalId);
+  if (!r) return;
+
+  const now = new Date();
+  const start = new Date(r.rental_start);
+  const hoursElapsed = (now - start) / 3600000;
+  const finalStatus = r._overdue ? 'overdue' : 'returned';
+  const retNotes = document.getElementById('ret-notes').value.trim();
+
+  const update = {
+    actual_return: now.toISOString(),
+    status: finalStatus,
+    notes: [r.notes, retNotes].filter(Boolean).join(' | ') || null,
+  };
+
+  const { error } = await sb.from('surf_rentals').update(update).eq('id', returnRentalId);
+  if (error) { toast('Erro ao registar devolução', 'error'); console.error(error); return; }
+
+  const idx = allRentals.findIndex(x => x.id === returnRentalId);
+  if (idx >= 0) allRentals[idx] = { ...r, ...update };
+
+  closeModal('modal-return');
+  renderAll();
+  toast(`Devolução confirmada — ${r.client_name}`, 'success');
+}
+
+/* =====================================================
+   DETAIL
+===================================================== */
+function detailAlert(rentalId) {
+  const r = allRentals.find(x => x.id === rentalId);
+  if (!r) return;
+  const items = (r.items || []).map(i => `  • ${i.name} ${i.size || ''}${i.qty > 1 ? ' ×'+i.qty : ''}`).join('\n');
+  alert(
+    `📋 Aluguer — ${r.client_name}\n\n` +
+    `Tel: ${r.client_phone || '–'}\n` +
+    `Email: ${r.client_email || '–'}\n` +
+    `Doc: ${r.client_id_doc || '–'}\n\n` +
+    `Material:\n${items || '  –'}\n\n` +
+    `Início: ${r.rental_start ? new Date(r.rental_start).toLocaleString('pt-PT') : '–'}\n` +
+    `Duração: ${r.rental_days} dia${r.rental_days>1?'s':''}\n` +
+    `Devolução prevista: ${r.expected_return ? new Date(r.expected_return).toLocaleString('pt-PT') : '–'}\n` +
+    `Devolvido em: ${r.actual_return ? new Date(r.actual_return).toLocaleString('pt-PT') : 'Ainda em aluguer'}\n` +
+    `Estado: ${r.status}\n\n` +
+    `Notas: ${r.notes || '–'}`
+  );
+}
+
+/* =====================================================
+   MODALS
+===================================================== */
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+/* =====================================================
+   TOAST
+===================================================== */
+let toastTimer;
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-icon').textContent = type === 'success' ? '✓' : '✕';
+  el.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+/* =====================================================
+   KEYBOARD SHORTCUTS
+===================================================== */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  }
+});
+
+/* =====================================================
+   START
+===================================================== */
+init();
+</script>
+</body>
+</html>
