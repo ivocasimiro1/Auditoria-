@@ -539,7 +539,12 @@
     /* ── ANALYTICS ── */
     #analytics-section { margin-bottom: 1.5rem; }
     .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
-    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.2rem; }
+    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.2rem; transition: border-color .2s; }
+    .chart-card.cf-active { border-color: var(--cyan); box-shadow: 0 0 0 1px rgba(0,207,253,.25); }
+    .chart-grid canvas { cursor: pointer; }
+    #chart-filter-bar { display:none; align-items:center; gap:.6rem; padding:.45rem .85rem; background:rgba(0,207,253,.08); border:1px solid rgba(0,207,253,.28); border-radius:9px; font-size:.82rem; color:var(--cyan); margin-bottom:.75rem; }
+    #chart-filter-bar button { margin-left:auto; background:rgba(0,207,253,.12); border:1px solid rgba(0,207,253,.3); border-radius:6px; color:var(--cyan); padding:.15rem .6rem; cursor:pointer; font-size:.78rem; line-height:1.5; }
+    #chart-filter-bar button:hover { background:rgba(0,207,253,.22); }
     .chart-card-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--cyan); margin-bottom: .8rem; display: flex; align-items: center; justify-content: space-between; }
     .chart-period-bar { margin-bottom: 1rem; }
     .chart-year-btns { display: flex; gap: .4rem; margin-bottom: .6rem; flex-wrap: wrap; }
@@ -901,6 +906,10 @@
           <div class="kpi-label">❌ Cancelamentos</div>
           <div class="kpi-value" id="kpi-cancel">0%</div>
         </div>
+      </div>
+      <div id="chart-filter-bar">
+        🔍 Filtro: <strong id="chart-filter-label"></strong>
+        <button onclick="clearChartFilter()">✕ Limpar</button>
       </div>
       <div class="chart-grid">
         <div class="chart-card">
@@ -3004,6 +3013,49 @@
   let chartYear = new Date().getFullYear();
   let chartMonth = null; // null = all months
   let chartInstances = {};
+  let chartFilter = null; // { field, value } — cross-filter active selection
+
+  const GNORM = {
+    'H':'Homem','Homem':'Homem','homem':'Homem','h':'Homem','Masculino':'Homem','masculino':'Homem','male':'Homem','Male':'Homem','M':'Homem','m':'Homem',
+    'F':'Mulher','f':'Mulher','Mulher':'Mulher','mulher':'Mulher','Feminino':'Mulher','feminino':'Mulher','female':'Mulher','Female':'Mulher',
+    'C':'Criança','c':'Criança','Criança':'Criança','criança':'Criança','crianca':'Criança','kid':'Criança','Kid':'Criança','Crianca':'Criança','child':'Criança','Child':'Criança'
+  };
+
+  const LESSON_NORM = {
+    // PT synonyms
+    'Surf Iniciação':'Iniciante','Iniciação Surf':'Iniciante','Aula Iniciante':'Iniciante','Surf Beginner':'Iniciante',
+    'Aula Privada':'Privada','Surf Privado':'Privada','Privado':'Privada','Aula Particular':'Privada','Surf Particular':'Privada',
+    'Surf Avançado':'Avançado','Aula Avançada':'Avançado','Avançada':'Avançado','Advanced Surf':'Avançado',
+    'Surf Intermédio':'Intermédio','Intermédio Avançado':'Avançado',
+    // EN
+    'Beginner':'Iniciante','beginner':'Iniciante','Beginner Surf':'Iniciante',
+    'Intermediate':'Intermédio','intermediate':'Intermédio','Intermediate Surf':'Intermédio',
+    'Private':'Privada','private':'Privada','Private Lesson':'Privada','Private Surf':'Privada',
+    'Advanced':'Avançado','advanced':'Avançado',
+    'Bodyboard Lesson':'Bodyboard','SUP':'Stand Up Paddle','Stand Up':'Stand Up Paddle',
+    // FR
+    'Débutant':'Iniciante','Debutant':'Iniciante','debutant':'Iniciante',
+    'Intermédiaire':'Intermédio','Intermediaire':'Intermédio','intermediaire':'Intermédio',
+    'Avancé':'Avançado','Avance':'Avançado','avance':'Avançado',
+    'Cours particulier':'Privada','Cours Particulier':'Privada',
+    // DE
+    'Anfänger':'Iniciante','Anfanger':'Iniciante','anfanger':'Iniciante',
+    'Fortgeschritten':'Avançado','Privatstunde':'Privada','Mittelstufe':'Intermédio',
+    // ES
+    'Principiante':'Iniciante','principiante':'Iniciante',
+    'Intermedio':'Intermédio','intermedio':'Intermédio',
+    'Clase Privada':'Privada','clase privada':'Privada',
+    'Avanzado':'Avançado','avanzado':'Avançado',
+    // NL
+    'Gevorderd':'Avançado','Beginner Surf':'Iniciante',
+  };
+  function normLesson(raw) { return raw ? (LESSON_NORM[raw] || LESSON_NORM[raw.trim()] || raw) : 'N/D'; }
+
+  function applyChartFilter(field, value) {
+    chartFilter = (chartFilter?.field === field && chartFilter?.value === value) ? null : { field, value };
+    buildCharts();
+  }
+  function clearChartFilter() { chartFilter = null; buildCharts(); }
 
   // Register datalabels plugin globally
   if (typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
@@ -3055,6 +3107,35 @@
     // Active bookings (non-cancelled) for revenue/occupancy charts
     let data = allPeriod.filter(b => b.status !== 'cancelled');
 
+    // ── Cross-filter ───────────────────────────────────────────
+    const filterBar  = document.getElementById('chart-filter-bar');
+    const filterLbl  = document.getElementById('chart-filter-label');
+    if (chartFilter && filterBar) {
+      const fieldPT = { lesson_type:'Modalidade', booking_time:'Horário', gender:'Género', nat:'Nacionalidade', wetsuit_size:'Tamanho Fato' };
+      filterBar.style.display = 'flex';
+      if (filterLbl) filterLbl.textContent = `${fieldPT[chartFilter.field]||chartFilter.field}: ${chartFilter.value}`;
+      const { field, value } = chartFilter;
+      data = data.filter(b => {
+        if (field === 'gender') return (GNORM[(b.client_gender||'').trim()] || (b.client_gender||'').trim() || 'N/D') === value;
+        if (field === 'nat')    return (b.client_country||'').replace(/^\S+\s/,'').trim() === value;
+        if (field === 'lesson_type') return normLesson(b.lesson_type) === value;
+        if (field === 'wetsuit_size') {
+          const sizes = Array.isArray(b.equipment_list) ? b.equipment_list.map(p=>p.size).filter(Boolean) : (b.wetsuit_size ? [b.wetsuit_size] : []);
+          return sizes.includes(value);
+        }
+        return (b[field]||'N/D') === value;
+      });
+    } else if (filterBar) {
+      filterBar.style.display = 'none';
+    }
+    // Highlight active chart card
+    document.querySelectorAll('.chart-grid .chart-card').forEach(c => c.classList.remove('cf-active'));
+    if (chartFilter) {
+      const cardMap = { lesson_type:'chart-lesson-rev', booking_time:'chart-slot-occ', gender:'chart-gender', nat:'chart-nationality', wetsuit_size:'chart-wetsuit' };
+      const activeCanvas = cardMap[chartFilter.field];
+      if (activeCanvas) document.getElementById(activeCanvas)?.closest('.chart-card')?.classList.add('cf-active');
+    }
+
     // ── KPI tiles ──────────────────────────────────────────────
     const totalRevenue  = data.reduce((s,b) => s + (parseFloat(b.total_price)||0), 0);
     const totalStudents = data.reduce((s,b) => s + (parseInt(b.num_people)||1), 0);
@@ -3089,7 +3170,7 @@
     // ── Receita por Modalidade ─────────────────────────────────
     const lessonRevMap = {};
     data.forEach(b => {
-      const lt = b.lesson_type || 'N/D';
+      const lt = normLesson(b.lesson_type);
       lessonRevMap[lt] = (lessonRevMap[lt]||0) + (parseFloat(b.total_price)||0);
     });
     const sortedLR = Object.entries(lessonRevMap).sort((a,b) => b[1]-a[1]);
@@ -3108,12 +3189,7 @@
     const slotLabels    = sortedSlots.map(([t]) => t);
     const slotOccupancy = sortedSlots.map(([,v]) => v.sessions > 0 ? Math.round(v.people/(v.sessions*maxSlot)*100) : 0);
 
-    // ── Gender (normalise to PT labels) ────────────────────────
-    const GNORM = {
-      'H':'Homem','Homem':'Homem','homem':'Homem','Masculino':'Homem','masculino':'Homem','male':'Homem','Male':'Homem','M':'Homem',
-      'F':'Mulher','Mulher':'Mulher','mulher':'Mulher','Feminino':'Mulher','feminino':'Mulher','female':'Mulher','Female':'Mulher',
-      'C':'Criança','Criança':'Criança','criança':'Criança','crianca':'Criança','kid':'Criança','Kid':'Criança','Crianca':'Criança'
-    };
+    // ── Gender ─────────────────────────────────────────────────
     const genderMap = {};
     data.forEach(b => {
       const raw = (b.client_gender || '').trim();
@@ -3157,6 +3233,7 @@
       type: 'bar',
       data: { labels: sortedLR.map(([k])=>k), datasets: [{ data: sortedLR.map(([,v])=>v), backgroundColor: lrColors.slice(0,sortedLR.length), borderRadius: 4 }] },
       options: {
+        onClick: (e, els, ch) => { if (els.length) applyChartFilter('lesson_type', ch.data.labels[els[0].index]); },
         scales: scaleOpts,
         layout: { padding: { top: 22 } },
         plugins: { legend: { display: false },
@@ -3172,6 +3249,7 @@
       type: 'bar',
       data: { labels: slotLabels, datasets: [{ label: '% Lotação', data: slotOccupancy, backgroundColor: occColors, borderRadius: 4 }] },
       options: {
+        onClick: (e, els, ch) => { if (els.length) applyChartFilter('booking_time', ch.data.labels[els[0].index]); },
         scales: {
           ...scaleOpts,
           y: { ...scaleOpts.y, min:0, max:100, ticks: { ...scaleOpts.y.ticks, callback: v => v+'%' } }
@@ -3184,27 +3262,41 @@
     });
 
     // Género
+    const gColorMap = { 'Homem':'#00CFFD', 'Mulher':'#a78bfa', 'Criança':'#22c55e', 'N/D':'rgba(148,163,184,.5)' };
+    const gKeys = Object.keys(genderMap);
+    const gBg   = gKeys.map(k => gColorMap[k] || '#eab308');
     const totalG = Object.values(genderMap).reduce((a,b)=>a+b,0);
     chartInstances.gender = new Chart(document.getElementById('chart-gender'), {
       type: 'doughnut',
-      data: { labels: Object.keys(genderMap), datasets: [{ data: Object.values(genderMap), backgroundColor: ['#00CFFD','#a78bfa','#22c55e','#eab308'], borderWidth:0 }] },
-      options: { plugins: { legend: { labels: { color: '#8B9AB0', font: { size: 11 } } },
-        datalabels: { color: '#fff', font: { size: 11, weight: '700' }, formatter: v => totalG ? `${Math.round(v/totalG*100)}%\n(${v})` : '' }
-      }}
+      data: { labels: gKeys, datasets: [{ data: Object.values(genderMap), backgroundColor: gBg, borderWidth:0 }] },
+      options: {
+        onClick: (e, els, ch) => { if (els.length) applyChartFilter('gender', ch.data.labels[els[0].index]); },
+        plugins: { legend: { labels: { color: '#8B9AB0', font: { size: 11 } } },
+          datalabels: { color: '#fff', font: { size: 11, weight: '700' }, formatter: v => totalG ? `${Math.round(v/totalG*100)}%\n(${v})` : '' }
+        }
+      }
     });
 
     // Nacionalidade
     chartInstances.nationality = new Chart(document.getElementById('chart-nationality'), {
       type: 'bar',
       data: { labels: topNat.map(([k])=>k), datasets: [{ label: 'Clientes', data: topNat.map(([,v])=>v), backgroundColor: 'rgba(167,139,250,.7)', borderRadius: 4 }] },
-      options: { indexAxis: 'y', scales: scaleOpts, layout: { padding: { right: 28 } }, plugins: { legend: { display: false }, datalabels: { ...barDL, anchor: 'end', align: 'right' } } }
+      options: {
+        onClick: (e, els, ch) => { if (els.length) applyChartFilter('nat', ch.data.labels[els[0].index]); },
+        indexAxis: 'y', scales: scaleOpts, layout: { padding: { right: 28 } },
+        plugins: { legend: { display: false }, datalabels: { ...barDL, anchor: 'end', align: 'right' } }
+      }
     });
 
     // Tamanhos de fato
     chartInstances.wetsuit = new Chart(document.getElementById('chart-wetsuit'), {
       type: 'bar',
       data: { labels: sortedWs.map(([k])=>k), datasets: [{ label: 'Fatos', data: sortedWs.map(([,v])=>v), backgroundColor: 'rgba(34,197,94,.6)', borderRadius: 4 }] },
-      options: { scales: scaleOpts, layout: { padding: { top: 18 } }, plugins: { legend: { display: false }, datalabels: barDL } }
+      options: {
+        onClick: (e, els, ch) => { if (els.length) applyChartFilter('wetsuit_size', ch.data.labels[els[0].index]); },
+        scales: scaleOpts, layout: { padding: { top: 18 } },
+        plugins: { legend: { display: false }, datalabels: barDL }
+      }
     });
   }
 
