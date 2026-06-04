@@ -2038,6 +2038,13 @@
         meeting_point: payload.meeting_point, slots: payload.time_slots,
         lesson_types: lessonTypesData, working_days: cfgWorkingDays,
       });
+      // Always persist to localStorage so booking site can read even if DB columns are missing
+      try {
+        localStorage.setItem(`surfbook_ltypes_${school.id}`, JSON.stringify(lessonTypesData));
+        localStorage.setItem(`surfbook_wdays_${school.id}`,  JSON.stringify(cfgWorkingDays));
+        localStorage.setItem(`surfbook_slots_${school.id}`,  JSON.stringify(cfgSlots));
+        localStorage.setItem(`surfbook_maxslot_${school.id}`,String(payload.max_per_slot));
+      } catch(_) {}
       // Sync LESSON_PRICES and manual booking dropdown
       LESSON_PRICES = {};
       cfgLessonTypes.forEach(lt => { LESSON_PRICES[lt.name] = { price: lt.price, perPerson: lt.maxPax > 1 }; });

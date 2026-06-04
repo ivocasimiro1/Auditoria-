@@ -1763,23 +1763,47 @@ function renderLessonCards(lessonTypes) {
 
 async function loadSchoolConfig() {
   if (!sb) return;
+  let dbLessonTypes = null;
   try {
-    const { data } = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number,lesson_types,working_days').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
-    if (data) {
-      if (data.time_slots?.length)  SCHOOL_SLOTS    = data.time_slots;
-      if (data.max_per_slot)        SCHOOL_MAX_SLOT  = data.max_per_slot;
-      // Working days
-      if (data.working_days?.length) {
-        SCHOOL_WORKING_DAYS = data.working_days;
-      } else {
-        const local = localStorage.getItem(`surfbook_wdays_${SCHOOL_ID_ACTIVE}`);
-        if (local) try { SCHOOL_WORKING_DAYS = JSON.parse(local); } catch(_) {}
-      }
-      // Lesson types
-      if (data.lesson_types?.length) {
-        renderLessonCards(data.lesson_types);
-      }
+    // Try full select first; if lesson_types/working_days columns missing, retry without them
+    let data = null;
+    const r1 = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number,lesson_types,working_days').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
+    if (!r1.error) {
+      data = r1.data;
+    } else {
+      // Fallback: select only stable columns
+      const r2 = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
+      if (!r2.error) data = r2.data;
     }
+    if (data) {
+      if (data.time_slots?.length)  SCHOOL_SLOTS   = data.time_slots;
+      if (data.max_per_slot)        SCHOOL_MAX_SLOT = data.max_per_slot;
+      if (data.working_days?.length) SCHOOL_WORKING_DAYS = data.working_days;
+      if (data.lesson_types?.length) dbLessonTypes  = data.lesson_types;
+    }
+  } catch(_) {}
+  // Lesson types: DB → localStorage fallback → static defaults
+  if (dbLessonTypes?.length) {
+    renderLessonCards(dbLessonTypes);
+  } else {
+    try {
+      const lsLt = localStorage.getItem(`surfbook_ltypes_${SCHOOL_ID_ACTIVE}`);
+      if (lsLt) { const lt = JSON.parse(lsLt); if (lt?.length) renderLessonCards(lt); }
+    } catch(_) {}
+  }
+  // Working days: DB → localStorage fallback
+  if (!SCHOOL_WORKING_DAYS) {
+    try {
+      const lsWd = localStorage.getItem(`surfbook_wdays_${SCHOOL_ID_ACTIVE}`);
+      if (lsWd) { const wd = JSON.parse(lsWd); if (wd?.length) SCHOOL_WORKING_DAYS = wd; }
+    } catch(_) {}
+  }
+  // Slots / max slot: localStorage fallback
+  try {
+    const lsSlots = localStorage.getItem(`surfbook_slots_${SCHOOL_ID_ACTIVE}`);
+    if (lsSlots && !SCHOOL_SLOTS.length) { const s = JSON.parse(lsSlots); if (s?.length) SCHOOL_SLOTS = s; }
+    const lsMax = localStorage.getItem(`surfbook_maxslot_${SCHOOL_ID_ACTIVE}`);
+    if (lsMax) SCHOOL_MAX_SLOT = parseInt(lsMax) || SCHOOL_MAX_SLOT;
   } catch(_) {}
   if (SCHOOL_WORKING_DAYS) buildCalendar();
   loadWeather(_theme.lat, _theme.lon);
