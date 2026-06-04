@@ -1849,8 +1849,8 @@
     // Lesson types — from school object or LESSON_PRICES fallback
     const lt = school.lesson_types;
     cfgLessonTypes = lt?.length
-      ? lt.map(x => ({ name:x.name, price:x.price, perPerson:x.max_pax!==1, icon:x.icon||CFG_DEFAULT_ICONS[x.name]||'🏄' }))
-      : Object.entries(LESSON_PRICES).map(([name,lp]) => ({ name, price:lp.price, perPerson:lp.perPerson, icon:CFG_DEFAULT_ICONS[name]||'🏄' }));
+      ? lt.map(x => ({ name:x.name, price:x.price, maxPax:x.max_pax||6, icon:x.icon||CFG_DEFAULT_ICONS[x.name]||'🏄' }))
+      : Object.entries(LESSON_PRICES).map(([name,lp]) => ({ name, price:lp.price, maxPax:lp.perPerson?(school.max_per_slot||6):1, icon:CFG_DEFAULT_ICONS[name]||'🏄' }));
     renderCfgLessons();
   }
 
@@ -1901,7 +1901,9 @@
   function renderCfgLessons() {
     const list = document.getElementById('cfg-lessons-list');
     if (!list) return;
-    list.innerHTML = cfgLessonTypes.map((lt,i) => `
+    list.innerHTML = cfgLessonTypes.map((lt,i) => {
+      const isFixed = lt.maxPax === 1;
+      return `
       <div style="display:flex;align-items:center;gap:.4rem;padding:.4rem .55rem;background:rgba(255,255,255,.04);border-radius:8px">
         <select onchange="cfgLessonTypes[${i}].icon=this.value"
           style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:.25rem .3rem;color:var(--white);font-size:.95rem;outline:none;color-scheme:dark;width:50px">
@@ -1912,22 +1914,24 @@
           style="flex:1;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:.35rem .6rem;color:var(--white);font-family:Inter,sans-serif;font-size:.84rem;outline:none;color-scheme:dark" />
         <div style="display:flex;align-items:center;gap:.25rem;flex-shrink:0">
           <span style="font-size:.78rem;color:var(--gray)">€</span>
-          <input type="number" min="1" step="1" value="${lt.price}" oninput="cfgLessonTypes[${i}].price=parseFloat(this.value)||lt.price"
+          <input type="number" min="1" step="1" value="${lt.price}" oninput="cfgLessonTypes[${i}].price=parseFloat(this.value)||0"
             style="width:60px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:.35rem .4rem;color:var(--white);font-family:Inter,sans-serif;font-size:.84rem;outline:none;text-align:center;color-scheme:dark" />
         </div>
-        <button onclick="cfgLessonTypes[${i}].perPerson=!cfgLessonTypes[${i}].perPerson;renderCfgLessons()"
-          title="${lt.perPerson?'Clica para mudar para preço fixo':'Clica para mudar para por pessoa'}"
-          style="font-size:.68rem;padding:.3rem .48rem;border-radius:6px;border:1px solid ${lt.perPerson?'rgba(0,207,253,.3)':'rgba(251,146,60,.3)'};
-          background:${lt.perPerson?'rgba(0,207,253,.1)':'rgba(251,146,60,.1)'};
-          color:${lt.perPerson?'var(--cyan)':'#fb923c'};cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap;min-width:70px;flex-shrink:0">
-          ${lt.perPerson?'👥 /pessoa':'1️⃣ fixo'}
-        </button>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0">
+          <span style="font-size:.6rem;color:var(--gray);line-height:1">máx.</span>
+          <input type="number" min="1" max="20" step="1" value="${lt.maxPax||6}"
+            oninput="cfgLessonTypes[${i}].maxPax=Math.max(1,parseInt(this.value)||1)"
+            title="Máximo de pessoas nesta modalidade (1 = preço fixo/aula privada)"
+            style="width:42px;background:rgba(255,255,255,.06);border:1px solid ${isFixed?'rgba(251,146,60,.35)':'rgba(0,207,253,.25)'};border-radius:6px;padding:.3rem .3rem;color:${isFixed?'#fb923c':'var(--cyan)'};font-family:Inter,sans-serif;font-size:.82rem;outline:none;text-align:center;color-scheme:dark" />
+          <span style="font-size:.6rem;color:var(--gray);line-height:1">${isFixed?'fixo':'pess.'}</span>
+        </div>
         <button onclick="cfgRemoveLesson(${i})"
           style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#fca5a5;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:.78rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
   function cfgAddLesson() {
-    cfgLessonTypes.push({ name:'Nova Modalidade', price:35, perPerson:true, icon:'🏄' });
+    cfgLessonTypes.push({ name:'Nova Modalidade', price:35, maxPax:6, icon:'🏄' });
     renderCfgLessons();
     const inputs = document.querySelectorAll('#cfg-lessons-list input[type="text"]');
     if (inputs.length) { const last=inputs[inputs.length-1]; last.focus(); last.select(); }
@@ -1941,7 +1945,7 @@
     const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
     if (!school) { showToast('Escola não encontrada', 'error'); return; }
     const lessonTypesData = cfgLessonTypes.map(lt => ({
-      name: lt.name, price: lt.price, max_pax: lt.perPerson ? (school.max_per_slot||6) : 1, icon: lt.icon||'🏄'
+      name: lt.name, price: lt.price, max_pax: lt.maxPax || 6, icon: lt.icon||'🏄'
     }));
     const payload = {
       id:            school.id,
@@ -1971,7 +1975,7 @@
     });
     // Sync LESSON_PRICES and manual booking dropdown
     LESSON_PRICES = {};
-    cfgLessonTypes.forEach(lt => { LESSON_PRICES[lt.name] = { price: lt.price, perPerson: lt.perPerson }; });
+    cfgLessonTypes.forEach(lt => { LESSON_PRICES[lt.name] = { price: lt.price, perPerson: lt.maxPax > 1 }; });
     const mbLesson = document.getElementById('mb-lesson');
     if (mbLesson) {
       const prev = mbLesson.value;

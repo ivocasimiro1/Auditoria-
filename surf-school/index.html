@@ -632,10 +632,10 @@
         <h3 class="step-title" data-t="s1_title"></h3>
         <p class="step-desc" data-t="s1_desc"></p>
         <div class="lesson-options">
-          <div class="lesson-option" onclick="selectLesson(this,'l1_name',35,35)"><span class="opt-icon">🌊</span><div class="opt-name" data-t="l1_name"></div><div class="opt-price">€35/<span data-t="pp"></span></div></div>
-          <div class="lesson-option" onclick="selectLesson(this,'l2_name',35,35)"><span class="opt-icon">🏄</span><div class="opt-name" data-t="l2_name"></div><div class="opt-price">€35/<span data-t="pp"></span></div></div>
-          <div class="lesson-option" onclick="selectLesson(this,'l3_name',65,65)"><span class="opt-icon">⭐</span><div class="opt-name" data-t="l3_name"></div><div class="opt-price">€65/<span data-t="ps"></span></div></div>
-          <div class="lesson-option" onclick="selectLesson(this,'l4_name',30,30)"><span class="opt-icon">🌀</span><div class="opt-name" data-t="l4_name"></div><div class="opt-price">€30/<span data-t="pp"></span></div></div>
+          <div class="lesson-option" onclick="selectLesson(this,'l1_name',35,35,6)"><span class="opt-icon">🌊</span><div class="opt-name" data-t="l1_name"></div><div class="opt-price">€35/<span data-t="pp"></span></div></div>
+          <div class="lesson-option" onclick="selectLesson(this,'l2_name',35,35,6)"><span class="opt-icon">🏄</span><div class="opt-name" data-t="l2_name"></div><div class="opt-price">€35/<span data-t="pp"></span></div></div>
+          <div class="lesson-option" onclick="selectLesson(this,'l3_name',65,65,1)"><span class="opt-icon">⭐</span><div class="opt-name" data-t="l3_name"></div><div class="opt-price">€65/<span data-t="ps"></span></div></div>
+          <div class="lesson-option" onclick="selectLesson(this,'l4_name',30,30,6)"><span class="opt-icon">🌀</span><div class="opt-name" data-t="l4_name"></div><div class="opt-price">€30/<span data-t="pp"></span></div></div>
         </div>
         <div class="nav-btns"><div></div><button class="btn-next" id="next-1" onclick="goToStep(2)" disabled data-t="btn_next"></button></div>
       </div>
@@ -1680,7 +1680,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── BOOKING STATE ─────────────────────────────────────────────────────────────
-const booking = { lessonKey:null, lessonPrice:0, lessonPrivate:false, selectedDateKey:null, selectedDateStr:null, time:null };
+const booking = { lessonKey:null, lessonPrice:0, lessonPrivate:false, lessonMaxPax:6, selectedDateKey:null, selectedDateStr:null, time:null };
 const SLOT_AVAIL = {};
 let SCHOOL_SLOTS        = ['08:00','10:30','14:00','16:30'];
 let SCHOOL_MAX_SLOT     = 6;
@@ -1752,7 +1752,7 @@ function renderLessonCards(lessonTypes) {
       ? `<div class="opt-name" data-t="${key}"></div>`
       : `<div class="opt-name">${lt.name}</div>`;
     const unitKey    = isPrivate ? 'ps' : 'pp';
-    return `<div class="lesson-option" onclick="selectLesson(this,'${key}',${lt.price},${lt.price})">
+    return `<div class="lesson-option" onclick="selectLesson(this,'${key}',${lt.price},${lt.price},${lt.max_pax||6})">
       <span class="opt-icon">${icon}</span>${nameHtml}
       <div class="opt-price">€${lt.price}/<span data-t="${unitKey}">${T(unitKey)}</span></div>
     </div>`;
@@ -1947,10 +1947,11 @@ function selectSlot(el, time, freeSpots) {
   if (btn) btn.disabled = false;
 }
 
-function selectLesson(el, key, price, raw) {
+function selectLesson(el, key, price, raw, maxPax) {
   document.querySelectorAll('.lesson-option').forEach(o=>o.classList.remove('selected'));
   el.classList.add('selected');
-  booking.lessonKey = key; booking.lessonPrice = raw; booking.lessonPrivate = (key === 'l3_name');
+  const mp = maxPax != null ? maxPax : SCHOOL_MAX_SLOT;
+  booking.lessonKey = key; booking.lessonPrice = raw; booking.lessonMaxPax = mp; booking.lessonPrivate = (mp === 1);
   const btn = document.getElementById('next-1');
   if (btn) btn.disabled = false;
 }
@@ -1971,7 +1972,7 @@ function goToStep(n) {
 
 function resetBookingForm() {
   // Reset booking state
-  booking.lessonKey = null; booking.lessonPrice = 0; booking.lessonPrivate = false;
+  booking.lessonKey = null; booking.lessonPrice = 0; booking.lessonPrivate = false; booking.lessonMaxPax = SCHOOL_MAX_SLOT;
   booking.selectedDateKey = null; booking.selectedDateStr = null; booking.time = null;
   // Deselect lessons, calendar cells, time slots
   document.querySelectorAll('.lesson-option').forEach(o => o.classList.remove('selected'));
@@ -2296,7 +2297,7 @@ function updatePessoasVisibility() {
     fp.value = '1'; fpGrp.style.opacity = '.4'; fpGrp.style.pointerEvents = 'none';
   } else {
     fpGrp.style.opacity = ''; fpGrp.style.pointerEvents = '';
-    const max = Math.min(6, booking.freeSlots || 6);
+    const max = Math.min(booking.lessonMaxPax || SCHOOL_MAX_SLOT, booking.freeSlots || SCHOOL_MAX_SLOT);
     const prev = parseInt(fp.value) || 1;
     fp.innerHTML = '';
     for (let i = 1; i <= max; i++) {
