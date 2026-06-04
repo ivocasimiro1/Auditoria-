@@ -1565,6 +1565,221 @@
     </div>
   </section>
 
+  <!-- SECTION 12: Custos de Infraestrutura -->
+  <section class="section wrapper">
+    <div class="section-header">
+      <div class="section-num">12</div>
+      <div class="section-title">Custos de Infraestrutura & Opcoes de Crescimento</div>
+    </div>
+
+    <!-- Intro -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <p style="font-size:.88rem;line-height:1.7;color:#cbd5e1;margin-bottom:.65rem">
+        A plataforma SurfBook funciona sobre infraestrutura cloud de terceiros (Cloudflare + Supabase). Estes custos sao absorvidos pela plataforma no plano de arranque, mas e importante que perceba o que existe por baixo — para que possa tomar decisoes informadas se quiser crescer ou ter mais independencia no futuro.
+      </p>
+    </div>
+
+    <!-- Supabase free vs pro -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1.25rem">
+
+      <!-- Free -->
+      <div style="background:var(--navy-card);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius);padding:24px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#ef4444,#f97316)"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <div style="width:38px;height:38px;background:rgba(239,68,68,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0">🆓</div>
+          <div>
+            <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#f87171">Supabase Free</div>
+            <div style="font-size:1.1rem;font-weight:800;color:var(--white)">€0 / mes</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.55rem">
+          <div style="display:flex;gap:.6rem;align-items:flex-start">
+            <span style="color:#10b981;flex-shrink:0;font-size:.85rem">✓</span>
+            <span style="font-size:.82rem;color:#94a3b8">500 MB base de dados · 1 GB armazenamento</span>
+          </div>
+          <div style="display:flex;gap:.6rem;align-items:flex-start">
+            <span style="color:#10b981;flex-shrink:0;font-size:.85rem">✓</span>
+            <span style="font-size:.82rem;color:#94a3b8">Funcional para fase de arranque</span>
+          </div>
+          <div style="display:flex;gap:.6rem;align-items:flex-start;margin-top:.25rem">
+            <span style="color:#ef4444;flex-shrink:0;font-size:.85rem">⚠</span>
+            <span style="font-size:.82rem;color:#f87171;line-height:1.5"><strong>Pausa automatica apos 7 dias sem actividade</strong> — se ninguem aceder ao site ou painel durante 1 semana, a base de dados hiberna e as reservas param de funcionar ate reactivacao manual.</span>
+          </div>
+          <div style="display:flex;gap:.6rem;align-items:flex-start">
+            <span style="color:#ef4444;flex-shrink:0;font-size:.85rem">⚠</span>
+            <span style="font-size:.82rem;color:#f87171">Sem backups automaticos diarios</span>
+          </div>
+          <div style="display:flex;gap:.6rem;align-items:flex-start">
+            <span style="color:#ef4444;flex-shrink:0;font-size:.85rem">⚠</span>
+            <span style="font-size:.82rem;color:#f87171">Sem SLA de disponibilidade garantido</span>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding:.6rem .85rem;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:.78rem;color:#fca5a5;line-height:1.5">
+          <strong>Risco real:</strong> Em periodos de epoca baixa ou fecho da escola, o sistema pode pausar mesmo com reservas futuras pendentes.
+        </div>
+      </div>
+
+      <!-- Pro -->
+      <div style="background:var(--navy-card);border:1px solid rgba(16,185,129,.3);border-radius:var(--radius);padding:24px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--green),#34d399)"></div>
+        <div style="position:absolute;top:12px;right:12px;background:linear-gradient(135deg,var(--green),#34d399);color:#fff;font-size:.65rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:3px 10px;border-radius:999px">Recomendado</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <div style="width:38px;height:38px;background:rgba(16,185,129,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0">🔒</div>
+          <div>
+            <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--green)">Supabase Pro</div>
+            <div style="font-size:1.1rem;font-weight:800;color:var(--white)">~€23 / mes</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.55rem">
+          <div style="display:flex;gap:.6rem;align-items:flex-start">
+            <span style="color:#10b981;flex-shrink:0;font-size:.85rem">✓</span>
+            <span style="font-size:.82rem;color:#cbd5e1"><strong>Sem pausas</strong> — base de dados sempre activa, 24/7/365</span>
+          </div>
+          <div style="display:flex;gap:.6rem;align-items:flex-start">
+            <span style="color:#10b981;flex-shrink:0;font-size:.85rem">✓</span>
+            <span style="font-size:.82rem;color:#cbd5e1">Backups diarios automaticos com restauro em 1 clique</span>
+          </div>
+          <div style="display:flex;gap:.6rem;align-items:flex-start">
+            <span style="color:#10b981;flex-shrink:0;font-size:.85rem">✓</span>
+            <span style="font-size:.82rem;color:#cbd5e1">8 GB base de dados · 100 GB armazenamento</span>
+          </div>
+          <div style="display:flex;gap:.6rem;align-items:flex-start">
+            <span style="color:#10b981;flex-shrink:0;font-size:.85rem">✓</span>
+            <span style="font-size:.82rem;color:#cbd5e1">Suporte prioritario com SLA</span>
+          </div>
+          <div style="display:flex;gap:.6rem;align-items:flex-start">
+            <span style="color:#10b981;flex-shrink:0;font-size:.85rem">✓</span>
+            <span style="font-size:.82rem;color:#cbd5e1">Logs de auditoria e autenticacao avancada</span>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding:.6rem .85rem;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;font-size:.78rem;color:#6ee7b7;line-height:1.5">
+          Com 10 aulas/mes a €35 = €350 facturado → comissao de 3% = €10,50. O Pro paga-se com ~22 aulas/mes.
+        </div>
+      </div>
+    </div>
+
+    <!-- Quando faz sentido actualizar -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--cyan);margin-bottom:.9rem">Quando Faz Sentido Actualizar para Pro</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem">
+        <div style="text-align:center;padding:.85rem .6rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px">
+          <div style="font-size:1.4rem;margin-bottom:.35rem">📅</div>
+          <div style="font-size:.78rem;font-weight:700;color:var(--white);margin-bottom:.25rem">Escola ativa todo o ano</div>
+          <div style="font-size:.75rem;color:#94a3b8;line-height:1.4">Se fechar temporada, o Free pausa. Com o Pro, o calendario e reservas funcionam sempre.</div>
+        </div>
+        <div style="text-align:center;padding:.85rem .6rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px">
+          <div style="font-size:1.4rem;margin-bottom:.35rem">🔑</div>
+          <div style="font-size:.78rem;font-weight:700;color:var(--white);margin-bottom:.25rem">Mais de 20 aulas/mes</div>
+          <div style="font-size:.75rem;color:#94a3b8;line-height:1.4">A partir deste volume, o custo do Pro e diluido e a fiabilidade justifica completamente.</div>
+        </div>
+        <div style="text-align:center;padding:.85rem .6rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px">
+          <div style="font-size:1.4rem;margin-bottom:.35rem">🛡️</div>
+          <div style="font-size:.78rem;font-weight:700;color:var(--white);margin-bottom:.25rem">Dados criticos</div>
+          <div style="font-size:.75rem;color:#94a3b8;line-height:1.4">Se nao quer arriscar perder historico de reservas, os backups diarios do Pro dao essa tranquilidade.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Opcoes de branding -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);margin-bottom:.9rem">Opcoes de Branding & Personalizacao</div>
+      <div style="display:flex;flex-direction:column;gap:.75rem">
+
+        <div style="display:flex;gap:1rem;align-items:flex-start;padding:.85rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px">
+          <div style="background:rgba(0,207,253,.15);border-radius:8px;padding:.35rem .7rem;font-size:.72rem;font-weight:700;color:var(--cyan);white-space:nowrap;flex-shrink:0;min-width:80px;text-align:center">Incluido</div>
+          <div>
+            <div style="font-size:.84rem;font-weight:600;color:var(--white);margin-bottom:.2rem">URL partilhado — surfbook.pt/escola</div>
+            <div style="font-size:.8rem;color:#94a3b8;line-height:1.5">Cada escola tem a sua sub-pagina dentro da plataforma SurfBook. Ex: <code style="color:var(--cyan);background:rgba(0,207,253,.08);padding:1px 5px;border-radius:4px">auditoria-25b.pages.dev/arrifana</code>. Sem custos adicionais.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:1rem;align-items:flex-start;padding:.85rem;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:10px">
+          <div style="background:rgba(245,158,11,.2);border-radius:8px;padding:.35rem .7rem;font-size:.72rem;font-weight:700;color:var(--gold);white-space:nowrap;flex-shrink:0;min-width:80px;text-align:center">Opcional</div>
+          <div>
+            <div style="font-size:.84rem;font-weight:600;color:var(--white);margin-bottom:.2rem">Dominio proprio — reservas.minhaescola.pt</div>
+            <div style="font-size:.8rem;color:#94a3b8;line-height:1.5">A escola regista o seu proprio dominio (~€10-15/ano) e apontamos o site de reservas para ele via DNS. O painel e sistema continuam centralizados. <strong style="color:var(--gold)">Custo: dominio a cargo da escola + configuracao tecnica gratuita pela SurfBook.</strong></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:1rem;align-items:flex-start;padding:.85rem;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:10px">
+          <div style="background:rgba(245,158,11,.2);border-radius:8px;padding:.35rem .7rem;font-size:.72rem;font-weight:700;color:var(--gold);white-space:nowrap;flex-shrink:0;min-width:80px;text-align:center">Opcional</div>
+          <div>
+            <div style="font-size:.84rem;font-weight:600;color:var(--white);margin-bottom:.2rem">Logotipo & cores da escola</div>
+            <div style="font-size:.8rem;color:#94a3b8;line-height:1.5">Site de reservas com as cores e logotipo da escola em vez da identidade SurfBook. Ideal para escolas com marca forte. <strong style="color:var(--gold)">Custo: a combinar (trabalho de personalizacao pontual).</strong></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:1rem;align-items:flex-start;padding:.85rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px">
+          <div style="background:rgba(167,139,250,.2);border-radius:8px;padding:.35rem .7rem;font-size:.72rem;font-weight:700;color:#a78bfa;white-space:nowrap;flex-shrink:0;min-width:80px;text-align:center">Futuro</div>
+          <div>
+            <div style="font-size:.84rem;font-weight:600;color:var(--white);margin-bottom:.2rem">App iOS / Android (PWA)</div>
+            <div style="font-size:.8rem;color:#94a3b8;line-height:1.5">Versao instalavel no telemovel para o admin gerir reservas em movimento. No roadmap para 2026/27. Sem custo adicional previsto para escolas parceiras.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Resumo tabela custos -->
+    <div class="card">
+      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-400);margin-bottom:1rem">Resumo de Custos de Infraestrutura</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(0,207,253,.2)">
+              <th style="text-align:left;padding:.6rem .75rem;color:var(--gray-400);font-weight:600;font-size:.75rem">Item</th>
+              <th style="text-align:center;padding:.6rem .75rem;color:var(--gray-400);font-weight:600;font-size:.75rem">Fase Arranque</th>
+              <th style="text-align:center;padding:.6rem .75rem;color:var(--gray-400);font-weight:600;font-size:.75rem">Opcao Pro</th>
+              <th style="text-align:left;padding:.6rem .75rem;color:var(--gray-400);font-weight:600;font-size:.75rem">Responsavel</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(255,255,255,.05)">
+              <td style="padding:.6rem .75rem;color:#cbd5e1">Hosting (Cloudflare Pages)</td>
+              <td style="padding:.6rem .75rem;text-align:center;color:#10b981;font-weight:600">Gratuito</td>
+              <td style="padding:.6rem .75rem;text-align:center;color:#10b981;font-weight:600">Gratuito</td>
+              <td style="padding:.6rem .75rem;color:#94a3b8">SurfBook</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,.05)">
+              <td style="padding:.6rem .75rem;color:#cbd5e1">Base de dados (Supabase Free)</td>
+              <td style="padding:.6rem .75rem;text-align:center;color:#10b981;font-weight:600">€0 / mes</td>
+              <td style="padding:.6rem .75rem;text-align:center;color:#94a3b8">—</td>
+              <td style="padding:.6rem .75rem;color:#94a3b8">SurfBook</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,.05)">
+              <td style="padding:.6rem .75rem;color:#cbd5e1">Base de dados (Supabase Pro)</td>
+              <td style="padding:.6rem .75rem;text-align:center;color:#94a3b8">—</td>
+              <td style="padding:.6rem .75rem;text-align:center;color:var(--gold);font-weight:600">~€23 / mes</td>
+              <td style="padding:.6rem .75rem;color:#94a3b8">SurfBook (partilhado)</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,.05)">
+              <td style="padding:.6rem .75rem;color:#cbd5e1">Dominio proprio da escola</td>
+              <td style="padding:.6rem .75rem;text-align:center;color:#94a3b8">—</td>
+              <td style="padding:.6rem .75rem;text-align:center;color:var(--gold);font-weight:600">€10–15 / ano</td>
+              <td style="padding:.6rem .75rem;color:#94a3b8">Escola</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,.05)">
+              <td style="padding:.6rem .75rem;color:#cbd5e1">Personalizacao visual (logo/cores)</td>
+              <td style="padding:.6rem .75rem;text-align:center;color:#94a3b8">—</td>
+              <td style="padding:.6rem .75rem;text-align:center;color:var(--gold);font-weight:600">A combinar</td>
+              <td style="padding:.6rem .75rem;color:#94a3b8">SurfBook</td>
+            </tr>
+            <tr>
+              <td style="padding:.6rem .75rem;color:#cbd5e1">Notificacoes WhatsApp</td>
+              <td style="padding:.6rem .75rem;text-align:center;color:#10b981;font-weight:600">Gratuito (wa.me)</td>
+              <td style="padding:.6rem .75rem;text-align:center;color:#10b981;font-weight:600">Gratuito (wa.me)</td>
+              <td style="padding:.6rem .75rem;color:#94a3b8">SurfBook</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:1rem;padding:.7rem 1rem;background:rgba(0,207,253,.06);border:1px solid rgba(0,207,253,.15);border-radius:8px;font-size:.8rem;color:#a0c4d4;line-height:1.55">
+        <strong style="color:var(--cyan)">Nota:</strong> Na fase actual, todos os custos de infraestrutura sao suportados pela SurfBook. Se e quando a plataforma escalar para o plano Pro, esses custos sao partilhados entre as escolas activas — o que significa que cada escola contribui centimos por mes para uma infraestrutura mais robusta. Sem surpresas.
+      </div>
+    </div>
+
+  </section>
+
   <!-- CTA -->
   <section class="cta-block">
     <h3>Pronto para transformar as reservas da sua escola?</h3>

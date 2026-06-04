@@ -3061,7 +3061,7 @@
     const avgPerStudent = totalStudents > 0 ? totalRevenue / totalStudents : 0;
     const cancelCount   = allPeriod.filter(b => b.status === 'cancelled').length;
     const cancelRate    = allPeriod.length > 0 ? Math.round(cancelCount / allPeriod.length * 100) : 0;
-    const fmt = v => v >= 1000 ? `€${(v/1000).toFixed(1)}k` : `€${Math.round(v)}`;
+    const fmt = v => '€' + Math.round(v).toLocaleString('pt-PT');
     document.getElementById('kpi-revenue').textContent  = fmt(totalRevenue);
     document.getElementById('kpi-students').textContent = totalStudents;
     document.getElementById('kpi-avg').textContent      = fmt(avgPerStudent);
@@ -3108,9 +3108,18 @@
     const slotLabels    = sortedSlots.map(([t]) => t);
     const slotOccupancy = sortedSlots.map(([,v]) => v.sessions > 0 ? Math.round(v.people/(v.sessions*maxSlot)*100) : 0);
 
-    // ── Gender ─────────────────────────────────────────────────
+    // ── Gender (normalise to PT labels) ────────────────────────
+    const GNORM = {
+      'H':'Homem','Homem':'Homem','homem':'Homem','Masculino':'Homem','masculino':'Homem','male':'Homem','Male':'Homem','M':'Homem',
+      'F':'Mulher','Mulher':'Mulher','mulher':'Mulher','Feminino':'Mulher','feminino':'Mulher','female':'Mulher','Female':'Mulher',
+      'C':'Criança','Criança':'Criança','criança':'Criança','crianca':'Criança','kid':'Criança','Kid':'Criança','Crianca':'Criança'
+    };
     const genderMap = {};
-    data.forEach(b => { const g = b.client_gender || 'N/A'; genderMap[g] = (genderMap[g]||0) + 1; });
+    data.forEach(b => {
+      const raw = (b.client_gender || '').trim();
+      const g = GNORM[raw] || (raw || 'N/D');
+      genderMap[g] = (genderMap[g]||0) + 1;
+    });
 
     // ── Nationality (top 8) ────────────────────────────────────
     const natMap = {};
@@ -3144,15 +3153,17 @@
 
     // Receita por Modalidade
     const lrColors = ['rgba(245,158,11,.75)','rgba(0,207,253,.7)','rgba(167,139,250,.7)','rgba(34,197,94,.7)','rgba(248,113,113,.7)'];
-    const lrTotal  = sortedLR.reduce((s,[,v])=>s+v,0);
     chartInstances.lessonRev = new Chart(document.getElementById('chart-lesson-rev'), {
-      type: 'doughnut',
-      data: { labels: sortedLR.map(([k])=>k), datasets: [{ data: sortedLR.map(([,v])=>v), backgroundColor: lrColors, borderWidth: 0 }] },
-      options: { plugins: {
-        legend: { labels: { color: '#8B9AB0', font: { size: 10 }, boxWidth: 10 } },
-        datalabels: { color: '#fff', font: { size: 10, weight: '700' },
-          formatter: v => lrTotal ? `${Math.round(v/lrTotal*100)}%` : '' }
-      }}
+      type: 'bar',
+      data: { labels: sortedLR.map(([k])=>k), datasets: [{ data: sortedLR.map(([,v])=>v), backgroundColor: lrColors.slice(0,sortedLR.length), borderRadius: 4 }] },
+      options: {
+        scales: scaleOpts,
+        layout: { padding: { top: 22 } },
+        plugins: { legend: { display: false },
+          datalabels: { color: '#CBD5E1', font: { size: 11, weight: '700' }, anchor: 'end', align: 'top', offset: 2,
+            formatter: v => v > 0 ? '€'+Math.round(v) : '' }
+        }
+      }
     });
 
     // Ocupação por Horário
@@ -3173,11 +3184,10 @@
     });
 
     // Género
-    const gLabels = { H:'Homem', M:'Mulher', C:'Criança', 'N/A':'N/D' };
     const totalG = Object.values(genderMap).reduce((a,b)=>a+b,0);
     chartInstances.gender = new Chart(document.getElementById('chart-gender'), {
       type: 'doughnut',
-      data: { labels: Object.keys(genderMap).map(g=>gLabels[g]||g), datasets: [{ data: Object.values(genderMap), backgroundColor: ['#00CFFD','#a78bfa','#22c55e','#eab308'], borderWidth:0 }] },
+      data: { labels: Object.keys(genderMap), datasets: [{ data: Object.values(genderMap), backgroundColor: ['#00CFFD','#a78bfa','#22c55e','#eab308'], borderWidth:0 }] },
       options: { plugins: { legend: { labels: { color: '#8B9AB0', font: { size: 11 } } },
         datalabels: { color: '#fff', font: { size: 11, weight: '700' }, formatter: v => totalG ? `${Math.round(v/totalG*100)}%\n(${v})` : '' }
       }}
