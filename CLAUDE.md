@@ -1,14 +1,18 @@
-# Plataforma Surf School — Documentação do Projeto
+# Plataforma Despomar — Documentação do Projeto
 
 ## O que é isto
-Multi-tenant SaaS para escolas de surf. Ivo Casimiro (ivocasimiro@gmail.com) é o super-administrador e dono da plataforma. As escolas de surf são os clientes (tenants). Os surfistas são os utilizadores finais.
+Dois sistemas distintos no mesmo repositório/Supabase, geridos por Ivo Casimiro (ivo@despomar.com / ivocasimiro@gmail.com):
 
-## URL de produção
+1. **SaaS Escolas de Surf** — Multi-tenant para escolas de surf (reservas de aulas)
+2. **58 Surf Alugueres** — Sistema de gestão de alugueres de pranchas e fatos para a cadeia 58 Surf (Grupo Despomar)
+
+## URLs de produção
 **https://auditoria-25b.pages.dev**
-- `/surf` ou `/reservar` → Site de reservas público
-- `/admin` → Painel do dono da escola
-- `/super-admin` → Painel do Ivo (super-admin)
+- `/surf` ou `/reservar` → Site de reservas público (aulas de surf)
+- `/admin` → Painel do dono da escola de surf
+- `/super-admin` → Painel do Ivo (super-admin escolas)
 - `/proposta` → Proposta comercial para atrair escolas
+- `/alugueres` ou `/58surf` → Painel de gestão de alugueres 58 Surf
 
 ## Infraestrutura
 - **Hosting**: Cloudflare Pages (deploy automático do branch `main`)
@@ -21,11 +25,12 @@ Multi-tenant SaaS para escolas de surf. Ivo Casimiro (ivocasimiro@gmail.com) é 
 ## Ficheiros principais
 ```
 surf-school/
-  index.html      ← Site de reservas público (multi-idioma)
-  admin.html      ← Painel do dono da escola
-  super-admin.html← Painel do Ivo (todas as escolas)
-  proposta.html   ← Página de proposta comercial
-_redirects        ← Clean URLs para Cloudflare Pages
+  index.html          ← Site de reservas público (multi-idioma)
+  admin.html          ← Painel do dono da escola de surf
+  super-admin.html    ← Painel do Ivo (todas as escolas)
+  proposta.html       ← Página de proposta comercial
+  rental-58surf.html  ← Painel de alugueres 58 Surf (Despomar)
+_redirects            ← Clean URLs para Cloudflare Pages
 ```
 
 ## Base de dados — Tabela `bookings`
@@ -105,7 +110,7 @@ Detecção automática de idioma pelo país do cliente:
 - Ajustar comissão por escola
 - Análise global (revenue, bookings, por escola, por nacionalidade)
 
-## Roadmap / Funcionalidades futuras
+## Roadmap / Funcionalidades futuras — Escolas de Surf
 - [ ] Quando marcar "Concluído" → enviar WA com pedido de review (Google/TripAdvisor)
 - [ ] Sistema de login real para admins (Supabase Auth) em vez de password simples
 - [ ] Cada escola com URL próprio (ex: /arrifana, /nazare)
@@ -115,6 +120,67 @@ Detecção automática de idioma pelo país do cliente:
 - [ ] Bloquear dias/horários indisponíveis no calendário
 - [ ] Sistema de vouchers/descontos
 - [ ] Emails automáticos de lembrança (D-1 antes da aula)
+
+---
+
+## Sistema 58 Surf Alugueres (Grupo Despomar)
+
+### Ficheiro
+`surf-school/rental-58surf.html` → `/alugueres` ou `/58surf`
+
+### Lojas activas
+```javascript
+const STORES = [
+  { id: '58surf-peniche',    name: '58 Peniche',    location: 'Peniche'           },
+  { id: '58surf-ericeira',   name: '58 Ericeira',   location: 'Ericeira'          },
+  { id: '58surf-matosinhos', name: '58 Matosinhos', location: 'Matosinhos'        },
+  { id: '58surf-caparica',   name: '58 Caparica',   location: 'Costa da Caparica' },
+  { id: '58surf-obidos',     name: '58 Óbidos',     location: 'Óbidos (em breve)' },
+];
+```
+Para adicionar loja: acrescentar entrada ao array `STORES` em `rental-58surf.html`.
+
+### Base de dados — Tabela `surf_rentals`
+Colunas principais:
+- `id` UUID
+- `store_id` TEXT (ex: '58surf-peniche')
+- `client_name`, `client_phone`, `client_email`, `client_id_doc` TEXT
+- `items` JSONB — array `[{catalog_id, name, size, qty}]`
+- `rental_start` TIMESTAMPTZ
+- `rental_days` INTEGER (1, 2, 3 ou 7)
+- `expected_return` TIMESTAMPTZ (rental_start + dias, às 18:00)
+- `actual_return` TIMESTAMPTZ (preenchido na devolução)
+- `status` TEXT: `active` | `returned` | `overdue`
+- `notes` TEXT
+
+RLS: política `allow_all` FOR ALL USING (true).
+
+### Catálogo de items (CATALOG em rental-58surf.html)
+Actualizar o array `CATALOG` conforme os tipos de aluguer reais das lojas.
+Campos por item: `id`, `name`, `icon`, `sizes[]`.
+Sem preços — sistema de tracking apenas (entrega e recepção).
+
+### Fluxo de aluguer
+1. Staff faz login (Supabase Auth) → selecciona loja
+2. Novo Aluguer: dados cliente + material + duração (1/2/3/7 dias)
+3. Sistema calcula `expected_return` = dia+N às 18:00
+4. Cards activos mostram timer em tempo real
+5. Se passa da `expected_return` → alerta automático (banner vermelho + tab "Em Atraso")
+6. Devolução: 1 clique → marca `returned` ou `overdue` + regista hora real
+
+### Dashboard analytics
+- Gráfico alugueres últimos 30 dias
+- Items mais alugados (ranking)
+- Distribuição por duração
+- Actividade por dia da semana
+
+### Roadmap 58 Surf
+- [ ] Adicionar logo oficial 58surf.com (substituir logo textual em `.login-brand`)
+- [ ] Notificação WhatsApp ao cliente no início do aluguer
+- [ ] Alerta WA/email ao staff quando aluguer entra em atraso
+- [ ] Relatório diário por loja (email automático)
+- [ ] Painel super-admin Despomar (ver todas as lojas em simultâneo)
+- [ ] Configurar tipos de aluguer reais (catálogo actualizado pelo Ivo)
 
 ## Como adicionar uma escola nova
 1. Em `admin.html` e `super-admin.html`, adicionar ao array `SCHOOLS`:
