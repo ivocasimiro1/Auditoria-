@@ -1281,7 +1281,7 @@
 
   async function tryLoadSchoolConfig() {
     try {
-      const { data, error } = await sb.from('schools').select('id,name,wa_number,meeting_point,max_per_slot,time_slots,lesson_types,status').eq('status','active');
+      const { data, error } = await sb.from('schools').select('id,name,wa_number,meeting_point,max_per_slot,time_slots,lesson_types,working_days,status').eq('status','active');
       if (!error && data && data.length) {
         SCHOOLS = data.map(s => ({
           id:            s.id,
@@ -1290,8 +1290,11 @@
           meeting_point: s.meeting_point || '',
           max_per_slot:  s.max_per_slot  || 6,
           slots:         s.time_slots    || ['08:00','10:30','14:00','16:30'],
+          lesson_types:  s.lesson_types  || null,
+          working_days:  s.working_days  || null,
+          status:        s.status        || 'active',
         }));
-        // Also refresh LESSON_PRICES from first school's lesson_types if available
+        // Refresh LESSON_PRICES from current school's lesson_types
         const school = data.find(s => s.id === (SCHOOLS[0]?.id)) || data[0];
         if (school?.lesson_types?.length) {
           for (const lt of school.lesson_types) {
@@ -1904,29 +1907,32 @@
     list.innerHTML = cfgLessonTypes.map((lt,i) => {
       const isFixed = lt.maxPax === 1;
       return `
-      <div style="display:flex;align-items:center;gap:.4rem;padding:.4rem .55rem;background:rgba(255,255,255,.04);border-radius:8px">
-        <select onchange="cfgLessonTypes[${i}].icon=this.value"
-          style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:.25rem .3rem;color:var(--white);font-size:.95rem;outline:none;color-scheme:dark;width:50px">
-          ${CFG_ICON_OPTIONS.map(ic=>`<option value="${ic}"${(lt.icon||'🏄')===ic?' selected':''}>${ic}</option>`).join('')}
-        </select>
-        <input type="text" value="${lt.name.replace(/"/g,'&quot;')}" placeholder="Nome da modalidade"
-          oninput="cfgLessonTypes[${i}].name=this.value"
-          style="flex:1;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:.35rem .6rem;color:var(--white);font-family:Inter,sans-serif;font-size:.84rem;outline:none;color-scheme:dark" />
-        <div style="display:flex;align-items:center;gap:.25rem;flex-shrink:0">
-          <span style="font-size:.78rem;color:var(--gray)">€</span>
-          <input type="number" min="1" step="1" value="${lt.price}" oninput="cfgLessonTypes[${i}].price=parseFloat(this.value)||0"
-            style="width:60px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:.35rem .4rem;color:var(--white);font-family:Inter,sans-serif;font-size:.84rem;outline:none;text-align:center;color-scheme:dark" />
+      <div style="display:flex;flex-direction:column;gap:.3rem;padding:.45rem .55rem;background:rgba(255,255,255,.04);border-radius:8px">
+        <div style="display:flex;align-items:center;gap:.4rem">
+          <select onchange="cfgLessonTypes[${i}].icon=this.value"
+            style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:.25rem .3rem;color:var(--white);font-size:.95rem;outline:none;color-scheme:dark;width:50px;flex-shrink:0">
+            ${CFG_ICON_OPTIONS.map(ic=>`<option value="${ic}"${(lt.icon||'🏄')===ic?' selected':''}>${ic}</option>`).join('')}
+          </select>
+          <input type="text" value="${lt.name.replace(/"/g,'&quot;')}" placeholder="Nome da modalidade"
+            oninput="cfgLessonTypes[${i}].name=this.value"
+            style="flex:1;min-width:0;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:.35rem .6rem;color:var(--white);font-family:Inter,sans-serif;font-size:.84rem;outline:none;color-scheme:dark" />
+          <button onclick="cfgRemoveLesson(${i})"
+            style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#fca5a5;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:.78rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0">
-          <span style="font-size:.6rem;color:var(--gray);line-height:1">máx.</span>
+        <div style="display:flex;align-items:center;gap:.5rem;padding-left:.25rem">
+          <span style="font-size:.75rem;color:var(--gray);flex-shrink:0">Preço</span>
+          <div style="display:flex;align-items:center;gap:.25rem;flex-shrink:0">
+            <span style="font-size:.78rem;color:var(--gray)">€</span>
+            <input type="number" min="0" step="1" value="${lt.price}" oninput="cfgLessonTypes[${i}].price=parseFloat(this.value)||0"
+              style="width:64px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:.3rem .4rem;color:var(--white);font-family:Inter,sans-serif;font-size:.84rem;outline:none;text-align:center;color-scheme:dark" />
+          </div>
+          <span style="font-size:.75rem;color:var(--gray);flex-shrink:0;margin-left:.2rem">Máx. pessoas</span>
           <input type="number" min="1" max="20" step="1" value="${lt.maxPax||6}"
             oninput="cfgLessonTypes[${i}].maxPax=Math.max(1,parseInt(this.value)||1)"
-            title="Máximo de pessoas nesta modalidade (1 = preço fixo/aula privada)"
-            style="width:42px;background:rgba(255,255,255,.06);border:1px solid ${isFixed?'rgba(251,146,60,.35)':'rgba(0,207,253,.25)'};border-radius:6px;padding:.3rem .3rem;color:${isFixed?'#fb923c':'var(--cyan)'};font-family:Inter,sans-serif;font-size:.82rem;outline:none;text-align:center;color-scheme:dark" />
-          <span style="font-size:.6rem;color:var(--gray);line-height:1">${isFixed?'fixo':'pess.'}</span>
+            title="1 = preço fixo (privada); 2+ = por pessoa (grupo)"
+            style="width:48px;background:rgba(255,255,255,.06);border:1px solid ${isFixed?'rgba(251,146,60,.4)':'rgba(0,207,253,.3)'};border-radius:6px;padding:.3rem .3rem;color:${isFixed?'#fb923c':'var(--cyan)'};font-family:Inter,sans-serif;font-size:.84rem;outline:none;text-align:center;color-scheme:dark;flex-shrink:0" />
+          <span style="font-size:.7rem;color:${isFixed?'#fb923c':'var(--cyan)'};flex-shrink:0">${isFixed?'fixo':'p/pessoa'}</span>
         </div>
-        <button onclick="cfgRemoveLesson(${i})"
-          style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#fca5a5;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:.78rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
       </div>`;
     }).join('');
   }
@@ -1960,11 +1966,19 @@
       updated_at:    new Date().toISOString(),
     };
     let { error } = await sb.from('schools').upsert(payload);
-    // Retry without working_days if column not yet created in DB
-    if (error?.code === '42703' || error?.message?.includes('working_days')) {
-      const { working_days, ...payloadFallback } = payload;
-      ({ error } = await sb.from('schools').upsert(payloadFallback));
+    // Cascade retry: remove unsupported columns one by one if they don't exist in DB yet
+    if (error?.code === '42703' || error?.message?.includes('working_days') || error?.message?.includes('column')) {
+      const { working_days, ...p2 } = payload;
+      ({ error } = await sb.from('schools').upsert(p2));
       if (!error) localStorage.setItem(`surfbook_wdays_${school.id}`, JSON.stringify(cfgWorkingDays));
+    }
+    if (error?.code === '42703' || error?.message?.includes('lesson_types') || error?.message?.includes('column')) {
+      const { lesson_types, working_days, ...p3 } = payload;
+      ({ error } = await sb.from('schools').upsert(p3));
+      if (!error) {
+        localStorage.setItem(`surfbook_wdays_${school.id}`, JSON.stringify(cfgWorkingDays));
+        localStorage.setItem(`surfbook_ltypes_${school.id}`, JSON.stringify(lessonTypesData));
+      }
     }
     if (error) { showToast('Erro ao guardar: ' + error.message, 'error'); return; }
     // Sync local SCHOOLS config
