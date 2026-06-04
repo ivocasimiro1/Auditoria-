@@ -801,7 +801,7 @@
           <div class="form-group" style="grid-column:span 2">
             <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Ponto de Encontro</label>
             <textarea id="cfg-meeting" rows="3" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.88rem;width:100%;outline:none;resize:vertical;color-scheme:dark"></textarea>
-            <div style="font-size:.72rem;color:var(--gray);margin-top:.25rem">Texto enviado ao cliente na mensagem WhatsApp de confirmação.</div>
+            <div style="font-size:.72rem;color:var(--gray);margin-top:.25rem">⚠️ Apenas o endereço/localização — a instrução de hora ("chegar 15 min antes") é adicionada automaticamente em cada idioma.</div>
           </div>
           <div class="form-group" style="grid-column:span 2">
             <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Horários Disponíveis</label>
@@ -810,6 +810,11 @@
               <input type="time" id="cfg-new-slot" value="09:00" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:.4rem .7rem;color:var(--white);font-family:Inter,sans-serif;font-size:.85rem;outline:none;color-scheme:dark;width:130px" />
               <button onclick="cfgAddSlot()" style="background:rgba(0,207,253,.1);border:1px dashed rgba(0,207,253,.35);color:var(--cyan);border-radius:8px;padding:.4rem .85rem;font-size:.8rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">+ Adicionar</button>
             </div>
+          </div>
+          <div class="form-group" style="grid-column:span 2">
+            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Preços das Modalidades</label>
+            <div style="display:flex;flex-direction:column;gap:.4rem" id="cfg-prices-list"></div>
+            <div style="font-size:.72rem;color:var(--gray);margin-top:.35rem">💡 Alterações de preço reflectem-se automaticamente no site de reservas ao guardar.</div>
           </div>
         </div>
       </div>
@@ -1201,7 +1206,7 @@
       id:            'escola-teste',
       name:          'Escola Surf Teste',
       wa_number:     '351962800400',
-      meeting_point: 'Encontramo-nos na Praia de Arrifana, junto ao acesso principal às escadas, 15 minutos antes da aula.',
+      meeting_point: 'Praia de Arrifana, junto ao acesso principal às escadas',
       max_per_slot:  6,
       slots:         ['08:00','10:30','14:00','16:30'],
       lat: 37.297, lon: -8.865,
@@ -1823,6 +1828,22 @@
     document.getElementById('cfg-meeting').value = school.meeting_point  || '';
     cfgSlots = [...(school.slots || ['08:00','10:30','14:00','16:30'])];
     renderCfgSlots();
+    // Render price rows
+    const priceList = document.getElementById('cfg-prices-list');
+    if (priceList) {
+      priceList.innerHTML = Object.entries(LESSON_PRICES).map(([name, lp]) => {
+        const safeId = name.replace(/[^a-zA-Z0-9]/g,'_');
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.4rem .75rem;background:rgba(255,255,255,.04);border-radius:8px;gap:.5rem">
+          <span style="font-size:.85rem;color:var(--white);flex:1">${name}</span>
+          <span style="font-size:.7rem;color:var(--gray)">${lp.perPerson ? 'por pessoa' : 'preço fixo'}</span>
+          <div style="display:flex;align-items:center;gap:.3rem">
+            <span style="font-size:.8rem;color:var(--gray)">€</span>
+            <input type="number" id="cfg-price-${safeId}" min="1" step="1" value="${lp.price}"
+              style="width:66px;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:6px;padding:.3rem .45rem;color:var(--white);font-family:Inter,sans-serif;font-size:.88rem;outline:none;text-align:center;color-scheme:dark" />
+          </div>
+        </div>`;
+      }).join('');
+    }
   }
 
   function renderCfgSlots() {
@@ -1844,19 +1865,30 @@
   async function saveSchoolSettings() {
     const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
     if (!school) { showToast('Escola não encontrada', 'error'); return; }
+    // Build lesson_types from price inputs
+    const lessonTypesData = Object.entries(LESSON_PRICES).map(([name, lp]) => {
+      const safeId = name.replace(/[^a-zA-Z0-9]/g,'_');
+      const el = document.getElementById(`cfg-price-${safeId}`);
+      const price = el ? (parseFloat(el.value) || lp.price) : lp.price;
+      return { name, price, max_pax: lp.perPerson ? (school.max_per_slot || 6) : 1 };
+    });
     const payload = {
       id:            school.id,
+      name:          school.name,
+      status:        school.status || 'active',
       wa_number:     document.getElementById('cfg-wa').value.trim().replace(/\D/g,'') || school.wa_number,
       max_per_slot:  parseInt(document.getElementById('cfg-maxslot').value) || school.max_per_slot,
       meeting_point: document.getElementById('cfg-meeting').value.trim() || school.meeting_point,
       time_slots:    cfgSlots,
+      lesson_types:  lessonTypesData,
       updated_at:    new Date().toISOString(),
     };
     const { error } = await sb.from('schools').upsert(payload);
     if (error) { showToast('Erro ao guardar: ' + error.message, 'error'); return; }
-    // Update local SCHOOLS config too
+    // Update local SCHOOLS config and LESSON_PRICES
     Object.assign(school, { wa_number: payload.wa_number, max_per_slot: payload.max_per_slot, meeting_point: payload.meeting_point, slots: payload.time_slots });
-    showToast('Configurações guardadas ✓', 'success');
+    lessonTypesData.forEach(lt => { if (LESSON_PRICES[lt.name]) LESSON_PRICES[lt.name].price = lt.price; });
+    showToast('Configurações guardadas ✓ — preços e horários actualizados no site', 'success');
   }
 
   async function updateReviewsBadge() {
@@ -1880,19 +1912,19 @@
   const WA_MSGS = {
     confirmed: {
       pt: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Aula Confirmada*\n\nOla ${name},\n\nA sua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Hora:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\n\nVista o fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAte ja!`,
+        `*${school} — Aula Confirmada*\n\nOla ${name},\n\nA sua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Hora:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\nChegue 15 minutos antes da aula.\n\nVista o fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAte ja!`,
       en: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Lesson Confirmed*\n\nHi ${name},\n\nYour surf lesson is *confirmed*.\n\n*Date:* ${date}\n*Time:* ${time}\n*Activity:* ${lesson}\n*People:* ${people}\n*Total:* €${price}\n\n*Meeting point:*\n${meet}\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!`,
+        `*${school} — Lesson Confirmed*\n\nHi ${name},\n\nYour surf lesson is *confirmed*.\n\n*Date:* ${date}\n*Time:* ${time}\n*Activity:* ${lesson}\n*People:* ${people}\n*Total:* €${price}\n\n*Meeting point:*\n${meet}\nPlease arrive 15 minutes before the lesson.\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!`,
       fr: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Cours Confirme*\n\nBonjour ${name},\n\nVotre cours de surf est *confirme*.\n\n*Date:* ${date}\n*Heure:* ${time}\n*Activite:* ${lesson}\n*Personnes:* ${people}\n*Total:* €${price}\n\n*Point de rendez-vous:*\n${meet}\n\nPortez votre maillot sous la combinaison. Apportez une serviette et de la creme solaire.\n\nA bientot!`,
+        `*${school} — Cours Confirme*\n\nBonjour ${name},\n\nVotre cours de surf est *confirme*.\n\n*Date:* ${date}\n*Heure:* ${time}\n*Activite:* ${lesson}\n*Personnes:* ${people}\n*Total:* €${price}\n\n*Point de rendez-vous:*\n${meet}\nMerci d'arriver 15 minutes avant le cours.\n\nPortez votre maillot sous la combinaison. Apportez une serviette et de la creme solaire.\n\nA bientot!`,
       de: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Kurs Bestatigt*\n\nHallo ${name},\n\nDein Surfkurs ist *bestatigt*.\n\n*Datum:* ${date}\n*Uhrzeit:* ${time}\n*Aktivitat:* ${lesson}\n*Personen:* ${people}\n*Gesamt:* €${price}\n\n*Treffpunkt:*\n${meet}\n\nTrage deinen Badeanzug unter dem Neoprenanzug. Bring ein Handtuch und Sonnencreme mit.\n\nBis bald!`,
+        `*${school} — Kurs Bestatigt*\n\nHallo ${name},\n\nDein Surfkurs ist *bestatigt*.\n\n*Datum:* ${date}\n*Uhrzeit:* ${time}\n*Aktivitat:* ${lesson}\n*Personen:* ${people}\n*Gesamt:* €${price}\n\n*Treffpunkt:*\n${meet}\nBitte 15 Minuten vor der Stunde erscheinen.\n\nTrage deinen Badeanzug unter dem Neoprenanzug. Bring ein Handtuch und Sonnencreme mit.\n\nBis bald!`,
       es: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Clase Confirmada*\n\nHola ${name},\n\nTu clase de surf esta *confirmada*.\n\n*Fecha:* ${date}\n*Hora:* ${time}\n*Actividad:* ${lesson}\n*Personas:* ${people}\n*Total:* €${price}\n\n*Punto de encuentro:*\n${meet}\n\nViste el banador debajo del traje de neopreno. Trae una toalla y protector solar.\n\n¡Hasta pronto!`,
+        `*${school} — Clase Confirmada*\n\nHola ${name},\n\nTu clase de surf esta *confirmada*.\n\n*Fecha:* ${date}\n*Hora:* ${time}\n*Actividad:* ${lesson}\n*Personas:* ${people}\n*Total:* €${price}\n\n*Punto de encuentro:*\n${meet}\nLlega 15 minutos antes de la clase.\n\nViste el banador debajo del traje de neopreno. Trae una toalla y protector solar.\n\n¡Hasta pronto!`,
       nl: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Les Bevestigd*\n\nHoi ${name},\n\nJe surfles is *bevestigd*.\n\n*Datum:* ${date}\n*Tijd:* ${time}\n*Activiteit:* ${lesson}\n*Personen:* ${people}\n*Totaal:* €${price}\n\n*Ontmoetingspunt:*\n${meet}\n\nDraag je zwemkleding onder het wetsuit. Breng een handdoek en zonnebrand mee.\n\nTot snel!`,
+        `*${school} — Les Bevestigd*\n\nHoi ${name},\n\nJe surfles is *bevestigd*.\n\n*Datum:* ${date}\n*Tijd:* ${time}\n*Activiteit:* ${lesson}\n*Personen:* ${people}\n*Totaal:* €${price}\n\n*Ontmoetingspunt:*\n${meet}\nKom 15 minuten voor de les.\n\nDraag je zwemkleding onder het wetsuit. Breng een handdoek en zonnebrand mee.\n\nTot snel!`,
       'pt-br': (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Aula Confirmada*\n\nOi ${name},\n\nSua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Horario:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\n\nVista o sunga ou maio por baixo do wetsuit. Traga toalha e protetor solar.\n\nAte logo!`,
+        `*${school} — Aula Confirmada*\n\nOi ${name},\n\nSua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Horario:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\nChegue 15 minutos antes da aula.\n\nVista o sunga ou maio por baixo do wetsuit. Traga toalha e protetor solar.\n\nAte logo!`,
     },
     cancelled: {
       pt: (name, school, date, time) =>

@@ -1524,6 +1524,67 @@ const DEMO_THEMES = {
 const _escolaParam = new URLSearchParams(window.location.search).get('escola') || 'escola-teste';
 const _theme = DEMO_THEMES[_escolaParam] || DEMO_THEMES['escola-teste'];
 
+// ── PWA ICON + MANIFEST per school ────────────────────────────────────────────
+(function(){
+  const n = _theme.navy, g = _theme.gold;
+  function genPWAIcon(sz) {
+    const c = document.createElement('canvas');
+    c.width = c.height = sz;
+    const ctx = c.getContext('2d');
+    const s = sz / 512;
+    // Background
+    ctx.fillStyle = n;
+    const r = sz * 0.17;
+    ctx.beginPath();
+    ctx.moveTo(r,0); ctx.lineTo(sz-r,0); ctx.arcTo(sz,0,sz,r,r);
+    ctx.lineTo(sz,sz-r); ctx.arcTo(sz,sz,sz-r,sz,r);
+    ctx.lineTo(r,sz); ctx.arcTo(0,sz,0,sz-r,r);
+    ctx.lineTo(0,r); ctx.arcTo(0,0,r,0,r);
+    ctx.closePath(); ctx.fill();
+    // Wave 1
+    ctx.strokeStyle = g; ctx.lineWidth = 30*s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(48*s,310*s); ctx.quadraticCurveTo(130*s,240*s,220*s,275*s); ctx.quadraticCurveTo(310*s,310*s,400*s,230*s); ctx.quadraticCurveTo(445*s,210*s,466*s,234*s); ctx.stroke();
+    // Wave 2 (faded)
+    ctx.globalAlpha = 0.45; ctx.lineWidth = 20*s;
+    ctx.beginPath(); ctx.moveTo(48*s,370*s); ctx.quadraticCurveTo(130*s,300*s,220*s,335*s); ctx.quadraticCurveTo(310*s,370*s,400*s,290*s); ctx.quadraticCurveTo(445*s,270*s,466*s,294*s); ctx.stroke();
+    ctx.globalAlpha = 1;
+    // Surfboard
+    ctx.save(); ctx.translate(265*s,250*s); ctx.rotate(-0.14);
+    ctx.fillStyle = g; ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(-70*s,-13*s,140*s,26*s,13*s);
+    else { ctx.rect(-70*s,-13*s,140*s,26*s); }
+    ctx.fill(); ctx.restore();
+    // Rider
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(280*s,210*s,22*s,0,Math.PI*2); ctx.fill();
+    return c.toDataURL('image/png');
+  }
+  try {
+    const icon180 = genPWAIcon(180);
+    const appleLink = document.createElement('link');
+    appleLink.rel = 'apple-touch-icon'; appleLink.href = icon180;
+    document.head.appendChild(appleLink);
+    const shortName = _theme.name.split(' ').slice(0,2).join(' ');
+    const manifest = { name:_theme.name, short_name:shortName,
+      description:`Reservas de surf — ${_theme.name}`,
+      start_url:`/surf?escola=${_escolaParam}`, display:'standalone',
+      background_color:n, theme_color:g, orientation:'portrait',
+      icons:[
+        { src:genPWAIcon(192), sizes:'192x192', type:'image/png' },
+        { src:genPWAIcon(512), sizes:'512x512', type:'image/png', purpose:'maskable' }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+    const mLink = document.createElement('link');
+    mLink.rel = 'manifest'; mLink.href = URL.createObjectURL(blob);
+    document.head.appendChild(mLink);
+    document.head.insertAdjacentHTML('beforeend',
+      `<meta name="apple-mobile-web-app-capable" content="yes">
+       <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+       <meta name="apple-mobile-web-app-title" content="${shortName}">
+       <meta name="theme-color" content="${n}">`);
+  } catch(_){}
+})();
+
 // ── Apply CSS custom properties immediately ──────────────────────────────────
 const _root = document.documentElement;
 _root.style.setProperty('--gold', _theme.gold);
@@ -1674,13 +1735,36 @@ async function loadMonthAvailability(year, month) {
   } catch(_) {}
 }
 
+// Maps Portuguese lesson names to lesson card keys
+const LESSON_KEY_MAP = {
+  'Iniciante':'l1_name','Intermédio':'l2_name','Aula Privada':'l3_name','Bodyboard':'l4_name'
+};
+
 async function loadSchoolConfig() {
   if (!sb) return;
   try {
-    const { data } = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
+    const { data } = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number,lesson_types').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
     if (data) {
-      if (data.time_slots?.length)  SCHOOL_SLOTS    = data.time_slots;
-      if (data.max_per_slot)        SCHOOL_MAX_SLOT  = data.max_per_slot;
+      if (data.time_slots?.length) SCHOOL_SLOTS   = data.time_slots;
+      if (data.max_per_slot)       SCHOOL_MAX_SLOT = data.max_per_slot;
+      if (data.lesson_types?.length) {
+        // Update lesson card prices from school config
+        data.lesson_types.forEach(lt => {
+          const key = LESSON_KEY_MAP[lt.name];
+          if (!key) return;
+          const isPrivate = lt.max_pax === 1;
+          const card = document.querySelector(`.lesson-option[onclick*="'${key}'"]`);
+          if (!card) return;
+          // Update onclick price
+          card.setAttribute('onclick', `selectLesson(this,'${key}',${lt.price},${lt.price})`);
+          // Update price display
+          const priceEl = card.querySelector('.opt-price');
+          if (priceEl) {
+            const unit = isPrivate ? T('ps') : T('pp');
+            priceEl.innerHTML = `€${lt.price}/<span data-t="${isPrivate?'ps':'pp'}">${unit}</span>`;
+          }
+        });
+      }
     }
   } catch(_) {}
   loadWeather(_theme.lat, _theme.lon);
@@ -2071,7 +2155,7 @@ async function reservarWhatsApp() {
     const p0 = equipment[0] || {};
     if (sb) {
       const fullRow = {
-        school_id: SCHOOL_ID_ACTIVE, lesson_type:T(booking.lessonKey),
+        school_id: SCHOOL_ID_ACTIVE, lesson_type:(LANGS.pt[booking.lessonKey]||T(booking.lessonKey)),
         booking_date:dateStr, booking_time:booking.time, num_people:pess,
         client_name:nome, client_phone:tel, client_email:email||null,
         client_country: country || null,
