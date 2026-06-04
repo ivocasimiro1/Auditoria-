@@ -3188,6 +3188,7 @@
     const sortedSlots   = Object.entries(slotMap).sort((a,b) => a[0].localeCompare(b[0]));
     const slotLabels    = sortedSlots.map(([t]) => t);
     const slotOccupancy = sortedSlots.map(([,v]) => v.sessions > 0 ? Math.round(v.people/(v.sessions*maxSlot)*100) : 0);
+    const slotPeople    = sortedSlots.map(([,v]) => v.people);
 
     // ── Gender ─────────────────────────────────────────────────
     const genderMap = {};
@@ -3262,9 +3263,10 @@
           ...scaleOpts,
           y: { ...scaleOpts.y, min:0, max:100, ticks: { ...scaleOpts.y.ticks, callback: v => v+'%' } }
         },
-        layout: { padding: { top: 18 } },
+        layout: { padding: { top: 30 } },
         plugins: { legend: { display: false },
-          datalabels: { color: '#CBD5E1', font: { size: 11, weight: '700' }, anchor: 'end', align: 'top', offset: 2, formatter: v => v > 0 ? v+'%' : '' }
+          datalabels: { color: '#CBD5E1', font: { size: 11, weight: '700' }, anchor: 'end', align: 'top', offset: 2,
+            formatter: (v, ctx) => v > 0 ? `${v}%\n${slotPeople[ctx.dataIndex]} pax` : '' }
         }
       }
     });
