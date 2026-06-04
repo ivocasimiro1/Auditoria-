@@ -1996,21 +1996,22 @@
         working_days:  cfgWorkingDays,
         updated_at:    new Date().toISOString(),
       };
-      let { error } = await sb.from('schools').upsert(payload);
+      const upsertOpts = { onConflict: 'id' };
+      let { error } = await sb.from('schools').upsert(payload, upsertOpts);
       // Cascade retry: remove columns that don't exist in DB yet
       if (error) {
-        const msg = error.message || '';
-        if (error.code === '42703' || msg.includes('working_days') || msg.includes('lesson_types') || msg.includes('column')) {
+        const msg = (error.message || '') + (error.details || '') + (error.hint || '');
+        if (error.code === '42703' || msg.includes('working_days') || msg.includes('column') || msg.includes('does not exist')) {
           const { working_days, ...p2 } = payload;
-          ({ error } = await sb.from('schools').upsert(p2));
+          ({ error } = await sb.from('schools').upsert(p2, upsertOpts));
           if (!error) localStorage.setItem(`surfbook_wdays_${school.id}`, JSON.stringify(cfgWorkingDays));
         }
       }
       if (error) {
-        const msg = error.message || '';
-        if (error.code === '42703' || msg.includes('lesson_types') || msg.includes('column')) {
+        const msg = (error.message || '') + (error.details || '') + (error.hint || '');
+        if (error.code === '42703' || msg.includes('lesson_types') || msg.includes('column') || msg.includes('does not exist')) {
           const { lesson_types, working_days, ...p3 } = payload;
-          ({ error } = await sb.from('schools').upsert(p3));
+          ({ error } = await sb.from('schools').upsert(p3, upsertOpts));
           if (!error) {
             localStorage.setItem(`surfbook_wdays_${school.id}`, JSON.stringify(cfgWorkingDays));
             localStorage.setItem(`surfbook_ltypes_${school.id}`, JSON.stringify(lessonTypesData));
@@ -2019,7 +2020,16 @@
       }
       if (error) {
         setSaveBtnState('reset');
-        showToast('Erro ao guardar: ' + (error.message || JSON.stringify(error)), 'error');
+        const errMsg = error.message || error.details || JSON.stringify(error);
+        showToast('Erro: ' + errMsg, 'error');
+        // Also show inline so it's never missed on mobile
+        const saveBtns = document.querySelectorAll('[data-save-btn]');
+        saveBtns.forEach(btn => {
+          btn.textContent = '❌ ' + errMsg.slice(0, 60);
+          btn.style.background = 'rgba(239,68,68,.3)';
+          setTimeout(() => { btn.textContent = btn.dataset.orig || '💾 Guardar'; btn.style.background = ''; }, 5000);
+        });
+        console.error('saveSchoolSettings:', error);
         return;
       }
       // Sync local SCHOOLS config
