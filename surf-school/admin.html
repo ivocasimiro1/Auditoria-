@@ -3224,7 +3224,15 @@
     chartInstances.monthly = new Chart(document.getElementById('chart-monthly'), {
       type: 'bar',
       data: { labels: timeLabels, datasets: [{ label: 'Marcações', data: timeData, backgroundColor: 'rgba(0,207,253,.6)', borderRadius: 4 }] },
-      options: { scales: scaleOpts, layout: { padding: { top: 18 } }, plugins: { legend: { display: false }, datalabels: barDL } }
+      options: {
+        onClick: (e, els) => {
+          if (!els.length || chartMonth !== null) return;
+          const btn = document.querySelectorAll('.chart-month-btn')[els[0].index];
+          if (btn) setChartMonth(els[0].index + 1, btn);
+        },
+        scales: scaleOpts, layout: { padding: { top: 18 } },
+        plugins: { legend: { display: false }, datalabels: barDL }
+      }
     });
 
     // Receita por Modalidade
