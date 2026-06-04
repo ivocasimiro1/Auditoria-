@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -147,6 +148,11 @@
     .stat-label { font-size: .75rem; color: var(--gray); text-transform: uppercase; letter-spacing: .07em; }
     .stat-value { font-size: 1.7rem; font-weight: 700; line-height: 1.2; }
     .stat-sub { font-size: .72rem; color: var(--gray); margin-top: .2rem; }
+    .rev-card { flex-direction: column !important; align-items: stretch !important; cursor: default !important; }
+    .rev-period-pills { display: flex; gap: .35rem; flex-wrap: wrap; margin-top: .6rem; padding-top: .55rem; border-top: 1px solid rgba(255,255,255,.06); }
+    .rev-pill { background: transparent; border: 1px solid var(--border); color: var(--gray); font-size: .68rem; font-weight: 600; padding: .22rem .6rem; border-radius: 999px; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; line-height: 1.5; }
+    .rev-pill:hover { border-color: var(--cyan); color: var(--white); }
+    .rev-pill.active { background: rgba(0,207,253,.15); border-color: var(--cyan); color: var(--cyan); }
 
     /* Filters */
     .filters-bar {
@@ -371,6 +377,8 @@
     .cal-dot-confirmed { background: var(--cyan); }
     .cal-dot-completed { background: var(--green); }
     .cal-count { font-size: .6rem; color: var(--gray); font-weight: 600; }
+    .cal-wx { font-size: .56rem; font-weight: 600; color: rgba(255,180,50,.8); line-height: 1; white-space: nowrap; }
+    .cal-wx-min { color: rgba(110,200,255,.7); font-weight: 500; }
 
     /* Slot availability — redesigned */
     .slot-avail-card {
@@ -469,10 +477,56 @@
     .today-equip-person strong { color: var(--white); }
     .today-card-status { float: right; margin-top: -2.4rem; }
 
+    /* ── MOBILE ── */
     @media(max-width: 768px) {
-      .dash-content { padding: 1rem; }
-      .topbar { padding: .8rem 1rem; }
-      .filters-bar { gap: .6rem; }
+      .dash-content { padding: .75rem; }
+      .topbar { padding: .7rem 1rem; gap: .5rem; }
+      .topbar-right { gap: .5rem; flex-wrap: wrap; }
+      .user-info { display: none; }
+      .filters-bar { gap: .5rem; padding: .75rem 1rem; }
+      .filter-group { flex: 1 1 140px; }
+      .filter-group span.filter-label { display: none; }
+      .filter-select, .filter-input { width: 100%; font-size: .82rem; padding: .45rem .7rem; }
+      .btn-today, .btn-refresh { flex: 0 0 auto; padding: .45rem .8rem; font-size: .8rem; }
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: .6rem; margin-bottom: 1rem; }
+      .stat-card { padding: .9rem 1rem; gap: .7rem; }
+      .stat-icon { width: 38px; height: 38px; font-size: 1.1rem; }
+      .stat-value { font-size: 1.35rem; }
+      .rev-period-pills { gap: .25rem; }
+      .rev-pill { font-size: .62rem; padding: .18rem .45rem; }
+      .settings-grid { grid-template-columns: 1fr; }
+      .settings-grid .form-group[style*="span 2"] { grid-column: 1; }
+    }
+
+    /* ── MOBILE TABLE → CARDS ── */
+    @media(max-width: 640px) {
+      /* hide desktop table */
+      .table-scroll table thead { display: none; }
+      .table-scroll table { display: block; }
+      .table-scroll tbody { display: flex; flex-direction: column; gap: .55rem; padding: .6rem; }
+      .table-scroll tr { display: flex; flex-direction: column; background: rgba(255,255,255,.04);
+        border: 1px solid var(--border); border-radius: 14px; padding: .85rem 1rem; gap: .4rem; }
+      .table-scroll tr:hover td { background: none; }
+      .table-scroll td { display: flex; align-items: center; padding: 0; border: none;
+        font-size: .85rem; gap: .4rem; }
+      .table-scroll td small { display: inline; margin: 0; }
+      .table-scroll td:first-child { font-size: .72rem; color: var(--gray); }
+      .table-scroll td:nth-child(2) { font-size: .92rem; font-weight: 700; }
+      .table-scroll td:nth-child(2) small { color: var(--cyan); font-size: .82rem; font-weight: 400; margin-left: .35rem; }
+      .table-scroll td.col-price { color: var(--cyan); font-size: .92rem; }
+      .table-scroll td.col-commission { display: none; }
+      .table-scroll td:last-child { margin-top: .3rem; padding-top: .5rem;
+        border-top: 1px solid rgba(255,255,255,.07); gap: .35rem; flex-wrap: wrap; }
+      .table-scroll .summary-row { background: rgba(0,112,243,.08);
+        border-color: rgba(0,207,253,.25); }
+      .table-scroll .summary-row td:first-child { display: none; }
+      .table-scroll .summary-row td { font-size: .85rem; }
+      .col-center { justify-content: flex-start; }
+      .act-btn { width: 36px; height: 36px; font-size: 1rem; border-radius: 10px; }
+      .filters-bar { display: flex; flex-wrap: wrap; gap: .4rem; }
+      .filter-group { flex: 1 1 calc(50% - .25rem); min-width: 120px; }
+      #fg-search { flex: 1 1 100%; }
+      .btn-today, .btn-refresh { flex: 1 1 calc(50% - .25rem); justify-content: center; }
     }
 
     /* ── ANALYTICS ── */
@@ -480,10 +534,71 @@
     .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
     .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.2rem; }
     .chart-card-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--cyan); margin-bottom: .8rem; display: flex; align-items: center; justify-content: space-between; }
-    .chart-year-btns { display: flex; gap: .4rem; margin-bottom: 1rem; }
-    .chart-year-btn { padding: .3rem .8rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--gray); font-size: .78rem; cursor: pointer; font-family: 'Inter',sans-serif; }
+    .chart-period-bar { margin-bottom: 1rem; }
+    .chart-year-btns { display: flex; gap: .4rem; margin-bottom: .6rem; flex-wrap: wrap; }
+    .chart-year-btn { padding: .3rem .8rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--gray); font-size: .78rem; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; }
     .chart-year-btn.active { background: var(--cyan); border-color: var(--cyan); color: var(--navy); font-weight: 700; }
+    .chart-month-btns { display: flex; gap: .35rem; flex-wrap: wrap; padding-top: .55rem; border-top: 1px solid rgba(255,255,255,.06); }
+    .chart-month-btn { padding: .22rem .6rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--gray); font-size: .72rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; }
+    .chart-month-btn:hover { border-color: var(--cyan); color: var(--white); }
+    .chart-month-btn.active { background: rgba(0,207,253,.15); border-color: var(--cyan); color: var(--cyan); }
     .btn-analytics { background: rgba(167,139,250,.12); border: 1px solid rgba(167,139,250,.3); color: #a78bfa; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
+    .btn-reviews   { background: rgba(245,158,11,.11); border: 1px solid rgba(245,158,11,.3);  color: #fbbf24; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; margin-left: .5rem; transition: box-shadow .3s; }
+    @keyframes pulse-gold { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.5)} 50%{box-shadow:0 0 0 6px rgba(245,158,11,0)} }
+    .btn-reviews.has-pending { animation: pulse-gold 1.8s ease infinite; border-color: #f59e0b; background: rgba(245,158,11,.2); }
+    .btn-settings  { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15); color: var(--gray); border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; margin-left: .5rem; }
+    .btn-settings:hover { border-color: var(--cyan); color: var(--white); }
+    .btn-qr { background: rgba(0,207,253,.1); border: 1px solid rgba(0,207,253,.3); color: var(--cyan); border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
+    .btn-report { background: rgba(134,239,172,.12); border: 1px solid rgba(134,239,172,.3); color: #86efac; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
+
+    /* REPORT MODAL */
+    #report-modal-bg { display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9000;padding:1rem;overflow-y:auto;backdrop-filter:blur(6px) }
+    #report-modal { background:#0A1A30;border:1px solid rgba(255,255,255,.12);border-radius:20px;max-width:820px;margin:2rem auto;padding:0;overflow:hidden }
+    #report-modal .modal-head { padding:1.25rem 1.5rem;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between }
+    #report-modal .modal-body { padding:1.4rem 1.5rem }
+    .report-period-btns { display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.2rem }
+    .rpb { padding:.5rem 1.1rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--gray);font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s }
+    .rpb.active { background:rgba(0,207,253,.15);border-color:var(--cyan);color:var(--cyan) }
+    #report-preview { background:#050D1A;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:1.2rem;margin-bottom:1.2rem;max-height:55vh;overflow-y:auto;font-size:.78rem;line-height:1.55 }
+    .rp-section { margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid rgba(255,255,255,.06) }
+    .rp-slot-title { font-size:.85rem;font-weight:800;color:var(--cyan);margin-bottom:.5rem }
+    .rp-instructor { display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem;flex-wrap:wrap }
+    .rp-instructor input { background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:.3rem .6rem;color:#fff;font-family:'Inter',sans-serif;font-size:.75rem;outline:none;width:160px;color-scheme:dark }
+    .rp-instructor input:focus { border-color:var(--cyan) }
+    .rp-table { width:100%;border-collapse:collapse;margin-top:.4rem }
+    .rp-table th { font-size:.67rem;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);padding:.3rem .5rem;border-bottom:1px solid rgba(255,255,255,.08);text-align:left }
+    .rp-table td { padding:.3rem .5rem;border-bottom:1px solid rgba(255,255,255,.05);color:var(--gray-200);font-size:.75rem }
+    .rp-table tr:last-child td { border-bottom:none }
+    .rp-equip-summary { font-size:.72rem;color:#94a3b8;margin-top:.4rem;padding:.3rem .5rem;background:rgba(255,255,255,.03);border-radius:6px }
+    .report-share-btns { display:flex;gap:.6rem;flex-wrap:wrap }
+    .rsb { padding:.6rem 1.2rem;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:.4rem;transition:opacity .2s }
+    .rsb:hover { opacity:.85 }
+    .rsb-pdf   { background:linear-gradient(135deg,#0070F3,#00CFFD);color:#fff }
+    .rsb-wa    { background:#25D366;color:#fff }
+    .rsb-email { background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2) }
+    @media print {
+      body > *:not(#report-print-frame) { display:none!important }
+      #report-print-frame { display:block!important }
+    }
+    #report-print-frame { display:none }
+    #settings-section { margin-bottom: 1.5rem; }
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .settings-slot-list { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: .6rem; }
+    .settings-slot { display: flex; align-items: center; gap: .3rem; background: rgba(255,255,255,.06); border: 1px solid var(--border); border-radius: 7px; padding: .25rem .55rem; font-size: .82rem; }
+    #reviews-section { margin-bottom: 1.5rem; }
+    .review-card { background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: .7rem; }
+    .review-stars { color: #f59e0b; font-size: 1rem; letter-spacing: .08rem; }
+    .review-meta  { font-size: .75rem; color: var(--gray); margin-top: .15rem; }
+    .review-comment { font-size: .86rem; margin-top: .45rem; line-height: 1.55; font-style: italic; color: #cbd5e1; }
+    .review-actions { display: flex; gap: .4rem; margin-top: .7rem; }
+    .btn-approve { background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.3); color: #86efac; border-radius: 8px; padding: .25rem .75rem; font-size: .75rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
+    .btn-approve:hover { background: rgba(34,197,94,.22); }
+    .btn-reject  { background: rgba(239,68,68,.1);  border: 1px solid rgba(239,68,68,.25); color: #fca5a5; border-radius: 8px; padding: .25rem .75rem; font-size: .75rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
+    .btn-reject:hover  { background: rgba(239,68,68,.2); }
+    .reviews-filter-bar { display: flex; gap: .4rem; margin-bottom: 1rem; }
+    .rev-filter-btn { background: transparent; border: 1px solid var(--border); color: var(--gray); border-radius: 6px; padding: .25rem .7rem; font-size: .75rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; }
+    .rev-filter-btn.active { background: rgba(245,158,11,.14); border-color: #f59e0b; color: #fbbf24; }
+    .reviews-avg-badge { display: inline-flex; align-items: center; gap: .35rem; background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.25); border-radius: 50px; padding: .25rem .8rem; font-size: .78rem; font-weight: 700; color: #fbbf24; margin-bottom: .9rem; }
 
     /* ── MANUAL BOOKING MODAL ── */
     #manual-booking-modal-bg {
@@ -594,12 +709,21 @@
           <div class="stat-sub" id="stat-month-label">este mês</div>
         </div>
       </div>
-      <div class="stat-card" id="sc-confirmed" onclick="statFilter('confirmed')" title="Ver confirmadas">
-        <div class="stat-icon si-green">💶</div>
-        <div class="stat-info">
-          <div class="stat-label">Receita Escola</div>
-          <div class="stat-value" id="stat-revenue">—</div>
-          <div class="stat-sub">ver confirmadas</div>
+      <div class="stat-card rev-card" id="sc-confirmed" onclick="statFilter('confirmed')" title="Ver confirmadas">
+        <div style="display:flex;align-items:center;gap:1rem;width:100%">
+          <div class="stat-icon si-green">💶</div>
+          <div class="stat-info">
+            <div class="stat-label">Receita Escola</div>
+            <div class="stat-value" id="stat-revenue">—</div>
+            <div class="stat-sub" id="stat-rev-label">este mês</div>
+          </div>
+        </div>
+        <div class="rev-period-pills" onclick="event.stopPropagation()">
+          <button class="rev-pill active" onclick="setRevPeriod('month',this)">Mês</button>
+          <button class="rev-pill" onclick="setRevPeriod('week',this)">Semana</button>
+          <button class="rev-pill" onclick="setRevPeriod('today',this)">Hoje</button>
+          <button class="rev-pill" onclick="setRevPeriod('year',this)">Ano</button>
+          <button class="rev-pill" onclick="setRevPeriod('all',this)">Total</button>
         </div>
       </div>
       <div class="stat-card" id="sc-today" onclick="statFilter('today')" title="Ver aulas de hoje">
@@ -620,20 +744,120 @@
       </div>
     </div>
 
-    <!-- Analytics toggle button -->
-    <div style="margin-bottom:1rem;display:flex;justify-content:flex-end">
+    <!-- Analytics + Reviews + Settings buttons -->
+    <div style="margin-bottom:1rem;display:flex;justify-content:flex-end;flex-wrap:wrap;gap:.4rem">
+      <button class="btn-settings"  id="btn-settings"  onclick="toggleSettings()">⚙️ Configurações</button>
+      <button class="btn-reviews"   id="btn-reviews"   onclick="toggleReviews()">⭐ Avaliações</button>
       <button class="btn-analytics" onclick="toggleAnalytics()">📊 Ver Análise</button>
+      <button class="btn-qr"     onclick="printQRCard()">🖨️ Cartão QR</button>
+      <button class="btn-report" onclick="openReportModal()">📄 Relatório</button>
+    </div>
+
+    <!-- REPORT MODAL -->
+    <div id="report-modal-bg" onclick="if(event.target===this)closeReportModal()">
+      <div id="report-modal">
+        <div class="modal-head">
+          <div>
+            <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--cyan);margin-bottom:2px">Relatório de Aulas</div>
+            <div style="font-weight:800;font-size:1rem" id="report-title-label">Relatório Diário</div>
+          </div>
+          <button onclick="closeReportModal()" style="background:none;border:none;color:var(--gray);font-size:1.3rem;cursor:pointer;padding:.2rem .5rem;font-family:'Inter',sans-serif">✕</button>
+        </div>
+        <div class="modal-body">
+          <!-- Period selector -->
+          <div class="report-period-btns">
+            <button class="rpb active" onclick="setReportPeriod('today',this)">📅 Hoje</button>
+            <button class="rpb" onclick="setReportPeriod('tomorrow',this)">📅 Amanhã</button>
+            <button class="rpb" onclick="setReportPeriod('week',this)">📅 Esta Semana</button>
+          </div>
+          <!-- Preview -->
+          <div id="report-preview"><div style="color:var(--gray);text-align:center;padding:2rem">A gerar relatório...</div></div>
+          <!-- Share buttons -->
+          <div class="report-share-btns">
+            <button class="rsb rsb-pdf"   onclick="printReport()">🖨️ Imprimir / PDF</button>
+            <button class="rsb rsb-wa"    onclick="shareReportWA()">📱 Enviar WhatsApp</button>
+            <button class="rsb rsb-email" onclick="shareReportEmail()">✉️ Enviar Email</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Section -->
+    <div id="settings-section" style="display:none">
+      <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--gray)">⚙️ Configurações da Escola</div>
+          <button class="btn-analytics" style="font-size:.78rem" onclick="saveSchoolSettings()">💾 Guardar</button>
+        </div>
+        <div class="settings-grid">
+          <div class="form-group">
+            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">WhatsApp (número)</label>
+            <input type="tel" id="cfg-wa" placeholder="351962800400" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.88rem;width:100%;outline:none;color-scheme:dark" />
+          </div>
+          <div class="form-group">
+            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Máx. alunos por horário</label>
+            <input type="number" id="cfg-maxslot" min="1" max="100" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.88rem;width:100%;outline:none;color-scheme:dark" />
+          </div>
+          <div class="form-group" style="grid-column:span 2">
+            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Ponto de Encontro</label>
+            <textarea id="cfg-meeting" rows="3" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.88rem;width:100%;outline:none;resize:vertical;color-scheme:dark"></textarea>
+            <div style="font-size:.72rem;color:var(--gray);margin-top:.25rem">Texto enviado ao cliente na mensagem WhatsApp de confirmação.</div>
+          </div>
+          <div class="form-group" style="grid-column:span 2">
+            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Horários Disponíveis</label>
+            <div class="settings-slot-list" id="cfg-slots-list"></div>
+            <div style="display:flex;gap:.5rem;align-items:center">
+              <input type="time" id="cfg-new-slot" value="09:00" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:.4rem .7rem;color:var(--white);font-family:Inter,sans-serif;font-size:.85rem;outline:none;color-scheme:dark;width:130px" />
+              <button onclick="cfgAddSlot()" style="background:rgba(0,207,253,.1);border:1px dashed rgba(0,207,253,.35);color:var(--cyan);border-radius:8px;padding:.4rem .85rem;font-size:.8rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">+ Adicionar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <div id="reviews-section" style="display:none">
+      <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:#fbbf24">⭐ Avaliações dos Clientes</div>
+          <div id="reviews-avg-badge" class="reviews-avg-badge" style="display:none"></div>
+        </div>
+        <div class="reviews-filter-bar">
+          <button class="rev-filter-btn active" onclick="setRevFilter('all',this)">Todas</button>
+          <button class="rev-filter-btn"        onclick="setRevFilter('pending',this)">Pendentes</button>
+          <button class="rev-filter-btn"        onclick="setRevFilter('published',this)">Publicadas</button>
+        </div>
+        <div id="reviews-list"><div style="color:var(--gray);font-size:.85rem;padding:.5rem 0">A carregar avaliações...</div></div>
+      </div>
     </div>
 
     <!-- Analytics Section -->
     <div id="analytics-section" style="display:none">
-      <div class="chart-year-btns">
-        <button class="chart-year-btn active" id="chart-year-cur" data-year="" onclick="setChartYear(new Date().getFullYear())"></button>
-        <button class="chart-year-btn" id="chart-year-prev" data-year="" onclick="setChartYear(new Date().getFullYear()-1)"></button>
+      <div class="chart-period-bar">
+        <div class="chart-year-btns">
+          <button class="chart-year-btn active" id="chart-year-cur" data-year="" onclick="setChartYear(new Date().getFullYear())"></button>
+          <button class="chart-year-btn" id="chart-year-prev" data-year="" onclick="setChartYear(new Date().getFullYear()-1)"></button>
+          <button class="chart-year-btn" id="chart-year-all" onclick="setChartYear('all')">Tudo</button>
+        </div>
+        <div class="chart-month-btns" id="chart-month-btns">
+          <button class="chart-month-btn active" onclick="setChartMonth(null,this)">Todos os meses</button>
+          <button class="chart-month-btn" onclick="setChartMonth(1,this)">Jan</button>
+          <button class="chart-month-btn" onclick="setChartMonth(2,this)">Fev</button>
+          <button class="chart-month-btn" onclick="setChartMonth(3,this)">Mar</button>
+          <button class="chart-month-btn" onclick="setChartMonth(4,this)">Abr</button>
+          <button class="chart-month-btn" onclick="setChartMonth(5,this)">Mai</button>
+          <button class="chart-month-btn" onclick="setChartMonth(6,this)">Jun</button>
+          <button class="chart-month-btn" onclick="setChartMonth(7,this)">Jul</button>
+          <button class="chart-month-btn" onclick="setChartMonth(8,this)">Ago</button>
+          <button class="chart-month-btn" onclick="setChartMonth(9,this)">Set</button>
+          <button class="chart-month-btn" onclick="setChartMonth(10,this)">Out</button>
+          <button class="chart-month-btn" onclick="setChartMonth(11,this)">Nov</button>
+          <button class="chart-month-btn" onclick="setChartMonth(12,this)">Dez</button>
+        </div>
       </div>
       <div class="chart-grid">
         <div class="chart-card">
-          <div class="chart-card-title">Marcações por Mês</div>
+          <div class="chart-card-title"><span id="chart-monthly-title">Marcações por Mês</span></div>
           <canvas id="chart-monthly" style="max-height:200px"></canvas>
         </div>
         <div class="chart-card">
@@ -719,7 +943,7 @@
           <option value="cancelled">Cancelado</option>
         </select>
       </div>
-      <div class="filter-group">
+      <div class="filter-group" id="fg-search">
         <span class="filter-label">Pesquisar</span>
         <input type="text" id="f-search" class="filter-input" placeholder="Nome ou telemóvel..." oninput="applyFilters()" />
       </div>
@@ -796,15 +1020,15 @@
     <div class="mb-grid">
       <div class="mb-field">
         <label>Data *</label>
-        <input type="date" id="mb-date" required />
+        <input type="date" id="mb-date" required onchange="checkMBAvailability()" />
       </div>
       <div class="mb-field">
         <label>Horário *</label>
-        <select id="mb-time"></select>
+        <select id="mb-time" onchange="checkMBAvailability()"></select>
       </div>
       <div class="mb-field">
         <label>Modalidade *</label>
-        <select id="mb-lesson">
+        <select id="mb-lesson" onchange="updateMBTotal()">
           <option value="Iniciante">Iniciante</option>
           <option value="Intermédio">Intermédio</option>
           <option value="Aula Privada">Aula Privada</option>
@@ -814,7 +1038,7 @@
       </div>
       <div class="mb-field">
         <label>Nº Pessoas *</label>
-        <select id="mb-people">
+        <select id="mb-people" onchange="buildMBEquipRows();updateMBTotal()">
           <option value="1" selected>1</option>
           <option value="2">2</option>
           <option value="3">3</option>
@@ -824,6 +1048,10 @@
           <option value="7">7</option>
           <option value="8">8</option>
         </select>
+      </div>
+      <div class="mb-field">
+        <label>Disponibilidade</label>
+        <div id="mb-avail" style="padding:.45rem .6rem;border-radius:8px;background:rgba(255,255,255,.05);font-size:.82rem;color:var(--gray)">— escolhe data e hora —</div>
       </div>
       <div class="mb-field">
         <label>Estado</label>
@@ -865,7 +1093,7 @@
           <option value="🇧🇪 Belgium">🇧🇪 Belgium</option>
           <option value="🇨🇭 Switzerland">🇨🇭 Switzerland</option>
           <option value="🇮🇹 Italy">🇮🇹 Italy</option>
-          <option value="🇧🇷 Brazil">🇧🇷 Brazil</option>
+          <option value="🇧🇷 Brasil">🇧🇷 Brasil</option>
           <option value="🇦🇺 Australia">🇦🇺 Australia</option>
           <option value="🇸🇪 Sweden">🇸🇪 Sweden</option>
           <option value="🇩🇰 Denmark">🇩🇰 Denmark</option>
@@ -876,12 +1104,17 @@
         <label>Idioma</label>
         <select id="mb-language">
           <option value="pt" selected>🇵🇹 Português</option>
+          <option value="pt-br">🇧🇷 Brasileiro</option>
           <option value="en">🇬🇧 English</option>
           <option value="fr">🇫🇷 Français</option>
           <option value="de">🇩🇪 Deutsch</option>
           <option value="es">🇪🇸 Español</option>
           <option value="nl">🇳🇱 Nederlands</option>
         </select>
+      </div>
+      <div class="mb-field full" id="mb-equip-section">
+        <label>Equipamento por Pessoa</label>
+        <div id="mb-equip-rows"></div>
       </div>
       <div class="mb-field full">
         <label>Nota</label>
@@ -910,6 +1143,52 @@
   const ADMIN_EMAIL  = 'ivocasimiro@gmail.com';
   const COMMISSION   = 0.05;
 
+  // ── School accent themes (mirrors the public booking site colours) ────────
+  const SCHOOL_THEMES = {
+    'escola-teste':  { cyan:'#00CFFD', blue:'#0070F3', rgb:'0,207,253' },
+    'surf-arrifana': { cyan:'#10B981', blue:'#059669', rgb:'16,185,129' },
+    'surf-nazare':   { cyan:'#F59E0B', blue:'#D97706', rgb:'245,158,11' },
+    'surf-peniche':  { cyan:'#818CF8', blue:'#6366F1', rgb:'129,140,248' },
+    'surf-lagos':    { cyan:'#FB923C', blue:'#EA580C', rgb:'251,146,60' },
+    'surf-sagres':   { cyan:'#C084FC', blue:'#A855F7', rgb:'192,132,252' },
+  };
+  function applyAdminTheme(schoolId) {
+    const t = SCHOOL_THEMES[schoolId] || SCHOOL_THEMES['escola-teste'];
+    const r = document.documentElement;
+    r.style.setProperty('--cyan', t.cyan);
+    r.style.setProperty('--blue', t.blue);
+    // Override hardcoded rgba(0,207,253,...) usages
+    let s = document.getElementById('_admin_theme_style');
+    if (!s) { s = document.createElement('style'); s.id = '_admin_theme_style'; document.head.appendChild(s); }
+    s.textContent = `
+      .status-confirmed{background:rgba(${t.rgb},.15)!important;color:${t.cyan}!important;border-color:rgba(${t.rgb},.3)!important}
+      .btn-login,.btn-action,.btn-primary-sm{background:linear-gradient(135deg,${t.blue},${t.cyan})!important}
+      .btn-confirm{background:rgba(${t.rgb},.15)!important;border-color:rgba(${t.rgb},.35)!important;color:${t.cyan}!important}
+      input:focus,select:focus{border-color:${t.cyan}!important}
+      .stat-card.active{border-color:${t.cyan}!important;background:rgba(${t.rgb},.1)!important}
+      .topbar-logo span{color:${t.cyan}!important}
+      .booking-row:hover{border-color:rgba(${t.rgb},.2)!important}
+    `;
+  }
+  // Apply on load from URL param (pre-login branding) and on school switch
+  applyAdminTheme(new URLSearchParams(window.location.search).get('escola') || 'escola-teste');
+
+  // ── WEATHER ──────────────────────────────────────────────────────────────────
+  let WEATHER_DATA = {};
+  async function loadWeather(lat, lon) {
+    if (!lat || !lon) return;
+    try {
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FLisbon&forecast_days=16`);
+      const d = await r.json();
+      if (d?.daily?.time) {
+        d.daily.time.forEach((date, i) => {
+          WEATHER_DATA[date] = { max: d.daily.temperature_2m_max[i], min: d.daily.temperature_2m_min[i] };
+        });
+        buildCalendar();
+      }
+    } catch(_) {}
+  }
+
   const { createClient } = supabase;
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -917,16 +1196,94 @@
   let allBookings = [];
 
   // Adicionar novas escolas aqui quando forem integradas
-  const SCHOOLS = [
+  let SCHOOLS = [
     {
       id:            'escola-teste',
       name:          'Escola Surf Teste',
       wa_number:     '351962800400',
       meeting_point: 'Encontramo-nos na Praia de Arrifana, junto ao acesso principal às escadas, 15 minutos antes da aula.',
-      max_per_slot:  6,   // max alunos por slot horário
+      max_per_slot:  6,
+      slots:         ['08:00','10:30','14:00','16:30'],
+      lat: 37.297, lon: -8.865,
+    },
+    {
+      id:            'surf-arrifana',
+      name:          'Arrifana Surf School',
+      wa_number:     '351911000001',
+      meeting_point: 'Praia de Arrifana, junto ao acesso principal.',
+      max_per_slot:  8,
+      slots:         ['08:00','10:00','14:00','16:00'],
+      lat: 37.297, lon: -8.865,
+    },
+    {
+      id:            'surf-nazare',
+      name:          'Nazaré Surf Experience',
+      wa_number:     '351911000002',
+      meeting_point: 'Praia da Nazaré Norte, junto ao posto de socorros.',
+      max_per_slot:  8,
+      slots:         ['08:00','10:30','14:00','16:30'],
+      lat: 39.601, lon: -9.070,
+    },
+    {
+      id:            'surf-peniche',
+      name:          'Peniche Surf Academy',
+      wa_number:     '351911000003',
+      meeting_point: 'Praia de Peniche de Cima, junto à escola.',
+      max_per_slot:  10,
       slots:         ['09:00','11:00','14:00','16:00'],
+      lat: 39.355, lon: -9.380,
+    },
+    {
+      id:            'surf-lagos',
+      name:          'Lagos Surf Club',
+      wa_number:     '351911000004',
+      meeting_point: 'Praia de Meia Praia, junto ao bar de apoio.',
+      max_per_slot:  6,
+      slots:         ['08:30','10:30','14:30','16:30'],
+      lat: 37.097, lon: -8.713,
+    },
+    {
+      id:            'surf-sagres',
+      name:          'Sagres Wild Surf',
+      wa_number:     '351911000005',
+      meeting_point: 'Praia do Tonel, Sagres, junto ao estacionamento.',
+      max_per_slot:  6,
+      slots:         ['08:00','10:00','14:00','16:00'],
+      lat: 37.010, lon: -8.941,
     },
   ];
+
+  // Preço base por modalidade (private = preço fixo, restantes = por pessoa)
+  const LESSON_PRICES = {
+    'Iniciante':        { price: 35, perPerson: true  },
+    'Intermédio':       { price: 35, perPerson: true  },
+    'Aula Privada':     { price: 65, perPerson: false },
+    'Bodyboard':        { price: 30, perPerson: true  },
+    'Stand Up Paddle':  { price: 35, perPerson: true  },
+  };
+
+  async function tryLoadSchoolConfig() {
+    try {
+      const { data, error } = await sb.from('schools').select('id,name,wa_number,meeting_point,max_per_slot,time_slots,lesson_types,status').eq('status','active');
+      if (!error && data && data.length) {
+        SCHOOLS = data.map(s => ({
+          id:            s.id,
+          name:          s.name,
+          wa_number:     s.wa_number || '',
+          meeting_point: s.meeting_point || '',
+          max_per_slot:  s.max_per_slot  || 6,
+          slots:         s.time_slots    || ['08:00','10:30','14:00','16:30'],
+        }));
+        // Also refresh LESSON_PRICES from first school's lesson_types if available
+        const school = data.find(s => s.id === (SCHOOLS[0]?.id)) || data[0];
+        if (school?.lesson_types?.length) {
+          for (const lt of school.lesson_types) {
+            LESSON_PRICES[lt.name] = { price: lt.price, perPerson: lt.max_pax !== 1 };
+          }
+        }
+      }
+    } catch(_) { /* table not yet created, use hardcoded fallback */ }
+  }
 
   const STATUS = {
     pending:   { label: 'Pendente',   cls: 'status-pending'   },
@@ -950,12 +1307,21 @@
 
   function startRealtime() {
     if (realtimeChannel) return; // already subscribed
+    const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
     realtimeChannel = sb
-      .channel('admin-bookings')
+      .channel('admin-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings' }, payload => {
         const b = payload.new;
+        if (school && b.school_id !== school.id) return;
         showToast(`🔔 Nova marcação: ${b.client_name} · ${b.booking_date} ${b.booking_time}`, 'success');
         loadBookings();
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reviews' }, payload => {
+        const r = payload.new;
+        if (school && r.school_id !== school.id) return;
+        const stars = '★'.repeat(r.rating || 0) + '☆'.repeat(5 - (r.rating || 0));
+        showToast(`⭐ Nova avaliação de ${r.client_name}: ${stars}`, 'success');
+        updateReviewsBadge();
       })
       .subscribe();
   }
@@ -1007,7 +1373,8 @@
     document.getElementById('dash-wrap').style.display  = 'none';
   }
 
-  function showDashboard() {
+  async function showDashboard() {
+    await tryLoadSchoolConfig();
     document.getElementById('login-wrap').style.display = 'none';
     document.getElementById('dash-wrap').style.display  = 'block';
     document.getElementById('user-email').textContent   = currentUser.email;
@@ -1044,6 +1411,8 @@
     const last  = parts[parts.length - 1];
     document.getElementById('topbar-logo').innerHTML =
       schoolId ? `${first} <span>${last}</span>` : `<span>Todas</span> as Escolas`;
+    applyAdminTheme(schoolId || 'escola-teste');
+    if (school?.lat) { WEATHER_DATA = {}; loadWeather(school.lat, school.lon); }
   }
 
   // ── DATA ──────────────────────────────────────────────────────
@@ -1075,6 +1444,7 @@
     applyFilters();
     buildCalendar();
     buildTodayBriefing();
+    updateReviewsBadge();
     // Refresh slot availability if a day is currently selected
     const selDay = document.getElementById('f-date').value;
     if (selDay) buildSlotAvailability(selDay);
@@ -1134,25 +1504,81 @@
     }
   }
 
+  let revPeriod = 'month';
+
+  function setRevPeriod(period, btn) {
+    revPeriod = period;
+    document.querySelectorAll('.rev-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    updateRevCard();
+  }
+
+  function updateRevCard() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    let src, label;
+
+    if (revPeriod === 'today') {
+      src = allBookings.filter(b => b.booking_date === todayStr);
+      label = 'hoje';
+    } else if (revPeriod === 'week') {
+      const d = new Date(now); d.setDate(d.getDate() - 6);
+      const from = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      src = allBookings.filter(b => b.booking_date >= from && b.booking_date <= todayStr);
+      label = 'últimos 7 dias';
+    } else if (revPeriod === 'month') {
+      const m = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+      src = allBookings.filter(b => b.booking_date.startsWith(m));
+      label = 'este mês';
+    } else if (revPeriod === 'year') {
+      src = allBookings.filter(b => b.booking_date.startsWith(`${now.getFullYear()}`));
+      label = String(now.getFullYear());
+    } else {
+      src = allBookings;
+      label = 'total histórico';
+    }
+
+    const rev = src.filter(b => b.status !== 'cancelled')
+                   .reduce((s, b) => s + parseFloat(b.total_price||0), 0);
+    document.getElementById('stat-revenue').textContent = `€${rev.toFixed(2)}`;
+    document.getElementById('stat-rev-label').textContent = label;
+  }
+
   function renderStats(monthFilter) {
     const src = monthFilter
       ? allBookings.filter(b => b.booking_date.startsWith(monthFilter))
       : allBookings;
 
     const active  = src.filter(b => b.status !== 'cancelled');
-    const revenue = active.reduce((s, b) => s + parseFloat(b.total_price || 0), 0);
     const pending = allBookings.filter(b => b.status === 'pending').length;
 
-    // Today's bookings
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const todayActive = allBookings.filter(b => b.booking_date === todayStr && b.status !== 'cancelled');
 
-    document.getElementById('stat-bookings').textContent   = active.length;
-    document.getElementById('stat-revenue').textContent    = `€${revenue.toFixed(2)}`;
-    document.getElementById('stat-today').textContent      = todayActive.length;
-    document.getElementById('stat-today-sub').textContent  = todayActive.length === 1 ? 'aula hoje' : 'aulas hoje';
-    document.getElementById('stat-pending').textContent    = pending;
+    document.getElementById('stat-bookings').textContent  = active.length;
+    document.getElementById('stat-today').textContent     = todayActive.length;
+
+    // Per-slot occupancy summary for today
+    const _school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
+    const _maxSlot = _school?.max_per_slot || 6;
+    const _slots   = _school?.slots || ['08:00','10:30','14:00','16:30'];
+    if (todayActive.length > 0) {
+      const _cnt = {};
+      _slots.forEach(t => (_cnt[t] = 0));
+      todayActive.forEach(b => { if (_cnt[b.booking_time] !== undefined) _cnt[b.booking_time] += (parseInt(b.num_people)||1); });
+      const _parts = _slots.filter(t => _cnt[t] > 0).map(t => {
+        const used = _cnt[t], full = used >= _maxSlot;
+        return `${t} ${used}/${_maxSlot}${full ? ' ⛔' : ''}`;
+      });
+      document.getElementById('stat-today-sub').textContent = _parts.length ? _parts.join(' · ') : 'aulas hoje';
+    } else {
+      document.getElementById('stat-today-sub').textContent = 'nenhuma aula hoje';
+    }
+
+    document.getElementById('stat-pending').textContent   = pending;
+    updateRevCard();
 
     if (monthFilter) {
       const [y, m] = monthFilter.split('-');
@@ -1181,16 +1607,20 @@
       const [y, m, d] = b.booking_date.split('-');
       const dateStr = `${d}/${m}/${y}`;
 
-      const langFlag = { pt:'🇵🇹', en:'🇬🇧', fr:'🇫🇷', de:'🇩🇪', es:'🇪🇸', nl:'🇳🇱' }[b.language] || '';
+      const langFlag = { pt:'🇵🇹', 'pt-br':'🇧🇷', en:'🇬🇧', fr:'🇫🇷', de:'🇩🇪', es:'🇪🇸', nl:'🇳🇱' }[b.language] || '';
 
       const actions = b.status === 'pending'
         ? `<button class="act-btn act-confirm"  title="Confirmar"          onclick="updateStatus('${b.id}','confirmed')">✓</button>
            <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`
         : b.status === 'confirmed'
-        ? `<button class="act-btn act-complete" title="Marcar concluído"   onclick="updateStatus('${b.id}','completed')">★</button>
-           <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`
+        ? (isLessonPast(b)
+            ? `<button class="act-btn act-complete" title="Marcar concluído + pedir avaliação" onclick="completeAndReview('${b.id}')">★</button>
+               <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`
+            : `<button class="act-btn act-complete" title="Aula ainda não aconteceu — disponível após a hora marcada" disabled style="opacity:.3;cursor:not-allowed">★</button>
+               <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`)
+
         : b.status === 'completed'
-        ? `<button class="act-btn act-revert"   title="Reverter a confirmado" onclick="confirmRevert('${b.id}','confirmed','Reverter a Confirmado?')">↩</button>`
+        ? `<span title="Concluído — bloqueado pelo sistema" style="font-size:.85rem;color:var(--gray);padding:.2rem .4rem;display:inline-block;line-height:1;cursor:default">🔒</span>`
         : b.status === 'cancelled'
         ? `<button class="act-btn act-revert"   title="Reativar (pendente)" onclick="confirmRevert('${b.id}','pending','Reativar marcação como Pendente?')">↩</button>`
         : '—';
@@ -1246,7 +1676,204 @@
 
   function confirmRevert(id, newStatus, msg) {
     if (!confirm(msg + '\n\nNenhuma mensagem será enviada ao cliente.')) return;
-    updateStatus(id, newStatus, false);
+    updateStatus(id, newStatus, false); // audit note appended inside updateStatus
+  }
+
+  // ── COMPLETE + REVIEW REQUEST ─────────────────────────────────────────
+  function completeAndReview(id) {
+    const b = allBookings.find(bk => bk.id === id);
+    if (!b) return;
+    const school = SCHOOLS.find(s => s.id === b.school_id) || SCHOOLS[0];
+    const [y, m, d] = b.booking_date.split('-');
+    const dateStr = `${d}/${m}/${y}`;
+    const reviewUrl = `https://auditoria-25b.pages.dev/review?b=${id}`;
+
+    let lang = (b.language || 'pt').toLowerCase();
+    if (b.client_country) {
+      const cn = b.client_country.replace(/^\S+\s/, '');
+      const CL = { 'United Kingdom':'en','USA':'en','Canada':'en','Ireland':'en',
+        'France':'fr','Belgium':'fr','Switzerland':'fr','Germany':'de','Austria':'de',
+        'Spain':'es','Netherlands':'nl','Brasil':'pt-br','Brazil':'pt-br' };
+      if (CL[cn]) lang = CL[cn];
+    }
+    const msgs = {
+      pt:    `*${school.name}* 🏄\n\nObrigado ${b.client_name}! Esperamos que tenha adorado a aula de surf de ${dateStr}. 🌊\n\nA sua opinião é muito importante e ajuda outros surfistas a escolher — deixe uma avaliação em menos de 1 minuto:\n\n⭐ ${reviewUrl}\n\nAté à próxima!`,
+      en:    `*${school.name}* 🏄\n\nThank you ${b.client_name}! Hope you loved your surf lesson on ${dateStr}. 🌊\n\nYour opinion matters and helps other surfers — leave a review in under 1 minute:\n\n⭐ ${reviewUrl}\n\nSee you again!`,
+      'pt-br': `*${school.name}* 🏄\n\nObrigado ${b.client_name}! Esperamos que tenha amado a aula de surf de ${dateStr}. 🌊\n\nSua opinião é muito importante — deixe uma avaliação em menos de 1 minuto:\n\n⭐ ${reviewUrl}\n\nAté logo!`,
+      fr:    `*${school.name}* 🏄\n\nMerci ${b.client_name}! Nous espérons que vous avez adoré votre cours de surf du ${dateStr}. 🌊\n\nVotre avis compte — laissez un avis en moins d'une minute:\n\n⭐ ${reviewUrl}\n\nÀ bientôt!`,
+      de:    `*${school.name}* 🏄\n\nDanke ${b.client_name}! Wir hoffen, du hast deinen Surfkurs am ${dateStr} geliebt. 🌊\n\nDeine Meinung zählt — hinterlasse eine Bewertung in unter 1 Minute:\n\n⭐ ${reviewUrl}\n\nBis bald!`,
+      es:    `*${school.name}* 🏄\n\n¡Gracias ${b.client_name}! Esperamos que hayas disfrutado tu clase de surf del ${dateStr}. 🌊\n\nTu opinión importa — deja una reseña en menos de 1 minuto:\n\n⭐ ${reviewUrl}\n\n¡Hasta pronto!`,
+      nl:    `*${school.name}* 🏄\n\nBedankt ${b.client_name}! Hopelijk heb je je surfles op ${dateStr} geweldig gevonden. 🌊\n\nJouw mening telt — laat een beoordeling achter in minder dan 1 minuut:\n\n⭐ ${reviewUrl}\n\nTot snel!`,
+    };
+    const phone = b.client_phone.replace(/\D/g, '');
+    // Open WA BEFORE any await (browser popup policy)
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msgs[lang] || msgs['pt'])}`, '_blank');
+    // Now update status (async, but WA already opened)
+    updateStatus(id, 'completed', false);
+  }
+
+  // ── REVIEWS PANEL ─────────────────────────────────────────────────────
+  let allReviews = [];
+  let revFilter  = 'all';
+
+  async function toggleReviews() {
+    const sec = document.getElementById('reviews-section');
+    const btn = document.getElementById('btn-reviews');
+    if (sec.style.display === 'none') {
+      sec.style.display = 'block';
+      btn.textContent = '⭐ Fechar Avaliações';
+      await loadReviews();
+    } else {
+      sec.style.display = 'none';
+      btn.textContent = '⭐ Avaliações';
+    }
+  }
+
+  async function loadReviews() {
+    const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
+    const { data, error } = await sb.from('reviews').select('*').eq('school_id', school.id).order('created_at', { ascending: false });
+    if (error) { document.getElementById('reviews-list').innerHTML = '<p style="color:var(--gray)">Erro ao carregar avaliações.</p>'; return; }
+    allReviews = data || [];
+    const avg = allReviews.length ? (allReviews.reduce((s,r) => s + r.rating, 0) / allReviews.length).toFixed(1) : null;
+    const badge = document.getElementById('reviews-avg-badge');
+    if (avg) {
+      badge.style.display = 'inline-flex';
+      badge.textContent = `${'★'.repeat(Math.round(avg))}${'☆'.repeat(5-Math.round(avg))}  ${avg}  (${allReviews.length})`;
+    }
+    renderReviews();
+    // Update button with pending count
+    const pending = allReviews.filter(r => r.status === 'pending').length;
+    document.getElementById('btn-reviews').textContent = pending > 0 ? `⭐ Fechar Avaliações (${pending} pendente${pending>1?'s':''})` : '⭐ Fechar Avaliações';
+  }
+
+  function setRevFilter(f, btn) {
+    revFilter = f;
+    document.querySelectorAll('.rev-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderReviews();
+  }
+
+  function renderReviews() {
+    const filtered = revFilter === 'all' ? allReviews
+      : allReviews.filter(r => r.status === revFilter);
+    if (!filtered.length) {
+      document.getElementById('reviews-list').innerHTML = `<p style="color:var(--gray);font-size:.85rem;padding:.3rem 0">Nenhuma avaliação${revFilter !== 'all' ? ' nesta categoria' : ''}.</p>`;
+      return;
+    }
+    document.getElementById('reviews-list').innerHTML = filtered.map(r => {
+      const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+      const date  = new Date(r.created_at).toLocaleDateString('pt');
+      const statusBadge = r.status === 'pending'
+        ? `<span style="background:rgba(234,179,8,.12);color:#fde047;border:1px solid rgba(234,179,8,.3);border-radius:50px;padding:.12rem .5rem;font-size:.67rem;font-weight:700">Pendente</span>`
+        : r.status === 'published'
+        ? `<span style="background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.3);border-radius:50px;padding:.12rem .5rem;font-size:.67rem;font-weight:700">Publicada</span>`
+        : `<span style="background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid rgba(239,68,68,.25);border-radius:50px;padding:.12rem .5rem;font-size:.67rem;font-weight:700">Rejeitada</span>`;
+      const actions = r.status === 'pending' ? `
+        <div class="review-actions">
+          <button class="btn-approve" onclick="moderateReview('${r.id}','published')">✓ Publicar</button>
+          <button class="btn-reject"  onclick="moderateReview('${r.id}','rejected')">✕ Rejeitar</button>
+        </div>` : r.status === 'published' ? `
+        <div class="review-actions">
+          <button class="btn-reject" onclick="moderateReview('${r.id}','rejected')">✕ Retirar</button>
+        </div>` : `
+        <div class="review-actions">
+          <button class="btn-approve" onclick="moderateReview('${r.id}','published')">↩ Republicar</button>
+        </div>`;
+      return `<div class="review-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
+          <div>
+            <span class="review-stars">${stars}</span> ${statusBadge}
+            <div class="review-meta">${r.client_name} · ${date}</div>
+            ${r.comment ? `<div class="review-comment">"${r.comment}"</div>` : ''}
+          </div>
+        </div>
+        ${actions}
+      </div>`;
+    }).join('');
+  }
+
+  async function moderateReview(reviewId, newStatus) {
+    const { error } = await sb.from('reviews').update({ status: newStatus }).eq('id', reviewId);
+    if (error) { showToast('Erro ao atualizar avaliação', 'error'); return; }
+    showToast(newStatus === 'published' ? 'Avaliação publicada ✓' : newStatus === 'rejected' ? 'Avaliação rejeitada' : 'Feito', 'success');
+    await loadReviews();
+  }
+
+  // ── SCHOOL SETTINGS ──────────────────────────────────────────────────
+  let cfgSlots = [];
+
+  function toggleSettings() {
+    const sec = document.getElementById('settings-section');
+    const btn = document.getElementById('btn-settings');
+    if (sec.style.display === 'none') {
+      sec.style.display = 'block';
+      btn.textContent   = '⚙️ Fechar';
+      loadSettingsForm();
+    } else {
+      sec.style.display = 'none';
+      btn.textContent   = '⚙️ Configurações';
+    }
+  }
+
+  function loadSettingsForm() {
+    const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
+    if (!school) return;
+    document.getElementById('cfg-wa').value      = school.wa_number      || '';
+    document.getElementById('cfg-maxslot').value = school.max_per_slot   || 6;
+    document.getElementById('cfg-meeting').value = school.meeting_point  || '';
+    cfgSlots = [...(school.slots || ['08:00','10:30','14:00','16:30'])];
+    renderCfgSlots();
+  }
+
+  function renderCfgSlots() {
+    document.getElementById('cfg-slots-list').innerHTML = cfgSlots.map(s => `
+      <div class="settings-slot">
+        <span>${s}</span>
+        <button onclick="cfgRemoveSlot('${s}')" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:.8rem;padding:0 .1rem">✕</button>
+      </div>`).join('');
+  }
+
+  function cfgAddSlot() {
+    const v = document.getElementById('cfg-new-slot').value;
+    if (!v || cfgSlots.includes(v)) return;
+    cfgSlots.push(v); cfgSlots.sort(); renderCfgSlots();
+  }
+
+  function cfgRemoveSlot(s) { cfgSlots = cfgSlots.filter(x => x !== s); renderCfgSlots(); }
+
+  async function saveSchoolSettings() {
+    const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
+    if (!school) { showToast('Escola não encontrada', 'error'); return; }
+    const payload = {
+      id:            school.id,
+      wa_number:     document.getElementById('cfg-wa').value.trim().replace(/\D/g,'') || school.wa_number,
+      max_per_slot:  parseInt(document.getElementById('cfg-maxslot').value) || school.max_per_slot,
+      meeting_point: document.getElementById('cfg-meeting').value.trim() || school.meeting_point,
+      time_slots:    cfgSlots,
+      updated_at:    new Date().toISOString(),
+    };
+    const { error } = await sb.from('schools').upsert(payload);
+    if (error) { showToast('Erro ao guardar: ' + error.message, 'error'); return; }
+    // Update local SCHOOLS config too
+    Object.assign(school, { wa_number: payload.wa_number, max_per_slot: payload.max_per_slot, meeting_point: payload.meeting_point, slots: payload.time_slots });
+    showToast('Configurações guardadas ✓', 'success');
+  }
+
+  async function updateReviewsBadge() {
+    try {
+      const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
+      if (!school) return;
+      const { count } = await sb.from('reviews').select('id', { count: 'exact', head: true }).eq('school_id', school.id).eq('status', 'pending');
+      const btn = document.getElementById('btn-reviews');
+      if (!btn) return;
+      if (count > 0) {
+        btn.textContent = `⭐ Avaliações (${count} nova${count>1?'s':''})`;
+        btn.classList.add('has-pending');
+      } else {
+        btn.textContent = '⭐ Avaliações';
+        btn.classList.remove('has-pending');
+      }
+    } catch(_) {}
   }
 
   // WA messages per client language — school owner always sees PT dashboard
@@ -1264,6 +1891,8 @@
         `*${school} — Clase Confirmada*\n\nHola ${name},\n\nTu clase de surf esta *confirmada*.\n\n*Fecha:* ${date}\n*Hora:* ${time}\n*Actividad:* ${lesson}\n*Personas:* ${people}\n*Total:* €${price}\n\n*Punto de encuentro:*\n${meet}\n\nViste el banador debajo del traje de neopreno. Trae una toalla y protector solar.\n\n¡Hasta pronto!`,
       nl: (name, school, date, time, lesson, people, price, meet) =>
         `*${school} — Les Bevestigd*\n\nHoi ${name},\n\nJe surfles is *bevestigd*.\n\n*Datum:* ${date}\n*Tijd:* ${time}\n*Activiteit:* ${lesson}\n*Personen:* ${people}\n*Totaal:* €${price}\n\n*Ontmoetingspunt:*\n${meet}\n\nDraag je zwemkleding onder het wetsuit. Breng een handdoek en zonnebrand mee.\n\nTot snel!`,
+      'pt-br': (name, school, date, time, lesson, people, price, meet) =>
+        `*${school} — Aula Confirmada*\n\nOi ${name},\n\nSua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Horario:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\n\nVista o sunga ou maio por baixo do wetsuit. Traga toalha e protetor solar.\n\nAte logo!`,
     },
     cancelled: {
       pt: (name, school, date, time) =>
@@ -1278,11 +1907,35 @@
         `*${school}*\n\nHola ${name},\n\nLamentablemente no pudimos confirmar tu reserva para el ${date} a las ${time}.\n\nPedimos disculpas por los inconvenientes. Contactanos para reprogramar.\n\nGracias por tu comprension.`,
       nl: (name, school, date, time) =>
         `*${school}*\n\nHoi ${name},\n\nHelaas konden we je reservering voor ${date} om ${time} niet bevestigen.\n\nOns excuses voor het ongemak. Neem contact met ons op om opnieuw in te plannen.\n\nBedankt voor je begrip.`,
+      'pt-br': (name, school, date, time) =>
+        `*${school}*\n\nOi ${name},\n\nInfelizmente nao conseguimos confirmar sua reserva para ${date} as ${time}.\n\nPedimos desculpas pelo inconveniente. Entre em contato para remarcar.\n\nObrigado pela compreensao.`,
     },
   };
 
+  function isLessonPast(b) {
+    if (!b?.booking_date || !b?.booking_time) return false;
+    const lessonEnd = new Date(`${b.booking_date}T${b.booking_time}:00`);
+    lessonEnd.setMinutes(lessonEnd.getMinutes() + 90); // assume 90min lesson before "past"
+    return lessonEnd < new Date();
+  }
+
   async function updateStatus(id, newStatus, sendWA = true) {
-    const { error } = await sb.from('bookings').update({ status: newStatus }).eq('id', id);
+    const current = allBookings.find(bk => bk.id === id);
+    // Fraud guard: completed lessons cannot be altered by school admin
+    if (current?.status === 'completed') {
+      showToast('⚠️ Aulas concluídas não podem ser alteradas. Contacta o super-administrador.', 'error');
+      return;
+    }
+    // Block completing a lesson that hasn't happened yet
+    if (newStatus === 'completed' && !isLessonPast(current)) {
+      showToast('⚠️ Não é possível concluir uma aula que ainda não aconteceu.', 'error');
+      return;
+    }
+    // Append audit entry to notes
+    const nowTs = new Date().toISOString().slice(0,16).replace('T',' ');
+    const auditLine = `\n[${nowTs}] ${current?.status||'?'} → ${newStatus}`;
+    const updatedNotes = (current?.notes || '') + auditLine;
+    const { error } = await sb.from('bookings').update({ status: newStatus, notes: updatedNotes }).eq('id', id);
     if (error) { showToast('Erro ao atualizar estado', 'error'); return; }
     const labels = { confirmed: 'Confirmado ✓', completed: 'Concluído ★', cancelled: 'Cancelado', pending: 'Pendente ↩' };
     showToast(`Estado atualizado: ${labels[newStatus] || newStatus}`, 'success');
@@ -1301,7 +1954,7 @@
           const COUNTRY_LANG = { 'United Kingdom':'en', 'USA':'en', 'Canada':'en', 'Ireland':'en',
             'France':'fr', 'Belgium':'fr', 'Switzerland':'fr',
             'Germany':'de', 'Austria':'de',
-            'Spain':'es', 'Netherlands':'nl' };
+            'Spain':'es', 'Netherlands':'nl', 'Brasil':'pt-br', 'Brazil':'pt-br' };
           if (COUNTRY_LANG[cn]) lang = COUNTRY_LANG[cn];
         }
         const msgs    = WA_MSGS[newStatus];
@@ -1311,6 +1964,42 @@
           : fn(b.client_name, school.name, dateStr, b.booking_time);
         const phone = b.client_phone.replace(/\D/g, '');
         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+
+        // Email to client (if email provided)
+        if (b.client_email) {
+          const isConf = newStatus === 'confirmed';
+          const subjectPT = isConf
+            ? `✅ Reserva Confirmada — ${b.lesson_type} ${dateStr}`
+            : `❌ Reserva Cancelada — ${b.lesson_type} ${dateStr}`;
+          const subjectEN = isConf
+            ? `✅ Booking Confirmed — ${b.lesson_type} ${dateStr}`
+            : `❌ Booking Cancelled — ${b.lesson_type} ${dateStr}`;
+          const useEN = ['en','fr','de','es','nl'].includes(lang);
+          const emailSubject = useEN ? subjectEN : subjectPT;
+
+          let emailBody;
+          if (isConf) {
+            emailBody = useEN
+              ? `Hi ${b.client_name},\n\nYour surf lesson is confirmed!\n\nLesson: ${b.lesson_type}\nDate: ${dateStr}\nTime: ${b.booking_time}\nPeople: ${b.num_people}\nTotal: €${price}\n\nMeeting point:\n${school.meeting_point}\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!\n${school.name}`
+              : `Olá ${b.client_name},\n\nA sua reserva está confirmada!\n\nAula: ${b.lesson_type}\nData: ${dateStr}\nHorário: ${b.booking_time}\nPessoas: ${b.num_people}\nTotal: €${price}\n\nPonto de encontro:\n${school.meeting_point}\n\nUse fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAté breve!\n${school.name}`;
+          } else {
+            emailBody = useEN
+              ? `Hi ${b.client_name},\n\nUnfortunately your booking has been cancelled.\n\nLesson: ${b.lesson_type}\nDate: ${dateStr}\nTime: ${b.booking_time}\n\nWe apologise for the inconvenience. Please contact us to reschedule.\n\n${school.name}`
+              : `Olá ${b.client_name},\n\nInfelizmente a sua reserva foi cancelada.\n\nAula: ${b.lesson_type}\nData: ${dateStr}\nHorário: ${b.booking_time}\n\nPedimos desculpa pelo inconveniente. Contacte-nos para reagendar.\n\n${school.name}`;
+          }
+
+          fetch('https://formsubmit.co/ajax/ivocasimiro@gmail.com', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+              _subject: emailSubject,
+              message: emailBody,
+              _replyto: 'ivocasimiro@gmail.com',
+              _cc: b.client_email,
+              _template: 'table',
+            })
+          }).catch(() => {});
+        }
       }
     }
 
@@ -1332,8 +2021,9 @@
     document.getElementById('f-date').value   = todayStr;
     applyFilters();
     buildCalendar();
-    document.getElementById('table-count').textContent =
-      `Hoje · ${allBookings.filter(b=>b.booking_date===todayStr).length} marcação${allBookings.filter(b=>b.booking_date===todayStr).length!==1?'ões':''}`;
+    const cnt = allBookings.filter(b=>b.booking_date===todayStr).length;
+    document.getElementById('table-count').textContent = `Hoje · ${cnt} marcação${cnt!==1?'ões':''}`;
+    document.querySelector('.table-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   // ── CALENDAR ──────────────────────────────────────────────────
@@ -1562,8 +2252,11 @@
         dm && dm.pending ? 'cal-has-pending' : '',
       ].filter(Boolean).join(' ');
 
+      const wx = WEATHER_DATA[dateStr];
+      const wxHtml = wx ? `<div class="cal-wx">${Math.round(wx.max)}°<span class="cal-wx-min">/${Math.round(wx.min)}°</span></div>` : '';
       html += `<div class="${cls}" onclick="selectCalDay('${dateStr}')">
         <div class="cal-day-num">${day}</div>
+        ${wxHtml}
         ${dots ? `<div class="cal-dots">${dots}</div>` : ''}
         ${total > 0 ? `<div class="cal-count">${total}</div>` : ''}
       </div>`;
@@ -1740,7 +2433,7 @@
           const COUNTRY_LANG = { 'United Kingdom':'en', 'USA':'en', 'Canada':'en', 'Ireland':'en',
             'France':'fr', 'Belgium':'fr', 'Switzerland':'fr',
             'Germany':'de', 'Austria':'de',
-            'Spain':'es', 'Netherlands':'nl' };
+            'Spain':'es', 'Netherlands':'nl', 'Brasil':'pt-br', 'Brazil':'pt-br' };
           if (COUNTRY_LANG[cn]) lang = COUNTRY_LANG[cn];
         }
         const rschMsgs = {
@@ -1861,11 +2554,99 @@
   }
 
   // ── MANUAL BOOKING ────────────────────────────────────────────
+  function buildMBEquipRows() {
+    const n = parseInt(document.getElementById('mb-people')?.value || '1');
+    const container = document.getElementById('mb-equip-rows');
+    if (!container) return;
+    let html = '';
+    for (let i = 0; i < n; i++) {
+      html += `<div style="border:1px solid var(--border);border-radius:8px;padding:.7rem;margin-bottom:.5rem">
+        <div style="font-size:.75rem;font-weight:700;color:var(--cyan);margin-bottom:.5rem">Pessoa ${i+1}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.5rem">
+          <div><label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:.2rem">Peso (kg)</label>
+            <input type="number" id="mbeq-peso-${i}" min="20" max="200" placeholder="kg" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;color:var(--white);padding:.35rem .5rem;font-size:.82rem" /></div>
+          <div><label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:.2rem">Altura (cm)</label>
+            <input type="number" id="mbeq-alt-${i}" min="80" max="220" placeholder="cm" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;color:var(--white);padding:.35rem .5rem;font-size:.82rem" /></div>
+          <div><label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:.2rem">Género</label>
+            <select id="mbeq-gen-${i}" onchange="updateMBFato(${i})" style="width:100%;background:#1a2332;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:.35rem .5rem;font-size:.82rem">
+              <option value="">—</option><option value="H">Homem</option><option value="M">Mulher</option><option value="C">Criança</option>
+            </select></div>
+          <div><label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:.2rem">Fato</label>
+            <select id="mbeq-fato-${i}" style="width:100%;background:#1a2332;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:.35rem .5rem;font-size:.82rem">
+              <option value="">—</option>
+            </select></div>
+          <div><label style="font-size:.7rem;color:var(--gray);display:block;margin-bottom:.2rem">Experiência</label>
+            <select id="mbeq-exp-${i}" style="width:100%;background:#1a2332;border:1px solid var(--border);border-radius:6px;color:var(--white);padding:.35rem .5rem;font-size:.82rem">
+              <option value="">—</option><option value="nunca">Nunca surfei</option><option value="ja_surfei">Já surfei</option><option value="intermedio">Intermédio</option><option value="avancado">Avançado</option>
+            </select></div>
+        </div>
+      </div>`;
+    }
+    container.innerHTML = html;
+  }
+
+  function updateMBTotal() {
+    const lesson  = document.getElementById('mb-lesson')?.value;
+    const people  = parseInt(document.getElementById('mb-people')?.value || '1');
+    const lp      = LESSON_PRICES[lesson];
+    if (!lp) return;
+    const total   = lp.perPerson ? lp.price * people : lp.price;
+    const el      = document.getElementById('mb-total');
+    if (el) el.value = total.toFixed(2);
+  }
+
+  const MB_WETSUIT = { H:['XS','S','SM','M','MT','ML','L','XL','XXL'], M:['6','8','10','12','14','S','M','L','XL'], C:['8','10','12','14','16','18','20','22','24'] };
+  function updateMBFato(i) {
+    const gen = document.getElementById(`mbeq-gen-${i}`)?.value;
+    const sel = document.getElementById(`mbeq-fato-${i}`);
+    if (!sel) return;
+    const sizes = MB_WETSUIT[gen] || [];
+    sel.innerHTML = `<option value="">—</option>` + sizes.map(s=>`<option value="${s}">${s}</option>`).join('');
+  }
+
+  function refreshMBTimeSlots(selectedDate) {
+    const schoolSel = document.getElementById('f-school');
+    const school = SCHOOLS.find(s => s.id === (schoolSel ? schoolSel.value : '')) || SCHOOLS[0];
+    const allSlots = school.slots || ['08:00','10:30','14:00','16:30'];
+    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const nowM = now.getHours() * 60 + now.getMinutes();
+    const slots = (selectedDate === todayStr)
+      ? allSlots.filter(t => { const [h,m] = t.split(':').map(Number); return h*60+m > nowM; })
+      : allSlots;
+    const show = slots.length ? slots : allSlots;
+    const sel = document.getElementById('mb-time');
+    const cur = sel.value;
+    sel.innerHTML = show.map(t => `<option value="${t}" ${t===cur?'selected':''}>${t}</option>`).join('');
+    if (!show.includes(cur) && show.length) sel.value = show[0];
+  }
+
+  async function checkMBAvailability() {
+    const date = document.getElementById('mb-date')?.value;
+    refreshMBTimeSlots(date);
+    const time = document.getElementById('mb-time')?.value;
+    const avail = document.getElementById('mb-avail');
+    if (!avail) return;
+    if (!date || !time || !sb) { avail.textContent = '— escolhe data e hora —'; avail.style.color = 'var(--gray)'; return; }
+    try {
+      const schoolSel = document.getElementById('f-school');
+      const school = SCHOOLS.find(s => s.id === (schoolSel ? schoolSel.value : '')) || SCHOOLS[0];
+      const maxSlot = school.max_per_slot || 6;
+      const { data } = await sb.from('bookings')
+        .select('num_people').eq('booking_date', date).eq('booking_time', time)
+        .neq('status', 'cancelled');
+      const used = (data || []).reduce((s, r) => s + (r.num_people || 1), 0);
+      const free = Math.max(0, maxSlot - used);
+      avail.textContent = free > 0 ? `✅ ${free} / ${maxSlot} vagas disponíveis` : '❌ Hora esgotada';
+      avail.style.color = free > 0 ? '#86efac' : '#fca5a5';
+    } catch(e) { avail.textContent = '⚠️ Erro ao verificar'; avail.style.color = '#fca5a5'; }
+  }
+
   function openManualBooking() {
-    // Reset form
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     document.getElementById('mb-date').value     = todayStr;
+    document.getElementById('mb-date').min       = todayStr; // block past dates
     document.getElementById('mb-lesson').value   = 'Iniciante';
     document.getElementById('mb-people').value   = '1';
     document.getElementById('mb-status').value   = 'confirmed';
@@ -1876,17 +2657,28 @@
     document.getElementById('mb-language').value = 'pt';
     document.getElementById('mb-total').value    = '';
     document.getElementById('mb-notes').value    = '';
+    const avail = document.getElementById('mb-avail');
+    if (avail) { avail.textContent = '— escolhe data e hora —'; avail.style.color = 'var(--gray)'; }
 
-    // Populate time slots from school config
     const schoolSel = document.getElementById('f-school');
     const school = SCHOOLS.find(s => s.id === (schoolSel ? schoolSel.value : '')) || SCHOOLS[0];
     const sel = document.getElementById('mb-time');
-    sel.innerHTML = (school.slots || ['09:00','11:00','14:00','16:00'])
+    // Only show future slots when booking is for today
+    const nowH = now.getHours() * 60 + now.getMinutes();
+    const availableSlots = (school.slots || ['09:00','11:00','14:00','16:00']).filter(t => {
+      const [h, m] = t.split(':').map(Number);
+      return (h * 60 + m) > nowH; // only future slots for today
+    });
+    const slotsToShow = availableSlots.length ? availableSlots : (school.slots || ['09:00','11:00','14:00','16:00']);
+    sel.innerHTML = slotsToShow
       .map((t, i) => `<option value="${t}" ${i === 0 ? 'selected' : ''}>${t}</option>`)
       .join('');
 
+    buildMBEquipRows();
+    updateMBTotal();
     document.getElementById('manual-booking-modal-bg').classList.add('open');
     setTimeout(() => document.getElementById('mb-name').focus(), 100);
+    checkMBAvailability();
   }
 
   function closeManualBooking() {
@@ -1912,26 +2704,57 @@
     if (!name)  { showToast('Preenche o nome do cliente', 'error'); return; }
     if (!phone) { showToast('Preenche o telemóvel do cliente', 'error'); return; }
 
+    // Collect per-person equipment
+    const equipment = [];
+    for (let i = 0; i < people; i++) {
+      equipment.push({
+        weight:     parseInt(document.getElementById(`mbeq-peso-${i}`)?.value) || null,
+        height:     parseInt(document.getElementById(`mbeq-alt-${i}`)?.value) || null,
+        gender:     document.getElementById(`mbeq-gen-${i}`)?.value || null,
+        size:       document.getElementById(`mbeq-fato-${i}`)?.value || null,
+        experience: document.getElementById(`mbeq-exp-${i}`)?.value || null,
+      });
+    }
+    const p0 = equipment[0] || {};
+
     const schoolSel = document.getElementById('f-school');
     const schoolId  = (schoolSel ? schoolSel.value : '') || SCHOOLS[0].id;
 
     const record = {
-      school_id:     schoolId,
-      lesson_type:   lesson,
-      booking_date:  date,
-      booking_time:  time,
-      num_people:    people,
-      client_name:   name,
-      client_phone:  phone,
-      client_email:  email || null,
+      school_id:      schoolId,
+      lesson_type:    lesson,
+      booking_date:   date,
+      booking_time:   time,
+      num_people:     people,
+      client_name:    name,
+      client_phone:   phone,
+      client_email:   email || null,
       client_country: country || null,
-      total_price:   total,
-      notes:         notes || null,
-      language:      lang,
-      status:        status,
+      client_weight:  p0.weight || null,
+      client_height:  p0.height || null,
+      client_gender:  p0.gender || null,
+      wetsuit_size:   p0.size || null,
+      equipment_list: equipment,
+      total_price:    total,
+      notes:          notes || null,
+      language:       lang,
+      status:         status,
     };
 
-    const { error } = await sb.from('bookings').insert([record]);
+    let { error } = await sb.from('bookings').insert([record]);
+    // Retry without optional columns if schema mismatch
+    if (error && (error.code === '42703' || error.code === 'PGRST204' || error.message?.includes('column'))) {
+      const coreRecord = {
+        school_id: record.school_id, lesson_type: record.lesson_type,
+        booking_date: record.booking_date, booking_time: record.booking_time,
+        num_people: record.num_people, client_name: record.client_name,
+        client_phone: record.client_phone, client_email: record.client_email,
+        client_country: record.client_country, equipment_list: record.equipment_list,
+        total_price: record.total_price, notes: record.notes,
+        language: record.language, status: record.status,
+      };
+      ({ error } = await sb.from('bookings').insert([coreRecord]));
+    }
     if (error) { showToast('Erro ao guardar: ' + error.message, 'error'); return; }
 
     showToast('✅ Marcação registada com sucesso!', 'success');
@@ -1941,14 +2764,17 @@
 
   // ── ANALYTICS ─────────────────────────────────────────────────
   let chartYear = new Date().getFullYear();
+  let chartMonth = null; // null = all months
   let chartInstances = {};
+
+  // Register datalabels plugin globally
+  if (typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
 
   function toggleAnalytics() {
     const el = document.getElementById('analytics-section');
     const isHidden = el.style.display === 'none' || el.style.display === '';
     el.style.display = isHidden ? 'block' : 'none';
     if (isHidden) {
-      // Set year button labels now that we know the year
       const curY = new Date().getFullYear();
       const curBtn  = document.getElementById('chart-year-cur');
       const prevBtn = document.getElementById('chart-year-prev');
@@ -1958,13 +2784,55 @@
     }
   }
 
-  function buildCharts() {
-    const year = chartYear;
-    const data = allBookings.filter(b => b.booking_date?.startsWith(year) && b.status !== 'cancelled');
+  function setChartYear(y) {
+    chartYear = y;
+    chartMonth = null;
+    document.querySelectorAll('.chart-month-btn').forEach((b,i) => b.classList.toggle('active', i === 0));
+    document.querySelectorAll('.chart-year-btn').forEach(b => {
+      const isAll = y === 'all' && b.id === 'chart-year-all';
+      const isYear = y !== 'all' && parseInt(b.dataset.year) === y;
+      b.classList.toggle('active', isAll || isYear);
+    });
+    buildCharts();
+  }
 
-    // Monthly chart — 12 months
-    const monthly = Array(12).fill(0);
-    data.forEach(b => { const m = parseInt(b.booking_date.split('-')[1]) - 1; monthly[m]++; });
+  function setChartMonth(m, btn) {
+    chartMonth = m;
+    document.querySelectorAll('.chart-month-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    buildCharts();
+  }
+
+  function buildCharts() {
+    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    // Filter by year
+    let data = allBookings.filter(b => b.status !== 'cancelled' && b.booking_date);
+    if (chartYear !== 'all') data = data.filter(b => b.booking_date.startsWith(String(chartYear)));
+
+    // Filter by month
+    if (chartMonth !== null) {
+      const mm = String(chartMonth).padStart(2,'0');
+      data = data.filter(b => b.booking_date.split('-')[1] === mm);
+    }
+
+    // ── First chart: monthly OR daily depending on selection ──
+    let timeLabels, timeData, timeTitle;
+    if (chartMonth !== null) {
+      // Daily breakdown for selected month
+      const daysInMonth = new Date(chartYear === 'all' ? new Date().getFullYear() : chartYear, chartMonth, 0).getDate();
+      timeData  = Array(daysInMonth).fill(0);
+      data.forEach(b => { const d = parseInt(b.booking_date.split('-')[2]) - 1; timeData[d]++; });
+      timeLabels = Array.from({length: daysInMonth}, (_, i) => i + 1);
+      timeTitle  = `Dias — ${months[chartMonth - 1]}`;
+    } else {
+      timeData  = Array(12).fill(0);
+      data.forEach(b => { const m = parseInt(b.booking_date.split('-')[1]) - 1; timeData[m]++; });
+      timeLabels = months;
+      timeTitle  = chartYear === 'all' ? 'Marcações por Mês (Histórico)' : `Marcações por Mês — ${chartYear}`;
+    }
+    const titleEl = document.getElementById('chart-monthly-title');
+    if (titleEl) titleEl.textContent = timeTitle;
 
     // Gender chart
     const genderMap = {};
@@ -1987,47 +2855,614 @@
     Object.values(chartInstances).forEach(c => c.destroy());
     chartInstances = {};
 
-    const chartDefaults = {
-      plugins: { legend: { labels: { color: '#8B9AB0', font: { size: 11 } } } },
-      scales: { x: { ticks: { color: '#8B9AB0' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                y: { ticks: { color: '#8B9AB0' }, grid: { color: 'rgba(255,255,255,0.05)' } } }
+    const scaleOpts = {
+      x: { ticks: { color: '#8B9AB0', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      y: { ticks: { color: '#8B9AB0', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+    };
+    const barDL = { // datalabels for bar charts
+      color: '#CBD5E1', font: { size: 10, weight: '600' },
+      anchor: 'end', align: 'top', offset: 2,
+      formatter: v => v > 0 ? v : ''
     };
 
     chartInstances.monthly = new Chart(document.getElementById('chart-monthly'), {
       type: 'bar',
-      data: { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
-              datasets: [{ label: 'Marcações', data: monthly, backgroundColor: 'rgba(0,207,253,.6)', borderRadius: 5 }] },
-      options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false } } }
+      data: { labels: timeLabels, datasets: [{ label: 'Marcações', data: timeData, backgroundColor: 'rgba(0,207,253,.6)', borderRadius: 4 }] },
+      options: { scales: scaleOpts, layout: { padding: { top: 18 } },
+        plugins: { legend: { display: false }, datalabels: barDL } }
     });
 
     const gLabels = { H:'Homem', M:'Mulher', C:'Criança', 'N/A':'N/D' };
+    const total = Object.values(genderMap).reduce((a,b)=>a+b,0);
     chartInstances.gender = new Chart(document.getElementById('chart-gender'), {
       type: 'doughnut',
       data: { labels: Object.keys(genderMap).map(g=>gLabels[g]||g),
               datasets: [{ data: Object.values(genderMap), backgroundColor: ['#00CFFD','#a78bfa','#22c55e','#eab308'] }] },
-      options: { plugins: { legend: { labels: { color: '#8B9AB0', font: { size: 11 } } } } }
+      options: { plugins: {
+        legend: { labels: { color: '#8B9AB0', font: { size: 11 } } },
+        datalabels: { color: '#fff', font: { size: 11, weight: '700' },
+          formatter: (v) => total ? `${Math.round(v/total*100)}%\n(${v})` : '' }
+      }}
     });
 
     chartInstances.nationality = new Chart(document.getElementById('chart-nationality'), {
       type: 'bar',
-      data: { labels: topNat.map(([k])=>k), datasets: [{ label: 'Clientes', data: topNat.map(([,v])=>v), backgroundColor: 'rgba(167,139,250,.7)', borderRadius: 5 }] },
-      options: { indexAxis: 'y', ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false } } }
+      data: { labels: topNat.map(([k])=>k), datasets: [{ label: 'Clientes', data: topNat.map(([,v])=>v), backgroundColor: 'rgba(167,139,250,.7)', borderRadius: 4 }] },
+      options: { indexAxis: 'y', scales: scaleOpts, layout: { padding: { right: 28 } },
+        plugins: { legend: { display: false }, datalabels: { ...barDL, anchor: 'end', align: 'right' } } }
     });
 
     chartInstances.wetsuit = new Chart(document.getElementById('chart-wetsuit'), {
       type: 'bar',
-      data: { labels: sortedWs.map(([k])=>k), datasets: [{ label: 'Fatos', data: sortedWs.map(([,v])=>v), backgroundColor: 'rgba(34,197,94,.6)', borderRadius: 5 }] },
-      options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false } } }
+      data: { labels: sortedWs.map(([k])=>k), datasets: [{ label: 'Fatos', data: sortedWs.map(([,v])=>v), backgroundColor: 'rgba(34,197,94,.6)', borderRadius: 4 }] },
+      options: { scales: scaleOpts, layout: { padding: { top: 18 } },
+        plugins: { legend: { display: false }, datalabels: barDL } }
     });
   }
 
-  function setChartYear(y) {
-    chartYear = y;
-    document.querySelectorAll('.chart-year-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.year) === y));
-    buildCharts();
+  init();
+
+  // ── DAILY REPORT ─────────────────────────────────────────────────────────────
+  let reportPeriod = 'today';
+  let reportInstructors = {}; // { 'YYYY-MM-DD|HH:MM': 'Nome Instrutor' }
+
+  function openReportModal() {
+    document.getElementById('report-modal-bg').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    buildReport();
   }
 
-  init();
+  function closeReportModal() {
+    document.getElementById('report-modal-bg').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  function setReportPeriod(period, btn) {
+    reportPeriod = period;
+    document.querySelectorAll('.rpb').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const labels = { today:'Relatório — Hoje', tomorrow:'Relatório — Amanhã', week:'Relatório — Esta Semana (Seg–Dom)' };
+    document.getElementById('report-title-label').textContent = labels[period] || 'Relatório';
+    buildReport();
+  }
+
+  function getReportDates() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const fmt = d => d.toISOString().slice(0,10);
+    if (reportPeriod === 'today')    return [fmt(today)];
+    if (reportPeriod === 'tomorrow') { const t = new Date(today); t.setDate(t.getDate()+1); return [fmt(t)]; }
+    // week: Monday–Sunday of current week
+    const days = [];
+    const dow = today.getDay(); // 0=Sun,1=Mon,...
+    const monday = new Date(today); monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+    for (let i = 0; i < 7; i++) { const d = new Date(monday); d.setDate(monday.getDate()+i); days.push(fmt(d)); }
+    return days;
+  }
+
+  function buildReport() {
+    const preview = document.getElementById('report-preview');
+    const schoolId = document.getElementById('f-school')?.value || SCHOOLS[0]?.id;
+    const school   = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0];
+    const dates    = getReportDates();
+
+    // Filter active bookings for the period
+    const bookings = allBookings.filter(b =>
+      dates.includes(b.booking_date) &&
+      b.school_id === schoolId &&
+      b.status !== 'cancelled'
+    );
+
+    if (!bookings.length) {
+      preview.innerHTML = '<div style="color:var(--gray);text-align:center;padding:2rem">Sem marcações para o período selecionado.</div>';
+      return;
+    }
+
+    // Group by date → slot
+    const byDate = {};
+    dates.forEach(d => { byDate[d] = {}; });
+    bookings.forEach(b => {
+      if (!byDate[b.booking_date]) byDate[b.booking_date] = {};
+      if (!byDate[b.booking_date][b.booking_time]) byDate[b.booking_date][b.booking_time] = [];
+      byDate[b.booking_date][b.booking_time].push(b);
+    });
+
+    const totalAlunos = bookings.reduce((s, b) => s + (parseInt(b.num_people)||1), 0);
+    const totalAulas  = bookings.length;
+
+    let html = `
+      <div style="margin-bottom:1rem;padding:.7rem .8rem;background:rgba(0,207,253,.07);border:1px solid rgba(0,207,253,.2);border-radius:8px;display:flex;gap:1.5rem;flex-wrap:wrap">
+        <div><span style="color:var(--gray);font-size:.7rem;text-transform:uppercase;letter-spacing:.07em">Escola</span><div style="font-weight:700;color:#fff;margin-top:1px">${school?.name||'—'}</div></div>
+        <div><span style="color:var(--gray);font-size:.7rem;text-transform:uppercase;letter-spacing:.07em">Total Alunos</span><div style="font-weight:700;color:var(--cyan);margin-top:1px">${totalAlunos}</div></div>
+        <div><span style="color:var(--gray);font-size:.7rem;text-transform:uppercase;letter-spacing:.07em">Marcações</span><div style="font-weight:700;color:#fff;margin-top:1px">${totalAulas}</div></div>
+        <div><span style="color:var(--gray);font-size:.7rem;text-transform:uppercase;letter-spacing:.07em">Período</span><div style="font-weight:700;color:#fff;margin-top:1px">${dates.length===1 ? fmtDatePT(dates[0]) : fmtDatePT(dates[0])+' – '+fmtDatePT(dates[dates.length-1])}</div></div>
+      </div>`;
+
+    dates.forEach(date => {
+      const slots = byDate[date];
+      if (!Object.keys(slots).length) return;
+      if (dates.length > 1) html += `<div style="font-weight:800;font-size:.82rem;color:#fff;margin:.8rem 0 .4rem;padding:.3rem .5rem;background:rgba(255,255,255,.05);border-radius:6px">${fmtDatePT(date)}</div>`;
+
+      Object.keys(slots).sort().forEach(slot => {
+        const blist = slots[slot];
+        const key   = `${date}|${slot}`;
+        const alunos = blist.reduce((s, b) => s + (parseInt(b.num_people)||1), 0);
+        const tipos  = [...new Set(blist.map(b => b.lesson_type))].join(', ');
+        const instrKey = `inst_${key.replace(/[|:]/g,'_')}`;
+        const instrVal = reportInstructors[key] || '';
+
+        // Equipment summary
+        const wsCount = {};
+        blist.forEach(b => {
+          (b.equipment_list||[]).forEach(p => { const sz = p.wetsuit||p.wetsuit_size||p.size||'?'; wsCount[sz] = (wsCount[sz]||0)+1; });
+        });
+        const wsSummary = Object.entries(wsCount).map(([k,v]) => `${k}×${v}`).join(' · ') || '—';
+
+        // Student rows
+        const studentRows = blist.flatMap(b => {
+          const rows = [];
+          const countryName = (b.client_country||'').replace(/^\S+\s*/,'');
+          if (b.equipment_list?.length) {
+            b.equipment_list.forEach((p,pi) => {
+              rows.push({ name: pi===0 ? b.client_name : `  └ ${p.name||'P'+(pi+1)}`, wetsuit: p.wetsuit||p.wetsuit_size||p.size||'?', weight: p.weight||'?', height: p.height||'?', gender: p.gender==='M'||p.gender==='H'?'♂':'♀', type: b.lesson_type, country: pi===0?countryName:'', phone: pi===0?(b.client_phone||''):'' });
+            });
+          } else {
+            rows.push({ name: b.client_name, wetsuit: b.wetsuit_size||'?', weight: b.client_weight||'?', height: b.client_height||'?', gender: b.client_gender==='M'||b.client_gender==='H'?'♂':'♀', type: b.lesson_type, country: countryName, phone: b.client_phone||'' });
+          }
+          return rows;
+        });
+
+        html += `
+          <div class="rp-section">
+            <div class="rp-slot-title">${slot} — ${tipos} <span style="color:var(--gray);font-weight:400;font-size:.75rem">(${alunos} aluno${alunos!==1?'s':''})</span></div>
+            <div class="rp-instructor">
+              <span style="font-size:.72rem;color:var(--gray)">Instrutor:</span>
+              <input id="${instrKey}" value="${instrVal}" placeholder="Nome do instrutor"
+                oninput="reportInstructors['${key}']=this.value;updateReportText()" />
+            </div>
+            <table class="rp-table">
+              <thead><tr><th>#</th><th>Nome</th><th>Tipo</th><th>Fato</th><th>Peso</th><th>Alt.</th><th>Gén.</th><th>País</th><th>Contacto</th></tr></thead>
+              <tbody>
+                ${studentRows.map((r,i) => `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.type}</td><td style="color:var(--cyan);font-weight:700">${r.wetsuit}</td><td>${r.weight}kg</td><td>${r.height}cm</td><td>${r.gender}</td><td style="font-size:.72rem;color:rgba(255,255,255,.6)">${r.country}</td><td style="font-size:.72rem;color:rgba(255,255,255,.6)">${r.phone}</td></tr>`).join('')}
+              </tbody>
+            </table>
+            <div class="rp-equip-summary">🏊 Fatos necessários: <strong>${wsSummary}</strong></div>
+          </div>`;
+      });
+    });
+
+    preview.innerHTML = html;
+  }
+
+  function fmtDatePT(iso) {
+    if (!iso) return '';
+    const [y,m,d] = iso.split('-');
+    const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const dayName = days[new Date(iso+'T12:00:00').getDay()];
+    return `${dayName} ${d}/${m}/${y}`;
+  }
+
+  function updateReportText() { /* instructors updated live via oninput */ }
+
+  function getReportTextForWA() {
+    const schoolId = document.getElementById('f-school')?.value || SCHOOLS[0]?.id;
+    const school   = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0];
+    const dates    = getReportDates();
+    const bookings = allBookings.filter(b => dates.includes(b.booking_date) && b.school_id===schoolId && b.status!=='cancelled');
+    const byDate   = {};
+    dates.forEach(d => { byDate[d] = {}; });
+    bookings.forEach(b => {
+      if (!byDate[b.booking_date]) byDate[b.booking_date] = {};
+      if (!byDate[b.booking_date][b.booking_time]) byDate[b.booking_date][b.booking_time] = [];
+      byDate[b.booking_date][b.booking_time].push(b);
+    });
+
+    const totalAlunos = bookings.reduce((s, b) => s + (parseInt(b.num_people)||1), 0);
+    let txt = `🏄 *${school?.name||'Escola'} — Relatório de Aulas*\n`;
+    txt += dates.length===1 ? `📅 ${fmtDatePT(dates[0])}\n` : `📅 ${fmtDatePT(dates[0])} – ${fmtDatePT(dates[dates.length-1])}\n`;
+    txt += `👥 Total: ${totalAlunos} aluno${totalAlunos!==1?'s':''}\n\n`;
+
+    dates.forEach(date => {
+      const slots = byDate[date];
+      if (!Object.keys(slots).length) return;
+      if (dates.length > 1) txt += `*${fmtDatePT(date)}*\n`;
+      Object.keys(slots).sort().forEach(slot => {
+        const blist = slots[slot];
+        const key   = `${date}|${slot}`;
+        const alunos = blist.reduce((s, b) => s + (parseInt(b.num_people)||1), 0);
+        const tipos  = [...new Set(blist.map(b => b.lesson_type))].join(', ');
+        const inst   = reportInstructors[key];
+        txt += `⏰ *${slot}* — ${tipos} (${alunos} aluno${alunos!==1?'s':''})`;
+        if (inst) txt += ` — Instrutor: ${inst}`;
+        txt += '\n';
+        // Student list
+        blist.forEach(b => {
+          const cn = (b.client_country||'').replace(/^\S+\s*/,'');
+          if (b.equipment_list?.length) {
+            b.equipment_list.forEach((p,pi) => {
+              const nm = pi===0 ? b.client_name : (p.name||'P'+(pi+1));
+              let line = `  • ${nm} — Fato ${p.wetsuit||p.wetsuit_size||p.size||'?'} · ${p.weight||'?'}kg · ${p.gender==='M'||p.gender==='H'?'♂':'♀'}`;
+              if (pi===0) { if (cn) line += ` · ${cn}`; if (b.client_phone) line += ` · ${b.client_phone}`; }
+              txt += line + '\n';
+            });
+          } else {
+            let line = `  • ${b.client_name} — Fato ${b.wetsuit_size||'?'} · ${b.client_weight||'?'}kg · ${b.client_gender==='M'||b.client_gender==='H'?'♂':'♀'}`;
+            if (cn) line += ` · ${cn}`; if (b.client_phone) line += ` · ${b.client_phone}`;
+            txt += line + '\n';
+          }
+        });
+        // Wetsuit summary
+        const wsCount = {};
+        blist.forEach(b => { (b.equipment_list||[]).forEach(p => { const sz=p.wetsuit||p.wetsuit_size||p.size||'?'; wsCount[sz]=(wsCount[sz]||0)+1; }); });
+        const wsSummary = Object.entries(wsCount).map(([k,v])=>`${k}×${v}`).join(' ');
+        if (wsSummary) txt += `  🏊 Fatos: ${wsSummary}\n`;
+        txt += '\n';
+      });
+    });
+    return txt;
+  }
+
+  function shareReportWA() {
+    const txt = getReportTextForWA();
+    window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
+  }
+
+  function shareReportEmail() {
+    const schoolId = document.getElementById('f-school')?.value || SCHOOLS[0]?.id;
+    const school   = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0];
+    const dates    = getReportDates();
+    const subject  = encodeURIComponent(`Relatório de Aulas — ${school?.name||''} — ${fmtDatePT(dates[0])}`);
+    const body     = encodeURIComponent(getReportTextForWA());
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+  }
+
+  function printReport() {
+    const schoolId = document.getElementById('f-school')?.value || SCHOOLS[0]?.id;
+    const school   = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0];
+    const dates    = getReportDates();
+    const periodLabel = dates.length===1 ? fmtDatePT(dates[0]) : `${fmtDatePT(dates[0])} – ${fmtDatePT(dates[dates.length-1])}`;
+    const previewHtml = document.getElementById('report-preview').innerHTML;
+
+    const win = window.open('', '_blank', 'width=800,height=700');
+    win.document.write(`<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
+    <title>Relatório — ${school?.name||''} — ${periodLabel}</title>
+    <style>
+      * { box-sizing:border-box; margin:0; padding:0; }
+      body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; font-size:11px; color:#1e293b; background:#fff; padding:20px; }
+      h1 { font-size:16px; font-weight:800; margin-bottom:2px; }
+      .subtitle { font-size:11px; color:#64748b; margin-bottom:16px; }
+      .summary { display:flex; gap:20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:16px; flex-wrap:wrap; }
+      .summary div span { font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:#94a3b8; display:block; }
+      .summary div strong { font-size:13px; font-weight:700; color:#0070F3; }
+      .slot-block { margin-bottom:14px; break-inside:avoid; }
+      .slot-title { font-size:12px; font-weight:800; color:#0070F3; margin-bottom:4px; border-bottom:1px solid #e2e8f0; padding-bottom:3px; }
+      .instructor { font-size:10px; color:#475569; margin-bottom:4px; }
+      table { width:100%; border-collapse:collapse; margin-bottom:4px; }
+      th { font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:#64748b; padding:3px 6px; border-bottom:1px solid #e2e8f0; text-align:left; background:#f8fafc; }
+      td { padding:3px 6px; border-bottom:1px solid #f1f5f9; font-size:10px; }
+      .ws { font-weight:700; color:#0070F3; }
+      .equip-row { font-size:9.5px; color:#475569; background:#f8fafc; padding:3px 6px; border-radius:4px; }
+      .day-header { font-size:11px; font-weight:700; background:#1e293b; color:#fff; padding:4px 8px; border-radius:4px; margin:10px 0 6px; }
+      @media print { @page { size:A4; margin:1.5cm; } body { padding:0; } }
+    </style></head><body>
+    <h1>📅 Relatório de Aulas — ${school?.name||''}</h1>
+    <div class="subtitle">Gerado em ${new Date().toLocaleString('pt-PT',{timeZone:'Europe/Lisbon'})} · Período: ${periodLabel}</div>
+    ${buildPrintHTML(schoolId, dates)}
+    <script>window.onload=()=>{ setTimeout(()=>window.print(),400); }<\/script>
+    </body></html>`);
+    win.document.close();
+  }
+
+  function buildPrintHTML(schoolId, dates) {
+    const bookings = allBookings.filter(b => dates.includes(b.booking_date) && b.school_id===schoolId && b.status!=='cancelled');
+    if (!bookings.length) return '<p>Sem marcações para o período.</p>';
+
+    const byDate = {};
+    dates.forEach(d => { byDate[d] = {}; });
+    bookings.forEach(b => {
+      if (!byDate[b.booking_date]) byDate[b.booking_date] = {};
+      if (!byDate[b.booking_date][b.booking_time]) byDate[b.booking_date][b.booking_time] = [];
+      byDate[b.booking_date][b.booking_time].push(b);
+    });
+
+    const total = bookings.reduce((s,b)=>s+(parseInt(b.num_people)||1),0);
+    let html = `<div class="summary">
+      <div><span>Total Alunos</span><strong>${total}</strong></div>
+      <div><span>Marcações</span><strong>${bookings.length}</strong></div>
+    </div>`;
+
+    dates.forEach(date => {
+      const slots = byDate[date];
+      if (!Object.keys(slots).length) return;
+      if (dates.length > 1) html += `<div class="day-header">${fmtDatePT(date)}</div>`;
+
+      Object.keys(slots).sort().forEach(slot => {
+        const blist = slots[slot];
+        const key   = `${date}|${slot}`;
+        const alunos = blist.reduce((s,b)=>s+(parseInt(b.num_people)||1),0);
+        const tipos  = [...new Set(blist.map(b=>b.lesson_type))].join(', ');
+        const inst   = reportInstructors[key] || '—';
+        const wsCount = {};
+        blist.forEach(b => { (b.equipment_list||[]).forEach(p=>{ const sz=p.wetsuit||p.wetsuit_size||p.size||'?'; wsCount[sz]=(wsCount[sz]||0)+1; }); });
+        const wsSummary = Object.entries(wsCount).map(([k,v])=>`${k}×${v}`).join(' · ')||'—';
+
+        const rows = blist.flatMap(b => {
+          const cn = (b.client_country||'').replace(/^\S+\s*/,'');
+          if (b.equipment_list?.length) return b.equipment_list.map((p,pi)=>({
+            name: pi===0?b.client_name:(p.name||'P'+(pi+1)), wetsuit:p.wetsuit||p.wetsuit_size||p.size||'?',
+            weight:p.weight||'?', height:p.height||'?', gender:p.gender==='M'||p.gender==='H'?'♂':'♀', type:b.lesson_type,
+            country:pi===0?cn:'', phone:pi===0?(b.client_phone||''):''
+          }));
+          return [{ name:b.client_name, wetsuit:b.wetsuit_size||'?', weight:b.client_weight||'?', height:b.client_height||'?', gender:b.client_gender==='M'||b.client_gender==='H'?'♂':'♀', type:b.lesson_type, country:cn, phone:b.client_phone||'' }];
+        });
+
+        html += `<div class="slot-block">
+          <div class="slot-title">${slot} — ${tipos} (${alunos} aluno${alunos!==1?'s':''})</div>
+          <div class="instructor">Instrutor: <strong>${inst}</strong></div>
+          <table>
+            <thead><tr><th>#</th><th>Nome</th><th>Modalidade</th><th>Fato</th><th>Peso</th><th>Alt.</th><th>Gén.</th><th>País</th><th>Contacto</th></tr></thead>
+            <tbody>${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.type}</td><td class="ws">${r.wetsuit}</td><td>${r.weight}kg</td><td>${r.height}cm</td><td>${r.gender}</td><td>${r.country}</td><td>${r.phone}</td></tr>`).join('')}</tbody>
+          </table>
+          <div class="equip-row">🏊 Fatos: ${wsSummary}</div>
+        </div>`;
+      });
+    });
+    return html;
+  }
+
+  // ── QR CARD (editable before print) ─────────────────────────────────────────
+  function printQRCard() {
+    const schoolId   = document.getElementById('f-school')?.value || SCHOOLS[0]?.id || 'escola-teste';
+    const school     = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0] || { id: schoolId, name: 'Escola Surf', wa_number: '' };
+    const bookingUrl = schoolId === 'escola-teste'
+      ? `https://auditoria-25b.pages.dev/surf`
+      : `https://auditoria-25b.pages.dev/surf?escola=${encodeURIComponent(schoolId)}`;
+    const wa         = school.wa_number ? '+' + school.wa_number.replace(/\D/g,'').replace(/^00/,'') : '';
+
+    const popup = window.open('', '_blank', 'width=580,height=920,scrollbars=yes');
+    if (!popup) { alert('Permite popups para imprimir o cartão QR.'); return; }
+    popup.document.write(`<!DOCTYPE html><html lang="pt"><head>
+<meta charset="UTF-8"/>
+<title>Cartão QR · ${school.name}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:#050D1A;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 16px 40px}
+  .toolbar{width:100%;max-width:460px;display:flex;gap:.5rem;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+  .btn{background:linear-gradient(135deg,#0070F3,#00CFFD);border:none;border-radius:9px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 22px;cursor:pointer;flex-shrink:0}
+  .btn-img{background:rgba(134,239,172,.15);border:1px solid rgba(134,239,172,.35);border-radius:9px;color:#86efac;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 16px;cursor:pointer;flex-shrink:0}
+  .btn-wa{background:#25D366;border:none;border-radius:9px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 18px;cursor:pointer;flex-shrink:0;text-decoration:none;display:inline-flex;align-items:center;gap:5px;border:none}
+  .btn-mail{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:9px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:9px 18px;cursor:pointer;flex-shrink:0;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+  .btn-share{background:rgba(167,139,250,.18);border:1px solid rgba(167,139,250,.35);border-radius:9px;color:#c4b5fd;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:9px 16px;cursor:pointer;flex-shrink:0}
+  .btn-sec{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:9px;color:#94a3b8;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:8px 16px;cursor:pointer;flex-shrink:0}
+  .hint{font-size:.7rem;color:rgba(255,255,255,.35);width:100%;text-align:center;margin-top:2px}
+  #capture-status{font-size:.72rem;color:#86efac;margin-top:4px;display:none;width:100%;text-align:center}
+  /* CARD */
+  .card{width:100%;max-width:420px;background:linear-gradient(160deg,#0A1A30,#0D2040);border:1px solid rgba(0,207,253,.3);border-radius:24px;padding:32px 28px 28px;text-align:center;position:relative;overflow:hidden}
+  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#0070F3,#00CFFD,#0070F3)}
+  /* Photo area */
+  .photo-wrap{width:80px;height:80px;border-radius:50%;margin:0 auto 14px;overflow:hidden;border:2px solid rgba(0,207,253,.35);cursor:pointer;position:relative;background:rgba(255,255,255,.05)}
+  .photo-wrap img{width:100%;height:100%;object-fit:cover}
+  .photo-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;font-size:.6rem;color:rgba(255,255,255,.3);gap:3px}
+  .photo-placeholder span{font-size:22px}
+  /* Editable fields */
+  [contenteditable]{outline:none;cursor:text;border-radius:6px;transition:background .15s}
+  [contenteditable]:hover{background:rgba(255,255,255,.06)}
+  [contenteditable]:focus{background:rgba(0,207,253,.08);outline:1px dashed rgba(0,207,253,.4)}
+  .school-name{font-size:22px;font-weight:900;background:linear-gradient(135deg,#fff 30%,#00CFFD);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;min-height:1.2em}
+  .school-name:focus{-webkit-text-fill-color:#fff}
+  .tagline{font-size:.8rem;color:rgba(255,255,255,.45);margin-bottom:6px;min-height:1.1em}
+  .address{font-size:.75rem;color:rgba(255,255,255,.35);margin-bottom:20px;min-height:1em}
+  .cta{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#00CFFD;margin-bottom:10px}
+  .qr-wrap{display:inline-block;background:#fff;border-radius:14px;padding:7px;margin-bottom:16px}
+  .qr-wrap canvas{display:block;border-radius:7px}
+  .url-text{font-size:.68rem;color:rgba(255,255,255,.4);font-family:monospace;margin-bottom:18px;padding:6px 10px;background:rgba(255,255,255,.04);border-radius:7px}
+  .sep{width:100%;height:1px;background:rgba(255,255,255,.08);margin:14px 0}
+  .info{display:flex;flex-direction:column;gap:7px}
+  .info-row{display:flex;align-items:center;justify-content:center;gap:7px;font-size:.8rem;color:rgba(255,255,255,.6)}
+  .info-row strong,[contenteditable]{color:#fff}
+  .info-row .icon{flex-shrink:0;width:18px;text-align:center}
+  /* Hidden file input */
+  #photo-input{display:none}
+  /* Extra fields toggled by toolbar */
+  .extra-field{display:none}
+  .extra-field.visible{display:flex}
+  @media print{
+    body{background:#fff;color:#000;padding:0;margin:0}
+    .toolbar{display:none}
+    .card{border:1.5px solid #ccc;background:#fff;color:#000;max-width:none;border-radius:12px;padding:28px 24px}
+    .card::before{background:linear-gradient(90deg,#0070F3,#00CFFD)}
+    .school-name{-webkit-text-fill-color:#050D1A;background:none;color:#050D1A}
+    .tagline,.address,.cta,.url-text,.info-row{color:#444}
+    .info-row strong,[contenteditable]{color:#111}
+    .sep{background:#ddd}
+    .photo-placeholder{display:none}
+    [contenteditable]{outline:none;background:none !important}
+  }
+</style></head><body>
+<input type="file" id="photo-input" accept="image/*"/>
+<div class="toolbar">
+  <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
+  <button class="btn-img" onclick="saveImage()">💾 Guardar Imagem</button>
+  <button class="btn-share" onclick="shareImage()">📤 Partilhar</button>
+  <button class="btn-sec" onclick="toggleExtra()">+ Morada / Redes</button>
+</div>
+<div id="capture-status"></div>
+<div class="card">
+  <!-- Photo -->
+  <div class="photo-wrap" onclick="document.getElementById('photo-input').click()" title="Clica para adicionar foto ou logo">
+    <div class="photo-placeholder" id="photo-ph"><span>📷</span>Foto / Logo</div>
+    <img id="photo-img" src="" style="display:none" alt=""/>
+  </div>
+  <!-- Name & tagline -->
+  <div class="school-name" contenteditable="true">${school.name}</div>
+  <div class="tagline" contenteditable="true">Reserve a sua aula de surf online</div>
+  <div class="address" contenteditable="true" placeholder="Morada / Praia">📍 Clica para adicionar morada</div>
+  <!-- QR -->
+  <div class="cta">Aponte a câmara para reservar</div>
+  <div class="qr-wrap"><canvas id="qr-canvas"></canvas></div>
+  <div class="url-text">${bookingUrl}</div>
+  <div class="sep"></div>
+  <!-- Contacts -->
+  <div class="info">
+    ${wa ? `<div class="info-row"><span class="icon">📱</span>WhatsApp <strong contenteditable="true">${wa}</strong></div>` : `<div class="info-row"><span class="icon">📱</span>WhatsApp <strong contenteditable="true">+351 ...</strong></div>`}
+    <div class="info-row extra-field" id="row-email"><span class="icon">✉️</span>Email <strong contenteditable="true">email@escola.pt</strong></div>
+    <div class="info-row extra-field" id="row-insta"><span class="icon">📸</span>Instagram <strong contenteditable="true">@escola</strong></div>
+    <div class="info-row"><span class="icon">🌊</span><strong contenteditable="true">auditoria-25b.pages.dev</strong></div>
+  </div>
+</div>
+<script>
+  document.getElementById('photo-input').addEventListener('change', function() {
+    const file = this.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('photo-img').src = e.target.result;
+      document.getElementById('photo-img').style.display = 'block';
+      document.getElementById('photo-ph').style.display  = 'none';
+    };
+    reader.readAsDataURL(file);
+  });
+  function toggleExtra() {
+    document.querySelectorAll('.extra-field').forEach(el => el.classList.toggle('visible'));
+  }
+  const statusEl = document.getElementById('capture-status');
+  function setStatus(msg, duration) {
+    statusEl.textContent = msg; statusEl.style.display = 'block';
+    if (duration) setTimeout(() => { statusEl.style.display = 'none'; }, duration);
+  }
+  // Generate QR onto canvas — client-side, no CORS
+  QRCode.toCanvas(document.getElementById('qr-canvas'), '${bookingUrl}', {
+    width: 200, margin: 1,
+    color: { dark: '#050D1A', light: '#00CFFD' }
+  });
+
+  // Draw the card directly with Canvas 2D API — avoids html2canvas/CORS issues entirely
+  async function captureCard() {
+    await document.fonts.ready;
+    const SC = 2, CW = 420, RADIUS = 24;
+    const txt = (sel, fb) => (document.querySelector(sel)?.textContent || fb || '').trim();
+    const schoolName = txt('.school-name', '');
+    const tagline    = txt('.tagline', '');
+    const address    = txt('.address', '');
+    const urlText    = txt('.url-text', '');
+    const photoImg   = document.getElementById('photo-img');
+    const hasPhoto   = photoImg && photoImg.style.display !== 'none' && photoImg.src;
+    const infoRows   = [...document.querySelectorAll('.info-row:not(.extra-field), .info-row.visible')];
+
+    // Calculate dynamic height
+    const CH = 80 + (hasPhoto?90:30) + 24+20+20+18+14+220+30+20+18 + infoRows.length*24 + 30;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = CW * SC; canvas.height = CH * SC;
+    const c = canvas.getContext('2d');
+    c.scale(SC, SC);
+
+    // ── Card background ──────────────────────────────────────────────
+    const bg = c.createLinearGradient(CW*0.4,0,0,CH);
+    bg.addColorStop(0,'#0A1A30'); bg.addColorStop(1,'#0D2040');
+    c.fillStyle = bg;
+    c.beginPath(); c.roundRect(0,0,CW,CH,RADIUS); c.fill();
+
+    // Top accent line
+    const tl = c.createLinearGradient(0,0,CW,0);
+    tl.addColorStop(0,'#0070F3'); tl.addColorStop(.5,'#00CFFD'); tl.addColorStop(1,'#0070F3');
+    c.fillStyle = tl; c.fillRect(0,0,CW,3);
+
+    let y = 40;
+
+    // ── Optional photo circle ────────────────────────────────────────
+    if (hasPhoto) {
+      c.save();
+      c.beginPath(); c.arc(CW/2, y+40, 40, 0, Math.PI*2); c.clip();
+      c.drawImage(photoImg, CW/2-40, y, 80, 80);
+      c.restore();
+      // ring
+      c.strokeStyle='rgba(0,207,253,.35)'; c.lineWidth=2;
+      c.beginPath(); c.arc(CW/2,y+40,41,0,Math.PI*2); c.stroke();
+      y += 100;
+    } else { y += 20; }
+
+    // ── School name ──────────────────────────────────────────────────
+    c.textAlign='center'; c.textBaseline='middle';
+    const grad = c.createLinearGradient(CW*.2,0,CW*.8,0);
+    grad.addColorStop(0,'#ffffff'); grad.addColorStop(1,'#00CFFD');
+    c.fillStyle=grad; c.font='900 22px Inter,system-ui,sans-serif';
+    c.fillText(schoolName, CW/2, y+12); y+=30;
+
+    // Tagline
+    c.fillStyle='rgba(255,255,255,.45)'; c.font='400 13px Inter,system-ui,sans-serif';
+    c.fillText(tagline, CW/2, y+8); y+=22;
+
+    // Address (only if edited)
+    if (address && !address.startsWith('📍 Clica')) {
+      c.fillStyle='rgba(255,255,255,.3)'; c.font='400 12px Inter,system-ui,sans-serif';
+      c.fillText(address, CW/2, y+8); y+=20;
+    }
+    y+=14;
+
+    // CTA text
+    c.fillStyle='#00CFFD'; c.font='700 10px Inter,system-ui,sans-serif';
+    c.fillText('APONTE A CÂMARA PARA RESERVAR', CW/2, y+7); y+=18;
+
+    // ── QR code ──────────────────────────────────────────────────────
+    const QS=200, qx=(CW-QS)/2, qy=y;
+    c.fillStyle='#ffffff';
+    c.beginPath(); c.roundRect(qx-7,qy-7,QS+14,QS+14,14); c.fill();
+    const qrCanvas=document.getElementById('qr-canvas');
+    if (qrCanvas) c.drawImage(qrCanvas, qx, qy, QS, QS);
+    y += QS+16;
+
+    // URL
+    c.fillStyle='rgba(255,255,255,.35)'; c.font='400 11px monospace,sans-serif';
+    c.fillText(urlText, CW/2, y+8); y+=24;
+
+    // Separator
+    c.strokeStyle='rgba(255,255,255,.08)'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(24,y); c.lineTo(CW-24,y); c.stroke(); y+=18;
+
+    // ── Contact rows ─────────────────────────────────────────────────
+    c.font='400 13px Inter,system-ui,sans-serif'; c.fillStyle='rgba(255,255,255,.7)';
+    infoRows.forEach(row => {
+      c.fillText(row.textContent.trim().replace(/\s+/g,' '), CW/2, y+8); y+=24;
+    });
+
+    return canvas;
+  }
+
+  async function saveImage() {
+    setStatus('A gerar imagem…');
+    try {
+      const canvas = await captureCard();
+      const a = document.createElement('a');
+      a.download = 'cartao-surf.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+      setStatus('✓ Imagem guardada!', 3000);
+    } catch(e) { console.error(e); setStatus('✗ Erro: ' + e.message, 4000); }
+  }
+  async function shareImage() {
+    setStatus('A gerar imagem…');
+    try {
+      const canvas = await captureCard();
+      canvas.toBlob(async blob => {
+        const file = new File([blob], 'cartao-surf.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: document.querySelector('.school-name').textContent });
+          statusEl.style.display = 'none';
+        } else {
+          const a = document.createElement('a');
+          a.download = 'cartao-surf.png';
+          a.href = canvas.toDataURL('image/png');
+          a.click();
+          setStatus('✓ Imagem guardada!', 4000);
+        }
+      }, 'image/png');
+    } catch(e) { console.error(e); setStatus('✗ Erro. Verifica consola.', 4000); }
+  }
+<\/script>
+</body></html>`);
+    popup.document.close();
+  }
 </script>
 </body>
 </html>

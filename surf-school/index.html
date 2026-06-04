@@ -217,7 +217,7 @@
     .cal-days-header{display:grid;grid-template-columns:repeat(7,1fr);gap:.3rem;margin-bottom:.4rem}
     .cal-dh{text-align:center;font-size:.65rem;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);padding:.3rem 0}
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:.3rem}
-    .cal-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:10px;font-size:.84rem;font-weight:500;cursor:pointer;transition:all .2s;position:relative;border:1px solid transparent}
+    .cal-cell{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px;font-size:.84rem;font-weight:500;cursor:pointer;transition:all .2s;position:relative;border:1px solid transparent;padding:.3rem .1rem .7rem;gap:1px}
     .cal-cell.empty{cursor:default}
     .cal-cell.past{color:rgba(255,255,255,.2);cursor:not-allowed}
     .cal-cell.available{color:var(--white)}
@@ -225,6 +225,16 @@
     .cal-cell.selected{background:var(--gold);color:var(--navy);font-weight:700;border-color:var(--gold)}
     .cal-cell.today{border-color:rgba(201,168,76,.5)}
     .cal-cell .avail-dot{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--green)}
+    .cal-avail{font-size:.56rem;font-weight:700;line-height:1;white-space:nowrap;position:absolute;bottom:3px;left:0;right:0;text-align:center}
+    .cal-avail.ok{color:#22c55e}
+    .cal-avail.low{color:#f59e0b}
+    .cal-avail.full{color:#ef4444;font-size:.5rem}
+    .cal-cell.selected .cal-avail{color:rgba(0,0,0,.65)!important}
+    .cal-temp{font-size:.56rem;font-weight:600;color:rgba(255,180,50,.85);line-height:1;white-space:nowrap;letter-spacing:-.01em}
+    .cal-temp-min{color:rgba(110,200,255,.75);font-weight:500}
+    .cal-cell.selected .cal-temp{color:rgba(0,0,0,.65)}
+    .cal-cell.selected .cal-temp-min{color:rgba(0,0,0,.45)}
+    .cal-cell.past .cal-temp{opacity:.35}
     .slots-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.9rem}
     .slot-card{padding:1.2rem;background:var(--card);border:1px solid var(--border);border-radius:14px;cursor:pointer;transition:all .2s;position:relative}
     .slot-card.available:hover{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.06)}
@@ -696,6 +706,13 @@
         </div>
         <button class="btn-whatsapp" onclick="reservarWhatsApp()">📱 <span data-t="btn_whatsapp"></span></button>
         <div class="nav-btns" style="margin-top:1rem"><button class="btn-back" onclick="goToStep(3)" data-t="btn_back"></button><div></div></div>
+      </div>
+      <!-- Confirmation overlay (shown after WA button click) -->
+      <div id="booking-confirm" style="display:none;text-align:center;padding:2.5rem 1rem">
+        <div id="booking-confirm-icon" style="font-size:3rem;margin-bottom:1rem">⏳</div>
+        <div id="booking-confirm-title" style="font-size:1.3rem;font-weight:700;margin-bottom:.5rem"></div>
+        <div id="booking-confirm-msg" style="font-size:.9rem;color:var(--gray);margin-bottom:1.5rem"></div>
+        <button id="booking-confirm-btn" style="display:none;padding:.8rem 2rem;background:var(--gold);border:none;border-radius:10px;color:var(--navy);font-weight:700;cursor:pointer;font-size:.95rem" onclick="resetBookingForm()">➕ Nova Marcação</button>
       </div>
     </div>
   </div>
@@ -1398,18 +1415,331 @@ function updateClock() {
   if (el) el.textContent = pt;
 }
 
+// ── DEMO THEMES ───────────────────────────────────────────────────────────────
+const DEMO_THEMES = {
+  'escola-teste': {
+    name:'Escola Surf Teste', logo:'Escola <span>Surf</span> Teste',
+    lat:37.297, lon:-8.865,
+    gold:'#C9A84C', rgb:'201,168,76', navy:'#060D1B', ocean:'#0A2540',
+    heroImg:'https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=1920&q=85',
+    heroOverlay:'linear-gradient(150deg,rgba(6,13,27,.82) 0%,rgba(6,13,27,.45) 55%,rgba(6,13,27,.72) 100%)',
+    badge:'🌊 Escola de Surf · Site de Demonstração',
+    h1:'Aprenda a <em>surfar</em><br>com confiança',
+    sub:'Experimente a adrenalina das ondas com instrutores certificados ISA. Aulas para todos os níveis na mais bela costa portuguesa.',
+    stats:[['500+','Surfistas'],['12','Anos'],['98%','Satisfação'],['ISA','Certificado']],
+    aboutImg:'https://images.unsplash.com/photo-1505459668311-8dfac7952bf0?auto=format&fit=crop&w=800&q=80',
+    aboutBadge:'⭐ 4.9 · +200 avaliações',
+    aboutTag:'A nossa escola',
+    aboutTitle:'A aventura do surf começa aqui',
+    aboutSub:'Com anos de experiência nas melhores praias do Alentejo, oferecemos aulas personalizadas, equipamento premium e instrutores com certificação internacional.',
+    feat:[['🎓','Instrutores ISA','Certificados pela federação internacional de surf com anos de experiência.'],['🏄','Para todos os níveis','Do zero absoluto ao surfista que quer evoluir a técnica.'],['📍','Localização perfeita','Praia tranquila, ondas consistentes e fácil acesso.']],
+  },
+  'surf-arrifana': {
+    name:'Arrifana Surf School', logo:'Arrifana <span>Surf</span> School',
+    lat:37.297, lon:-8.865,
+    gold:'#10B981', rgb:'16,185,129', navy:'#020E0C', ocean:'#041A12',
+    heroImg:'https://images.unsplash.com/photo-1476158085676-e67f57ed9ed7?auto=format&fit=crop&w=1920&q=85',
+    heroOverlay:'linear-gradient(150deg,rgba(2,14,12,.88) 0%,rgba(2,14,12,.38) 55%,rgba(2,14,12,.78) 100%)',
+    badge:'🌿 Escola Boutique · Arrifana · Costa Vicentina',
+    h1:'Conquiste as ondas<br>do <em>Atlântico</em> selvagem',
+    sub:'Arrifana é uma das praias mais dramáticas e preservadas de Portugal. Falésias de 100 metros, ondas consistentes e grupos de máximo 6 pessoas para atenção real.',
+    stats:[['350+','Surfistas'],['8','Anos'],['99%','Satisfação'],['ISA','Certificado']],
+    aboutImg:'https://images.unsplash.com/photo-1506477331477-33d5d8b3dc85?auto=format&fit=crop&w=800&q=80',
+    aboutBadge:'⭐ 5.0 · +130 avaliações',
+    aboutTag:'A nossa filosofia',
+    aboutTitle:'Pequenos grupos, experiência única',
+    aboutSub:'Na Arrifana não há turismo de massas. Há autenticidade, silêncio e ondas perfeitas. Grupos máximo de 6 surfistas garantem a atenção que mereces para evoluíres rápido.',
+    feat:[['🌿','Máximo 6 pessoas','Atenção total do instrutor — nunca te perdemos no meio da turma.'],['🏔️','Cenário dramático','Falésias de 100m, Costa Vicentina virgem, sem multidões.'],['🐬','Mar Limpo','Parque Natural da Costa Vicentina — as águas mais puras de Portugal.']],
+  },
+  'surf-nazare': {
+    name:'Nazaré Surf Experience', logo:'Nazaré <span>Surf</span> Experience',
+    lat:39.601, lon:-9.070,
+    gold:'#F59E0B', rgb:'245,158,11', navy:'#0D0900', ocean:'#1C1100',
+    heroImg:'https://images.unsplash.com/photo-1444120775320-d20350f7f0f5?auto=format&fit=crop&w=1920&q=85',
+    heroOverlay:'linear-gradient(150deg,rgba(13,9,0,.90) 0%,rgba(13,9,0,.42) 55%,rgba(13,9,0,.82) 100%)',
+    badge:'⚡ Capital das Ondas Gigantes · Nazaré · Portugal',
+    h1:'Onde as lendas<br>do <em>surf</em> nascem',
+    sub:'Nazaré é o berço das maiores ondas do mundo. Garrett McNamara. Records mundiais. E agora, as tuas primeiras ondas neste lugar mágico — a emoção é a mesma.',
+    stats:[['800+','Surfistas'],['15','Anos'],['97%','Satisfação'],['ISA','Certificado']],
+    aboutImg:'https://images.unsplash.com/photo-1531722569936-825d4eaf4d8a?auto=format&fit=crop&w=800&q=80',
+    aboutBadge:'⭐ 4.8 · +350 avaliações',
+    aboutTag:'A nossa história',
+    aboutTitle:'A adrenalina pura de Nazaré',
+    aboutSub:'A Praia Norte recebe recordes mundiais todos os invernos. Mas temos também spots perfeitos para iniciantes. Venha descobrir por que Nazaré atrai surfistas do mundo inteiro.',
+    feat:[['⚡','Ondas lendárias','O mesmo oceano que produziu as maiores ondas do mundo está aqui.'],['📸','Fotografia incluída','Imortalizamos o teu primeiro momento a surfar em Nazaré.'],['🏨','Pacotes completos','Surf + alojamento + transfer desde Lisboa disponíveis.']],
+  },
+  'surf-peniche': {
+    name:'Peniche Surf Academy', logo:'Peniche <span>Surf</span> Academy',
+    lat:39.355, lon:-9.380,
+    gold:'#818CF8', rgb:'129,140,248', navy:'#04040F', ocean:'#080818',
+    heroImg:'https://images.unsplash.com/photo-1465919292275-c60ba49da6ae?auto=format&fit=crop&w=1920&q=85',
+    heroOverlay:'linear-gradient(150deg,rgba(4,4,15,.92) 0%,rgba(4,4,15,.40) 55%,rgba(4,4,15,.80) 100%)',
+    badge:'🎓 Academia ISA · Peniche · Capital Europeia do Surf',
+    h1:'Progressão técnica<br>sem <em>compromissos</em>',
+    sub:'Peniche acolhe o WSL Championship Tour todos os anos — as melhores ondas do circuito mundial. A nossa academia garante evolução real, com análise de vídeo em cada sessão.',
+    stats:[['1.2k+','Alunos'],['20','Anos'],['96%','Progressão'],['WSL','Parceiro']],
+    aboutImg:'https://images.unsplash.com/photo-1516939884836-3b6239a55eda?auto=format&fit=crop&w=800&q=80',
+    aboutBadge:'⭐ 4.9 · +520 avaliações',
+    aboutTag:'Metodologia',
+    aboutTitle:'Academia de alto rendimento',
+    aboutSub:'Análise de vídeo após cada sessão, planos de treino personalizados e instrutores que já formaram campeões nacionais. Peniche não é só uma praia — é o seu laboratório de surf.',
+    feat:[['📹','Análise de vídeo','Gravamos cada sessão e analisamos a tua técnica frame a frame.'],['📋','Plano de treino','Programa individualizado para atingir os teus objetivos.'],['🏆','Instrutores de elite','Formados pelo WSL e pela FPS — a elite do ensino do surf em Portugal.']],
+  },
+  'surf-lagos': {
+    name:'Lagos Surf Club', logo:'Lagos <span>Surf</span> Club',
+    lat:37.097, lon:-8.713,
+    gold:'#FB923C', rgb:'251,146,60', navy:'#0D0600', ocean:'#1A0D00',
+    heroImg:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=85',
+    heroOverlay:'linear-gradient(150deg,rgba(13,6,0,.86) 0%,rgba(13,6,0,.38) 55%,rgba(13,6,0,.76) 100%)',
+    badge:'☀️ Surf & Lifestyle · Lagos · Algarve Dourado',
+    h1:'Sol, ondas e surf<br>no <em>Algarve</em> perfeito',
+    sub:'Lagos combina falésias douradas, águas turquesa e o melhor clima de Portugal. Aprende a surfar com o cenário mais deslumbrante da Europa como pano de fundo.',
+    stats:[['600+','Surfistas'],['10','Anos'],['99%','Satisfação'],['ISA','Certificado']],
+    aboutImg:'https://images.unsplash.com/photo-1559827291-3cd07d93ce11?auto=format&fit=crop&w=800&q=80',
+    aboutBadge:'⭐ 5.0 · +280 avaliações',
+    aboutTag:'Bem-vindo ao Algarve',
+    aboutTitle:'O surf que o Algarve merecia',
+    aboutSub:'Além das praias de turismo, Lagos tem spots de surf incríveis e pouco conhecidos. Grupos familiares, casais e amigos — o pacote perfeito para a vossa aventura algarviana.',
+    feat:[['🌅','Clima perfeito','300 dias de sol por ano e águas até 22°C no verão.'],['👨‍👩‍👧','Para a família toda','Programas para crianças a partir dos 7 anos e adultos de todas as idades.'],['🍹','Lifestyle completo','Yoga ao nascer do sol, SUP ao pôr-do-sol e jantar na praia após a aula.']],
+  },
+  'surf-sagres': {
+    name:'Sagres Wild Surf', logo:'Sagres <span>Wild</span> Surf',
+    lat:37.010, lon:-8.941,
+    gold:'#C084FC', rgb:'192,132,252', navy:'#06030E', ocean:'#0F0820',
+    heroImg:'https://images.unsplash.com/photo-1527089930014-f4ba4ff9c82f?auto=format&fit=crop&w=1920&q=85',
+    heroOverlay:'linear-gradient(150deg,rgba(6,3,14,.92) 0%,rgba(6,3,14,.38) 55%,rgba(6,3,14,.84) 100%)',
+    badge:'🌑 Wild Surf · Sagres · Fim do Mundo',
+    h1:'No fim do mundo<br><em>começa</em> tudo',
+    sub:'Sagres é o ponto mais a sudoeste da Europa. Cabo de São Vicente. Onde os ventos da Costa Vicentina encontram o Atlântico aberto e criam as ondas mais selvagens e autênticas do país.',
+    stats:[['400+','Surfistas'],['7','Anos'],['98%','Satisfação'],['ISA','Certificado']],
+    aboutImg:'https://images.unsplash.com/photo-1484291470158-b8f8d608850d?auto=format&fit=crop&w=800&q=80',
+    aboutBadge:'⭐ 4.9 · +170 avaliações',
+    aboutTag:'A nossa essência',
+    aboutTitle:'Autêntico. Selvagem. Inesquecível.',
+    aboutSub:'Em Sagres não há resorts nem turismo de massa. Há autenticidade pura, por do sol mais dramático da Europa e ondas que te fazem sentir verdadeiramente vivo. Surf como foi inventado.',
+    feat:[['🌑','Fim do mundo real','Cabo de São Vicente — o farol que guiou os navegadores portugueses.'],['🌊','Ondas consistentes','Exposição total ao Atlântico Norte garante surf 350 dias por ano.'],['🔇','Zero turismo de massa','Sagres ainda é um segredo. Partilhamo-lo contigo com orgulho.']],
+  },
+};
+
+const _escolaParam = new URLSearchParams(window.location.search).get('escola') || 'escola-teste';
+const _theme = DEMO_THEMES[_escolaParam] || DEMO_THEMES['escola-teste'];
+
+// ── Apply CSS custom properties immediately ──────────────────────────────────
+const _root = document.documentElement;
+_root.style.setProperty('--gold', _theme.gold);
+_root.style.setProperty('--navy', _theme.navy);
+_root.style.setProperty('--ocean', _theme.ocean);
+
+// Inject targeted CSS overrides for hardcoded rgba(gold) values
+(function(){
+  const s = document.createElement('style');
+  const g = _theme.gold, r = _theme.rgb, n = _theme.navy;
+  s.textContent = `
+    .lb.active,.lb:hover{border-color:${g}!important;color:${g}!important;background:rgba(${r},.08)!important}
+    .btn-primary{background:${g}!important;box-shadow:0 4px 24px rgba(${r},.35)!important;color:${n}!important}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(${r},.5)!important}
+    .nav-cta{background:${g}!important;color:${n}!important}
+    .nav-cta:hover,.nav-cta.active{box-shadow:0 4px 20px rgba(${r},.4)!important;color:${n}!important}
+    .hero-badge{background:rgba(${r},.12)!important;border-color:rgba(${r},.3)!important;color:${g}!important}
+    .hero h1 em{color:${g}!important}
+    .section-tag{color:${g}!important}
+    .stat-num{color:${g}!important}
+    .cb{border-bottom-color:rgba(${r},.15)!important}
+    .about-badge{background:${g}!important;color:${n}!important}
+    .price-card.featured{border-color:rgba(${r},.4)!important}
+    .tag-all{background:rgba(${r},.18)!important;color:${g}!important;border-color:rgba(${r},.3)!important}
+    .footer-logo span,.logo span{color:${g}!important}
+    .hero-ov{background:${_theme.heroOverlay}!important}
+  `;
+  document.head.appendChild(s);
+})();
+
+// ── Apply hero background image immediately ──────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Logo & footer school name
+  document.querySelectorAll('.logo, .footer-logo').forEach(el => { el.innerHTML = _theme.logo; });
+
+  // Hero background
+  const hp = document.getElementById('hero-photo');
+  if (hp) hp.style.backgroundImage = `url('${_theme.heroImg}')`;
+
+  // Hero badge
+  const badge = document.querySelector('.hero-badge');
+  if (badge) badge.textContent = _theme.badge;
+
+  // Apply all text overrides AFTER translations have run
+  setTimeout(() => {
+    // Hero H1 (override data-t content)
+    const h1 = document.querySelector('.hero h1');
+    if (h1) h1.innerHTML = _theme.h1;
+
+    // Hero subtitle
+    const sub = document.querySelector('.hero > .hero-content > p, .hero-content > p');
+    if (sub) sub.textContent = _theme.sub;
+
+    // Hero stats
+    const statNums = document.querySelectorAll('.stat-num');
+    const statLabels = document.querySelectorAll('.stat-label');
+    _theme.stats.forEach(([n,l], i) => {
+      if (statNums[i]) statNums[i].textContent = n;
+      if (statLabels[i]) statLabels[i].textContent = l;
+    });
+
+    // About photo
+    const aboutImg = document.querySelector('.about-photo-wrap img');
+    if (aboutImg) aboutImg.src = _theme.aboutImg;
+
+    // About badge
+    const ab = document.querySelector('.about-badge');
+    if (ab) ab.innerHTML = `<strong>${_theme.aboutBadge.split('·')[0].trim()}</strong><span>${_theme.aboutBadge.split('·')[1]?.trim()||''}</span>`;
+
+    // About section tag, title, subtitle
+    const aboutSection = document.getElementById('sobre');
+    if (aboutSection) {
+      const tag = aboutSection.querySelector('.section-tag');
+      const title = aboutSection.querySelector('.section-title, h2');
+      const desc = aboutSection.querySelector('.section-sub');
+      if (tag) tag.textContent = _theme.aboutTag;
+      if (title) title.textContent = _theme.aboutTitle;
+      if (desc) desc.textContent = _theme.aboutSub;
+
+      // Feature blocks
+      const feats = aboutSection.querySelectorAll('.feature');
+      _theme.feat.forEach(([icon, title, desc], i) => {
+        if (!feats[i]) return;
+        const fi = feats[i].querySelector('.feature-icon');
+        const fh = feats[i].querySelector('h4');
+        const fp = feats[i].querySelector('p');
+        if (fi) fi.textContent = icon;
+        if (fh) fh.textContent = title;
+        if (fp) fp.textContent = desc;
+      });
+    }
+  }, 80);
+});
+
 // ── BOOKING STATE ─────────────────────────────────────────────────────────────
 const booking = { lessonKey:null, lessonPrice:0, lessonPrivate:false, selectedDateKey:null, selectedDateStr:null, time:null };
 const SLOT_AVAIL = {};
+let SCHOOL_SLOTS     = ['08:00','10:30','14:00','16:30'];
+let SCHOOL_MAX_SLOT  = 6;
+let SCHOOL_ID_ACTIVE = _escolaParam;
+
+// ── WEATHER ───────────────────────────────────────────────────────────────────
+let WEATHER_DATA = {};
+async function loadWeather(lat, lon) {
+  if (!lat || !lon) return;
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FLisbon&forecast_days=16`);
+    const d = await r.json();
+    if (d?.daily?.time) {
+      d.daily.time.forEach((date, i) => {
+        WEATHER_DATA[date] = { max: d.daily.temperature_2m_max[i], min: d.daily.temperature_2m_min[i] };
+      });
+      buildCalendar();
+    }
+  } catch(_) {}
+}
+
+// ── MONTH AVAILABILITY ────────────────────────────────────────────────────────
+let MONTH_AVAIL = {}; // { 'YYYY-MM-DD': remainingSpots }
+async function loadMonthAvailability(year, month) {
+  if (!sb) return;
+  const pad = n => String(n).padStart(2,'0');
+  const startDate = `${year}-${pad(month+1)}-01`;
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const endDate = `${year}-${pad(month+1)}-${pad(daysInMonth)}`;
+  try {
+    const { data } = await sb.from('bookings')
+      .select('booking_date,booking_time,num_people')
+      .eq('school_id', SCHOOL_ID_ACTIVE)
+      .gte('booking_date', startDate)
+      .lte('booking_date', endDate)
+      .in('status', ['pending','confirmed']);
+    // Build per-slot usage map
+    const slotUsed = {};
+    (data || []).forEach(b => {
+      const k = `${b.booking_date}|${b.booking_time}`;
+      slotUsed[k] = (slotUsed[k] || 0) + (b.num_people || 1);
+    });
+    // Calculate remaining capacity per day
+    MONTH_AVAIL = {};
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${pad(month+1)}-${pad(d)}`;
+      let used = 0;
+      SCHOOL_SLOTS.forEach(slot => { used += slotUsed[`${dateStr}|${slot}`] || 0; });
+      MONTH_AVAIL[dateStr] = Math.max(0, SCHOOL_MAX_SLOT * SCHOOL_SLOTS.length - used);
+    }
+    buildCalendar();
+  } catch(_) {}
+}
+
+async function loadSchoolConfig() {
+  if (!sb) return;
+  try {
+    const { data } = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
+    if (data) {
+      if (data.time_slots?.length)  SCHOOL_SLOTS    = data.time_slots;
+      if (data.max_per_slot)        SCHOOL_MAX_SLOT  = data.max_per_slot;
+    }
+  } catch(_) {}
+  loadWeather(_theme.lat, _theme.lon);
+  await loadPublicReviews();
+}
+
+async function loadPublicReviews() {
+  if (!sb) return;
+  try {
+    const { data } = await sb.from('reviews')
+      .select('client_name,rating,comment,created_at,school_id')
+      .eq('school_id', SCHOOL_ID_ACTIVE)
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(6);
+    if (!data || data.length === 0) return;
+
+    const grid = document.querySelector('.reviews-grid');
+    if (!grid) return;
+
+    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    grid.innerHTML = data.map(r => {
+      const initial = (r.client_name || '?')[0].toUpperCase();
+      const stars   = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
+      const d       = r.created_at ? new Date(r.created_at) : null;
+      const dateLbl = d ? `${months[d.getMonth()]} ${d.getFullYear()}` : '';
+      const comment = r.comment ? `"${r.comment}"` : '';
+      return `
+        <div class="review-card">
+          <div class="rq">"</div>
+          <div class="review-stars">${stars}</div>
+          <p class="review-text">${comment}</p>
+          <div class="review-author">
+            <div class="review-avatar">${initial}</div>
+            <div><div class="review-name">${r.client_name || 'Cliente'}</div><div class="review-loc">${dateLbl}</div></div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Update average badge
+    const avg = (data.reduce((s, r) => s + (r.rating || 5), 0) / data.length).toFixed(1);
+    const badge = document.querySelector('.about-badge strong');
+    if (badge) badge.textContent = `⭐ ${avg}`;
+  } catch(_) {}
+}
+
+function isPastSlot(timeStr, dateKey) {
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+  if (dateKey !== todayKey) return false;
+  const [h, m] = timeStr.split(':').map(Number);
+  const slotMs = h * 60 + m;
+  const nowMs  = now.getHours() * 60 + now.getMinutes();
+  return slotMs <= nowMs;
+}
 
 function getSlots(dateKey) {
   if (!SLOT_AVAIL[dateKey]) {
-    SLOT_AVAIL[dateKey] = [
-      {t:'08:00', used:Math.floor(Math.random()*5)},
-      {t:'10:30', used:Math.floor(Math.random()*5)},
-      {t:'14:00', used:Math.floor(Math.random()*5)},
-      {t:'16:30', used:Math.floor(Math.random()*5)},
-    ];
+    SLOT_AVAIL[dateKey] = SCHOOL_SLOTS.map(t => ({ t, used: 0 }));
   }
   return SLOT_AVAIL[dateKey];
 }
@@ -1435,13 +1765,31 @@ function buildCalendar() {
     const isToday = date.getTime() === TODAY.getTime();
     const key = `${calYear}-${calMonth}-${d}`;
     const isSelected = booking.selectedDateKey === key;
+    const dateISO = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const wx = WEATHER_DATA[dateISO];
+    const wxHtml = wx ? `<span class="cal-temp">${Math.round(wx.max)}°<span class="cal-temp-min">/${Math.round(wx.min)}°</span></span>` : '';
+    // Availability badge
+    let availHtml = '';
+    if (!isPast) {
+      const rem = MONTH_AVAIL[dateISO];
+      if (rem !== undefined) {
+        const totalCap = SCHOOL_MAX_SLOT * SCHOOL_SLOTS.length;
+        if (rem <= 0) {
+          availHtml = `<span class="cal-avail full">Esgot.</span>`;
+        } else {
+          const cls2 = rem <= Math.ceil(totalCap * 0.3) ? 'low' : 'ok';
+          availHtml = `<span class="cal-avail ${cls2}">${rem} vag.</span>`;
+        }
+      } else {
+        availHtml = `<span class="avail-dot"></span>`;
+      }
+    }
     let cls = 'cal-cell';
     if (isPast) cls += ' past';
     else if (isSelected) cls += ' selected';
     else cls += ' available';
     if (isToday && !isPast) cls += ' today';
-    const dot = !isPast ? `<span class="avail-dot"></span>` : '';
-    grid.innerHTML += `<div class="${cls}" ${!isPast?`onclick="selectCalDate('${key}',${d},${calMonth},${calYear})"`:''}>${d}${dot}</div>`;
+    grid.innerHTML += `<div class="${cls}" ${!isPast?`onclick="selectCalDate('${key}',${d},${calMonth},${calYear})"`:''}>${d}${wxHtml}${availHtml}</div>`;
   }
 }
 
@@ -1449,7 +1797,9 @@ function changeMonth(dir) {
   calMonth += dir;
   if (calMonth < 0) { calMonth=11; calYear--; }
   if (calMonth > 11) { calMonth=0; calYear++; }
+  MONTH_AVAIL = {};
   buildCalendar();
+  loadMonthAvailability(calYear, calMonth);
 }
 
 async function selectCalDate(key, d, m, y) {
@@ -1471,14 +1821,17 @@ function buildSlots(dateKey) {
   const grid = document.getElementById('slots-grid');
   if (!grid) return;
   grid.innerHTML = '';
+  const maxSlot = SCHOOL_MAX_SLOT;
   getSlots(dateKey).forEach(s => {
-    const free = 6 - s.used, full = free === 0, sel = booking.time === s.t;
+    const past = isPastSlot(s.t, dateKey);
+    const free = maxSlot - s.used, full = free <= 0 || past, sel = booking.time === s.t;
     const cls = `slot-card ${full?'full':'available'}${sel?' selected':''}`;
+    const pastLabel = past ? `<div class="slot-badge-full" style="background:rgba(148,163,176,.12);color:var(--gray)">Encerrado</div>` : '';
     grid.innerHTML += `
-      <div class="${cls}" ${!full?`onclick="selectSlot(this,'${s.t}',${free})"`:''}>${full?`<div class="slot-badge-full">${T('slot_full')}</div>`:''}
+      <div class="${cls}" ${!full?`onclick="selectSlot(this,'${s.t}',${free})"`:''}>${full?`${pastLabel || `<div class="slot-badge-full">${T('slot_full')}</div>`}`:''}
         <div class="slot-time">${s.t}</div>
-        <div class="slot-status"><span class="adi"></span>${full?`<span style="color:var(--red)">${T('slot_full')}</span>`:`${free} ${T('slot_available')}`}</div>
-        <div class="slot-vagas">6 ${T('slot_spots')}</div>
+        <div class="slot-status"><span class="adi"></span>${full?(past?`<span style="color:var(--gray)">Encerrado</span>`:`<span style="color:var(--red)">${T('slot_full')}</span>`):`${free} ${T('slot_available')}`}</div>
+        <div class="slot-vagas">${maxSlot} ${T('slot_spots')}</div>
       </div>`;
   });
 }
@@ -1534,9 +1887,11 @@ function resetBookingForm() {
   buildEquipmentRows(1);
   // Reset calendar to current month
   calYear = TODAY.getFullYear(); calMonth = TODAY.getMonth();
-  renderCalendar();
-  // Clear save status
-  const ss = document.getElementById('save-status'); if (ss) { ss.textContent = ''; ss.style.background = 'transparent'; }
+  buildCalendar();
+  // Hide confirmation overlay and restore form elements
+  const cd = document.getElementById('booking-confirm'); if (cd) cd.style.display = 'none';
+  const s4 = document.getElementById('step-4');
+  if (s4) s4.querySelectorAll('.booking-summary,.form-grid,#equipment-rows,.btn-whatsapp,.nav-btns').forEach(el => el.style.display = '');
   goToStep(1);
 }
 
@@ -1572,11 +1927,17 @@ async function loadSlotAvailability(dateKey) {
   try {
     const [year, month, day] = dateKey.split('-').map(Number);
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    const { data } = await sb.rpc('get_slot_availability', { p_date: dateStr });
+    const { data } = await sb.from('bookings')
+      .select('booking_time, num_people')
+      .eq('booking_date', dateStr)
+      .eq('school_id', SCHOOL_ID_ACTIVE)
+      .neq('status', 'cancelled');
     const used = {};
-    (data || []).forEach(r => { used[r.slot_time] = r.booked_people; });
+    (data || []).forEach(r => {
+      used[r.booking_time] = (used[r.booking_time] || 0) + (r.num_people || 1);
+    });
     return used;
-  } catch { return {}; }
+  } catch(e) { return {}; }
 }
 
 // ── WHATSAPP ──────────────────────────────────────────────────────────────────
@@ -1632,30 +1993,48 @@ async function reservarWhatsApp() {
   if (nota) msg += `\n*${T('wa_note')}:* ${nota}\n`;
   msg += `\n${T('wa_closing')}`;
 
+  // ── Show confirmation screen (replaces form content) ──
+  const step4 = document.getElementById('step-4');
+  const confirmDiv = document.getElementById('booking-confirm');
+  const formEls = step4 ? [...step4.querySelectorAll('.booking-summary,.form-grid,#equipment-rows,.btn-whatsapp,.nav-btns')] : [];
+  formEls.forEach(el => el.style.display = 'none');
+  if (confirmDiv) {
+    confirmDiv.style.display = 'block';
+    document.getElementById('booking-confirm-icon').textContent = '⏳';
+    document.getElementById('booking-confirm-title').textContent = 'A guardar reserva...';
+    document.getElementById('booking-confirm-msg').textContent = 'O WhatsApp abriu numa nova aba. Volta aqui para ver o resultado.';
+    document.getElementById('booking-confirm-btn').style.display = 'none';
+    const wrap = document.querySelector('.booking-wrap');
+    if (wrap) wrap.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  function showConfirm(ok, title, msg) {
+    if (!confirmDiv) return;
+    document.getElementById('booking-confirm-icon').textContent = ok ? '✅' : '❌';
+    document.getElementById('booking-confirm-title').style.color = ok ? '#86efac' : '#fca5a5';
+    document.getElementById('booking-confirm-title').textContent = title;
+    document.getElementById('booking-confirm-msg').textContent = msg;
+    document.getElementById('booking-confirm-btn').style.display = ok ? 'inline-block' : 'none';
+    if (!ok) {
+      // Show back button on error so user can try again
+      const backBtn = document.createElement('button');
+      backBtn.textContent = '← Tentar novamente';
+      backBtn.style.cssText = 'margin-left:.7rem;padding:.8rem 1.5rem;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-size:.9rem';
+      backBtn.onclick = () => {
+        formEls.forEach(el => el.style.display = '');
+        confirmDiv.style.display = 'none';
+        const waBtn2 = document.querySelector('.btn-whatsapp');
+        if (waBtn2) { waBtn2.disabled = false; waBtn2.innerHTML = `📱 <span data-t="btn_whatsapp">${T('btn_whatsapp')}</span>`; }
+      };
+      document.getElementById('booking-confirm-btn').after(backBtn);
+    }
+  }
+
   // ── Open WhatsApp SYNCHRONOUSLY (user gesture still active) ──
   window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
 
   // ── Save to Supabase + Email notification ────────────────────
   const waBtn = document.querySelector('.btn-whatsapp');
-  if (waBtn) { waBtn.disabled = true; waBtn.innerHTML = '⏳ A guardar...'; }
-
-  // Fixed toast — always visible even if user switches tabs
-  let toast = document.getElementById('booking-toast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'booking-toast';
-    toast.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;padding:1rem 1.5rem;font-size:1rem;font-weight:600;text-align:center;display:none;transition:opacity .4s';
-    document.body.appendChild(toast);
-  }
-  function showToast(msg, ok) {
-    toast.textContent = msg;
-    toast.style.background = ok ? '#166534' : '#7f1d1d';
-    toast.style.color = ok ? '#bbf7d0' : '#fecaca';
-    toast.style.display = 'block';
-    toast.style.opacity = '1';
-    if (ok) setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => { toast.style.display = 'none'; }, 400); }, 5000);
-  }
-  showToast('⏳ A guardar reserva...', true);
 
   // ── Email backup via FormSubmit (sends to school email) ──────
   try {
@@ -1680,6 +2059,7 @@ async function reservarWhatsApp() {
         _subject: `🏄 Nova Marcação: ${nome} — ${T(booking.lessonKey)} ${booking.selectedDateStr}`,
         message: emailBody,
         _replyto: email || tel,
+        _cc: email || undefined,
         _template: 'table',
       })
     }).catch(() => {}); // email is best-effort, don't block on failure
@@ -1691,7 +2071,7 @@ async function reservarWhatsApp() {
     const p0 = equipment[0] || {};
     if (sb) {
       const fullRow = {
-        school_id:'escola-teste', lesson_type:T(booking.lessonKey),
+        school_id: SCHOOL_ID_ACTIVE, lesson_type:T(booking.lessonKey),
         booking_date:dateStr, booking_time:booking.time, num_people:pess,
         client_name:nome, client_phone:tel, client_email:email||null,
         client_country: country || null,
@@ -1717,17 +2097,17 @@ async function reservarWhatsApp() {
       }
       if (error) {
         console.warn('Supabase save error:', error.code, error.message);
-        showToast(`⚠️ Erro ao guardar (${error.code}): ${error.message}`, false);
+        showConfirm(false, 'Erro ao guardar', `Código: ${error.code} — ${error.message}\n\nO WhatsApp foi aberto. O dono foi notificado.`);
       } else {
-        showToast('✅ Reserva guardada! Aguarda confirmação por WhatsApp.', true);
-        setTimeout(() => resetBookingForm(), 3000);
+        showConfirm(true, 'Reserva guardada!', 'Aguarda confirmação por WhatsApp. Clica em "Nova Marcação" quando quiseres marcar mais.');
+        loadMonthAvailability(calYear, calMonth);
       }
     } else {
-      showToast('⚠️ Sem ligação à base de dados — o dono foi notificado por WhatsApp', false);
+      showConfirm(false, 'Sem ligação à base de dados', 'O WhatsApp foi aberto. O dono foi notificado por WhatsApp.');
     }
   } catch(e) {
     console.warn('Supabase save failed', e);
-    showToast(`⚠️ Erro: ${e.message}`, false);
+    showConfirm(false, 'Erro inesperado', e.message);
   }
   if (waBtn) { waBtn.disabled = false; waBtn.innerHTML = `📱 <span data-t="btn_whatsapp">${T('btn_whatsapp')}</span>`; }
 }
@@ -1863,6 +2243,8 @@ setLang('pt');
 buildTideGrid();
 buildCalendar();
 updateNextTide();
+loadSchoolConfig(); // loads time_slots + max_per_slot from Supabase, then loadPublicReviews
+loadMonthAvailability(calYear, calMonth);
 updateClock();
 fetchConditions(getBeach());
 setInterval(updateClock, 1000);
