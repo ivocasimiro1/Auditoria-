@@ -315,13 +315,13 @@
 
     /* Toast notification */
     .toast {
-      position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
-      padding: .85rem 1.3rem; border-radius: 12px; font-size: .9rem; font-weight: 500;
-      transform: translateY(100px); opacity: 0;
+      position: fixed; top: 1.2rem; left: 50%; transform: translateX(-50%) translateY(-80px);
+      z-index: 9999; padding: .85rem 1.3rem; border-radius: 12px;
+      font-size: .9rem; font-weight: 500; opacity: 0;
       transition: transform .3s, opacity .3s;
-      max-width: 320px;
+      max-width: calc(100vw - 2rem); white-space: nowrap;
     }
-    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
     .toast-success { background: rgba(34,197,94,.2); border: 1px solid rgba(34,197,94,.4); color: #86efac; }
     .toast-error   { background: rgba(239,68,68,.2); border: 1px solid rgba(239,68,68,.4); color: #fca5a5; }
 
@@ -787,7 +787,7 @@
       <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.25rem">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
           <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--gray)">⚙️ Configurações da Escola</div>
-          <button class="btn-analytics" style="font-size:.78rem" onclick="saveSchoolSettings()">💾 Guardar</button>
+          <button class="btn-analytics" style="font-size:.78rem" data-save-btn onclick="saveSchoolSettings()">💾 Guardar</button>
         </div>
         <div class="settings-grid">
           <div class="form-group">
@@ -830,7 +830,7 @@
           </div>
           <!-- Save button repeated at bottom for mobile -->
           <div class="form-group" style="grid-column:span 2;margin-top:.25rem">
-            <button onclick="saveSchoolSettings()" style="width:100%;padding:.75rem;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;border-radius:10px;color:white;font-weight:700;font-size:.95rem;cursor:pointer;font-family:Inter,sans-serif;letter-spacing:.02em">💾 Guardar Configurações</button>
+            <button data-save-btn onclick="saveSchoolSettings()" style="width:100%;padding:.75rem;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;border-radius:10px;color:white;font-weight:700;font-size:.95rem;cursor:pointer;font-family:Inter,sans-serif;letter-spacing:.02em">💾 Guardar Configurações</button>
           </div>
         </div>
       </div>
@@ -1951,56 +1951,99 @@
     cfgLessonTypes.splice(i,1); renderCfgLessons();
   }
 
-  async function saveSchoolSettings() {
-    const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
-    if (!school) { showToast('Escola não encontrada', 'error'); return; }
-    const lessonTypesData = cfgLessonTypes.map(lt => ({
-      name: lt.name, price: lt.price, max_pax: lt.maxPax || 6, icon: lt.icon||'🏄'
-    }));
-    const payload = {
-      id:            school.id,
-      name:          school.name,
-      status:        school.status || 'active',
-      wa_number:     document.getElementById('cfg-wa').value.trim().replace(/\D/g,'') || school.wa_number,
-      max_per_slot:  parseInt(document.getElementById('cfg-maxslot').value) || school.max_per_slot,
-      meeting_point: document.getElementById('cfg-meeting').value.trim() || school.meeting_point,
-      time_slots:    cfgSlots,
-      lesson_types:  lessonTypesData,
-      working_days:  cfgWorkingDays,
-      updated_at:    new Date().toISOString(),
-    };
-    let { error } = await sb.from('schools').upsert(payload);
-    // Cascade retry: remove unsupported columns one by one if they don't exist in DB yet
-    if (error?.code === '42703' || error?.message?.includes('working_days') || error?.message?.includes('column')) {
-      const { working_days, ...p2 } = payload;
-      ({ error } = await sb.from('schools').upsert(p2));
-      if (!error) localStorage.setItem(`surfbook_wdays_${school.id}`, JSON.stringify(cfgWorkingDays));
-    }
-    if (error?.code === '42703' || error?.message?.includes('lesson_types') || error?.message?.includes('column')) {
-      const { lesson_types, working_days, ...p3 } = payload;
-      ({ error } = await sb.from('schools').upsert(p3));
-      if (!error) {
-        localStorage.setItem(`surfbook_wdays_${school.id}`, JSON.stringify(cfgWorkingDays));
-        localStorage.setItem(`surfbook_ltypes_${school.id}`, JSON.stringify(lessonTypesData));
+  function setSaveBtnState(state) {
+    document.querySelectorAll('[data-save-btn]').forEach(btn => {
+      if (state === 'loading') {
+        btn.disabled = true;
+        btn.dataset.orig = btn.textContent;
+        btn.textContent = '⏳ A guardar...';
+        btn.style.opacity = '.7';
+      } else if (state === 'ok') {
+        btn.disabled = false;
+        btn.textContent = '✅ Guardado!';
+        btn.style.opacity = '';
+        btn.style.background = 'rgba(34,197,94,.25)';
+        setTimeout(() => {
+          btn.textContent = btn.dataset.orig || '💾 Guardar';
+          btn.style.background = '';
+        }, 2500);
+      } else {
+        btn.disabled = false;
+        btn.textContent = btn.dataset.orig || '💾 Guardar';
+        btn.style.opacity = '';
+        btn.style.background = '';
       }
-    }
-    if (error) { showToast('Erro ao guardar: ' + error.message, 'error'); return; }
-    // Sync local SCHOOLS config
-    Object.assign(school, {
-      wa_number: payload.wa_number, max_per_slot: payload.max_per_slot,
-      meeting_point: payload.meeting_point, slots: payload.time_slots,
-      lesson_types: lessonTypesData, working_days: cfgWorkingDays,
     });
-    // Sync LESSON_PRICES and manual booking dropdown
-    LESSON_PRICES = {};
-    cfgLessonTypes.forEach(lt => { LESSON_PRICES[lt.name] = { price: lt.price, perPerson: lt.maxPax > 1 }; });
-    const mbLesson = document.getElementById('mb-lesson');
-    if (mbLesson) {
-      const prev = mbLesson.value;
-      mbLesson.innerHTML = cfgLessonTypes.map(lt => `<option value="${lt.name}">${lt.name}</option>`).join('');
-      if (LESSON_PRICES[prev]) mbLesson.value = prev;
+  }
+
+  async function saveSchoolSettings() {
+    try {
+      const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
+      if (!school) { showToast('Escola não encontrada', 'error'); return; }
+      setSaveBtnState('loading');
+      const lessonTypesData = cfgLessonTypes.map(lt => ({
+        name: lt.name, price: lt.price, max_pax: lt.maxPax || 6, icon: lt.icon||'🏄'
+      }));
+      const payload = {
+        id:            school.id,
+        name:          school.name,
+        status:        school.status || 'active',
+        wa_number:     document.getElementById('cfg-wa').value.trim().replace(/\D/g,'') || school.wa_number,
+        max_per_slot:  parseInt(document.getElementById('cfg-maxslot').value) || school.max_per_slot,
+        meeting_point: document.getElementById('cfg-meeting').value.trim() || school.meeting_point,
+        time_slots:    cfgSlots,
+        lesson_types:  lessonTypesData,
+        working_days:  cfgWorkingDays,
+        updated_at:    new Date().toISOString(),
+      };
+      let { error } = await sb.from('schools').upsert(payload);
+      // Cascade retry: remove columns that don't exist in DB yet
+      if (error) {
+        const msg = error.message || '';
+        if (error.code === '42703' || msg.includes('working_days') || msg.includes('lesson_types') || msg.includes('column')) {
+          const { working_days, ...p2 } = payload;
+          ({ error } = await sb.from('schools').upsert(p2));
+          if (!error) localStorage.setItem(`surfbook_wdays_${school.id}`, JSON.stringify(cfgWorkingDays));
+        }
+      }
+      if (error) {
+        const msg = error.message || '';
+        if (error.code === '42703' || msg.includes('lesson_types') || msg.includes('column')) {
+          const { lesson_types, working_days, ...p3 } = payload;
+          ({ error } = await sb.from('schools').upsert(p3));
+          if (!error) {
+            localStorage.setItem(`surfbook_wdays_${school.id}`, JSON.stringify(cfgWorkingDays));
+            localStorage.setItem(`surfbook_ltypes_${school.id}`, JSON.stringify(lessonTypesData));
+          }
+        }
+      }
+      if (error) {
+        setSaveBtnState('reset');
+        showToast('Erro ao guardar: ' + (error.message || JSON.stringify(error)), 'error');
+        return;
+      }
+      // Sync local SCHOOLS config
+      Object.assign(school, {
+        wa_number: payload.wa_number, max_per_slot: payload.max_per_slot,
+        meeting_point: payload.meeting_point, slots: payload.time_slots,
+        lesson_types: lessonTypesData, working_days: cfgWorkingDays,
+      });
+      // Sync LESSON_PRICES and manual booking dropdown
+      LESSON_PRICES = {};
+      cfgLessonTypes.forEach(lt => { LESSON_PRICES[lt.name] = { price: lt.price, perPerson: lt.maxPax > 1 }; });
+      const mbLesson = document.getElementById('mb-lesson');
+      if (mbLesson) {
+        const prev = mbLesson.value;
+        mbLesson.innerHTML = cfgLessonTypes.map(lt => `<option value="${lt.name}">${lt.name}</option>`).join('');
+        if (LESSON_PRICES[prev]) mbLesson.value = prev;
+      }
+      setSaveBtnState('ok');
+      showToast('Configurações guardadas ✓ — preços, horários e dias actualizados no site', 'success');
+    } catch(e) {
+      setSaveBtnState('reset');
+      showToast('Erro inesperado: ' + e.message, 'error');
+      console.error('saveSchoolSettings error:', e);
     }
-    showToast('Configurações guardadas ✓ — preços, horários e dias actualizados no site', 'success');
   }
 
   async function updateReviewsBadge() {
