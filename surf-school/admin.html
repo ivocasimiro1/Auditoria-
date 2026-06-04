@@ -377,6 +377,8 @@
     .cal-dot-confirmed { background: var(--cyan); }
     .cal-dot-completed { background: var(--green); }
     .cal-count { font-size: .6rem; color: var(--gray); font-weight: 600; }
+    .cal-wx { font-size: .56rem; font-weight: 600; color: rgba(255,180,50,.8); line-height: 1; white-space: nowrap; }
+    .cal-wx-min { color: rgba(110,200,255,.7); font-weight: 500; }
 
     /* Slot availability — redesigned */
     .slot-avail-card {
@@ -1171,6 +1173,22 @@
   // Apply on load from URL param (pre-login branding) and on school switch
   applyAdminTheme(new URLSearchParams(window.location.search).get('escola') || 'escola-teste');
 
+  // ── WEATHER ──────────────────────────────────────────────────────────────────
+  let WEATHER_DATA = {};
+  async function loadWeather(lat, lon) {
+    if (!lat || !lon) return;
+    try {
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FLisbon&forecast_days=16`);
+      const d = await r.json();
+      if (d?.daily?.time) {
+        d.daily.time.forEach((date, i) => {
+          WEATHER_DATA[date] = { max: d.daily.temperature_2m_max[i], min: d.daily.temperature_2m_min[i] };
+        });
+        buildCalendar();
+      }
+    } catch(_) {}
+  }
+
   const { createClient } = supabase;
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1184,8 +1202,9 @@
       name:          'Escola Surf Teste',
       wa_number:     '351962800400',
       meeting_point: 'Encontramo-nos na Praia de Arrifana, junto ao acesso principal às escadas, 15 minutos antes da aula.',
-      max_per_slot:  6,   // max alunos por slot horário
+      max_per_slot:  6,
       slots:         ['08:00','10:30','14:00','16:30'],
+      lat: 37.297, lon: -8.865,
     },
     {
       id:            'surf-arrifana',
@@ -1194,6 +1213,7 @@
       meeting_point: 'Praia de Arrifana, junto ao acesso principal.',
       max_per_slot:  8,
       slots:         ['08:00','10:00','14:00','16:00'],
+      lat: 37.297, lon: -8.865,
     },
     {
       id:            'surf-nazare',
@@ -1202,6 +1222,7 @@
       meeting_point: 'Praia da Nazaré Norte, junto ao posto de socorros.',
       max_per_slot:  8,
       slots:         ['08:00','10:30','14:00','16:30'],
+      lat: 39.601, lon: -9.070,
     },
     {
       id:            'surf-peniche',
@@ -1210,6 +1231,7 @@
       meeting_point: 'Praia de Peniche de Cima, junto à escola.',
       max_per_slot:  10,
       slots:         ['09:00','11:00','14:00','16:00'],
+      lat: 39.355, lon: -9.380,
     },
     {
       id:            'surf-lagos',
@@ -1218,6 +1240,7 @@
       meeting_point: 'Praia de Meia Praia, junto ao bar de apoio.',
       max_per_slot:  6,
       slots:         ['08:30','10:30','14:30','16:30'],
+      lat: 37.097, lon: -8.713,
     },
     {
       id:            'surf-sagres',
@@ -1226,6 +1249,7 @@
       meeting_point: 'Praia do Tonel, Sagres, junto ao estacionamento.',
       max_per_slot:  6,
       slots:         ['08:00','10:00','14:00','16:00'],
+      lat: 37.010, lon: -8.941,
     },
   ];
 
@@ -1388,6 +1412,7 @@
     document.getElementById('topbar-logo').innerHTML =
       schoolId ? `${first} <span>${last}</span>` : `<span>Todas</span> as Escolas`;
     applyAdminTheme(schoolId || 'escola-teste');
+    if (school?.lat) { WEATHER_DATA = {}; loadWeather(school.lat, school.lon); }
   }
 
   // ── DATA ──────────────────────────────────────────────────────
@@ -2227,8 +2252,11 @@
         dm && dm.pending ? 'cal-has-pending' : '',
       ].filter(Boolean).join(' ');
 
+      const wx = WEATHER_DATA[dateStr];
+      const wxHtml = wx ? `<div class="cal-wx">${Math.round(wx.max)}°<span class="cal-wx-min">/${Math.round(wx.min)}°</span></div>` : '';
       html += `<div class="${cls}" onclick="selectCalDay('${dateStr}')">
         <div class="cal-day-num">${day}</div>
+        ${wxHtml}
         ${dots ? `<div class="cal-dots">${dots}</div>` : ''}
         ${total > 0 ? `<div class="cal-count">${total}</div>` : ''}
       </div>`;
