@@ -1682,9 +1682,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── BOOKING STATE ─────────────────────────────────────────────────────────────
 const booking = { lessonKey:null, lessonPrice:0, lessonPrivate:false, selectedDateKey:null, selectedDateStr:null, time:null };
 const SLOT_AVAIL = {};
-let SCHOOL_SLOTS     = ['08:00','10:30','14:00','16:30'];
-let SCHOOL_MAX_SLOT  = 6;
-let SCHOOL_ID_ACTIVE = _escolaParam;
+let SCHOOL_SLOTS        = ['08:00','10:30','14:00','16:30'];
+let SCHOOL_MAX_SLOT     = 6;
+let SCHOOL_ID_ACTIVE    = _escolaParam;
+let SCHOOL_WORKING_DAYS = null; // null = all days; array [0-6] (0=Sun) when set
 
 // ── WEATHER ───────────────────────────────────────────────────────────────────
 let WEATHER_DATA = {};
@@ -1735,38 +1736,52 @@ async function loadMonthAvailability(year, month) {
   } catch(_) {}
 }
 
-// Maps Portuguese lesson names to lesson card keys
-const LESSON_KEY_MAP = {
-  'Iniciante':'l1_name','Intermédio':'l2_name','Aula Privada':'l3_name','Bodyboard':'l4_name'
-};
+// Maps Portuguese lesson names → booking key (default cards)
+const LESSON_KEY_MAP  = { 'Iniciante':'l1_name','Intermédio':'l2_name','Aula Privada':'l3_name','Bodyboard':'l4_name' };
+const LESSON_ICON_MAP = { 'Iniciante':'🌊','Intermédio':'🏄','Aula Privada':'⭐','Bodyboard':'🌀','Stand Up Paddle':'🚣' };
+
+function renderLessonCards(lessonTypes) {
+  const container = document.querySelector('.lesson-options');
+  if (!container || !lessonTypes?.length) return;
+  container.innerHTML = lessonTypes.map(lt => {
+    const key  = LESSON_KEY_MAP[lt.name] || lt.name;
+    const icon = lt.icon || LESSON_ICON_MAP[lt.name] || '🏄';
+    const isDefault  = !!LESSON_KEY_MAP[lt.name];
+    const isPrivate  = lt.max_pax === 1;
+    const nameHtml   = isDefault
+      ? `<div class="opt-name" data-t="${key}"></div>`
+      : `<div class="opt-name">${lt.name}</div>`;
+    const unitKey    = isPrivate ? 'ps' : 'pp';
+    return `<div class="lesson-option" onclick="selectLesson(this,'${key}',${lt.price},${lt.price})">
+      <span class="opt-icon">${icon}</span>${nameHtml}
+      <div class="opt-price">€${lt.price}/<span data-t="${unitKey}">${T(unitKey)}</span></div>
+    </div>`;
+  }).join('');
+  // Re-apply translations to data-t elements
+  container.querySelectorAll('[data-t]').forEach(el => { el.textContent = T(el.dataset.t); });
+}
 
 async function loadSchoolConfig() {
   if (!sb) return;
   try {
-    const { data } = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number,lesson_types').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
+    const { data } = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number,lesson_types,working_days').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
     if (data) {
-      if (data.time_slots?.length) SCHOOL_SLOTS   = data.time_slots;
-      if (data.max_per_slot)       SCHOOL_MAX_SLOT = data.max_per_slot;
+      if (data.time_slots?.length)  SCHOOL_SLOTS    = data.time_slots;
+      if (data.max_per_slot)        SCHOOL_MAX_SLOT  = data.max_per_slot;
+      // Working days
+      if (data.working_days?.length) {
+        SCHOOL_WORKING_DAYS = data.working_days;
+      } else {
+        const local = localStorage.getItem(`surfbook_wdays_${SCHOOL_ID_ACTIVE}`);
+        if (local) try { SCHOOL_WORKING_DAYS = JSON.parse(local); } catch(_) {}
+      }
+      // Lesson types
       if (data.lesson_types?.length) {
-        // Update lesson card prices from school config
-        data.lesson_types.forEach(lt => {
-          const key = LESSON_KEY_MAP[lt.name];
-          if (!key) return;
-          const isPrivate = lt.max_pax === 1;
-          const card = document.querySelector(`.lesson-option[onclick*="'${key}'"]`);
-          if (!card) return;
-          // Update onclick price
-          card.setAttribute('onclick', `selectLesson(this,'${key}',${lt.price},${lt.price})`);
-          // Update price display
-          const priceEl = card.querySelector('.opt-price');
-          if (priceEl) {
-            const unit = isPrivate ? T('ps') : T('pp');
-            priceEl.innerHTML = `€${lt.price}/<span data-t="${isPrivate?'ps':'pp'}">${unit}</span>`;
-          }
-        });
+        renderLessonCards(data.lesson_types);
       }
     }
   } catch(_) {}
+  if (SCHOOL_WORKING_DAYS) buildCalendar();
   loadWeather(_theme.lat, _theme.lon);
   await loadPublicReviews();
 }
@@ -1847,14 +1862,16 @@ function buildCalendar() {
     const date = new Date(calYear, calMonth, d); date.setHours(0,0,0,0);
     const isPast = date < TODAY;
     const isToday = date.getTime() === TODAY.getTime();
+    const dow = date.getDay(); // 0=Sun..6=Sat
+    const isClosedDay = SCHOOL_WORKING_DAYS && !SCHOOL_WORKING_DAYS.includes(dow);
     const key = `${calYear}-${calMonth}-${d}`;
     const isSelected = booking.selectedDateKey === key;
     const dateISO = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const wx = WEATHER_DATA[dateISO];
     const wxHtml = wx ? `<span class="cal-temp">${Math.round(wx.max)}°<span class="cal-temp-min">/${Math.round(wx.min)}°</span></span>` : '';
-    // Availability badge
+    // Availability badge — skip for past/closed days
     let availHtml = '';
-    if (!isPast) {
+    if (!isPast && !isClosedDay) {
       const rem = MONTH_AVAIL[dateISO];
       if (rem !== undefined) {
         const totalCap = SCHOOL_MAX_SLOT * SCHOOL_SLOTS.length;
@@ -1869,11 +1886,12 @@ function buildCalendar() {
       }
     }
     let cls = 'cal-cell';
-    if (isPast) cls += ' past';
+    if (isPast || isClosedDay) cls += ' past';
     else if (isSelected) cls += ' selected';
     else cls += ' available';
-    if (isToday && !isPast) cls += ' today';
-    grid.innerHTML += `<div class="${cls}" ${!isPast?`onclick="selectCalDate('${key}',${d},${calMonth},${calYear})"`:''}>${d}${wxHtml}${availHtml}</div>`;
+    if (isToday && !isPast && !isClosedDay) cls += ' today';
+    const clickable = !isPast && !isClosedDay;
+    grid.innerHTML += `<div class="${cls}" ${clickable?`onclick="selectCalDate('${key}',${d},${calMonth},${calYear})"`:''}>${d}${wxHtml}${availHtml}</div>`;
   }
 }
 

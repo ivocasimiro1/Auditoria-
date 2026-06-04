@@ -812,9 +812,21 @@
             </div>
           </div>
           <div class="form-group" style="grid-column:span 2">
-            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Preços das Modalidades</label>
-            <div style="display:flex;flex-direction:column;gap:.4rem" id="cfg-prices-list"></div>
-            <div style="font-size:.72rem;color:var(--gray);margin-top:.35rem">💡 Alterações de preço reflectem-se automaticamente no site de reservas ao guardar.</div>
+            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Dias de Funcionamento</label>
+            <div id="cfg-days-list" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem"></div>
+            <div style="display:flex;gap:.35rem;flex-wrap:wrap">
+              <button onclick="cfgSetDays([1,2,3,4,5,6,0])" style="font-size:.7rem;padding:.25rem .55rem;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--gray);cursor:pointer;font-family:Inter,sans-serif">Semana toda</button>
+              <button onclick="cfgSetDays([1,2,3,4,5])" style="font-size:.7rem;padding:.25rem .55rem;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--gray);cursor:pointer;font-family:Inter,sans-serif">Seg–Sex</button>
+              <button onclick="cfgSetDays([6,0])" style="font-size:.7rem;padding:.25rem .55rem;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--gray);cursor:pointer;font-family:Inter,sans-serif">Sáb–Dom</button>
+              <button onclick="cfgSetDays([4,5,6,0,1])" style="font-size:.7rem;padding:.25rem .55rem;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--gray);cursor:pointer;font-family:Inter,sans-serif">Qui–Seg</button>
+            </div>
+            <div style="font-size:.72rem;color:var(--gray);margin-top:.35rem">Os dias desactivados ficam bloqueados no calendário de reservas.</div>
+          </div>
+          <div class="form-group" style="grid-column:span 2">
+            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Modalidades e Preços</label>
+            <div id="cfg-lessons-list" style="display:flex;flex-direction:column;gap:.35rem;margin-bottom:.5rem"></div>
+            <button onclick="cfgAddLesson()" style="background:rgba(0,207,253,.08);border:1px dashed rgba(0,207,253,.35);color:var(--cyan);border-radius:8px;padding:.4rem .85rem;font-size:.8rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;align-self:flex-start">+ Adicionar Modalidade</button>
+            <div style="font-size:.72rem;color:var(--gray);margin-top:.4rem">💡 Nome, preço e tipo (por pessoa / preço fixo). Reflectem-se no site de reservas ao guardar.</div>
           </div>
         </div>
       </div>
@@ -1828,22 +1840,18 @@
     document.getElementById('cfg-meeting').value = school.meeting_point  || '';
     cfgSlots = [...(school.slots || ['08:00','10:30','14:00','16:30'])];
     renderCfgSlots();
-    // Render price rows
-    const priceList = document.getElementById('cfg-prices-list');
-    if (priceList) {
-      priceList.innerHTML = Object.entries(LESSON_PRICES).map(([name, lp]) => {
-        const safeId = name.replace(/[^a-zA-Z0-9]/g,'_');
-        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.4rem .75rem;background:rgba(255,255,255,.04);border-radius:8px;gap:.5rem">
-          <span style="font-size:.85rem;color:var(--white);flex:1">${name}</span>
-          <span style="font-size:.7rem;color:var(--gray)">${lp.perPerson ? 'por pessoa' : 'preço fixo'}</span>
-          <div style="display:flex;align-items:center;gap:.3rem">
-            <span style="font-size:.8rem;color:var(--gray)">€</span>
-            <input type="number" id="cfg-price-${safeId}" min="1" step="1" value="${lp.price}"
-              style="width:66px;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:6px;padding:.3rem .45rem;color:var(--white);font-family:Inter,sans-serif;font-size:.88rem;outline:none;text-align:center;color-scheme:dark" />
-          </div>
-        </div>`;
-      }).join('');
-    }
+    // Working days — from school object or localStorage fallback
+    const wdSaved = school.working_days || (() => {
+      try { const v = localStorage.getItem(`surfbook_wdays_${school.id}`); return v ? JSON.parse(v) : null; } catch(_) { return null; }
+    })();
+    cfgWorkingDays = wdSaved?.length ? [...wdSaved] : [0,1,2,3,4,5,6];
+    renderCfgDays();
+    // Lesson types — from school object or LESSON_PRICES fallback
+    const lt = school.lesson_types;
+    cfgLessonTypes = lt?.length
+      ? lt.map(x => ({ name:x.name, price:x.price, perPerson:x.max_pax!==1, icon:x.icon||CFG_DEFAULT_ICONS[x.name]||'🏄' }))
+      : Object.entries(LESSON_PRICES).map(([name,lp]) => ({ name, price:lp.price, perPerson:lp.perPerson, icon:CFG_DEFAULT_ICONS[name]||'🏄' }));
+    renderCfgLessons();
   }
 
   function renderCfgSlots() {
@@ -1862,16 +1870,79 @@
 
   function cfgRemoveSlot(s) { cfgSlots = cfgSlots.filter(x => x !== s); renderCfgSlots(); }
 
+  // ── WORKING DAYS ──────────────────────────────────────────────────────────────
+  let cfgWorkingDays = [0,1,2,3,4,5,6]; // 0=Sun, 1=Mon … 6=Sat
+  const CFG_DAY_LABELS = [{d:1,l:'Seg'},{d:2,l:'Ter'},{d:3,l:'Qua'},{d:4,l:'Qui'},{d:5,l:'Sex'},{d:6,l:'Sáb'},{d:0,l:'Dom'}];
+  function renderCfgDays() {
+    const el = document.getElementById('cfg-days-list');
+    if (!el) return;
+    el.innerHTML = CFG_DAY_LABELS.map(({d,l}) => {
+      const on = cfgWorkingDays.includes(d);
+      return `<button onclick="toggleCfgDay(${d})"
+        style="padding:.38rem .72rem;border-radius:8px;border:1px solid ${on?'var(--cyan)':'var(--border)'};
+        background:${on?'rgba(0,207,253,.15)':'rgba(255,255,255,.04)'};
+        color:${on?'var(--cyan)':'var(--gray)'};font-size:.82rem;font-weight:${on?700:500};
+        cursor:pointer;font-family:Inter,sans-serif;min-width:46px;transition:all .12s">${l}</button>`;
+    }).join('');
+  }
+  function toggleCfgDay(d) {
+    if (cfgWorkingDays.includes(d)) {
+      if (cfgWorkingDays.length<=1) { showToast('Mínimo de 1 dia de funcionamento','error'); return; }
+      cfgWorkingDays = cfgWorkingDays.filter(x=>x!==d);
+    } else { cfgWorkingDays.push(d); }
+    renderCfgDays();
+  }
+  function cfgSetDays(days) { cfgWorkingDays = [...days]; renderCfgDays(); }
+
+  // ── LESSON TYPES EDITOR ───────────────────────────────────────────────────────
+  let cfgLessonTypes = [];
+  const CFG_DEFAULT_ICONS = { 'Iniciante':'🌊','Intermédio':'🏄','Aula Privada':'⭐','Bodyboard':'🌀','Stand Up Paddle':'🚣' };
+  const CFG_ICON_OPTIONS  = ['🌊','🏄','⭐','🌀','🚣','🧘','🏊','🪸','🎿','🎯'];
+  function renderCfgLessons() {
+    const list = document.getElementById('cfg-lessons-list');
+    if (!list) return;
+    list.innerHTML = cfgLessonTypes.map((lt,i) => `
+      <div style="display:flex;align-items:center;gap:.4rem;padding:.4rem .55rem;background:rgba(255,255,255,.04);border-radius:8px">
+        <select onchange="cfgLessonTypes[${i}].icon=this.value"
+          style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:.25rem .3rem;color:var(--white);font-size:.95rem;outline:none;color-scheme:dark;width:50px">
+          ${CFG_ICON_OPTIONS.map(ic=>`<option value="${ic}"${(lt.icon||'🏄')===ic?' selected':''}>${ic}</option>`).join('')}
+        </select>
+        <input type="text" value="${lt.name.replace(/"/g,'&quot;')}" placeholder="Nome da modalidade"
+          oninput="cfgLessonTypes[${i}].name=this.value"
+          style="flex:1;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:.35rem .6rem;color:var(--white);font-family:Inter,sans-serif;font-size:.84rem;outline:none;color-scheme:dark" />
+        <div style="display:flex;align-items:center;gap:.25rem;flex-shrink:0">
+          <span style="font-size:.78rem;color:var(--gray)">€</span>
+          <input type="number" min="1" step="1" value="${lt.price}" oninput="cfgLessonTypes[${i}].price=parseFloat(this.value)||lt.price"
+            style="width:60px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:.35rem .4rem;color:var(--white);font-family:Inter,sans-serif;font-size:.84rem;outline:none;text-align:center;color-scheme:dark" />
+        </div>
+        <button onclick="cfgLessonTypes[${i}].perPerson=!cfgLessonTypes[${i}].perPerson;renderCfgLessons()"
+          title="${lt.perPerson?'Clica para mudar para preço fixo':'Clica para mudar para por pessoa'}"
+          style="font-size:.68rem;padding:.3rem .48rem;border-radius:6px;border:1px solid ${lt.perPerson?'rgba(0,207,253,.3)':'rgba(251,146,60,.3)'};
+          background:${lt.perPerson?'rgba(0,207,253,.1)':'rgba(251,146,60,.1)'};
+          color:${lt.perPerson?'var(--cyan)':'#fb923c'};cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap;min-width:70px;flex-shrink:0">
+          ${lt.perPerson?'👥 /pessoa':'1️⃣ fixo'}
+        </button>
+        <button onclick="cfgRemoveLesson(${i})"
+          style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#fca5a5;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:.78rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
+      </div>`).join('');
+  }
+  function cfgAddLesson() {
+    cfgLessonTypes.push({ name:'Nova Modalidade', price:35, perPerson:true, icon:'🏄' });
+    renderCfgLessons();
+    const inputs = document.querySelectorAll('#cfg-lessons-list input[type="text"]');
+    if (inputs.length) { const last=inputs[inputs.length-1]; last.focus(); last.select(); }
+  }
+  function cfgRemoveLesson(i) {
+    if (cfgLessonTypes.length<=1) { showToast('Deve ter pelo menos uma modalidade','error'); return; }
+    cfgLessonTypes.splice(i,1); renderCfgLessons();
+  }
+
   async function saveSchoolSettings() {
     const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
     if (!school) { showToast('Escola não encontrada', 'error'); return; }
-    // Build lesson_types from price inputs
-    const lessonTypesData = Object.entries(LESSON_PRICES).map(([name, lp]) => {
-      const safeId = name.replace(/[^a-zA-Z0-9]/g,'_');
-      const el = document.getElementById(`cfg-price-${safeId}`);
-      const price = el ? (parseFloat(el.value) || lp.price) : lp.price;
-      return { name, price, max_pax: lp.perPerson ? (school.max_per_slot || 6) : 1 };
-    });
+    const lessonTypesData = cfgLessonTypes.map(lt => ({
+      name: lt.name, price: lt.price, max_pax: lt.perPerson ? (school.max_per_slot||6) : 1, icon: lt.icon||'🏄'
+    }));
     const payload = {
       id:            school.id,
       name:          school.name,
@@ -1881,14 +1952,33 @@
       meeting_point: document.getElementById('cfg-meeting').value.trim() || school.meeting_point,
       time_slots:    cfgSlots,
       lesson_types:  lessonTypesData,
+      working_days:  cfgWorkingDays,
       updated_at:    new Date().toISOString(),
     };
-    const { error } = await sb.from('schools').upsert(payload);
+    let { error } = await sb.from('schools').upsert(payload);
+    // Retry without working_days if column not yet created in DB
+    if (error?.code === '42703' || error?.message?.includes('working_days')) {
+      const { working_days, ...payloadFallback } = payload;
+      ({ error } = await sb.from('schools').upsert(payloadFallback));
+      if (!error) localStorage.setItem(`surfbook_wdays_${school.id}`, JSON.stringify(cfgWorkingDays));
+    }
     if (error) { showToast('Erro ao guardar: ' + error.message, 'error'); return; }
-    // Update local SCHOOLS config and LESSON_PRICES
-    Object.assign(school, { wa_number: payload.wa_number, max_per_slot: payload.max_per_slot, meeting_point: payload.meeting_point, slots: payload.time_slots });
-    lessonTypesData.forEach(lt => { if (LESSON_PRICES[lt.name]) LESSON_PRICES[lt.name].price = lt.price; });
-    showToast('Configurações guardadas ✓ — preços e horários actualizados no site', 'success');
+    // Sync local SCHOOLS config
+    Object.assign(school, {
+      wa_number: payload.wa_number, max_per_slot: payload.max_per_slot,
+      meeting_point: payload.meeting_point, slots: payload.time_slots,
+      lesson_types: lessonTypesData, working_days: cfgWorkingDays,
+    });
+    // Sync LESSON_PRICES and manual booking dropdown
+    LESSON_PRICES = {};
+    cfgLessonTypes.forEach(lt => { LESSON_PRICES[lt.name] = { price: lt.price, perPerson: lt.perPerson }; });
+    const mbLesson = document.getElementById('mb-lesson');
+    if (mbLesson) {
+      const prev = mbLesson.value;
+      mbLesson.innerHTML = cfgLessonTypes.map(lt => `<option value="${lt.name}">${lt.name}</option>`).join('');
+      if (LESSON_PRICES[prev]) mbLesson.value = prev;
+    }
+    showToast('Configurações guardadas ✓ — preços, horários e dias actualizados no site', 'success');
   }
 
   async function updateReviewsBadge() {
