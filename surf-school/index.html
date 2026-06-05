@@ -1686,6 +1686,7 @@ let SCHOOL_SLOTS        = ['08:00','10:30','14:00','16:30'];
 let SCHOOL_MAX_SLOT     = 6;
 let SCHOOL_ID_ACTIVE    = _escolaParam;
 let SCHOOL_WORKING_DAYS = null; // null = all days; array [0-6] (0=Sun) when set
+let SCHOOL_NOTIFY_EMAIL = '';   // school email for new booking notifications
 
 // ── WEATHER ───────────────────────────────────────────────────────────────────
 let WEATHER_DATA = {};
@@ -1767,7 +1768,7 @@ async function loadSchoolConfig() {
   try {
     // Try full select first; if lesson_types/working_days columns missing, retry without them
     let data = null;
-    const r1 = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number,lesson_types,working_days').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
+    const r1 = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number,school_email,lesson_types,working_days').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
     if (!r1.error) {
       data = r1.data;
     } else {
@@ -1780,6 +1781,7 @@ async function loadSchoolConfig() {
       if (data.max_per_slot)        SCHOOL_MAX_SLOT = data.max_per_slot;
       if (data.working_days?.length) SCHOOL_WORKING_DAYS = data.working_days;
       if (data.lesson_types?.length) dbLessonTypes  = data.lesson_types;
+      if (data.school_email)         SCHOOL_NOTIFY_EMAIL = data.school_email;
     }
   } catch(_) {}
   // Lesson types: DB → localStorage fallback → static defaults
@@ -2179,14 +2181,18 @@ async function reservarWhatsApp() {
       nota ? `Nota: ${nota}` : '',
     ].filter(Boolean).join('\n');
 
-    fetch('https://formsubmit.co/ajax/ivocasimiro@gmail.com', {
+    // Primary recipient = school email (if configured), fallback to Ivo
+    const notifyTo = SCHOOL_NOTIFY_EMAIL || 'ivocasimiro@gmail.com';
+    // CC = client email + Ivo (if school email is primary)
+    const ccParts = [email, SCHOOL_NOTIFY_EMAIL ? 'ivocasimiro@gmail.com' : ''].filter(Boolean);
+    fetch(`https://formsubmit.co/ajax/${encodeURIComponent(notifyTo)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
         _subject: `🏄 Nova Marcação: ${nome} — ${T(booking.lessonKey)} ${booking.selectedDateStr}`,
         message: emailBody,
         _replyto: email || tel,
-        _cc: email || undefined,
+        _cc: ccParts.join(',') || undefined,
         _template: 'table',
       })
     }).catch(() => {}); // email is best-effort, don't block on failure
