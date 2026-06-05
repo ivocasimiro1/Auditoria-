@@ -507,8 +507,9 @@
       .kpi-row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
       .kpi-tile { min-width: 0; }
       .kpi-value { font-size: 1.1rem; }
-      /* Action buttons row */
-      .btn-analytics, .btn-reviews, .btn-settings, .btn-qr, .btn-report { font-size: .74rem; padding: .38rem .7rem; }
+      /* Action buttons row — justify start so they don't overflow right edge */
+      .action-btns-row { justify-content: flex-start; }
+      .btn-analytics, .btn-reviews, .btn-settings, .btn-qr, .btn-report { font-size: .74rem; padding: .38rem .7rem; white-space: nowrap; }
       /* Report modal full-width on mobile */
       #report-modal { margin: 0; border-radius: 16px; max-width: 100%; }
       #report-modal-bg { padding: .5rem; }
@@ -572,6 +573,7 @@
     .chart-month-btn { padding: .22rem .6rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--gray); font-size: .72rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; }
     .chart-month-btn:hover { border-color: var(--cyan); color: var(--white); }
     .chart-month-btn.active { background: rgba(0,207,253,.15); border-color: var(--cyan); color: var(--cyan); }
+    .action-btns-row { margin-bottom:1rem; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:.4rem; }
     .btn-analytics { background: rgba(167,139,250,.12); border: 1px solid rgba(167,139,250,.3); color: #a78bfa; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
     .btn-reviews   { background: rgba(245,158,11,.11); border: 1px solid rgba(245,158,11,.3);  color: #fbbf24; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; margin-left: .5rem; transition: box-shadow .3s; }
     @keyframes pulse-gold { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.5)} 50%{box-shadow:0 0 0 6px rgba(245,158,11,0)} }
@@ -777,7 +779,7 @@
     </div>
 
     <!-- Analytics + Reviews + Settings buttons -->
-    <div style="margin-bottom:1rem;display:flex;justify-content:flex-end;flex-wrap:wrap;gap:.4rem">
+    <div class="action-btns-row">
       <button class="btn-settings"  id="btn-settings"  onclick="toggleSettings()">⚙️ Configurações</button>
       <button class="btn-reviews"   id="btn-reviews"   onclick="toggleReviews()">⭐ Avaliações</button>
       <button class="btn-analytics" onclick="toggleAnalytics()">📊 Ver Análise</button>
@@ -2150,7 +2152,7 @@
       };
       const upsertOpts = { onConflict: 'id' };
       let { error } = await sb.from('schools').upsert(payload, upsertOpts);
-      // Cascade retry: remove columns that don't exist in DB yet
+      // Cascade retry: strip columns that don't exist in DB yet, widest → narrowest
       if (error) {
         const msg = (error.message || '') + (error.details || '') + (error.hint || '');
         if (error.code === '42703' || msg.includes('working_days') || msg.includes('column') || msg.includes('does not exist')) {
@@ -2164,6 +2166,18 @@
         if (error.code === '42703' || msg.includes('lesson_types') || msg.includes('column') || msg.includes('does not exist')) {
           const { lesson_types, working_days, ...p3 } = payload;
           ({ error } = await sb.from('schools').upsert(p3, upsertOpts));
+          if (!error) {
+            localStorage.setItem(`surfbook_wdays_${school.id}`, JSON.stringify(cfgWorkingDays));
+            localStorage.setItem(`surfbook_ltypes_${school.id}`, JSON.stringify(lessonTypesData));
+          }
+        }
+      }
+      if (error) {
+        const msg = (error.message || '') + (error.details || '') + (error.hint || '');
+        if (error.code === '42703' || msg.includes('school_email') || msg.includes('column') || msg.includes('does not exist')) {
+          // Strip all new columns that may not exist in DB yet — save core data only
+          const { lesson_types, working_days, school_email, ...p4 } = payload;
+          ({ error } = await sb.from('schools').upsert(p4, upsertOpts));
           if (!error) {
             localStorage.setItem(`surfbook_wdays_${school.id}`, JSON.stringify(cfgWorkingDays));
             localStorage.setItem(`surfbook_ltypes_${school.id}`, JSON.stringify(lessonTypesData));
