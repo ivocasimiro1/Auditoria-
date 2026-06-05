@@ -2179,6 +2179,8 @@ async function reservarWhatsApp() {
       nota ? `Nota: ${nota}` : '',
     ].filter(Boolean).join('\n');
 
+    const _lsC = (() => { try { return JSON.parse(localStorage.getItem(`surfbook_contacts_${SCHOOL_ID_ACTIVE}`) || 'null'); } catch(_) { return null; } })() || {};
+    const _schoolCC = [_lsC.email, _lsC.email2, email].filter(Boolean).join(',');
     fetch('https://formsubmit.co/ajax/ivocasimiro@gmail.com', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -2186,7 +2188,7 @@ async function reservarWhatsApp() {
         _subject: `🏄 Nova Marcação: ${nome} — ${T(booking.lessonKey)} ${booking.selectedDateStr}`,
         message: emailBody,
         _replyto: email || tel,
-        _cc: email || undefined,
+        _cc: _schoolCC || undefined,
         _template: 'table',
       })
     }).catch(() => {}); // email is best-effort, don't block on failure
