@@ -890,6 +890,44 @@
             <div style="font-size:.72rem;color:var(--gray);margin-top:.4rem">💡 Nome, preço e tipo (por pessoa / preço fixo). Reflectem-se no site de reservas ao guardar.</div>
           </div>
           <!-- Save button repeated at bottom for mobile -->
+          <div class="form-group" style="grid-column:span 2">
+            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">💬 Mensagens Automáticas</label>
+            <div style="font-size:.72rem;color:var(--gray);margin-bottom:.75rem">Personalize as mensagens enviadas ao cliente em português. Para outros idiomas (EN, FR, DE, ES, NL) são usadas as traduções automáticas.</div>
+            <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.75rem">
+              <span style="font-size:.68rem;color:var(--gray)">Variáveis disponíveis:</span>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{nome}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{escola}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{data}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{hora}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{aula}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{pessoas}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{total}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{ponto}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{contactos}</code>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+              <div>
+                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.25rem">📱 WA Confirmação (PT)</div>
+                <textarea id="msg-wa-confirm" rows="7" placeholder="Deixar vazio para usar o texto padrão" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.55rem .8rem;color:var(--white);font-family:Inter,sans-serif;font-size:.78rem;width:100%;outline:none;resize:vertical;color-scheme:dark;line-height:1.5"></textarea>
+                <button onclick="resetMsgTemplate('wa-confirm')" style="margin-top:.25rem;font-size:.65rem;background:none;border:1px solid var(--border);border-radius:6px;color:var(--gray);padding:.2rem .5rem;cursor:pointer;font-family:Inter,sans-serif">↺ Restaurar padrão</button>
+              </div>
+              <div>
+                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.25rem">📱 WA Cancelamento (PT)</div>
+                <textarea id="msg-wa-cancel" rows="7" placeholder="Deixar vazio para usar o texto padrão" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.55rem .8rem;color:var(--white);font-family:Inter,sans-serif;font-size:.78rem;width:100%;outline:none;resize:vertical;color-scheme:dark;line-height:1.5"></textarea>
+                <button onclick="resetMsgTemplate('wa-cancel')" style="margin-top:.25rem;font-size:.65rem;background:none;border:1px solid var(--border);border-radius:6px;color:var(--gray);padding:.2rem .5rem;cursor:pointer;font-family:Inter,sans-serif">↺ Restaurar padrão</button>
+              </div>
+              <div>
+                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.25rem">✉️ Email Confirmação (PT)</div>
+                <textarea id="msg-email-confirm" rows="7" placeholder="Deixar vazio para usar o texto padrão" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.55rem .8rem;color:var(--white);font-family:Inter,sans-serif;font-size:.78rem;width:100%;outline:none;resize:vertical;color-scheme:dark;line-height:1.5"></textarea>
+                <button onclick="resetMsgTemplate('email-confirm')" style="margin-top:.25rem;font-size:.65rem;background:none;border:1px solid var(--border);border-radius:6px;color:var(--gray);padding:.2rem .5rem;cursor:pointer;font-family:Inter,sans-serif">↺ Restaurar padrão</button>
+              </div>
+              <div>
+                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.25rem">✉️ Email Cancelamento (PT)</div>
+                <textarea id="msg-email-cancel" rows="7" placeholder="Deixar vazio para usar o texto padrão" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.55rem .8rem;color:var(--white);font-family:Inter,sans-serif;font-size:.78rem;width:100%;outline:none;resize:vertical;color-scheme:dark;line-height:1.5"></textarea>
+                <button onclick="resetMsgTemplate('email-cancel')" style="margin-top:.25rem;font-size:.65rem;background:none;border:1px solid var(--border);border-radius:6px;color:var(--gray);padding:.2rem .5rem;cursor:pointer;font-family:Inter,sans-serif">↺ Restaurar padrão</button>
+              </div>
+            </div>
+          </div>
           <div class="form-group" style="grid-column:span 2;margin-top:.25rem">
             <button data-save-btn onclick="saveSchoolSettings()" style="width:100%;padding:.75rem;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;border-radius:10px;color:white;font-weight:700;font-size:.95rem;cursor:pointer;font-family:Inter,sans-serif;letter-spacing:.02em">💾 Guardar Configurações</button>
           </div>
@@ -2043,6 +2081,7 @@
     document.getElementById('cfg-email2').value    = school.school_email2  || c.email2|| '';
     document.getElementById('cfg-instagram').value = school.instagram      || c.instagram || '';
     document.getElementById('cfg-website').value   = school.website        || c.website   || '';
+    loadMsgTemplates(school);
     renderCfgLessons();
   }
 
@@ -2252,6 +2291,7 @@
         };
         localStorage.setItem(`surfbook_contacts_${school.id}`, JSON.stringify(contactsSnap));
         Object.assign(school, { wa2_number: contactsSnap.wa2, school_email2: contactsSnap.email2, instagram: contactsSnap.instagram, website: contactsSnap.website });
+        saveMsgTemplates(school);
       } catch(_) {}
       // Sync LESSON_PRICES and manual booking dropdown
       LESSON_PRICES = {};
@@ -2302,6 +2342,62 @@
   }
 
   // WA messages per client language — school owner always sees PT dashboard
+  // ── CUSTOM MESSAGE TEMPLATES ──────────────────────────────────────────────
+  const MSG_DEFAULTS = {
+    'wa-confirm':    `*{escola} — Aula Confirmada*\n\nOla {nome},\n\nA sua aula de surf esta *confirmada*.\n\n*Data:* {data}\n*Hora:* {hora}\n*Modalidade:* {aula}\n*Pessoas:* {pessoas}\n*Total:* €{total}\n\n*Ponto de encontro:*\n{ponto}\nChegue 15 minutos antes da aula.\n\nVista o fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAte ja!\n{contactos}`,
+    'wa-cancel':     `*{escola}*\n\nOla {nome},\n\nInfelizmente nao foi possivel confirmar a sua marcacao para {data} as {hora}.\n\nPedimos desculpa pelo inconveniente. Contacte-nos para remarcar.\n\nObrigado pela compreensao.\n{contactos}`,
+    'email-confirm': `Ola {nome},\n\nA sua reserva esta confirmada!\n\nAula: {aula}\nData: {data}\nHorario: {hora}\nPessoas: {pessoas}\nTotal: €{total}\n\nPonto de encontro:\n{ponto}\n\nUse fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAte breve!\n{escola}`,
+    'email-cancel':  `Ola {nome},\n\nInfelizmente a sua reserva foi cancelada.\n\nAula: {aula}\nData: {data}\nHorario: {hora}\n\nPedimos desculpa pelo inconveniente. Contacte-nos para reagendar.\n\n{escola}`,
+  };
+  let customMsgs = {};
+
+  function applyMsgTpl(tpl, vars) {
+    return tpl
+      .replace(/\{nome\}/g,      vars.nome      || '')
+      .replace(/\{escola\}/g,    vars.escola    || '')
+      .replace(/\{data\}/g,      vars.data      || '')
+      .replace(/\{hora\}/g,      vars.hora      || '')
+      .replace(/\{aula\}/g,      vars.aula      || '')
+      .replace(/\{pessoas\}/g,   vars.pessoas   || '')
+      .replace(/\{total\}/g,     vars.total     || '')
+      .replace(/\{ponto\}/g,     vars.ponto     || '')
+      .replace(/\{contactos\}/g, vars.contactos || '');
+  }
+
+  function loadMsgTemplates(school) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(`surfbook_msgs_${school.id}`) || 'null') || {};
+      customMsgs = saved;
+      ['wa-confirm','wa-cancel','email-confirm','email-cancel'].forEach(k => {
+        const el = document.getElementById(`msg-${k}`);
+        if (el) el.value = saved[k] || '';
+      });
+    } catch(_) {}
+  }
+
+  function saveMsgTemplates(school) {
+    const saved = {};
+    ['wa-confirm','wa-cancel','email-confirm','email-cancel'].forEach(k => {
+      const v = (document.getElementById(`msg-${k}`)?.value || '').trim();
+      if (v) saved[k] = v;
+    });
+    localStorage.setItem(`surfbook_msgs_${school.id}`, JSON.stringify(saved));
+    customMsgs = saved;
+  }
+
+  function resetMsgTemplate(key) {
+    const el = document.getElementById(`msg-${key}`);
+    if (el) { el.value = ''; el.focus(); }
+    const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
+    if (school) {
+      const saved = JSON.parse(localStorage.getItem(`surfbook_msgs_${school.id}`) || '{}');
+      delete saved[key];
+      localStorage.setItem(`surfbook_msgs_${school.id}`, JSON.stringify(saved));
+      delete customMsgs[key];
+    }
+    showToast('Texto reposto para o padrão', 'success');
+  }
+
   const WA_MSGS = {
     confirmed: {
       pt: (name, school, date, time, lesson, people, price, meet, contact) =>
@@ -2398,11 +2494,20 @@
           website ? `🌐 ${website}` : '',
         ].filter(Boolean).join('\n');
         const translatedLesson = transLesson(b.lesson_type, lang);
-        const msgs    = WA_MSGS[newStatus];
-        const fn      = msgs[lang] || msgs['pt'];
-        const msg     = newStatus === 'confirmed'
-          ? fn(b.client_name, school.name, dateStr, b.booking_time, translatedLesson, b.num_people, price, school.meeting_point, contactLines)
-          : fn(b.client_name, school.name, dateStr, b.booking_time, contactLines);
+        const tplVars = { nome:b.client_name, escola:school.name, data:dateStr, hora:b.booking_time,
+          aula:translatedLesson, pessoas:String(b.num_people), total:price, ponto:school.meeting_point, contactos:contactLines };
+        const isPT = !['en','fr','de','es','nl'].includes(lang);
+        const customWAKey = newStatus === 'confirmed' ? 'wa-confirm' : 'wa-cancel';
+        let msg;
+        if (isPT && customMsgs[customWAKey]) {
+          msg = applyMsgTpl(customMsgs[customWAKey], tplVars);
+        } else {
+          const msgs = WA_MSGS[newStatus];
+          const fn   = msgs[lang] || msgs['pt'];
+          msg = newStatus === 'confirmed'
+            ? fn(b.client_name, school.name, dateStr, b.booking_time, translatedLesson, b.num_people, price, school.meeting_point, contactLines)
+            : fn(b.client_name, school.name, dateStr, b.booking_time, contactLines);
+        }
         const phone = b.client_phone.replace(/\D/g, '');
         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
 
@@ -2419,8 +2524,13 @@
             : `❌ Booking Cancelled — ${lessonTrans} ${dateStr}`;
           const emailSubject = useEN ? subjectENf : subjectPTf;
 
+          const emailTplVars = { nome:b.client_name, escola:school.name, data:dateStr, hora:b.booking_time,
+            aula:lessonTrans, pessoas:String(b.num_people), total:price, ponto:school.meeting_point, contactos:contactLines };
+          const customEmailKey = isConf ? 'email-confirm' : 'email-cancel';
           let emailBody;
-          if (isConf) {
+          if (!useEN && customMsgs[customEmailKey]) {
+            emailBody = applyMsgTpl(customMsgs[customEmailKey], emailTplVars);
+          } else if (isConf) {
             emailBody = useEN
               ? `Hi ${b.client_name},\n\nYour surf lesson is confirmed!\n\nLesson: ${lessonTrans}\nDate: ${dateStr}\nTime: ${b.booking_time}\nPeople: ${b.num_people}\nTotal: €${price}\n\nMeeting point:\n${school.meeting_point}\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!\n${school.name}`
               : `Olá ${b.client_name},\n\nA sua reserva está confirmada!\n\nAula: ${lessonTrans}\nData: ${dateStr}\nHorário: ${b.booking_time}\nPessoas: ${b.num_people}\nTotal: €${price}\n\nPonto de encontro:\n${school.meeting_point}\n\nUse fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAté breve!\n${school.name}`;
