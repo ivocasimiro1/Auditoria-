@@ -2181,18 +2181,19 @@ async function reservarWhatsApp() {
 
   // ── Email backup via FormSubmit (sends to school email) ──────
   try {
+    const lessonPT = LANGS['pt'][booking.lessonKey] || booking.lessonKey; // sempre PT para a escola
     const emailBody = [
-      `Nova Marcação — ${T(booking.lessonKey)}`,
+      `Nova Marcação — ${lessonPT}`,
       `Nome: ${nome}`,
       `Telefone: ${tel}`,
       email ? `Email: ${email}` : '',
       country ? `País: ${country}` : '',
-      `Aula: ${T(booking.lessonKey)}`,
+      `Aula: ${lessonPT}`,
       `Data: ${booking.selectedDateStr}`,
       `Horário: ${booking.time}`,
       `Pessoas: ${pess}`,
       `Total: €${total}`,
-      nota ? `Nota: ${nota}` : '',
+      nota ? `Nota do cliente: ${nota}` : '',
     ].filter(Boolean).join('\n');
 
     const _schoolCC = [SCHOOL_EMAIL, SCHOOL_EMAIL2, email].filter(Boolean).join(',');
@@ -2200,7 +2201,7 @@ async function reservarWhatsApp() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
-        _subject: `🏄 Nova Marcação: ${nome} — ${T(booking.lessonKey)} ${booking.selectedDateStr}`,
+        _subject: `🏄 Nova Marcação: ${nome} — ${lessonPT} ${booking.selectedDateStr}`,
         message: emailBody,
         _replyto: email || tel,
         _cc: _schoolCC || undefined,
