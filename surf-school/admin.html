@@ -2379,22 +2379,21 @@
           const contacts = (() => { try { return JSON.parse(localStorage.getItem(`surfbook_contacts_${school.id}`) || 'null'); } catch(_) { return null; } })() || {};
           const schoolEmail  = school.school_email  || contacts.email  || '';
           const schoolEmail2 = school.school_email2 || contacts.email2 || '';
-          // Primary recipient = school email (if set), fallback to Ivo
-          const toEmail = schoolEmail || 'ivocasimiro@gmail.com';
-          // CC = client + secondary school email + Ivo (if school email is primary)
-          const ccParts = [b.client_email, schoolEmail2, schoolEmail ? 'ivocasimiro@gmail.com' : ''].filter(Boolean);
-          const ccList = ccParts.join(',');
-          fetch(`https://formsubmit.co/ajax/${encodeURIComponent(toEmail)}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({
-              _subject: emailSubject,
-              message: emailBody,
-              _replyto: b.client_email || toEmail,
-              _cc: ccList || undefined,
-              _template: 'table',
-            })
-          }).catch(() => {});
+          if (schoolEmail) {
+            // TO = email principal da escola; CC = email secundário + cliente
+            const ccParts = [schoolEmail2, b.client_email].filter(Boolean);
+            fetch(`https://formsubmit.co/ajax/${encodeURIComponent(schoolEmail)}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify({
+                _subject: emailSubject,
+                message: emailBody,
+                _replyto: b.client_email || schoolEmail,
+                _cc: ccParts.join(',') || undefined,
+                _template: 'table',
+              })
+            }).catch(() => {});
+          }
         }
       }
     }

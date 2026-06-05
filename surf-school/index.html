@@ -2181,21 +2181,20 @@ async function reservarWhatsApp() {
       nota ? `Nota: ${nota}` : '',
     ].filter(Boolean).join('\n');
 
-    // Primary recipient = school email (if configured), fallback to Ivo
-    const notifyTo = SCHOOL_NOTIFY_EMAIL || 'ivocasimiro@gmail.com';
-    // CC = client email + Ivo (if school email is primary)
-    const ccParts = [email, SCHOOL_NOTIFY_EMAIL ? 'ivocasimiro@gmail.com' : ''].filter(Boolean);
-    fetch(`https://formsubmit.co/ajax/${encodeURIComponent(notifyTo)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({
-        _subject: `🏄 Nova Marcação: ${nome} — ${T(booking.lessonKey)} ${booking.selectedDateStr}`,
-        message: emailBody,
-        _replyto: email || tel,
-        _cc: ccParts.join(',') || undefined,
-        _template: 'table',
-      })
-    }).catch(() => {}); // email is best-effort, don't block on failure
+    if (SCHOOL_NOTIFY_EMAIL) {
+      // TO = email principal da escola; CC = cliente
+      fetch(`https://formsubmit.co/ajax/${encodeURIComponent(SCHOOL_NOTIFY_EMAIL)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          _subject: `🏄 Nova Marcação: ${nome} — ${T(booking.lessonKey)} ${booking.selectedDateStr}`,
+          message: emailBody,
+          _replyto: email || tel,
+          _cc: email || undefined,
+          _template: 'table',
+        })
+      }).catch(() => {}); // email is best-effort, don't block on failure
+    }
   } catch(e) {}
 
   try {
