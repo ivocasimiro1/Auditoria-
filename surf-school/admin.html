@@ -912,6 +912,10 @@
           <div class="kpi-value" id="kpi-cancel">0%</div>
         </div>
       </div>
+      <div id="dash-filter-bar" style="display:none;align-items:center;gap:.6rem;padding:.45rem .85rem;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.28);border-radius:9px;font-size:.82rem;color:#a78bfa;margin-bottom:.5rem">
+        📊 <strong id="dash-filter-label"></strong>
+        <button onclick="clearDashFilter()" style="margin-left:auto;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);border-radius:6px;color:#a78bfa;padding:.15rem .6rem;cursor:pointer;font-size:.78rem;line-height:1.5">✕ Limpar</button>
+      </div>
       <div id="chart-filter-bar">
         🔍 Filtro: <strong id="chart-filter-label"></strong>
         <button onclick="clearChartFilter()">✕ Limpar</button>
@@ -1549,34 +1553,41 @@
   }
 
   function statFilter(type) {
-    // Remove active highlight from all cards
     document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
 
     if (type === 'today') {
       filterToday();
       document.getElementById('sc-today').classList.add('active');
+      dashFilter = { type:'today', date: todayStr, label: 'Aulas de Hoje' };
     } else if (type === 'pending') {
       clearDayFilter();
       document.getElementById('f-status').value = 'pending';
       document.getElementById('f-search').value = '';
       applyFilters();
       document.getElementById('sc-pending').classList.add('active');
-      document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelector('.table-wrap').scrollIntoView({ behavior:'smooth', block:'start' });
+      dashFilter = { type:'status', status:'pending', label: 'Por Confirmar' };
     } else if (type === 'confirmed') {
       clearDayFilter();
       document.getElementById('f-status').value = 'confirmed';
       document.getElementById('f-search').value = '';
       applyFilters();
       document.getElementById('sc-confirmed').classList.add('active');
-      document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelector('.table-wrap').scrollIntoView({ behavior:'smooth', block:'start' });
+      dashFilter = { type:'status', status:'confirmed', label: 'Confirmadas' };
     } else {
       clearDayFilter();
       document.getElementById('f-status').value = '';
       document.getElementById('f-search').value = '';
       applyFilters();
       document.getElementById('sc-all').classList.add('active');
-      document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelector('.table-wrap').scrollIntoView({ behavior:'smooth', block:'start' });
+      dashFilter = null;
     }
+    _triggerChartsIfOpen();
   }
 
   let revPeriod = 'month';
@@ -1586,7 +1597,38 @@
     document.querySelectorAll('.rev-pill').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     updateRevCard();
+    // Sync analytics charts with the same period
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    if (period === 'today') {
+      dashFilter = { type:'today', date: todayStr, label: 'Receita — Hoje' };
+      chartYear = now.getFullYear(); chartMonth = now.getMonth() + 1;
+    } else if (period === 'week') {
+      const dow = now.getDay(); const diff = now.getDate() - dow + (dow === 0 ? -6 : 1);
+      const mon = new Date(now.getFullYear(), now.getMonth(), diff);
+      const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
+      const fmt  = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      dashFilter = { type:'week', start: fmt(mon), end: fmt(sun), label: 'Receita — Esta Semana' };
+      chartYear = now.getFullYear(); chartMonth = null;
+    } else if (period === 'month') {
+      const prefix = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+      dashFilter = { type:'month', prefix, label: `Receita — ${months[now.getMonth()]} ${now.getFullYear()}` };
+      chartYear = now.getFullYear(); chartMonth = now.getMonth() + 1;
+    } else if (period === 'year') {
+      dashFilter = null; chartYear = now.getFullYear(); chartMonth = null;
+    } else { // all
+      dashFilter = null; chartYear = 'all'; chartMonth = null;
+    }
+    // Update year/month button states
+    const curY = new Date().getFullYear();
+    document.getElementById('chart-year-cur')?.classList.toggle('active', chartYear === curY);
+    document.getElementById('chart-year-prev')?.classList.toggle('active', chartYear === curY - 1);
+    document.getElementById('chart-year-all')?.classList.toggle('active', chartYear === 'all');
+    document.querySelectorAll('.chart-month-btn').forEach((b,i) => b.classList.toggle('active', chartMonth !== null ? i === chartMonth : i === 0));
+    _triggerChartsIfOpen();
   }
+  const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
   function updateRevCard() {
     const now = new Date();
@@ -3053,6 +3095,7 @@
   let chartMonth = null; // null = all months
   let chartInstances = {};
   let chartFilter = null; // { field, value } — cross-filter active selection
+  let dashFilter  = null; // { type, label, start?, end?, prefix? } — dashboard card filter
 
   const GNORM = {
     'H':'Homem','Homem':'Homem','homem':'Homem','h':'Homem','Masculino':'Homem','masculino':'Homem','male':'Homem','Male':'Homem','M':'Homem','m':'Homem',
@@ -3095,6 +3138,12 @@
     buildCharts();
   }
   function clearChartFilter() { chartFilter = null; buildCharts(); }
+  function clearDashFilter()  { dashFilter  = null; document.querySelectorAll('.stat-card').forEach(c=>c.classList.remove('active')); buildCharts(); }
+
+  function _triggerChartsIfOpen() {
+    const el = document.getElementById('analytics-section');
+    if (el && el.style.display !== 'none') buildCharts();
+  }
 
   // Register datalabels plugin globally
   if (typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
@@ -3143,8 +3192,20 @@
   function buildCharts() {
     const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
+    // ── Dashboard source filter ────────────────────────────────
+    const dashBar = document.getElementById('dash-filter-bar');
+    const dashLbl = document.getElementById('dash-filter-label');
+    let sourceBookings = allBookings;
+    if (dashFilter) {
+      if (dashFilter.type === 'today')     sourceBookings = allBookings.filter(b => b.booking_date === dashFilter.date);
+      else if (dashFilter.type === 'week') sourceBookings = allBookings.filter(b => b.booking_date >= dashFilter.start && b.booking_date <= dashFilter.end);
+      else if (dashFilter.type === 'month')sourceBookings = allBookings.filter(b => b.booking_date?.startsWith(dashFilter.prefix));
+      else if (dashFilter.type === 'status')sourceBookings = allBookings.filter(b => b.status === dashFilter.status);
+      if (dashBar) { dashBar.style.display = 'flex'; if (dashLbl) dashLbl.textContent = dashFilter.label; }
+    } else if (dashBar) { dashBar.style.display = 'none'; }
+
     // All bookings in period (including cancelled — for cancellation rate)
-    let allPeriod = allBookings.filter(b => b.booking_date);
+    let allPeriod = sourceBookings.filter(b => b.booking_date);
     if (chartYear !== 'all') allPeriod = allPeriod.filter(b => b.booking_date.startsWith(String(chartYear)));
     if (chartMonth !== null) {
       const mm = String(chartMonth).padStart(2,'0');
