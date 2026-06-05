@@ -1686,6 +1686,8 @@ let SCHOOL_SLOTS        = ['08:00','10:30','14:00','16:30'];
 let SCHOOL_MAX_SLOT     = 6;
 let SCHOOL_ID_ACTIVE    = _escolaParam;
 let SCHOOL_WORKING_DAYS = null; // null = all days; array [0-6] (0=Sun) when set
+let SCHOOL_EMAIL  = ''; // email principal da escola (do Supabase)
+let SCHOOL_EMAIL2 = ''; // email secundário da escola (do Supabase)
 
 // ── WEATHER ───────────────────────────────────────────────────────────────────
 let WEATHER_DATA = {};
@@ -1767,7 +1769,7 @@ async function loadSchoolConfig() {
   try {
     // Try full select first; if lesson_types/working_days columns missing, retry without them
     let data = null;
-    const r1 = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number,school_email,lesson_types,working_days').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
+    const r1 = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number,school_email,school_email2,lesson_types,working_days').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
     if (!r1.error) {
       data = r1.data;
     } else {
@@ -1776,10 +1778,12 @@ async function loadSchoolConfig() {
       if (!r2.error) data = r2.data;
     }
     if (data) {
-      if (data.time_slots?.length)  SCHOOL_SLOTS   = data.time_slots;
-      if (data.max_per_slot)        SCHOOL_MAX_SLOT = data.max_per_slot;
+      if (data.time_slots?.length)   SCHOOL_SLOTS        = data.time_slots;
+      if (data.max_per_slot)         SCHOOL_MAX_SLOT     = data.max_per_slot;
       if (data.working_days?.length) SCHOOL_WORKING_DAYS = data.working_days;
-      if (data.lesson_types?.length) dbLessonTypes  = data.lesson_types;
+      if (data.lesson_types?.length) dbLessonTypes       = data.lesson_types;
+      if (data.school_email)         SCHOOL_EMAIL        = data.school_email;
+      if (data.school_email2)        SCHOOL_EMAIL2       = data.school_email2;
     }
   } catch(_) {}
   // Lesson types: DB → localStorage fallback → static defaults
@@ -2179,8 +2183,7 @@ async function reservarWhatsApp() {
       nota ? `Nota: ${nota}` : '',
     ].filter(Boolean).join('\n');
 
-    const _lsC = (() => { try { return JSON.parse(localStorage.getItem(`surfbook_contacts_${SCHOOL_ID_ACTIVE}`) || 'null'); } catch(_) { return null; } })() || {};
-    const _schoolCC = [_lsC.email, _lsC.email2, email].filter(Boolean).join(',');
+    const _schoolCC = [SCHOOL_EMAIL, SCHOOL_EMAIL2, email].filter(Boolean).join(',');
     fetch('https://formsubmit.co/ajax/ivocasimiro@gmail.com', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
