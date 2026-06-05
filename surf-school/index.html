@@ -335,7 +335,9 @@
     #mob-drawer{display:none;position:fixed;inset:0;background:#060D1B;z-index:200;flex-direction:column;padding:90px 8% 3rem;overflow-y:auto}
     #mob-drawer.open{display:flex}
     #mob-drawer a{color:#fff;font-size:1.5rem;font-weight:700;text-decoration:none;padding:1rem 0;border-bottom:1px solid rgba(255,255,255,.12);font-family:'Inter',sans-serif;letter-spacing:-.01em}
-    #mob-drawer a:last-child{border-bottom:none;margin-top:.5rem;background:var(--gold);color:#060D1B;text-align:center;border-radius:50px;padding:.8rem 2rem}
+    #mob-drawer a:last-of-type{border-bottom:none;margin-top:.5rem;background:var(--gold);color:#060D1B;text-align:center;border-radius:50px;padding:.8rem 2rem}
+    .drawer-lang{display:flex;gap:.5rem;flex-wrap:wrap;padding-top:1.5rem;margin-top:.5rem;border-top:1px solid rgba(255,255,255,.12)}
+    .drawer-lang .lb{padding:.4rem .8rem;font-size:.8rem}
     .beach-selector{display:flex;gap:.5rem;overflow-x:auto;padding:.5rem 0 1rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem;scrollbar-width:none}
     .beach-selector::-webkit-scrollbar{display:none}
     .beach-btn{padding:.45rem 1rem;border-radius:50px;border:1px solid var(--border);background:transparent;color:var(--gray);font-size:.78rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;white-space:nowrap}
@@ -395,6 +397,14 @@
   <a href="#mares"   onclick="closeMenu()" data-t="nav_mares"></a>
   <a href="#aulas"   onclick="closeMenu()" data-t="nav_aulas"></a>
   <a href="#reservar" onclick="closeMenu()" data-t="nav_reservar"></a>
+  <div class="drawer-lang">
+    <button class="lb active" onclick="setLang('pt');closeMenu()">PT</button>
+    <button class="lb" onclick="setLang('en');closeMenu()">EN</button>
+    <button class="lb" onclick="setLang('fr');closeMenu()">FR</button>
+    <button class="lb" onclick="setLang('de');closeMenu()">DE</button>
+    <button class="lb" onclick="setLang('es');closeMenu()">ES</button>
+    <button class="lb" onclick="setLang('nl');closeMenu()">NL</button>
+  </div>
 </div>
 
 <!-- HERO -->
