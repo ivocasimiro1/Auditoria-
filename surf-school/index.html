@@ -1798,6 +1798,14 @@ async function loadSchoolConfig() {
       if (data.school_email2)        SCHOOL_EMAIL2       = data.school_email2;
     }
   } catch(_) {}
+  // School email: localStorage fallback when Supabase column is null/empty
+  if (!SCHOOL_EMAIL) {
+    try {
+      const lsC = JSON.parse(localStorage.getItem(`surfbook_contacts_${SCHOOL_ID_ACTIVE}`) || 'null');
+      if (lsC?.email)  SCHOOL_EMAIL  = lsC.email;
+      if (lsC?.email2) SCHOOL_EMAIL2 = lsC.email2;
+    } catch(_) {}
+  }
   // Lesson types: DB → localStorage fallback → static defaults
   if (dbLessonTypes?.length) {
     renderLessonCards(dbLessonTypes);
