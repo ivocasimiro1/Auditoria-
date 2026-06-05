@@ -7,8 +7,25 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script>
+    // EmailJS — shared platform account, no setup required per school
+    (function(){ emailjs.init({ publicKey: '3FKYg4uuVsN5MLSi0' }); })();
+    function sendEmailJS(toEmail, ccEmail, subject, message, replyTo) {
+      if (!toEmail) return;
+      return emailjs.send('service_4bt815v', 'template_ga4en5t', {
+        to_email:  toEmail,
+        cc_email:  ccEmail || '',
+        subject:   subject,
+        title:     subject,
+        message:   message,
+        reply_to:  replyTo || toEmail,
+        from_name: 'SurfBook',
+      }).catch(() => {});
+    }
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -2433,21 +2450,8 @@
           const contacts = (() => { try { return JSON.parse(localStorage.getItem(`surfbook_contacts_${school.id}`) || 'null'); } catch(_) { return null; } })() || {};
           const schoolEmail  = school.school_email  || contacts.email  || '';
           const schoolEmail2 = school.school_email2 || contacts.email2 || '';
-          if (schoolEmail) {
-            // TO = email principal da escola; CC = email secundário + cliente
-            const ccParts = [schoolEmail2, b.client_email].filter(Boolean);
-            fetch(`https://formsubmit.co/ajax/${encodeURIComponent(schoolEmail)}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-              body: JSON.stringify({
-                _subject: emailSubject,
-                message: emailBody,
-                _replyto: b.client_email || schoolEmail,
-                _cc: ccParts.join(',') || undefined,
-                _template: 'table',
-              })
-            }).catch(() => {});
-          }
+          // Send via EmailJS — no activation needed, dynamic recipient per school
+          sendEmailJS(schoolEmail, schoolEmail2, emailSubject, emailBody, b.client_email);
         }
       }
     }

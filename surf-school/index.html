@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>(function(){ emailjs.init({ publicKey: '3FKYg4uuVsN5MLSi0' }); })();</script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -2189,18 +2191,16 @@ async function reservarWhatsApp() {
     ].filter(Boolean).join('\n');
 
     if (SCHOOL_NOTIFY_EMAIL) {
-      // TO = email principal da escola; CC = cliente
-      fetch(`https://formsubmit.co/ajax/${encodeURIComponent(SCHOOL_NOTIFY_EMAIL)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          _subject: `🏄 Nova Marcação: ${nome} — ${T(booking.lessonKey)} ${booking.selectedDateStr}`,
-          message: emailBody,
-          _replyto: email || tel,
-          _cc: email || undefined,
-          _template: 'table',
-        })
-      }).catch(() => {}); // email is best-effort, don't block on failure
+      // Send via EmailJS — dynamic recipient, no activation needed
+      emailjs.send('service_4bt815v', 'template_ga4en5t', {
+        to_email:  SCHOOL_NOTIFY_EMAIL,
+        cc_email:  email || '',
+        subject:   `🏄 Nova Marcação: ${nome} — ${T(booking.lessonKey)} ${booking.selectedDateStr}`,
+        title:     `🏄 Nova Marcação: ${nome} — ${T(booking.lessonKey)} ${booking.selectedDateStr}`,
+        message:   emailBody,
+        reply_to:  email || tel || SCHOOL_NOTIFY_EMAIL,
+        from_name: 'SurfBook',
+      }).catch(() => {});
     }
   } catch(e) {}
 
