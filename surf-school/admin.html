@@ -1579,20 +1579,22 @@
     const search = document.getElementById('f-search').value.toLowerCase();
 
     const filtered = allBookings.filter(b => {
-      if (day    && b.booking_date !== day)                  return false;  // day overrides month
-      if (!day && month && !b.booking_date.startsWith(month)) return false;
-      if (status && b.status !== status)                     return false;
+      if (day && b.booking_date !== day) return false;            // exact day overrides all
+      if (!day && tableWeekFilter && (b.booking_date < tableWeekFilter.start || b.booking_date > tableWeekFilter.end)) return false;
+      if (!day && !tableWeekFilter && month && !b.booking_date.startsWith(month)) return false;
+      if (status && b.status !== status)                          return false;
       if (search && !b.client_name.toLowerCase().includes(search) &&
-                    !b.client_phone.includes(search))        return false;
+                    !b.client_phone.includes(search))             return false;
       return true;
     });
 
-    renderStats(day ? null : month);
+    renderStats(day ? null : (tableWeekFilter ? null : month));
     renderTable(filtered);
   }
 
   function clearDayFilter() {
     document.getElementById('f-date').value = '';
+    tableWeekFilter = null;
   }
 
   function statFilter(type) {
@@ -1606,25 +1608,32 @@
       document.getElementById('sc-today').classList.add('active');
       dashFilter = { type:'today', date: todayStr, label: 'Aulas de Hoje' };
     } else if (type === 'pending') {
-      clearDayFilter();
+      // Clear ALL date filters — show pending bookings from any month
+      document.getElementById('f-date').value  = '';
+      document.getElementById('f-month').value = '';
       document.getElementById('f-status').value = 'pending';
       document.getElementById('f-search').value = '';
+      tableWeekFilter = null;
       applyFilters();
       document.getElementById('sc-pending').classList.add('active');
       document.querySelector('.table-wrap').scrollIntoView({ behavior:'smooth', block:'start' });
       dashFilter = { type:'status', status:'pending', label: 'Por Confirmar' };
     } else if (type === 'confirmed') {
-      clearDayFilter();
+      document.getElementById('f-date').value  = '';
+      document.getElementById('f-month').value = '';
       document.getElementById('f-status').value = 'confirmed';
       document.getElementById('f-search').value = '';
+      tableWeekFilter = null;
       applyFilters();
       document.getElementById('sc-confirmed').classList.add('active');
       document.querySelector('.table-wrap').scrollIntoView({ behavior:'smooth', block:'start' });
       dashFilter = { type:'status', status:'confirmed', label: 'Confirmadas' };
     } else {
-      clearDayFilter();
+      document.getElementById('f-date').value  = '';
+      document.getElementById('f-month').value = '';
       document.getElementById('f-status').value = '';
       document.getElementById('f-search').value = '';
+      tableWeekFilter = null;
       applyFilters();
       document.getElementById('sc-all').classList.add('active');
       document.querySelector('.table-wrap').scrollIntoView({ behavior:'smooth', block:'start' });
@@ -1640,11 +1649,20 @@
     document.querySelectorAll('.rev-pill').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     updateRevCard();
-    // Sync analytics charts with the same period
     const now = new Date();
     const pad = n => String(n).padStart(2,'0');
     const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+
+    // Reset table status/search filters but keep date in sync with pill
+    document.getElementById('f-status').value = '';
+    document.getElementById('f-search').value = '';
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('sc-all')?.classList.add('active');
+
     if (period === 'today') {
+      tableWeekFilter = null;
+      document.getElementById('f-date').value  = todayStr;
+      document.getElementById('f-month').value = '';
       dashFilter = { type:'today', date: todayStr, label: 'Receita — Hoje' };
       chartYear = now.getFullYear(); chartMonth = now.getMonth() + 1;
     } else if (period === 'week') {
@@ -1652,18 +1670,31 @@
       const mon = new Date(now.getFullYear(), now.getMonth(), diff);
       const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
       const fmt  = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      tableWeekFilter = { start: fmt(mon), end: fmt(sun) };
+      document.getElementById('f-date').value  = '';
+      document.getElementById('f-month').value = '';
       dashFilter = { type:'week', start: fmt(mon), end: fmt(sun), label: 'Receita — Esta Semana' };
       chartYear = now.getFullYear(); chartMonth = null;
     } else if (period === 'month') {
       const prefix = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+      tableWeekFilter = null;
+      document.getElementById('f-date').value  = '';
+      document.getElementById('f-month').value = prefix;
       dashFilter = { type:'month', prefix, label: `Receita — ${months[now.getMonth()]} ${now.getFullYear()}` };
       chartYear = now.getFullYear(); chartMonth = now.getMonth() + 1;
     } else if (period === 'year') {
+      tableWeekFilter = null;
+      document.getElementById('f-date').value  = '';
+      document.getElementById('f-month').value = '';
       dashFilter = null; chartYear = now.getFullYear(); chartMonth = null;
     } else { // all
+      tableWeekFilter = null;
+      document.getElementById('f-date').value  = '';
+      document.getElementById('f-month').value = '';
       dashFilter = null; chartYear = 'all'; chartMonth = null;
     }
-    // Update year/month button states
+    applyFilters();
+    // Update analytics year/month button states
     const curY = new Date().getFullYear();
     document.getElementById('chart-year-cur')?.classList.toggle('active', chartYear === curY);
     document.getElementById('chart-year-prev')?.classList.toggle('active', chartYear === curY - 1);
@@ -3193,6 +3224,7 @@
   let chartInstances = {};
   let chartFilter = null; // { field, value } — cross-filter active selection
   let dashFilter  = null; // { type, label, start?, end?, prefix? } — dashboard card filter
+  let tableWeekFilter = null; // { start, end } YYYY-MM-DD — set by revenue pills
 
   const GNORM = {
     'H':'Homem','Homem':'Homem','homem':'Homem','h':'Homem','Masculino':'Homem','masculino':'Homem','male':'Homem','Male':'Homem','M':'Homem','m':'Homem',
