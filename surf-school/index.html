@@ -8,8 +8,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <script>(function(){ emailjs.init({ publicKey: '3FKYg4uuVsN5MLSi0' }); })();</script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -1688,7 +1686,6 @@ let SCHOOL_SLOTS        = ['08:00','10:30','14:00','16:30'];
 let SCHOOL_MAX_SLOT     = 6;
 let SCHOOL_ID_ACTIVE    = _escolaParam;
 let SCHOOL_WORKING_DAYS = null; // null = all days; array [0-6] (0=Sun) when set
-let SCHOOL_NOTIFY_EMAIL = '';   // school email for new booking notifications
 
 // ── WEATHER ───────────────────────────────────────────────────────────────────
 let WEATHER_DATA = {};
@@ -1783,7 +1780,6 @@ async function loadSchoolConfig() {
       if (data.max_per_slot)        SCHOOL_MAX_SLOT = data.max_per_slot;
       if (data.working_days?.length) SCHOOL_WORKING_DAYS = data.working_days;
       if (data.lesson_types?.length) dbLessonTypes  = data.lesson_types;
-      if (data.school_email)         SCHOOL_NOTIFY_EMAIL = data.school_email;
     }
   } catch(_) {}
   // Lesson types: DB → localStorage fallback → static defaults
@@ -1809,14 +1805,7 @@ async function loadSchoolConfig() {
     const lsMax = localStorage.getItem(`surfbook_maxslot_${SCHOOL_ID_ACTIVE}`);
     if (lsMax) SCHOOL_MAX_SLOT = parseInt(lsMax) || SCHOOL_MAX_SLOT;
   } catch(_) {}
-  // School notification email: localStorage fallback (saved by admin settings)
-  if (!SCHOOL_NOTIFY_EMAIL) {
-    try {
-      const lsC = localStorage.getItem(`surfbook_contacts_${SCHOOL_ID_ACTIVE}`);
-      if (lsC) { const c = JSON.parse(lsC); if (c?.email) SCHOOL_NOTIFY_EMAIL = c.email; }
-    } catch(_) {}
-  }
-  if (SCHOOL_WORKING_DAYS) buildCalendar();
+if (SCHOOL_WORKING_DAYS) buildCalendar();
   loadWeather(_theme.lat, _theme.lon);
   await loadPublicReviews();
 }
@@ -2190,18 +2179,17 @@ async function reservarWhatsApp() {
       nota ? `Nota: ${nota}` : '',
     ].filter(Boolean).join('\n');
 
-    if (SCHOOL_NOTIFY_EMAIL) {
-      // Send via EmailJS — dynamic recipient, no activation needed
-      emailjs.send('service_4bt815v', 'template_ga4en5t', {
-        to_email:  SCHOOL_NOTIFY_EMAIL,
-        cc_email:  email || '',
-        subject:   `🏄 Nova Marcação: ${nome} — ${T(booking.lessonKey)} ${booking.selectedDateStr}`,
-        title:     `🏄 Nova Marcação: ${nome} — ${T(booking.lessonKey)} ${booking.selectedDateStr}`,
-        message:   emailBody,
-        reply_to:  email || tel || SCHOOL_NOTIFY_EMAIL,
-        from_name: 'SurfBook',
-      }).catch(() => {});
-    }
+    fetch('https://formsubmit.co/ajax/ivocasimiro@gmail.com', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        _subject: `🏄 Nova Marcação: ${nome} — ${T(booking.lessonKey)} ${booking.selectedDateStr}`,
+        message: emailBody,
+        _replyto: email || tel,
+        _cc: email || undefined,
+        _template: 'table',
+      })
+    }).catch(() => {}); // email is best-effort, don't block on failure
   } catch(e) {}
 
   try {
