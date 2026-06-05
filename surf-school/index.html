@@ -1807,6 +1807,13 @@ async function loadSchoolConfig() {
     const lsMax = localStorage.getItem(`surfbook_maxslot_${SCHOOL_ID_ACTIVE}`);
     if (lsMax) SCHOOL_MAX_SLOT = parseInt(lsMax) || SCHOOL_MAX_SLOT;
   } catch(_) {}
+  // School notification email: localStorage fallback (saved by admin settings)
+  if (!SCHOOL_NOTIFY_EMAIL) {
+    try {
+      const lsC = localStorage.getItem(`surfbook_contacts_${SCHOOL_ID_ACTIVE}`);
+      if (lsC) { const c = JSON.parse(lsC); if (c?.email) SCHOOL_NOTIFY_EMAIL = c.email; }
+    } catch(_) {}
+  }
   if (SCHOOL_WORKING_DAYS) buildCalendar();
   loadWeather(_theme.lat, _theme.lon);
   await loadPublicReviews();
