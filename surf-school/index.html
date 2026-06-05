@@ -1786,9 +1786,14 @@ async function loadSchoolConfig() {
     if (!r1.error) {
       data = r1.data;
     } else {
-      // Fallback: select only stable columns
-      const r2 = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
-      if (!r2.error) data = r2.data;
+      // Fallback sem colunas novas opcionais, mas mantendo school_email (já existe após migration)
+      const r2 = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number,school_email,school_email2').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
+      if (!r2.error) { data = r2.data; }
+      else {
+        // Último recurso: só colunas originais
+        const r3 = await sb.from('schools').select('id,time_slots,max_per_slot,wa_number').eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
+        if (!r3.error) data = r3.data;
+      }
     }
     if (data) {
       if (data.time_slots?.length)   SCHOOL_SLOTS        = data.time_slots;
