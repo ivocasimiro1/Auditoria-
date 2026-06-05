@@ -2256,39 +2256,52 @@
     } catch(_) {}
   }
 
+  // Lesson name translation (PT canonical → client language)
+  const LESSON_TRANS = {
+    'Iniciante':  { en:'Beginner',      fr:'Débutant',       de:'Anfänger',        es:'Principiante', nl:'Beginner',    'pt-br':'Iniciante'    },
+    'Intermédio': { en:'Intermediate',  fr:'Intermédiaire',  de:'Mittelstufe',     es:'Intermedio',   nl:'Gemiddeld',   'pt-br':'Intermediário' },
+    'Avançado':   { en:'Advanced',      fr:'Avancé',         de:'Fortgeschritten', es:'Avanzado',     nl:'Gevorderd',   'pt-br':'Avançado'     },
+    'Privada':    { en:'Private',       fr:'Cours Particulier', de:'Privatstunde', es:'Clase Privada',nl:'Privéles',    'pt-br':'Privada'      },
+    'Bodyboard':  { en:'Bodyboard',     fr:'Bodyboard',      de:'Bodyboard',       es:'Bodyboard',    nl:'Bodyboard',   'pt-br':'Bodyboard'    },
+  };
+  function transLesson(rawPT, lang) {
+    const norm = normLesson(rawPT);
+    return LESSON_TRANS[norm]?.[lang] || rawPT;
+  }
+
   // WA messages per client language — school owner always sees PT dashboard
   const WA_MSGS = {
     confirmed: {
-      pt: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Aula Confirmada*\n\nOla ${name},\n\nA sua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Hora:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\nChegue 15 minutos antes da aula.\n\nVista o fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAte ja!`,
-      en: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Lesson Confirmed*\n\nHi ${name},\n\nYour surf lesson is *confirmed*.\n\n*Date:* ${date}\n*Time:* ${time}\n*Activity:* ${lesson}\n*People:* ${people}\n*Total:* €${price}\n\n*Meeting point:*\n${meet}\nPlease arrive 15 minutes before the lesson.\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!`,
-      fr: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Cours Confirme*\n\nBonjour ${name},\n\nVotre cours de surf est *confirme*.\n\n*Date:* ${date}\n*Heure:* ${time}\n*Activite:* ${lesson}\n*Personnes:* ${people}\n*Total:* €${price}\n\n*Point de rendez-vous:*\n${meet}\nMerci d'arriver 15 minutes avant le cours.\n\nPortez votre maillot sous la combinaison. Apportez une serviette et de la creme solaire.\n\nA bientot!`,
-      de: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Kurs Bestatigt*\n\nHallo ${name},\n\nDein Surfkurs ist *bestatigt*.\n\n*Datum:* ${date}\n*Uhrzeit:* ${time}\n*Aktivitat:* ${lesson}\n*Personen:* ${people}\n*Gesamt:* €${price}\n\n*Treffpunkt:*\n${meet}\nBitte 15 Minuten vor der Stunde erscheinen.\n\nTrage deinen Badeanzug unter dem Neoprenanzug. Bring ein Handtuch und Sonnencreme mit.\n\nBis bald!`,
-      es: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Clase Confirmada*\n\nHola ${name},\n\nTu clase de surf esta *confirmada*.\n\n*Fecha:* ${date}\n*Hora:* ${time}\n*Actividad:* ${lesson}\n*Personas:* ${people}\n*Total:* €${price}\n\n*Punto de encuentro:*\n${meet}\nLlega 15 minutos antes de la clase.\n\nViste el banador debajo del traje de neopreno. Trae una toalla y protector solar.\n\n¡Hasta pronto!`,
-      nl: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Les Bevestigd*\n\nHoi ${name},\n\nJe surfles is *bevestigd*.\n\n*Datum:* ${date}\n*Tijd:* ${time}\n*Activiteit:* ${lesson}\n*Personen:* ${people}\n*Totaal:* €${price}\n\n*Ontmoetingspunt:*\n${meet}\nKom 15 minuten voor de les.\n\nDraag je zwemkleding onder het wetsuit. Breng een handdoek en zonnebrand mee.\n\nTot snel!`,
-      'pt-br': (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Aula Confirmada*\n\nOi ${name},\n\nSua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Horario:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\nChegue 15 minutos antes da aula.\n\nVista o sunga ou maio por baixo do wetsuit. Traga toalha e protetor solar.\n\nAte logo!`,
+      pt: (name, school, date, time, lesson, people, price, meet, contact) =>
+        `*${school} — Aula Confirmada*\n\nOla ${name},\n\nA sua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Hora:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\nChegue 15 minutos antes da aula.\n\nVista o fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAte ja!\n${contact}`,
+      en: (name, school, date, time, lesson, people, price, meet, contact) =>
+        `*${school} — Lesson Confirmed*\n\nHi ${name},\n\nYour surf lesson is *confirmed*.\n\n*Date:* ${date}\n*Time:* ${time}\n*Activity:* ${lesson}\n*People:* ${people}\n*Total:* €${price}\n\n*Meeting point:*\n${meet}\nPlease arrive 15 minutes before the lesson.\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!\n${contact}`,
+      fr: (name, school, date, time, lesson, people, price, meet, contact) =>
+        `*${school} — Cours Confirme*\n\nBonjour ${name},\n\nVotre cours de surf est *confirme*.\n\n*Date:* ${date}\n*Heure:* ${time}\n*Activite:* ${lesson}\n*Personnes:* ${people}\n*Total:* €${price}\n\n*Point de rendez-vous:*\n${meet}\nMerci d'arriver 15 minutes avant le cours.\n\nPortez votre maillot sous la combinaison. Apportez une serviette et de la creme solaire.\n\nA bientot!\n${contact}`,
+      de: (name, school, date, time, lesson, people, price, meet, contact) =>
+        `*${school} — Kurs Bestatigt*\n\nHallo ${name},\n\nDein Surfkurs ist *bestatigt*.\n\n*Datum:* ${date}\n*Uhrzeit:* ${time}\n*Aktivitat:* ${lesson}\n*Personen:* ${people}\n*Gesamt:* €${price}\n\n*Treffpunkt:*\n${meet}\nBitte 15 Minuten vor der Stunde erscheinen.\n\nTrage deinen Badeanzug unter dem Neoprenanzug. Bring ein Handtuch und Sonnencreme mit.\n\nBis bald!\n${contact}`,
+      es: (name, school, date, time, lesson, people, price, meet, contact) =>
+        `*${school} — Clase Confirmada*\n\nHola ${name},\n\nTu clase de surf esta *confirmada*.\n\n*Fecha:* ${date}\n*Hora:* ${time}\n*Actividad:* ${lesson}\n*Personas:* ${people}\n*Total:* €${price}\n\n*Punto de encuentro:*\n${meet}\nLlega 15 minutos antes de la clase.\n\nViste el banador debajo del traje de neopreno. Trae una toalla y protector solar.\n\n¡Hasta pronto!\n${contact}`,
+      nl: (name, school, date, time, lesson, people, price, meet, contact) =>
+        `*${school} — Les Bevestigd*\n\nHoi ${name},\n\nJe surfles is *bevestigd*.\n\n*Datum:* ${date}\n*Tijd:* ${time}\n*Activiteit:* ${lesson}\n*Personen:* ${people}\n*Totaal:* €${price}\n\n*Ontmoetingspunt:*\n${meet}\nKom 15 minuten voor de les.\n\nDraag je zwemkleding onder het wetsuit. Breng een handdoek en zonnebrand mee.\n\nTot snel!\n${contact}`,
+      'pt-br': (name, school, date, time, lesson, people, price, meet, contact) =>
+        `*${school} — Aula Confirmada*\n\nOi ${name},\n\nSua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Horario:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\nChegue 15 minutos antes da aula.\n\nVista o sunga ou maio por baixo do wetsuit. Traga toalha e protetor solar.\n\nAte logo!\n${contact}`,
     },
     cancelled: {
-      pt: (name, school, date, time) =>
-        `*${school}*\n\nOla ${name},\n\nInfelizmente nao foi possivel confirmar a sua marcacao para ${date} as ${time}.\n\nPedimos desculpa pelo inconveniente. Contacte-nos para remarcar.\n\nObrigado pela compreensao.`,
-      en: (name, school, date, time) =>
-        `*${school}*\n\nHi ${name},\n\nUnfortunately we were unable to confirm your booking for ${date} at ${time}.\n\nWe apologise for the inconvenience. Please contact us to reschedule.\n\nThank you for your understanding.`,
-      fr: (name, school, date, time) =>
-        `*${school}*\n\nBonjour ${name},\n\nNous n'avons malheureusement pas pu confirmer votre reservation pour le ${date} a ${time}.\n\nNous nous excusons pour la gene occasionnee. Contactez-nous pour reprogrammer.\n\nMerci de votre comprehension.`,
-      de: (name, school, date, time) =>
-        `*${school}*\n\nHallo ${name},\n\nLeider konnten wir deine Buchung fur den ${date} um ${time} nicht bestatigen.\n\nWir entschuldigen uns fur die Unannehmlichkeiten. Bitte kontaktiere uns fur eine Umbuchung.\n\nVielen Dank fur dein Verstandnis.`,
-      es: (name, school, date, time) =>
-        `*${school}*\n\nHola ${name},\n\nLamentablemente no pudimos confirmar tu reserva para el ${date} a las ${time}.\n\nPedimos disculpas por los inconvenientes. Contactanos para reprogramar.\n\nGracias por tu comprension.`,
-      nl: (name, school, date, time) =>
-        `*${school}*\n\nHoi ${name},\n\nHelaas konden we je reservering voor ${date} om ${time} niet bevestigen.\n\nOns excuses voor het ongemak. Neem contact met ons op om opnieuw in te plannen.\n\nBedankt voor je begrip.`,
-      'pt-br': (name, school, date, time) =>
-        `*${school}*\n\nOi ${name},\n\nInfelizmente nao conseguimos confirmar sua reserva para ${date} as ${time}.\n\nPedimos desculpas pelo inconveniente. Entre em contato para remarcar.\n\nObrigado pela compreensao.`,
+      pt: (name, school, date, time, contact) =>
+        `*${school}*\n\nOla ${name},\n\nInfelizmente nao foi possivel confirmar a sua marcacao para ${date} as ${time}.\n\nPedimos desculpa pelo inconveniente. Contacte-nos para remarcar.\n\nObrigado pela compreensao.\n${contact}`,
+      en: (name, school, date, time, contact) =>
+        `*${school}*\n\nHi ${name},\n\nUnfortunately we were unable to confirm your booking for ${date} at ${time}.\n\nWe apologise for the inconvenience. Please contact us to reschedule.\n\nThank you for your understanding.\n${contact}`,
+      fr: (name, school, date, time, contact) =>
+        `*${school}*\n\nBonjour ${name},\n\nNous n'avons malheureusement pas pu confirmer votre reservation pour le ${date} a ${time}.\n\nNous nous excusons pour la gene occasionnee. Contactez-nous pour reprogrammer.\n\nMerci de votre comprehension.\n${contact}`,
+      de: (name, school, date, time, contact) =>
+        `*${school}*\n\nHallo ${name},\n\nLeider konnten wir deine Buchung fur den ${date} um ${time} nicht bestatigen.\n\nWir entschuldigen uns fur die Unannehmlichkeiten. Bitte kontaktiere uns fur eine Umbuchung.\n\nVielen Dank fur dein Verstandnis.\n${contact}`,
+      es: (name, school, date, time, contact) =>
+        `*${school}*\n\nHola ${name},\n\nLamentablemente no pudimos confirmar tu reserva para el ${date} a las ${time}.\n\nPedimos disculpas por los inconvenientes. Contactanos para reprogramar.\n\nGracias por tu comprension.\n${contact}`,
+      nl: (name, school, date, time, contact) =>
+        `*${school}*\n\nHoi ${name},\n\nHelaas konden we je reservering voor ${date} om ${time} niet bevestigen.\n\nOns excuses voor het ongemak. Neem contact met ons op om opnieuw in te plannen.\n\nBedankt voor je begrip.\n${contact}`,
+      'pt-br': (name, school, date, time, contact) =>
+        `*${school}*\n\nOi ${name},\n\nInfelizmente nao conseguimos confirmar sua reserva para ${date} as ${time}.\n\nPedimos desculpas pelo inconveniente. Entre em contato para remarcar.\n\nObrigado pela compreensao.\n${contact}`,
     },
   };
 
@@ -2345,35 +2358,44 @@
           };
           if (COUNTRY_LANG[cn]) lang = COUNTRY_LANG[cn];
         }
+        const contacts2 = (() => { try { return JSON.parse(localStorage.getItem(`surfbook_contacts_${school.id}`) || 'null'); } catch(_) { return null; } })() || {};
+        const instag  = school.instagram  || contacts2.instagram || '';
+        const website = school.website    || contacts2.website   || '';
+        const contactLines = [
+          instag  ? `📸 ${instag}`  : '',
+          website ? `🌐 ${website}` : '',
+        ].filter(Boolean).join('\n');
+        const translatedLesson = transLesson(b.lesson_type, lang);
         const msgs    = WA_MSGS[newStatus];
         const fn      = msgs[lang] || msgs['pt'];
         const msg     = newStatus === 'confirmed'
-          ? fn(b.client_name, school.name, dateStr, b.booking_time, b.lesson_type, b.num_people, price, school.meeting_point)
-          : fn(b.client_name, school.name, dateStr, b.booking_time);
+          ? fn(b.client_name, school.name, dateStr, b.booking_time, translatedLesson, b.num_people, price, school.meeting_point, contactLines)
+          : fn(b.client_name, school.name, dateStr, b.booking_time, contactLines);
         const phone = b.client_phone.replace(/\D/g, '');
         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
 
         // Email to client (if email provided)
         if (b.client_email) {
           const isConf = newStatus === 'confirmed';
-          const subjectPT = isConf
-            ? `✅ Reserva Confirmada — ${b.lesson_type} ${dateStr}`
-            : `❌ Reserva Cancelada — ${b.lesson_type} ${dateStr}`;
-          const subjectEN = isConf
-            ? `✅ Booking Confirmed — ${b.lesson_type} ${dateStr}`
-            : `❌ Booking Cancelled — ${b.lesson_type} ${dateStr}`;
           const useEN = ['en','fr','de','es','nl'].includes(lang);
-          const emailSubject = useEN ? subjectEN : subjectPT;
+          const lessonTrans = transLesson(b.lesson_type, lang);
+          const subjectPTf = isConf
+            ? `✅ Reserva Confirmada — ${lessonTrans} ${dateStr}`
+            : `❌ Reserva Cancelada — ${lessonTrans} ${dateStr}`;
+          const subjectENf = isConf
+            ? `✅ Booking Confirmed — ${lessonTrans} ${dateStr}`
+            : `❌ Booking Cancelled — ${lessonTrans} ${dateStr}`;
+          const emailSubject = useEN ? subjectENf : subjectPTf;
 
           let emailBody;
           if (isConf) {
             emailBody = useEN
-              ? `Hi ${b.client_name},\n\nYour surf lesson is confirmed!\n\nLesson: ${b.lesson_type}\nDate: ${dateStr}\nTime: ${b.booking_time}\nPeople: ${b.num_people}\nTotal: €${price}\n\nMeeting point:\n${school.meeting_point}\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!\n${school.name}`
-              : `Olá ${b.client_name},\n\nA sua reserva está confirmada!\n\nAula: ${b.lesson_type}\nData: ${dateStr}\nHorário: ${b.booking_time}\nPessoas: ${b.num_people}\nTotal: €${price}\n\nPonto de encontro:\n${school.meeting_point}\n\nUse fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAté breve!\n${school.name}`;
+              ? `Hi ${b.client_name},\n\nYour surf lesson is confirmed!\n\nLesson: ${lessonTrans}\nDate: ${dateStr}\nTime: ${b.booking_time}\nPeople: ${b.num_people}\nTotal: €${price}\n\nMeeting point:\n${school.meeting_point}\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!\n${school.name}`
+              : `Olá ${b.client_name},\n\nA sua reserva está confirmada!\n\nAula: ${lessonTrans}\nData: ${dateStr}\nHorário: ${b.booking_time}\nPessoas: ${b.num_people}\nTotal: €${price}\n\nPonto de encontro:\n${school.meeting_point}\n\nUse fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAté breve!\n${school.name}`;
           } else {
             emailBody = useEN
-              ? `Hi ${b.client_name},\n\nUnfortunately your booking has been cancelled.\n\nLesson: ${b.lesson_type}\nDate: ${dateStr}\nTime: ${b.booking_time}\n\nWe apologise for the inconvenience. Please contact us to reschedule.\n\n${school.name}`
-              : `Olá ${b.client_name},\n\nInfelizmente a sua reserva foi cancelada.\n\nAula: ${b.lesson_type}\nData: ${dateStr}\nHorário: ${b.booking_time}\n\nPedimos desculpa pelo inconveniente. Contacte-nos para reagendar.\n\n${school.name}`;
+              ? `Hi ${b.client_name},\n\nUnfortunately your booking has been cancelled.\n\nLesson: ${lessonTrans}\nDate: ${dateStr}\nTime: ${b.booking_time}\n\nWe apologise for the inconvenience. Please contact us to reschedule.\n\n${school.name}`
+              : `Olá ${b.client_name},\n\nInfelizmente a sua reserva foi cancelada.\n\nAula: ${lessonTrans}\nData: ${dateStr}\nHorário: ${b.booking_time}\n\nPedimos desculpa pelo inconveniente. Contacte-nos para reagendar.\n\n${school.name}`;
           }
 
           const contacts = (() => { try { return JSON.parse(localStorage.getItem(`surfbook_contacts_${school.id}`) || 'null'); } catch(_) { return null; } })() || {};
