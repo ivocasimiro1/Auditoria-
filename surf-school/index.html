@@ -2193,36 +2193,57 @@ async function reservarWhatsApp() {
   // ── Save to Supabase + Email notification ────────────────────
   const waBtn = document.querySelector('.btn-whatsapp');
 
-  // ── Email backup via FormSubmit (sends to school email) ──────
-  try {
-    const lessonPT = LANGS['pt'][booking.lessonKey] || booking.lessonKey; // sempre PT para a escola
-    const emailBody = [
-      `Nova Marcação — ${lessonPT}`,
-      `Nome: ${nome}`,
-      `Telefone: ${tel}`,
-      email ? `Email: ${email}` : '',
-      country ? `País: ${country}` : '',
-      `Aula: ${lessonPT}`,
-      `Data: ${booking.selectedDateStr}`,
-      `Horário: ${booking.time}`,
-      `Pessoas: ${pess}`,
-      `Total: €${total}`,
-      nota ? `Nota do cliente: ${nota}` : '',
-    ].filter(Boolean).join('\n');
+  // ── Email backup via FormSubmit ──────────────────────────────
+  (async () => {
+    try {
+      // Garantir email da escola — Supabase directo + fallback localStorage
+      let sEmail = SCHOOL_EMAIL, sEmail2 = SCHOOL_EMAIL2;
+      if (!sEmail && sb) {
+        try {
+          const { data: sd } = await sb.from('schools')
+            .select('school_email,school_email2')
+            .eq('id', SCHOOL_ID_ACTIVE).maybeSingle();
+          if (sd?.school_email)  sEmail  = sd.school_email;
+          if (sd?.school_email2) sEmail2 = sd.school_email2;
+        } catch(_) {}
+      }
+      if (!sEmail) {
+        try {
+          const lsC = JSON.parse(localStorage.getItem(`surfbook_contacts_${SCHOOL_ID_ACTIVE}`) || 'null');
+          if (lsC?.email)  sEmail  = lsC.email;
+          if (lsC?.email2) sEmail2 = lsC.email2;
+        } catch(_) {}
+      }
 
-    const _schoolCC = [SCHOOL_EMAIL, SCHOOL_EMAIL2, email].filter(Boolean).join(',');
-    fetch('https://formsubmit.co/ajax/ivocasimiro@gmail.com', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({
-        _subject: `🏄 Nova Marcação: ${nome} — ${lessonPT} ${booking.selectedDateStr}`,
-        message: emailBody,
-        _replyto: email || tel,
-        _cc: _schoolCC || undefined,
-        _template: 'table',
-      })
-    }).catch(() => {}); // email is best-effort, don't block on failure
-  } catch(e) {}
+      const lessonPT = LANGS['pt'][booking.lessonKey] || booking.lessonKey;
+      const emailBody = [
+        `Nova Marcação — ${lessonPT}`,
+        `Nome: ${nome}`,
+        `Telefone: ${tel}`,
+        email ? `Email: ${email}` : '',
+        country ? `País: ${country}` : '',
+        `Aula: ${lessonPT}`,
+        `Data: ${booking.selectedDateStr}`,
+        `Horário: ${booking.time}`,
+        `Pessoas: ${pess}`,
+        `Total: €${total}`,
+        nota ? `Nota do cliente: ${nota}` : '',
+      ].filter(Boolean).join('\n');
+
+      const ccList = [sEmail, sEmail2, email].filter(Boolean).join(',');
+      fetch('https://formsubmit.co/ajax/ivocasimiro@gmail.com', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          _subject: `🏄 Nova Marcação: ${nome} — ${lessonPT} ${booking.selectedDateStr}`,
+          message: emailBody,
+          _replyto: email || tel,
+          _cc: ccList || undefined,
+          _template: 'table',
+        })
+      }).catch(() => {});
+    } catch(e) {}
+  })();
 
   try {
     const [year, month, day] = booking.selectedDateKey.split('-').map(Number);
