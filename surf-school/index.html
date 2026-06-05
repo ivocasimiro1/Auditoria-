@@ -1701,7 +1701,6 @@ let SCHOOL_ID_ACTIVE    = _escolaParam;
 let SCHOOL_WORKING_DAYS = null; // null = all days; array [0-6] (0=Sun) when set
 let SCHOOL_EMAIL       = '';
 let SCHOOL_EMAIL2      = '';
-let SCHOOL_CMB_KEY     = ''; // CallMeBot API key para notificações WA automáticas
 
 // ── WEATHER ───────────────────────────────────────────────────────────────────
 let WEATHER_DATA = {};
@@ -1811,7 +1810,6 @@ async function loadSchoolConfig() {
       const lsC = JSON.parse(localStorage.getItem(`surfbook_contacts_${SCHOOL_ID_ACTIVE}`) || 'null');
       if (lsC?.email)         SCHOOL_EMAIL   = lsC.email;
       if (lsC?.email2)        SCHOOL_EMAIL2  = lsC.email2;
-      if (lsC?.callmebot_key) SCHOOL_CMB_KEY = lsC.callmebot_key;
     } catch(_) {}
   }
   // Lesson types: DB → localStorage fallback → static defaults
@@ -2283,13 +2281,6 @@ async function reservarWhatsApp() {
       } else {
         showConfirm(true, 'Reserva guardada!', 'Aguarda confirmação por WhatsApp. Clica em "Nova Marcação" quando quiseres marcar mais.');
         loadMonthAvailability(calYear, calMonth);
-        // Notificação WA automática ao dono via CallMeBot
-        const _cmbKey = SCHOOL_CMB_KEY || (() => { try { return JSON.parse(localStorage.getItem(`surfbook_contacts_${SCHOOL_ID_ACTIVE}`)||'null')?.callmebot_key; } catch(_){} })();
-        if (_cmbKey && WA_NUMBER) {
-          const lessonPT2 = LANGS['pt'][booking.lessonKey] || booking.lessonKey;
-          const notifMsg  = `🏄 Nova marcação!\n${nome} — ${lessonPT2}\n📅 ${booking.selectedDateStr} às ${booking.time}\n👥 ${pess} pessoa(s) — €${total}\n\nConfirmar: auditoria-25b.pages.dev/admin`;
-          new Image().src = `https://api.callmebot.com/whatsapp.php?phone=${WA_NUMBER}&text=${encodeURIComponent(notifMsg)}&apikey=${_cmbKey}`;
-        }
       }
     } else {
       showConfirm(false, 'Sem ligação à base de dados', 'O WhatsApp foi aberto. O dono foi notificado por WhatsApp.');

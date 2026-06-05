@@ -860,18 +860,6 @@
             <div style="font-size:.7rem;color:var(--gray);margin-top:.25rem">📧 Estes emails recebem cópia de cada reserva nova e de cada confirmação/cancelamento. Os restantes campos aparecem no cartão QR e no site.</div>
           </div>
           <div class="form-group" style="grid-column:span 2">
-            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">🔔 Notificações WA Automáticas</label>
-            <div class="contacts-grid" style="margin-top:.5rem">
-              <div>
-                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.3rem">🤖 API Key CallMeBot</div>
-                <input type="text" id="cfg-callmebot-key" placeholder="Ex: 1234567" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.55rem .8rem;color:var(--white);font-family:Inter,sans-serif;font-size:.85rem;width:100%;outline:none;color-scheme:dark" />
-              </div>
-              <div style="display:flex;align-items:flex-end">
-                <div style="font-size:.7rem;color:var(--gray);line-height:1.5">Para activar: envia <strong style="color:var(--white)">I allow callmebot to send me messages</strong> para <strong style="color:var(--cyan)">+34 644 68 12 55</strong> no WA. Recebes a API Key de volta. O número de destino é o WA principal acima.</div>
-              </div>
-            </div>
-          </div>
-          <div class="form-group" style="grid-column:span 2">
             <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Ponto de Encontro</label>
             <textarea id="cfg-meeting" rows="3" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.88rem;width:100%;outline:none;resize:vertical;color-scheme:dark"></textarea>
             <div style="font-size:.72rem;color:var(--gray);margin-top:.25rem">⚠️ Apenas o endereço/localização — a instrução de hora ("chegar 15 min antes") é adicionada automaticamente em cada idioma.</div>
@@ -2093,7 +2081,6 @@
     document.getElementById('cfg-email2').value    = school.school_email2  || c.email2|| '';
     document.getElementById('cfg-instagram').value      = school.instagram         || c.instagram    || '';
     document.getElementById('cfg-website').value        = school.website           || c.website      || '';
-    document.getElementById('cfg-callmebot-key').value = school.callmebot_key     || c.callmebot_key|| '';
     loadMsgTemplates(school);
     renderCfgLessons();
   }
@@ -2301,7 +2288,6 @@
           email2: (document.getElementById('cfg-email2')?.value||'').trim(),
           instagram: (document.getElementById('cfg-instagram')?.value||'').trim(),
           website: (document.getElementById('cfg-website')?.value||'').trim(),
-          callmebot_key: (document.getElementById('cfg-callmebot-key')?.value||'').trim(),
         };
         localStorage.setItem(`surfbook_contacts_${school.id}`, JSON.stringify(contactsSnap));
         Object.assign(school, { wa2_number: contactsSnap.wa2, school_email2: contactsSnap.email2, instagram: contactsSnap.instagram, website: contactsSnap.website });
