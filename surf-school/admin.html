@@ -811,6 +811,11 @@
             <input type="number" id="cfg-maxslot" min="1" max="100" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.88rem;width:100%;outline:none;color-scheme:dark" />
           </div>
           <div class="form-group" style="grid-column:span 2">
+            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Email para notificações de reserva</label>
+            <input type="email" id="cfg-email" placeholder="escola@exemplo.com" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.88rem;width:100%;outline:none;color-scheme:dark" />
+            <div style="font-size:.72rem;color:var(--gray);margin-top:.25rem">📧 Recebe cópia de cada reserva nova directamente no email da escola.</div>
+          </div>
+          <div class="form-group" style="grid-column:span 2">
             <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Ponto de Encontro</label>
             <textarea id="cfg-meeting" rows="3" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.88rem;width:100%;outline:none;resize:vertical;color-scheme:dark"></textarea>
             <div style="font-size:.72rem;color:var(--gray);margin-top:.25rem">⚠️ Apenas o endereço/localização — a instrução de hora ("chegar 15 min antes") é adicionada automaticamente em cada idioma.</div>
@@ -913,7 +918,10 @@
       </div>
       <div class="chart-grid">
         <div class="chart-card">
-          <div class="chart-card-title"><span id="chart-monthly-title">Marcações por Mês</span></div>
+          <div class="chart-card-title">
+            <span id="chart-monthly-title">Marcações por Mês</span>
+            <button id="chart-monthly-back" onclick="resetToMonthView()" style="display:none;background:rgba(0,207,253,.1);border:1px solid rgba(0,207,253,.28);border-radius:6px;color:var(--cyan);font-size:.72rem;font-weight:700;padding:.2rem .65rem;cursor:pointer;font-family:inherit">← Meses</button>
+          </div>
           <canvas id="chart-monthly" style="max-height:200px"></canvas>
         </div>
         <div class="chart-card">
@@ -1888,19 +1896,30 @@
     document.getElementById('cfg-wa').value      = school.wa_number      || '';
     document.getElementById('cfg-maxslot').value = school.max_per_slot   || 6;
     document.getElementById('cfg-meeting').value = school.meeting_point  || '';
-    cfgSlots = [...(school.slots || ['08:00','10:30','14:00','16:30'])];
+    // Slots — DB → localStorage → default
+    const lsSlots = (() => { try { const v = localStorage.getItem(`surfbook_slots_${school.id}`); return v ? JSON.parse(v) : null; } catch(_) { return null; } })();
+    cfgSlots = [...(school.slots?.length ? school.slots : lsSlots?.length ? lsSlots : ['08:00','10:30','14:00','16:30'])];
+    // Max slot — DB → localStorage → default
+    const lsMax = (() => { try { return parseInt(localStorage.getItem(`surfbook_maxslot_${school.id}`)) || 0; } catch(_) { return 0; } })();
+    document.getElementById('cfg-maxslot').value = school.max_per_slot || lsMax || 6;
     renderCfgSlots();
-    // Working days — from school object or localStorage fallback
+    // Working days — DB → localStorage → all days
     const wdSaved = school.working_days || (() => {
       try { const v = localStorage.getItem(`surfbook_wdays_${school.id}`); return v ? JSON.parse(v) : null; } catch(_) { return null; }
     })();
     cfgWorkingDays = wdSaved?.length ? [...wdSaved] : [0,1,2,3,4,5,6];
     renderCfgDays();
-    // Lesson types — from school object or LESSON_PRICES fallback
+    // Lesson types — DB → localStorage → hardcoded defaults
     const lt = school.lesson_types;
+    const lsLt = (() => { try { const v = localStorage.getItem(`surfbook_ltypes_${school.id}`); return v ? JSON.parse(v) : null; } catch(_) { return null; } })();
     cfgLessonTypes = lt?.length
       ? lt.map(x => ({ name:x.name, price:x.price, maxPax:x.max_pax||6, icon:x.icon||CFG_DEFAULT_ICONS[x.name]||'🏄' }))
-      : Object.entries(LESSON_PRICES).map(([name,lp]) => ({ name, price:lp.price, maxPax:lp.perPerson?(school.max_per_slot||6):1, icon:CFG_DEFAULT_ICONS[name]||'🏄' }));
+      : lsLt?.length
+        ? lsLt.map(x => ({ name:x.name, price:x.price, maxPax:x.max_pax||6, icon:x.icon||CFG_DEFAULT_ICONS[x.name]||'🏄' }))
+        : Object.entries(LESSON_PRICES).map(([name,lp]) => ({ name, price:lp.price, maxPax:lp.perPerson?(school.max_per_slot||6):1, icon:CFG_DEFAULT_ICONS[name]||'🏄' }));
+    // School email
+    const lsEmail = (() => { try { return localStorage.getItem(`surfbook_email_${school.id}`) || ''; } catch(_) { return ''; } })();
+    document.getElementById('cfg-email').value = school.school_email || lsEmail;
     renderCfgLessons();
   }
 
@@ -2037,6 +2056,7 @@
         time_slots:    cfgSlots,
         lesson_types:  lessonTypesData,
         working_days:  cfgWorkingDays,
+        school_email:  (document.getElementById('cfg-email')?.value || '').trim(),
         updated_at:    new Date().toISOString(),
       };
       const upsertOpts = { onConflict: 'id' };
@@ -2087,6 +2107,7 @@
         localStorage.setItem(`surfbook_wdays_${school.id}`,  JSON.stringify(cfgWorkingDays));
         localStorage.setItem(`surfbook_slots_${school.id}`,  JSON.stringify(cfgSlots));
         localStorage.setItem(`surfbook_maxslot_${school.id}`,String(payload.max_per_slot));
+        if (payload.school_email) localStorage.setItem(`surfbook_email_${school.id}`, payload.school_email);
       } catch(_) {}
       // Sync LESSON_PRICES and manual booking dropdown
       LESSON_PRICES = {};
@@ -2198,10 +2219,18 @@
         // Infer language from country when saved as PT but client is foreign
         if (b.client_country) {
           const cn = b.client_country.replace(/^\S+\s/, '');
-          const COUNTRY_LANG = { 'United Kingdom':'en', 'USA':'en', 'Canada':'en', 'Ireland':'en',
-            'France':'fr', 'Belgium':'fr', 'Switzerland':'fr',
-            'Germany':'de', 'Austria':'de',
-            'Spain':'es', 'Netherlands':'nl', 'Brasil':'pt-br', 'Brazil':'pt-br' };
+          const COUNTRY_LANG = {
+            'Reino Unido':'en','Estados Unidos':'en','Canadá':'en','Irlanda':'en','Austrália':'en','Nova Zelândia':'en','África do Sul':'en',
+            'França':'fr','Bélgica':'fr','Suíça':'fr',
+            'Alemanha':'de','Áustria':'de',
+            'Espanha':'es',
+            'Holanda':'nl','Países Baixos':'nl',
+            'Brasil':'pt-br',
+            'United Kingdom':'en','USA':'en','Canada':'en','Ireland':'en','Australia':'en',
+            'France':'fr','Belgium':'fr','Switzerland':'fr',
+            'Germany':'de','Austria':'de',
+            'Spain':'es','Netherlands':'nl','Brazil':'pt-br',
+          };
           if (COUNTRY_LANG[cn]) lang = COUNTRY_LANG[cn];
         }
         const msgs    = WA_MSGS[newStatus];
@@ -2235,14 +2264,16 @@
               : `Olá ${b.client_name},\n\nInfelizmente a sua reserva foi cancelada.\n\nAula: ${b.lesson_type}\nData: ${dateStr}\nHorário: ${b.booking_time}\n\nPedimos desculpa pelo inconveniente. Contacte-nos para reagendar.\n\n${school.name}`;
           }
 
+          const schoolEmail = school.school_email || (() => { try { return localStorage.getItem(`surfbook_email_${school.id}`) || ''; } catch(_) { return ''; } })();
+          const ccList = [b.client_email, schoolEmail].filter(Boolean).join(',');
           fetch('https://formsubmit.co/ajax/ivocasimiro@gmail.com', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({
               _subject: emailSubject,
               message: emailBody,
-              _replyto: 'ivocasimiro@gmail.com',
-              _cc: b.client_email,
+              _replyto: b.client_email || 'ivocasimiro@gmail.com',
+              _cc: ccList || undefined,
               _template: 'table',
             })
           }).catch(() => {});
@@ -2677,10 +2708,18 @@
         let lang = (b.language || 'pt').toLowerCase();
         if (b.client_country) {
           const cn = b.client_country.replace(/^\S+\s/, '');
-          const COUNTRY_LANG = { 'United Kingdom':'en', 'USA':'en', 'Canada':'en', 'Ireland':'en',
-            'France':'fr', 'Belgium':'fr', 'Switzerland':'fr',
-            'Germany':'de', 'Austria':'de',
-            'Spain':'es', 'Netherlands':'nl', 'Brasil':'pt-br', 'Brazil':'pt-br' };
+          const COUNTRY_LANG = {
+            'Reino Unido':'en','Estados Unidos':'en','Canadá':'en','Irlanda':'en','Austrália':'en','Nova Zelândia':'en','África do Sul':'en',
+            'França':'fr','Bélgica':'fr','Suíça':'fr',
+            'Alemanha':'de','Áustria':'de',
+            'Espanha':'es',
+            'Holanda':'nl','Países Baixos':'nl',
+            'Brasil':'pt-br',
+            'United Kingdom':'en','USA':'en','Canada':'en','Ireland':'en','Australia':'en',
+            'France':'fr','Belgium':'fr','Switzerland':'fr',
+            'Germany':'de','Austria':'de',
+            'Spain':'es','Netherlands':'nl','Brazil':'pt-br',
+          };
           if (COUNTRY_LANG[cn]) lang = COUNTRY_LANG[cn];
         }
         const rschMsgs = {
@@ -3074,6 +3113,14 @@
     }
   }
 
+  function resetToMonthView() {
+    chartMonth = null;
+    if (chartFilter?.field === 'day') chartFilter = null;
+    document.querySelectorAll('.chart-month-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.chart-month-btn')?.classList.add('active');
+    buildCharts();
+  }
+
   function setChartYear(y) {
     chartYear = y;
     chartMonth = null;
@@ -3107,18 +3154,26 @@
     // Active bookings (non-cancelled) for revenue/occupancy charts
     let data = allPeriod.filter(b => b.status !== 'cancelled');
 
+    // ── Back button visibility ─────────────────────────────────
+    const backBtn = document.getElementById('chart-monthly-back');
+    if (backBtn) backBtn.style.display = chartMonth !== null ? 'inline-flex' : 'none';
+
     // ── Cross-filter ───────────────────────────────────────────
     const filterBar  = document.getElementById('chart-filter-bar');
     const filterLbl  = document.getElementById('chart-filter-label');
     if (chartFilter && filterBar) {
-      const fieldPT = { lesson_type:'Modalidade', booking_time:'Horário', gender:'Género', nat:'Nacionalidade', wetsuit_size:'Tamanho Fato' };
+      const fieldPT = { lesson_type:'Modalidade', booking_time:'Horário', gender:'Género', nat:'Nacionalidade', wetsuit_size:'Tamanho Fato', day:'Dia' };
+      const dispVal = chartFilter.field === 'day'
+        ? (() => { const [,m,d] = chartFilter.value.split('-'); return `${parseInt(d)} ${months[parseInt(m)-1]}`; })()
+        : chartFilter.value;
       filterBar.style.display = 'flex';
-      if (filterLbl) filterLbl.textContent = `${fieldPT[chartFilter.field]||chartFilter.field}: ${chartFilter.value}`;
+      if (filterLbl) filterLbl.textContent = `${fieldPT[chartFilter.field]||chartFilter.field}: ${dispVal}`;
       const { field, value } = chartFilter;
       data = data.filter(b => {
         if (field === 'gender') return (GNORM[(b.client_gender||'').trim()] || (b.client_gender||'').trim() || 'N/D') === value;
         if (field === 'nat')    return (b.client_country||'').replace(/^\S+\s/,'').trim() === value;
         if (field === 'lesson_type') return normLesson(b.lesson_type) === value;
+        if (field === 'day')         return b.booking_date === value;
         if (field === 'wetsuit_size') {
           const sizes = Array.isArray(b.equipment_list) ? b.equipment_list.map(p=>p.size).filter(Boolean) : (b.wetsuit_size ? [b.wetsuit_size] : []);
           return sizes.includes(value);
@@ -3227,7 +3282,21 @@
       data: { labels: timeLabels, datasets: [{ label: 'Marcações', data: timeData, backgroundColor: 'rgba(0,207,253,.6)', borderRadius: 4 }] },
       options: {
         onClick: (e, els) => {
-          if (!els.length || chartMonth !== null) return;
+          if (chartMonth !== null) {
+            if (els.length) {
+              // Day view: click a bar → cross-filter all charts for that day
+              const yr = chartYear === 'all' ? new Date().getFullYear() : chartYear;
+              const mm = String(chartMonth).padStart(2,'0');
+              const dd = String(els[0].index + 1).padStart(2,'0');
+              applyChartFilter('day', `${yr}-${mm}-${dd}`);
+            } else {
+              // Day view: click empty area → go back to month view
+              resetToMonthView();
+            }
+            return;
+          }
+          // Year view: click a month bar → drill down into that month
+          if (!els.length) return;
           const btn = document.querySelectorAll('.chart-month-btn')[els[0].index];
           if (btn) setChartMonth(els[0].index + 1, btn);
         },
