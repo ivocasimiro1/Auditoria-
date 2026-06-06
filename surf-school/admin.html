@@ -2236,6 +2236,15 @@
         meeting_point: payload.meeting_point, slots: payload.time_slots,
         lesson_types: lessonTypesData, working_days: cfgWorkingDays,
       });
+      // Garantir que school_email é sempre guardado no Supabase (pode ter sido retirado pelo cascade)
+      const emailVal  = (document.getElementById('cfg-email')?.value||'').trim();
+      const email2Val = (document.getElementById('cfg-email2')?.value||'').trim();
+      if (sb && emailVal) {
+        sb.from('schools').update({ school_email: emailVal, school_email2: email2Val || null })
+          .eq('id', school.id).then(({ error: e }) => {
+            if (!e) { school.school_email = emailVal; school.school_email2 = email2Val; }
+          });
+      }
       // Always persist to localStorage so booking site can read even if DB columns are missing
       try {
         localStorage.setItem(`surfbook_ltypes_${school.id}`, JSON.stringify(lessonTypesData));
