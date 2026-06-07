@@ -1895,9 +1895,9 @@
       return `<tr>
         <td style="color:var(--gray);font-size:.8rem">#${b.booking_ref || (i+1)}</td>
         <td><strong>${dateStr}</strong><small>${b.booking_time}</small></td>
-        <td>${b.lesson_type} ${langFlag}</td>
-        <td>${b.client_name}${b.client_country ? `<small style="margin-left:.35rem;opacity:.8">${b.client_country.split(' ')[0]}</small>` : ''}
-          <small>${b.client_phone}${b.client_email ? ' · ' + b.client_email : ''}</small>
+        <td>${escapeHtml(b.lesson_type)} ${langFlag}</td>
+        <td>${escapeHtml(b.client_name)}${b.client_country ? `<small style="margin-left:.35rem;opacity:.8">${escapeHtml(b.client_country.split(' ')[0])}</small>` : ''}
+          <small>${escapeHtml(b.client_phone)}${b.client_email ? ' · ' + escapeHtml(b.client_email) : ''}</small>
           ${equip ? `<small style="color:#C9A84C">👕 ${equip}</small>` : ''}
         </td>
         <td class="col-center">${b.num_people}</td>
@@ -2003,6 +2003,13 @@
     renderReviews();
   }
 
+  // Escapa HTML para prevenir XSS em conteúdo submetido por clientes
+  function escapeHtml(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   function renderReviews() {
     const filtered = revFilter === 'all' ? allReviews
       : allReviews.filter(r => r.status === revFilter);
@@ -2033,8 +2040,8 @@
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
           <div>
             <span class="review-stars">${stars}</span> ${statusBadge}
-            <div class="review-meta">${r.client_name} · ${date}</div>
-            ${r.comment ? `<div class="review-comment">"${r.comment}"</div>` : ''}
+            <div class="review-meta">${escapeHtml(r.client_name)} · ${date}</div>
+            ${r.comment ? `<div class="review-comment">"${escapeHtml(r.comment)}"</div>` : ''}
           </div>
         </div>
         ${actions}
@@ -2670,7 +2677,7 @@
         const dotCls = b.status === 'confirmed' ? 'confirmed' : 'pending';
         const dotLetter = b.status === 'confirmed' ? 'C' : 'P';
         for (let i = 0; i < n; i++) {
-          dots.push(`<div class="seat ${dotCls}" title="${b.client_name}${n>1?' ('+(i+1)+'/'+n+')':''}">${dotLetter}</div>`);
+          dots.push(`<div class="seat ${dotCls}" title="${escapeHtml(b.client_name)}${n>1?' ('+(i+1)+'/'+n+')':''}">${dotLetter}</div>`);
           seatIdx++;
         }
       });
@@ -2682,7 +2689,7 @@
       const clientRows = books.map(b => {
         const np = b.num_people > 1 ? ` (${b.num_people} pess.)` : '';
         const dotCls = b.status === 'confirmed' ? 'dot-confirmed' : 'dot-pending';
-        return `<div class="slot-client-row"><div class="slot-client-dot ${dotCls}"></div><span>${b.client_name}${np}</span></div>`;
+        return `<div class="slot-client-row"><div class="slot-client-dot ${dotCls}"></div><span>${escapeHtml(b.client_name)}${np}</span></div>`;
       }).join('');
 
       const dStr = JSON.stringify(dateStr).replace(/"/g,"'");
@@ -2863,9 +2870,9 @@
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
             <div>
               <div class="today-card-time">${b.booking_time}</div>
-              <div class="today-card-name">${b.client_name}${b.client_country ? `<span style="font-size:.8rem;margin-left:.4rem;opacity:.8">${b.client_country.split(' ')[0]}</span>` : ''}</div>
-              <div class="today-card-lesson">${b.lesson_type} · ${b.num_people} pess. · €${price}</div>
-              <div style="font-size:.73rem;color:var(--gray);margin-top:.2rem">📞 ${b.client_phone}${b.client_email?' · '+b.client_email:''}${b.client_country?` · ${b.client_country}`:''}</div>
+              <div class="today-card-name">${escapeHtml(b.client_name)}${b.client_country ? `<span style="font-size:.8rem;margin-left:.4rem;opacity:.8">${escapeHtml(b.client_country.split(' ')[0])}</span>` : ''}</div>
+              <div class="today-card-lesson">${escapeHtml(b.lesson_type)} · ${b.num_people} pess. · €${price}</div>
+              <div style="font-size:.73rem;color:var(--gray);margin-top:.2rem">📞 ${escapeHtml(b.client_phone)}${b.client_email?' · '+escapeHtml(b.client_email):''}${b.client_country?` · ${escapeHtml(b.client_country)}`:''}</div>
             </div>
             <span class="status-badge ${s.cls}" style="font-size:.65rem;flex-shrink:0">${s.label}</span>
           </div>
@@ -2901,7 +2908,7 @@
     // Info box
     const [y,m,d] = b.booking_date.split('-');
     document.getElementById('rsch-info').innerHTML =
-      `<strong>${b.client_name}</strong> · ${b.lesson_type}<br>Atual: <strong>${d}/${m}/${y} às ${b.booking_time}</strong>`;
+      `<strong>${escapeHtml(b.client_name)}</strong> · ${escapeHtml(b.lesson_type)}<br>Atual: <strong>${d}/${m}/${y} às ${b.booking_time}</strong>`;
 
     // Date input — default to current date
     document.getElementById('rsch-date').value = b.booking_date;
@@ -3053,7 +3060,7 @@
       <div class="detail-section">
         <div class="detail-section-title">📋 Reserva</div>
         <div class="detail-row"><span>Referência</span><strong>#${b.booking_ref || b.id?.slice(0,8)}</strong></div>
-        <div class="detail-row"><span>Modalidade</span><strong>${b.lesson_type}</strong></div>
+        <div class="detail-row"><span>Modalidade</span><strong>${escapeHtml(b.lesson_type)}</strong></div>
         <div class="detail-row"><span>Data</span><strong>${dateStr} às ${b.booking_time}</strong></div>
         <div class="detail-row"><span>Pessoas</span><strong>${b.num_people}</strong></div>
         <div class="detail-row"><span>Total</span><strong style="color:var(--cyan)">€${parseFloat(b.total_price).toFixed(2)}</strong></div>
@@ -3061,10 +3068,10 @@
       </div>
       <div class="detail-section">
         <div class="detail-section-title">👤 Cliente</div>
-        <div class="detail-row"><span>Nome</span><strong>${b.client_name}</strong></div>
-        <div class="detail-row"><span>Telemóvel</span><strong>${b.client_phone}</strong></div>
-        ${b.client_email ? `<div class="detail-row"><span>Email</span><strong>${b.client_email}</strong></div>` : ''}
-        ${b.notes ? `<div class="detail-row"><span>Nota</span><strong style="max-width:70%;text-align:right">${b.notes}</strong></div>` : ''}
+        <div class="detail-row"><span>Nome</span><strong>${escapeHtml(b.client_name)}</strong></div>
+        <div class="detail-row"><span>Telemóvel</span><strong>${escapeHtml(b.client_phone)}</strong></div>
+        ${b.client_email ? `<div class="detail-row"><span>Email</span><strong>${escapeHtml(b.client_email)}</strong></div>` : ''}
+        ${b.notes ? `<div class="detail-row"><span>Nota</span><strong style="max-width:70%;text-align:right">${escapeHtml(b.notes)}</strong></div>` : ''}
       </div>
       ${equipHtml ? `<div class="detail-section"><div class="detail-section-title">👕 Equipamento</div>${equipHtml}</div>` : ''}
     `;

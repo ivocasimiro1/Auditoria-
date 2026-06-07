@@ -1850,6 +1850,13 @@ if (SCHOOL_WORKING_DAYS) buildCalendar();
   await loadPublicReviews();
 }
 
+// Escapa HTML para prevenir XSS em conteúdo submetido por clientes
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 async function loadPublicReviews() {
   if (!sb) return;
   try {
@@ -1866,11 +1873,12 @@ async function loadPublicReviews() {
 
     const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     grid.innerHTML = data.map(r => {
-      const initial = (r.client_name || '?')[0].toUpperCase();
+      const name    = escapeHtml(r.client_name || 'Cliente');
+      const initial = escapeHtml((r.client_name || '?')[0].toUpperCase());
       const stars   = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
       const d       = r.created_at ? new Date(r.created_at) : null;
       const dateLbl = d ? `${months[d.getMonth()]} ${d.getFullYear()}` : '';
-      const comment = r.comment ? `"${r.comment}"` : '';
+      const comment = r.comment ? `"${escapeHtml(r.comment)}"` : '';
       return `
         <div class="review-card">
           <div class="rq">"</div>
@@ -1878,7 +1886,7 @@ async function loadPublicReviews() {
           <p class="review-text">${comment}</p>
           <div class="review-author">
             <div class="review-avatar">${initial}</div>
-            <div><div class="review-name">${r.client_name || 'Cliente'}</div><div class="review-loc">${dateLbl}</div></div>
+            <div><div class="review-name">${name}</div><div class="review-loc">${dateLbl}</div></div>
           </div>
         </div>`;
     }).join('');
@@ -2456,6 +2464,15 @@ loadSchoolConfig(); // loads time_slots + max_per_slot from Supabase, then loadP
 loadMonthAvailability(calYear, calMonth);
 updateClock();
 fetchConditions(getBeach());
+
+// ── SERVICE WORKER (PWA offline + instalável) ─────────────────────────────────
+// Network-first: online serve sempre conteúdo fresco; cache só para offline.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
 setInterval(updateClock, 1000);
 setInterval(updateNextTide, 60000);
 setInterval(() => fetchConditions(getBeach()), 600000); // refresh conditions every 10min
