@@ -121,15 +121,22 @@ app.use(errorHandler);
 
 async function start(): Promise<void> {
   await initDb();
-  await seedStickers();
-  await seedUsers();
-  await ensureAdmin();
 
+  // Start accepting requests immediately so Railway health checks pass during seeding
   app.listen(PORT, () => {
     console.log(`\n🌍 Panini WC2026 Trading Platform`);
     console.log(`🚀 Servidor a correr em http://localhost:${PORT}`);
     console.log(`📦 Base de dados inicializada\n`);
   });
+
+  // Seeds run after server is already listening — failures are non-fatal
+  try {
+    await seedStickers();
+    await seedUsers();
+    await ensureAdmin();
+  } catch (err) {
+    console.error('Seed error (non-fatal, server continues):', err);
+  }
 }
 
 start().catch(err => {
