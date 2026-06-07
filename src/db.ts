@@ -225,9 +225,6 @@ CREATE TABLE IF NOT EXISTS missing_reports (
 );
 CREATE INDEX IF NOT EXISTS idx_missing_reports_status ON missing_reports(status, created_at);
 
-INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
-SELECT 'SWE-P14', COALESCE((SELECT MAX(number) FROM stickers), 0) + 1, 'SWE', 'Suécia', 'F', 'Viktor Gyökeres', 'player', 'common', ''
-WHERE NOT EXISTS (SELECT 1 FROM stickers WHERE id = 'SWE-P14');
 `;
 
 export async function initDb(): Promise<void> {
