@@ -474,7 +474,7 @@
     .slot-clients { display: flex; flex-direction: column; gap: 3px; }
     .slot-client-row {
       display: flex; align-items: center; gap: 6px;
-      font-size: .75rem; color: var(--gray-light);
+      font-size: .75rem; color: var(--gray);
     }
     .slot-client-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
     .dot-confirmed { background: #22c55e; }
@@ -489,7 +489,7 @@
     .slot-cap-btns { display: flex; align-items: center; gap: 6px; }
     .cap-btn {
       width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border);
-      background: var(--card2); color: var(--white); font-size: 14px; font-weight: 700;
+      background: var(--card); color: var(--white); font-size: 14px; font-weight: 700;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       line-height: 1; transition: background .15s, border-color .15s;
     }
@@ -706,6 +706,25 @@
       white-space: nowrap;
     }
     .btn-nova-marcacao:hover { transform: translateY(-1px); }
+
+    /* ── MODAL INPUT (reutilizável) ── */
+    .modal-input {
+      background: rgba(255,255,255,.07); border: 1px solid var(--border);
+      border-radius: 10px; padding: .8rem 1rem; color: var(--white);
+      font-family: 'Inter', sans-serif; font-size: .95rem; outline: none;
+      width: 100%; transition: border-color .2s; color-scheme: dark;
+    }
+    .modal-input:focus { border-color: var(--cyan); }
+
+    /* Melhorias mobile extra */
+    @media (max-width: 480px) {
+      .topbar { gap: .4rem; }
+      .btn-nova-marcacao { font-size: .75rem; padding: .4rem .7rem; }
+      .stat-value { font-size: 1.2rem; }
+      .detail-modal { padding: 1.2rem; }
+      #manual-booking-modal { padding: 1.2rem; }
+      #reschedule-modal { padding: 1.2rem; }
+    }
   </style>
 </head>
 <body>
@@ -726,8 +745,8 @@
       <input type="password" id="l-pass" name="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
     </div>
     <button class="btn-login" onclick="doLogin()">Entrar →</button>
-    <div class="login-error" id="login-error"></div>
-    <div class="login-info"  id="login-info"></div>
+    <div class="login-error" id="login-error" role="alert" aria-live="assertive"></div>
+    <div class="login-info"  id="login-info"  role="status" aria-live="polite"></div>
     <p style="text-align:center;margin-top:1.2rem;font-size:.78rem;color:var(--gray)">
       Esqueceste? <a href="#" onclick="sendReset();return false" style="color:var(--cyan);text-decoration:none">Recuperar password</a>
     </p>
@@ -756,17 +775,17 @@
     <div style="background:#0A1929;border:1px solid var(--border);border-radius:20px;padding:2rem;width:100%;max-width:380px;margin:1rem">
       <h3 id="pass-modal-title" style="margin-bottom:1.2rem;font-size:1.1rem">🔑 Alterar Password</h3>
       <div class="form-group">
-        <label>Nova password</label>
-        <input type="password" id="new-pass" placeholder="mínimo 6 caracteres" style="background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem;color:var(--white);font-family:'Inter',sans-serif;font-size:.95rem;outline:none;width:100%;transition:border-color .2s" />
+        <label for="new-pass">Nova password</label>
+        <input type="password" id="new-pass" name="new-password" autocomplete="new-password" placeholder="mínimo 6 caracteres" class="modal-input" />
       </div>
       <div class="form-group">
-        <label>Confirmar nova password</label>
-        <input type="password" id="new-pass2" placeholder="repetir password" style="background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem;color:var(--white);font-family:'Inter',sans-serif;font-size:.95rem;outline:none;width:100%;transition:border-color .2s" />
+        <label for="new-pass2">Confirmar nova password</label>
+        <input type="password" id="new-pass2" name="confirm-password" autocomplete="new-password" placeholder="repetir password" class="modal-input" />
       </div>
       <div id="pass-msg" style="font-size:.83rem;margin-bottom:.8rem;display:none"></div>
       <div style="display:flex;gap:.8rem">
         <button onclick="doChangePass()" style="flex:1;padding:.8rem;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;border-radius:10px;color:white;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Guardar</button>
-        <button onclick="hideChangePass()" style="padding:.8rem 1.2rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-family:'Inter',sans-serif">Cancelar</button>
+        <button onclick="hideChangePass()" aria-label="Fechar modal de alteração de password" style="padding:.8rem 1.2rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-family:'Inter',sans-serif">Cancelar</button>
       </div>
     </div>
   </div>
@@ -1058,7 +1077,7 @@
               <div style="font-size:.95rem;font-weight:700">Ocupacao por Horario — <span id="slots-avail-date"></span></div>
               <div style="font-size:.72rem;color:var(--gray);margin-top:2px">Clique em + / − para ajustar vagas neste dia</div>
             </div>
-            <button onclick="closeSlotAvail()" style="font-size:.75rem;color:var(--gray);background:transparent;border:none;cursor:pointer">✕ Fechar</button>
+            <button onclick="closeSlotAvail()" aria-label="Fechar painel de disponibilidade" style="font-size:.75rem;color:var(--gray);background:transparent;border:none;cursor:pointer">✕ Fechar</button>
           </div>
           <div id="slots-avail-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem"></div>
         </div>
@@ -1080,7 +1099,7 @@
     <div class="filters-bar">
       <div class="filter-group admin-only" id="fg-school" style="display:none">
         <span class="filter-label">Escola</span>
-        <select id="f-school" class="filter-select" onchange="updateTopbarSchool();loadBookings()">
+        <select id="f-school" class="filter-select" aria-label="Selecionar escola" onchange="updateTopbarSchool();loadBookings()">
           <option value="">Todas</option>
         </select>
       </div>
@@ -2896,11 +2915,15 @@
       .map(t => `<option value="${t}" ${t === b.booking_time ? 'selected' : ''}>${t}</option>`)
       .join('');
 
-    document.getElementById('reschedule-modal-bg').classList.add('open');
+    const bg = document.getElementById('reschedule-modal-bg');
+    bg.classList.add('open');
+    bg.removeAttribute('aria-hidden');
   }
 
   function closeReschedule() {
-    document.getElementById('reschedule-modal-bg').classList.remove('open');
+    const bg = document.getElementById('reschedule-modal-bg');
+    bg.classList.remove('open');
+    bg.setAttribute('aria-hidden', 'true');
     rschBookingId = null;
   }
 
@@ -3045,14 +3068,18 @@
       </div>
       ${equipHtml ? `<div class="detail-section"><div class="detail-section-title">👕 Equipamento</div>${equipHtml}</div>` : ''}
     `;
-    document.getElementById('detail-modal-bg').classList.add('open');
+    const bg = document.getElementById('detail-modal-bg');
+    bg.classList.add('open');
+    bg.removeAttribute('aria-hidden');
   }
 
   function closeDetail(e) {
     if (e.target === document.getElementById('detail-modal-bg')) closeDetailModal();
   }
   function closeDetailModal() {
-    document.getElementById('detail-modal-bg').classList.remove('open');
+    const bg = document.getElementById('detail-modal-bg');
+    bg.classList.remove('open');
+    bg.setAttribute('aria-hidden', 'true');
   }
 
   // ── MANUAL BOOKING ────────────────────────────────────────────
@@ -3178,13 +3205,17 @@
 
     buildMBEquipRows();
     updateMBTotal();
-    document.getElementById('manual-booking-modal-bg').classList.add('open');
+    const bg = document.getElementById('manual-booking-modal-bg');
+    bg.classList.add('open');
+    bg.removeAttribute('aria-hidden');
     setTimeout(() => document.getElementById('mb-name').focus(), 100);
     checkMBAvailability();
   }
 
   function closeManualBooking() {
-    document.getElementById('manual-booking-modal-bg').classList.remove('open');
+    const bg = document.getElementById('manual-booking-modal-bg');
+    bg.classList.remove('open');
+    bg.setAttribute('aria-hidden', 'true');
   }
 
   async function saveManualBooking() {
@@ -3622,13 +3653,17 @@
   let reportInstructors = {}; // { 'YYYY-MM-DD|HH:MM': 'Nome Instrutor' }
 
   function openReportModal() {
-    document.getElementById('report-modal-bg').classList.add('open');
+    const bg = document.getElementById('report-modal-bg');
+    bg.classList.add('open');
+    bg.removeAttribute('aria-hidden');
     document.body.style.overflow = 'hidden';
     buildReport();
   }
 
   function closeReportModal() {
-    document.getElementById('report-modal-bg').classList.remove('open');
+    const bg = document.getElementById('report-modal-bg');
+    bg.classList.remove('open');
+    bg.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   }
 
