@@ -2234,19 +2234,38 @@ async function reservarWhatsApp() {
       }
 
       const lessonPT = LANGS['pt'][booking.lessonKey] || booking.lessonKey;
+
+      // Equipamento por pessoa (mesmos dados da mensagem WhatsApp)
+      let equipLines = '';
+      if (equipment.some(p => p.weight || p.gender || p.size || p.height || p.experience)) {
+        equipLines = '\nEQUIPAMENTO POR PESSOA\n' + equipment.map((p, i) => {
+          const expStr = p.experience ? ` · ${expMap[p.experience] || p.experience}` : '';
+          return `  Pessoa ${i+1}: ${genLabel(p.gender)} · ${p.weight?p.weight+'kg':'—'} · ${p.height?p.height+'cm':'—'} · Fato ${p.size||'—'}${expStr}`;
+        }).join('\n') + '\n';
+      }
+
       const emailBody = [
-        `Nova Marcação — ${lessonPT}`,
-        `Nome: ${nome}`,
-        `Telefone: ${tel}`,
-        email ? `Email: ${email}` : '',
-        country ? `País: ${country}` : '',
-        `Aula: ${lessonPT}`,
-        `Data: ${booking.selectedDateStr}`,
-        `Horário: ${booking.time}`,
-        `Pessoas: ${pess}`,
-        `Total: €${total}`,
-        nota ? `Nota do cliente: ${nota}` : '',
-      ].filter(Boolean).join('\n');
+        '🏄 NOVA MARCAÇÃO',
+        '━━━━━━━━━━━━━━━━━━━━',
+        '',
+        'CLIENTE',
+        `  Nome: ${nome}`,
+        `  Telefone: ${tel}`,
+        email   ? `  Email: ${email}`   : '',
+        country ? `  País: ${country}`  : '',
+        '',
+        'AULA',
+        `  Modalidade: ${lessonPT}`,
+        `  Data: ${booking.selectedDateStr}`,
+        `  Horário: ${booking.time}`,
+        `  Pessoas: ${pess}`,
+        `  Total estimado: €${total}`,
+        equipLines,
+        nota ? `NOTA DO CLIENTE\n  ${nota}` : '',
+        '',
+        '━━━━━━━━━━━━━━━━━━━━',
+        'Recebido via site de reservas.',
+      ].filter(s => s !== '').join('\n');
 
       const ccList = [sEmail, sEmail2, email].filter(Boolean).join(',');
       fetch('https://formsubmit.co/ajax/ivocasimiro@gmail.com', {

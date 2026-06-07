@@ -2493,15 +2493,32 @@
             : `❌ Booking Cancelled — ${lessonTrans} ${dateStr}`;
           const emailSubject = useEN ? subjectENf : subjectPTf;
 
+          // Equipamento por pessoa (se registado na marcação)
+          let equipInfo = '';
+          try {
+            const eq = Array.isArray(b.equipment_list) ? b.equipment_list : [];
+            if (eq.some(p => p && (p.weight || p.height || p.size || p.gender))) {
+              const gMap = useEN
+                ? { H:'Man', M:'Woman', C:'Child' }
+                : { H:'Homem', M:'Mulher', C:'Criança' };
+              const head = useEN ? 'Equipment per person' : 'Equipamento por pessoa';
+              equipInfo = `\n\n${head}:\n` + eq.map((p, i) =>
+                `  ${i+1}. ${gMap[p.gender]||'—'} · ${p.weight?p.weight+'kg':'—'} · ${p.height?p.height+'cm':'—'} · ${useEN?'Wetsuit':'Fato'} ${p.size||'—'}`
+              ).join('\n');
+            }
+          } catch(_) {}
+          const ref = b.booking_ref ? `#${b.booking_ref}` : (b.id ? '#'+b.id.slice(0,8) : '');
+          const footerContacts = contactLines ? `\n\n${contactLines}` : '';
+
           let emailBody;
           if (isConf) {
             emailBody = useEN
-              ? `Hi ${b.client_name},\n\nYour surf lesson is confirmed!\n\nLesson: ${lessonTrans}\nDate: ${dateStr}\nTime: ${b.booking_time}\nPeople: ${b.num_people}\nTotal: €${price}\n\nMeeting point:\n${school.meeting_point}\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!\n${school.name}`
-              : `Olá ${b.client_name},\n\nA sua reserva está confirmada!\n\nAula: ${lessonTrans}\nData: ${dateStr}\nHorário: ${b.booking_time}\nPessoas: ${b.num_people}\nTotal: €${price}\n\nPonto de encontro:\n${school.meeting_point}\n\nUse fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAté breve!\n${school.name}`;
+              ? `Hi ${b.client_name},\n\nYour surf lesson is CONFIRMED! ✅\n\nBooking ${ref}\nLesson: ${lessonTrans}\nDate: ${dateStr}\nTime: ${b.booking_time}\nPeople: ${b.num_people}\nTotal: €${price}${equipInfo}\n\nMeeting point:\n${school.meeting_point}\n\nArrive 15 min early. Wear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!\n${school.name}${footerContacts}`
+              : `Olá ${b.client_name},\n\nA sua aula de surf está CONFIRMADA! ✅\n\nReserva ${ref}\nAula: ${lessonTrans}\nData: ${dateStr}\nHorário: ${b.booking_time}\nPessoas: ${b.num_people}\nTotal: €${price}${equipInfo}\n\nPonto de encontro:\n${school.meeting_point}\n\nChegue 15 min antes. Use fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAté breve!\n${school.name}${footerContacts}`;
           } else {
             emailBody = useEN
-              ? `Hi ${b.client_name},\n\nUnfortunately your booking has been cancelled.\n\nLesson: ${lessonTrans}\nDate: ${dateStr}\nTime: ${b.booking_time}\n\nWe apologise for the inconvenience. Please contact us to reschedule.\n\n${school.name}`
-              : `Olá ${b.client_name},\n\nInfelizmente a sua reserva foi cancelada.\n\nAula: ${lessonTrans}\nData: ${dateStr}\nHorário: ${b.booking_time}\n\nPedimos desculpa pelo inconveniente. Contacte-nos para reagendar.\n\n${school.name}`;
+              ? `Hi ${b.client_name},\n\nUnfortunately your booking ${ref} has been cancelled.\n\nLesson: ${lessonTrans}\nDate: ${dateStr}\nTime: ${b.booking_time}\n\nWe apologise for the inconvenience. Please contact us to reschedule.\n\n${school.name}${footerContacts}`
+              : `Olá ${b.client_name},\n\nInfelizmente a sua reserva ${ref} foi cancelada.\n\nAula: ${lessonTrans}\nData: ${dateStr}\nHorário: ${b.booking_time}\n\nPedimos desculpa pelo inconveniente. Contacte-nos para reagendar.\n\n${school.name}${footerContacts}`;
           }
 
           const contacts = (() => { try { return JSON.parse(localStorage.getItem(`surfbook_contacts_${school.id}`) || 'null'); } catch(_) { return null; } })() || {};
