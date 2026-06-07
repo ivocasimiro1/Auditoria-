@@ -3,9 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Escola Teste · Surf School · Demo</title>
-  <meta name="description" content="Site de demonstração para desenvolvimento. Escola de surf — template de teste." />
+  <title>Escola Surf Teste · Aulas de Surf · Costa Vicentina</title>
+  <meta name="description" content="Escola de surf na Costa Vicentina. Aulas para todos os níveis, instrutores ISA certificados. Reserva online em minutos via WhatsApp." />
+  <meta name="theme-color" content="#060D1B" />
+  <meta name="color-scheme" content="dark" />
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Escola Surf Teste — Reserva a tua aula" />
+  <meta property="og:description" content="Escola de surf na Costa Vicentina. Aulas para todos os níveis, instrutores ISA certificados. Reserva online em minutos." />
+  <meta property="og:image" content="https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=1200&q=85" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <!-- Fonts & performance -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://marine-api.open-meteo.com" />
+  <link rel="dns-prefetch" href="https://api.open-meteo.com" />
+  <link rel="dns-prefetch" href="https://formsubmit.co" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -311,6 +324,7 @@
       nav{top:0}
       nav ul{display:none}
       .hbg{display:flex}
+      .mob-lang-bar{display:flex}
       .form-grid{grid-template-columns:1fr}
       .form-group.full{grid-column:1}
       .booking-steps{flex-wrap:wrap}
@@ -331,11 +345,19 @@
     @media(max-width:700px){.person-row-grid{grid-template-columns:1fr 1fr}}
     @media(max-width:400px){.person-row-grid{grid-template-columns:1fr}}
 
+    /* SKIP LINK */
+    .skip-link{position:fixed;top:-100%;left:1rem;z-index:9999;background:var(--gold);color:var(--navy);padding:.5rem 1.2rem;border-radius:8px;font-weight:700;font-size:.9rem;text-decoration:none;transition:top .15s}
+    .skip-link:focus{top:1rem}
+    /* FOCUS VISIBLE */
+    :focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:4px}
+    .cal-cell:focus-visible,.lesson-option:focus-visible,.slot-card:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+    /* MOBILE LANG BAR */
+    .mob-lang-bar{display:none;gap:.4rem;justify-content:center;flex-wrap:wrap;padding:.5rem 5%;background:rgba(6,13,27,0.92);border-bottom:1px solid rgba(255,255,255,.08);position:fixed;top:56px;left:0;right:0;z-index:199}
     /* MOBILE DRAWER */
     #mob-drawer{display:none;position:fixed;inset:0;background:#060D1B;z-index:200;flex-direction:column;padding:90px 8% 3rem;overflow-y:auto}
     #mob-drawer.open{display:flex}
     #mob-drawer a{color:#fff;font-size:1.5rem;font-weight:700;text-decoration:none;padding:1rem 0;border-bottom:1px solid rgba(255,255,255,.12);font-family:'Inter',sans-serif;letter-spacing:-.01em}
-    #mob-drawer a:last-child{border-bottom:none;margin-top:.5rem;background:var(--gold);color:#060D1B;text-align:center;border-radius:50px;padding:.8rem 2rem}
+    #mob-drawer a:last-of-type{border-bottom:none;margin-top:.5rem;background:var(--gold);color:#060D1B;text-align:center;border-radius:50px;padding:.8rem 2rem}
     .beach-selector{display:flex;gap:.5rem;overflow-x:auto;padding:.5rem 0 1rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem;scrollbar-width:none}
     .beach-selector::-webkit-scrollbar{display:none}
     .beach-btn{padding:.45rem 1rem;border-radius:50px;border:1px solid var(--border);background:transparent;color:var(--gray);font-size:.78rem;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;white-space:nowrap}
@@ -346,32 +368,33 @@
 </head>
 <body>
 
+<a class="skip-link" href="#reservar">Saltar para reservas</a>
 <div class="nav-overlay" id="nav-overlay" onclick="closeMenu()"></div>
 
 <!-- CONDITIONS BAR -->
-<div class="cb">
+<div class="cb" role="banner" aria-label="Condições do mar e hora atual">
   <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center">
     <div class="ci" style="color:var(--gold);font-weight:600">📍 <span id="cond-beach-name">Meia Praia</span></div>
-    <span style="color:var(--border)">·</span>
-    <div class="ci">🌊 <span class="cv" id="cond-wave-val">—</span> <span id="cond-wave-quality"></span></div>
-    <span style="color:var(--border)">·</span>
-    <div class="ci">💨 <span class="cv" id="cond-wind-val">—</span></div>
-    <span style="color:var(--border)">·</span>
-    <div class="ci">🌡 <span class="cv" id="cond-water-val">—</span></div>
-    <span style="color:var(--border)">·</span>
-    <div class="ci"><span id="tide-direction" class="cv">—</span> <span style="opacity:.6;font-size:.7rem" id="tide-next-label">—</span> <span class="cv" id="next-tide-val" style="font-size:.7rem"></span></div>
-    <span style="color:var(--border)">·</span>
+    <span aria-hidden="true" style="color:var(--border)">·</span>
+    <div class="ci" aria-label="Ondas">🌊 <span class="cv" id="cond-wave-val" aria-live="polite">—</span> <span id="cond-wave-quality"></span></div>
+    <span aria-hidden="true" style="color:var(--border)">·</span>
+    <div class="ci" aria-label="Vento">💨 <span class="cv" id="cond-wind-val" aria-live="polite">—</span></div>
+    <span aria-hidden="true" style="color:var(--border)">·</span>
+    <div class="ci" aria-label="Temperatura da água">🌡 <span class="cv" id="cond-water-val" aria-live="polite">—</span></div>
+    <span aria-hidden="true" style="color:var(--border)">·</span>
+    <div class="ci" aria-label="Próxima maré"><span id="tide-direction" class="cv">—</span> <span style="opacity:.6;font-size:.7rem" id="tide-next-label">—</span> <span class="cv" id="next-tide-val" style="font-size:.7rem"></span></div>
+    <span aria-hidden="true" style="color:var(--border)">·</span>
     <div class="ci">🕐 <span data-t="cond_pt"></span>: <span class="cv" id="pt-time">—</span></div>
-    <span style="color:var(--border)">·</span>
-    <div class="vc"><span class="vc-dot"></span>👥 <span id="visitor-count">—</span></div>
+    <span aria-hidden="true" style="color:var(--border)">·</span>
+    <div class="vc" aria-label="Visitantes online"><span class="vc-dot" aria-hidden="true"></span>👥 <span id="visitor-count">—</span></div>
   </div>
-  <div class="ls">
-    <button class="lb active" onclick="setLang('pt')">PT</button>
-    <button class="lb" onclick="setLang('en')">EN</button>
-    <button class="lb" onclick="setLang('fr')">FR</button>
-    <button class="lb" onclick="setLang('de')">DE</button>
-    <button class="lb" onclick="setLang('es')">ES</button>
-    <button class="lb" onclick="setLang('nl')">NL</button>
+  <div class="ls" role="navigation" aria-label="Selecionar idioma">
+    <button class="lb active" onclick="setLang('pt')" aria-pressed="true" aria-label="Português">PT</button>
+    <button class="lb" onclick="setLang('en')" aria-pressed="false" aria-label="English">EN</button>
+    <button class="lb" onclick="setLang('fr')" aria-pressed="false" aria-label="Français">FR</button>
+    <button class="lb" onclick="setLang('de')" aria-pressed="false" aria-label="Deutsch">DE</button>
+    <button class="lb" onclick="setLang('es')" aria-pressed="false" aria-label="Español">ES</button>
+    <button class="lb" onclick="setLang('nl')" aria-pressed="false" aria-label="Nederlands">NL</button>
   </div>
 </div>
 
@@ -385,11 +408,11 @@
     <li><a href="#aulas" data-t="nav_aulas"></a></li>
     <li><a href="#reservar" class="nav-cta" data-t="nav_reservar"></a></li>
   </ul>
-  <button class="hbg" onclick="toggleMenu()" aria-label="Menu"><span></span><span></span><span></span></button>
+  <button class="hbg" id="hbg-btn" onclick="toggleMenu()" aria-label="Abrir menu" aria-expanded="false" aria-controls="mob-drawer"><span></span><span></span><span></span></button>
 </nav>
 
 <!-- MOBILE DRAWER -->
-<div id="mob-drawer">
+<div id="mob-drawer" role="dialog" aria-label="Menu de navegação" aria-hidden="true">
   <a href="#sobre"   onclick="closeMenu()" data-t="nav_sobre"></a>
   <a href="#praias"  onclick="closeMenu()" data-t="nav_praias"></a>
   <a href="#mares"   onclick="closeMenu()" data-t="nav_mares"></a>
@@ -397,6 +420,17 @@
   <a href="#reservar" onclick="closeMenu()" data-t="nav_reservar"></a>
 </div>
 
+<!-- MOBILE LANG BAR -->
+<div class="mob-lang-bar" role="navigation" aria-label="Selecionar idioma">
+  <button class="lb active" onclick="setLang('pt')" aria-label="Português">PT</button>
+  <button class="lb" onclick="setLang('en')" aria-label="English">EN</button>
+  <button class="lb" onclick="setLang('fr')" aria-label="Français">FR</button>
+  <button class="lb" onclick="setLang('de')" aria-label="Deutsch">DE</button>
+  <button class="lb" onclick="setLang('es')" aria-label="Español">ES</button>
+  <button class="lb" onclick="setLang('nl')" aria-label="Nederlands">NL</button>
+</div>
+
+<main id="main-content">
 <!-- HERO -->
 <section class="hero" id="home">
   <div class="hero-photo" id="hero-photo"></div>
@@ -510,11 +544,11 @@
     <p class="section-sub" data-t="gallery_sub"></p>
   </div>
   <div class="gallery-grid">
-    <div class="gi"><img src="https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=800&q=80" alt="Surf" loading="lazy" /><div class="gi-ov"></div></div>
-    <div class="gi"><img src="https://images.unsplash.com/photo-1488423947859-e24d0a64b8d6?auto=format&fit=crop&w=600&q=80" alt="Praia" loading="lazy" /><div class="gi-ov"></div></div>
-    <div class="gi"><img src="https://images.unsplash.com/photo-1519852476561-2aad874fcce5?auto=format&fit=crop&w=600&q=80" alt="Surfista" loading="lazy" /><div class="gi-ov"></div></div>
-    <div class="gi"><img src="https://images.unsplash.com/photo-1531722569936-825d4eea4575?auto=format&fit=crop&w=600&q=80" alt="Pranchas" loading="lazy" /><div class="gi-ov"></div></div>
-    <div class="gi"><img src="https://images.unsplash.com/photo-1511593358241-7eea1f3c84e5?auto=format&fit=crop&w=1000&q=80" alt="Ondas" loading="lazy" /><div class="gi-ov"></div></div>
+    <div class="gi"><img src="https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=800&q=80" alt="Surfista na prancha a apanhar uma onda na Costa Vicentina" loading="lazy" width="800" height="520" /><div class="gi-ov"></div></div>
+    <div class="gi"><img src="https://images.unsplash.com/photo-1488423947859-e24d0a64b8d6?auto=format&fit=crop&w=600&q=80" alt="Vista aérea de praia com ondas" loading="lazy" width="600" height="260" /><div class="gi-ov"></div></div>
+    <div class="gi"><img src="https://images.unsplash.com/photo-1519852476561-2aad874fcce5?auto=format&fit=crop&w=600&q=80" alt="Instrutor a ajudar aluno durante aula de surf" loading="lazy" width="600" height="260" /><div class="gi-ov"></div></div>
+    <div class="gi"><img src="https://images.unsplash.com/photo-1531722569936-825d4eea4575?auto=format&fit=crop&w=600&q=80" alt="Pranchas de surf alinhadas na areia" loading="lazy" width="600" height="260" /><div class="gi-ov"></div></div>
+    <div class="gi"><img src="https://images.unsplash.com/photo-1511593358241-7eea1f3c84e5?auto=format&fit=crop&w=1000&q=80" alt="Ondas perfeitas na Praia da Arrifana ao pôr do sol" loading="lazy" width="1000" height="260" /><div class="gi-ov"></div></div>
   </div>
 </section>
 
@@ -620,22 +654,22 @@
     <p class="section-sub" data-t="book_sub"></p>
   </div>
   <div class="booking-wrap">
-    <div class="booking-steps">
-      <div class="step-tab active" id="tab-1"><span class="step-num">1</span><span data-t="step1_label"></span></div>
-      <div class="step-tab" id="tab-2"><span class="step-num">2</span><span data-t="step2_label"></span></div>
-      <div class="step-tab" id="tab-3"><span class="step-num">3</span><span data-t="step3_label"></span></div>
-      <div class="step-tab" id="tab-4"><span class="step-num">4</span><span data-t="step4_label"></span></div>
+    <div class="booking-steps" role="list" aria-label="Passos da reserva">
+      <div class="step-tab active" id="tab-1" role="listitem"><span class="step-num" aria-hidden="true">1</span><span data-t="step1_label"></span></div>
+      <div class="step-tab" id="tab-2" role="listitem"><span class="step-num" aria-hidden="true">2</span><span data-t="step2_label"></span></div>
+      <div class="step-tab" id="tab-3" role="listitem"><span class="step-num" aria-hidden="true">3</span><span data-t="step3_label"></span></div>
+      <div class="step-tab" id="tab-4" role="listitem"><span class="step-num" aria-hidden="true">4</span><span data-t="step4_label"></span></div>
     </div>
-    <div class="booking-body">
+    <div class="booking-body" aria-live="polite" aria-atomic="false">
       <!-- STEP 1 -->
       <div class="step-panel active" id="step-1">
         <h3 class="step-title" data-t="s1_title"></h3>
         <p class="step-desc" data-t="s1_desc"></p>
         <div class="lesson-options">
-          <div class="lesson-option" onclick="selectLesson(this,'l1_name',35,35,6)"><span class="opt-icon">🌊</span><div class="opt-name" data-t="l1_name"></div><div class="opt-price">€35/<span data-t="pp"></span></div></div>
-          <div class="lesson-option" onclick="selectLesson(this,'l2_name',35,35,6)"><span class="opt-icon">🏄</span><div class="opt-name" data-t="l2_name"></div><div class="opt-price">€35/<span data-t="pp"></span></div></div>
-          <div class="lesson-option" onclick="selectLesson(this,'l3_name',65,65,1)"><span class="opt-icon">⭐</span><div class="opt-name" data-t="l3_name"></div><div class="opt-price">€65/<span data-t="ps"></span></div></div>
-          <div class="lesson-option" onclick="selectLesson(this,'l4_name',30,30,6)"><span class="opt-icon">🌀</span><div class="opt-name" data-t="l4_name"></div><div class="opt-price">€30/<span data-t="pp"></span></div></div>
+          <div class="lesson-option" role="button" tabindex="0" onclick="selectLesson(this,'l1_name',35,35,6)" aria-label="Iniciante €35 por pessoa"><span class="opt-icon">🌊</span><div class="opt-name" data-t="l1_name"></div><div class="opt-price">€35/<span data-t="pp"></span></div></div>
+          <div class="lesson-option" role="button" tabindex="0" onclick="selectLesson(this,'l2_name',35,35,6)" aria-label="Intermédio €35 por pessoa"><span class="opt-icon">🏄</span><div class="opt-name" data-t="l2_name"></div><div class="opt-price">€35/<span data-t="pp"></span></div></div>
+          <div class="lesson-option" role="button" tabindex="0" onclick="selectLesson(this,'l3_name',65,65,1)" aria-label="Aula Privada €65 por sessão"><span class="opt-icon">⭐</span><div class="opt-name" data-t="l3_name"></div><div class="opt-price">€65/<span data-t="ps"></span></div></div>
+          <div class="lesson-option" role="button" tabindex="0" onclick="selectLesson(this,'l4_name',30,30,6)" aria-label="Bodyboard €30 por pessoa"><span class="opt-icon">🌀</span><div class="opt-name" data-t="l4_name"></div><div class="opt-price">€30/<span data-t="pp"></span></div></div>
         </div>
         <div class="nav-btns"><div></div><button class="btn-next" id="next-1" onclick="goToStep(2)" disabled data-t="btn_next"></button></div>
       </div>
@@ -645,9 +679,9 @@
         <p class="step-desc" data-t="s2_desc"></p>
         <div class="calendar-wrap">
           <div class="cal-header">
-            <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
-            <span class="cal-title" id="cal-month-title"></span>
-            <button class="cal-nav" onclick="changeMonth(1)">›</button>
+            <button class="cal-nav" onclick="changeMonth(-1)" aria-label="Mês anterior">‹</button>
+            <span class="cal-title" id="cal-month-title" aria-live="polite"></span>
+            <button class="cal-nav" onclick="changeMonth(1)" aria-label="Próximo mês">›</button>
           </div>
           <div class="cal-days-header" id="cal-days-header"></div>
           <div class="cal-grid" id="cal-grid"></div>
@@ -667,11 +701,11 @@
         <p class="step-desc" data-t="s4_desc"></p>
         <div class="booking-summary" id="booking-summary"></div>
         <div class="form-grid">
-          <div class="form-group"><label data-t="f_name"></label><input type="text" id="fname" data-placeholder="f_name_ph" /></div>
-          <div class="form-group"><label data-t="f_phone"></label><input type="tel" id="fphone" data-placeholder="f_phone_ph" /></div>
-          <div class="form-group"><label data-t="f_email"></label><input type="email" id="femail" data-placeholder="f_email_ph" /></div>
-          <div class="form-group"><label data-t="f_country"></label>
-            <select id="fcountry">
+          <div class="form-group"><label for="fname" data-t="f_name"></label><input type="text" id="fname" data-placeholder="f_name_ph" autocomplete="name" required /></div>
+          <div class="form-group"><label for="fphone" data-t="f_phone"></label><input type="tel" id="fphone" data-placeholder="f_phone_ph" autocomplete="tel" required /></div>
+          <div class="form-group"><label for="femail" data-t="f_email"></label><input type="email" id="femail" data-placeholder="f_email_ph" autocomplete="email" /></div>
+          <div class="form-group"><label for="fcountry" data-t="f_country"></label>
+            <select id="fcountry" autocomplete="country-name">
               <option value="🇵🇹 Portugal">🇵🇹 Portugal</option>
               <option value="🇬🇧 United Kingdom">🇬🇧 United Kingdom</option>
               <option value="🇫🇷 France">🇫🇷 France</option>
@@ -692,7 +726,7 @@
               <option value="🌍 Other">🌍 Other</option>
             </select>
           </div>
-          <div class="form-group"><label data-t="f_pessoas"></label>
+          <div class="form-group"><label for="fpessoas" data-t="f_pessoas"></label>
             <select id="fpessoas" onchange="onPessoasChange()">
               <option value="1">1</option><option value="2">2</option><option value="3">3</option>
               <option value="4">4</option><option value="5">5</option><option value="6">6</option>
@@ -702,9 +736,9 @@
         <!-- Equipment rows per person — built dynamically -->
         <div id="equipment-rows"></div>
         <div class="form-grid" style="margin-top:.8rem">
-          <div class="form-group full"><label data-t="f_nota"></label><textarea id="fnota" data-placeholder="f_nota_ph"></textarea></div>
+          <div class="form-group full"><label for="fnota" data-t="f_nota"></label><textarea id="fnota" data-placeholder="f_nota_ph"></textarea></div>
         </div>
-        <button class="btn-whatsapp" onclick="reservarWhatsApp()">📱 <span data-t="btn_whatsapp"></span></button>
+        <button class="btn-whatsapp" onclick="reservarWhatsApp()" aria-label="Confirmar reserva via WhatsApp">📱 <span data-t="btn_whatsapp"></span></button>
         <div class="nav-btns" style="margin-top:1rem"><button class="btn-back" onclick="goToStep(3)" data-t="btn_back"></button><div></div></div>
       </div>
       <!-- Confirmation overlay (shown after WA button click) -->
@@ -747,6 +781,8 @@
   </div>
 </section>
 
+</main><!-- /main-content -->
+
 <!-- FOOTER -->
 <footer>
   <div class="footer-inner">
@@ -764,7 +800,7 @@
     </div>
     <div class="footer-col">
       <h4 data-t="footer_contact"></h4>
-      <a href="https://wa.me/351962800400" target="_blank">WhatsApp</a>
+      <a href="https://wa.me/351962800400" target="_blank" rel="noopener noreferrer">WhatsApp</a>
       <a href="mailto:ivo@despomar.com">Email</a>
       <a href="#mares" data-t="nav_mares"></a>
     </div>
@@ -1185,7 +1221,11 @@ const LANG_DEFAULT_COUNTRY = {
 function setLang(lang) {
   currentLang = lang;
   document.documentElement.lang = lang;
-  document.querySelectorAll('.lb').forEach(b => b.classList.toggle('active', b.textContent === lang.toUpperCase()));
+  document.querySelectorAll('.lb').forEach(b => {
+    const isActive = b.textContent.trim() === lang.toUpperCase();
+    b.classList.toggle('active', isActive);
+    b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
   document.querySelectorAll('[data-t]').forEach(el => {
     const key = el.dataset.t;
     const val = T(key);
@@ -1915,7 +1955,7 @@ function buildCalendar() {
     else cls += ' available';
     if (isToday && !isPast && !isClosedDay) cls += ' today';
     const clickable = !isPast && !isClosedDay;
-    grid.innerHTML += `<div class="${cls}" ${clickable?`onclick="selectCalDate('${key}',${d},${calMonth},${calYear})"`:''}>${d}${wxHtml}${availHtml}</div>`;
+    grid.innerHTML += `<div class="${cls}" ${clickable?`onclick="selectCalDate('${key}',${d},${calMonth},${calYear})" role="button" tabindex="0" aria-label="${d} de ${T('cal_months')[calMonth]}"`:'aria-hidden="true"'}>${d}${wxHtml}${availHtml}</div>`;
   }
 }
 
@@ -1954,7 +1994,7 @@ function buildSlots(dateKey) {
     const cls = `slot-card ${full?'full':'available'}${sel?' selected':''}`;
     const pastLabel = past ? `<div class="slot-badge-full" style="background:rgba(148,163,176,.12);color:var(--gray)">Encerrado</div>` : '';
     grid.innerHTML += `
-      <div class="${cls}" ${!full?`onclick="selectSlot(this,'${s.t}',${free})"`:''}>${full?`${pastLabel || `<div class="slot-badge-full">${T('slot_full')}</div>`}`:''}
+      <div class="${cls}" ${!full?`onclick="selectSlot(this,'${s.t}',${free})" role="button" tabindex="0" aria-label="${s.t} — ${free} ${T('slot_available')}"`:''} ${full?'aria-disabled="true"':''}>${full?`${pastLabel || `<div class="slot-badge-full">${T('slot_full')}</div>`}`:''}
         <div class="slot-time">${s.t}</div>
         <div class="slot-status"><span class="adi"></span>${full?(past?`<span style="color:var(--gray)">Encerrado</span>`:`<span style="color:var(--red)">${T('slot_full')}</span>`):`${free} ${T('slot_available')}`}</div>
         <div class="slot-vagas">${maxSlot} ${T('slot_spots')}</div>
@@ -2360,21 +2400,40 @@ function updatePessoasVisibility() {
 // ── MENU ──────────────────────────────────────────────────────────────────────
 function toggleMenu() {
   const drawer = document.getElementById('mob-drawer');
-  const hbg    = document.querySelector('.hbg');
+  const btn    = document.getElementById('hbg-btn');
   if (drawer.classList.contains('open')) { closeMenu(); return; }
   drawer.classList.add('open');
-  hbg.classList.add('open');
+  btn.classList.add('open');
+  btn.setAttribute('aria-expanded','true');
+  btn.setAttribute('aria-label','Fechar menu');
+  drawer.setAttribute('aria-hidden','false');
   document.body.style.overflow = 'hidden';
+  drawer.querySelector('a')?.focus();
 }
 function closeMenu() {
   const drawer = document.getElementById('mob-drawer');
-  const hbg    = document.querySelector('.hbg');
+  const btn    = document.getElementById('hbg-btn');
   drawer.classList.remove('open');
-  hbg.classList.remove('open');
+  btn.classList.remove('open');
+  btn.setAttribute('aria-expanded','false');
+  btn.setAttribute('aria-label','Abrir menu');
+  drawer.setAttribute('aria-hidden','true');
   document.body.style.overflow = '';
 }
+// Fechar menu ao pressionar Escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
 // Fechar menu ao clicar num link
 document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', closeMenu));
+
+// ── KEYBOARD NAVIGATION ───────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const t = e.target;
+  if (t.classList.contains('lesson-option') || t.classList.contains('slot-card') || t.classList.contains('cal-cell')) {
+    e.preventDefault();
+    t.click();
+  }
+});
 
 // ── ANIMATIONS ────────────────────────────────────────────────────────────────
 const obs = new IntersectionObserver(entries => {
