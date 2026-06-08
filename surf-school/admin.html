@@ -24,6 +24,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -651,6 +652,72 @@
       #report-print-frame { display:block!important }
     }
     #report-print-frame { display:none }
+    /* ── QR MODAL ── */
+    #qr-modal-bg { display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9500;padding:1rem;align-items:center;justify-content:center;backdrop-filter:blur(8px) }
+    #qr-modal-bg.open { display:flex }
+    #qr-modal {
+      background:linear-gradient(160deg,#0A1A30,#0D2040);
+      border:1px solid rgba(0,207,253,.25);
+      border-radius:24px;
+      width:100%; max-width:440px;
+      display:flex; flex-direction:column;
+      max-height:96vh; overflow:hidden;
+      position:relative;
+    }
+    #qr-modal::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:3px;
+      background:linear-gradient(90deg,#0070F3,#00CFFD,#0070F3);
+      border-radius:24px 24px 0 0;
+    }
+    .qr-modal-head {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:1rem 1.2rem .8rem; flex-shrink:0;
+      border-bottom:1px solid rgba(255,255,255,.07);
+    }
+    .qr-modal-title { font-size:.9rem; font-weight:700; color:var(--cyan); }
+    .qr-modal-body { flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:1.1rem 1.2rem; display:flex; flex-direction:column; align-items:center; gap:.9rem; }
+    .qr-url-row { display:flex; gap:.4rem; width:100%; }
+    .qr-url-row input {
+      flex:1; background:rgba(255,255,255,.07); border:1px solid rgba(0,207,253,.3);
+      border-radius:8px; padding:.6rem .85rem; color:#fff; font-family:monospace;
+      font-size:.78rem; outline:none; min-width:0; color-scheme:dark;
+    }
+    .qr-url-row input:focus { border-color:var(--cyan); }
+    .qr-url-apply {
+      background:rgba(0,207,253,.15); border:1px solid rgba(0,207,253,.4);
+      color:var(--cyan); border-radius:8px; padding:.6rem .9rem;
+      font-size:.82rem; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif;
+      flex-shrink:0; white-space:nowrap;
+    }
+    .qr-card-visual {
+      width:100%; background:#fff; border-radius:16px; padding:1.2rem;
+      display:flex; flex-direction:column; align-items:center; gap:.7rem;
+      text-align:center;
+    }
+    .qr-card-name { font-size:1.1rem; font-weight:900; color:#050D1A; }
+    .qr-card-cta { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#0070F3; }
+    #qr-main-canvas { display:block; border-radius:8px; max-width:100%; height:auto; }
+    .qr-card-url { font-size:.68rem; color:#64748b; font-family:monospace; word-break:break-all; }
+    .qr-share-row { display:flex; gap:.55rem; width:100%; flex-wrap:wrap; }
+    .qr-share-row button, .qr-share-row a {
+      flex:1; min-width:120px; padding:.7rem .5rem;
+      border-radius:10px; border:none; font-family:'Inter',sans-serif;
+      font-size:.82rem; font-weight:700; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      gap:.35rem; text-decoration:none; min-height:44px;
+    }
+    .qr-btn-wa    { background:#25D366; color:#fff; }
+    .qr-btn-email { background:rgba(255,255,255,.1); color:#fff; border:1px solid rgba(255,255,255,.2)!important; }
+    .qr-btn-save  { background:rgba(134,239,172,.15); color:#86efac; border:1px solid rgba(134,239,172,.3)!important; }
+    .qr-btn-print { background:rgba(255,255,255,.07); color:var(--gray); border:1px solid var(--border)!important; }
+    .qr-status { font-size:.72rem; color:#86efac; text-align:center; min-height:1em; }
+    @media(max-width:480px) {
+      #qr-modal-bg { padding:0; align-items:flex-end; }
+      #qr-modal { border-radius:24px 24px 0 0; max-width:100%; max-height:95vh; }
+    }
+    @media print {
+      #qr-modal-bg { display:none!important; }
+    }
     #settings-section { margin-bottom: 1.5rem; }
     .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .contacts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-bottom: .4rem; }
@@ -1495,6 +1562,35 @@
     <div class="mb-actions">
       <button onclick="saveManualBooking()" style="flex:1;padding:.7rem;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;border-radius:10px;color:var(--white);font-weight:700;cursor:pointer;font-size:.9rem;font-family:'Inter',sans-serif">Guardar</button>
       <button onclick="closeManualBooking()" aria-label="Fechar modal de nova marcação" style="padding:.7rem 1.1rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-size:.9rem;font-family:'Inter',sans-serif">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR MODAL -->
+<div id="qr-modal-bg" onclick="if(event.target===this)closeQrModal()" aria-hidden="true">
+  <div id="qr-modal" role="dialog" aria-modal="true" aria-labelledby="qr-modal-lbl">
+    <div class="qr-modal-head">
+      <div id="qr-modal-lbl" class="qr-modal-title">🖨️ Cartão QR</div>
+      <button class="modal-close-x" onclick="closeQrModal()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="qr-modal-body">
+      <div class="qr-url-row">
+        <input type="url" id="qr-url-field" placeholder="URL do QR code" />
+        <button class="qr-url-apply" onclick="applyQrModalUrl()">✓ Aplicar</button>
+      </div>
+      <div class="qr-card-visual" id="qr-card-visual">
+        <div class="qr-card-name" id="qr-card-name"></div>
+        <div class="qr-card-cta">Aponte a câmara para reservar</div>
+        <canvas id="qr-main-canvas" width="300" height="300"></canvas>
+        <div class="qr-card-url" id="qr-card-url"></div>
+      </div>
+      <div class="qr-status" id="qr-modal-status"></div>
+      <div class="qr-share-row">
+        <button class="qr-btn-wa"    onclick="shareQrWa()">💬 WhatsApp</button>
+        <button class="qr-btn-email" onclick="shareQrEmail()">✉️ Email</button>
+        <button class="qr-btn-save"  onclick="saveQrImage()">💾 Guardar PNG</button>
+        <button class="qr-btn-print" onclick="printQrCard()">🖨️ Imprimir</button>
+      </div>
     </div>
   </div>
 </div>
@@ -4202,311 +4298,165 @@
     return html;
   }
 
-  // ── QR CARD (editable before print) ─────────────────────────────────────────
+  // ── QR MODAL (in-page, sem popup) ───────────────────────────────────────────
+  let _qrSchool = null, _qrCurrentUrl = '';
+
   function printQRCard() {
-    const schoolId      = document.getElementById('f-school')?.value || SCHOOLS[0]?.id || 'escola-teste';
-    const school        = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0] || { id: schoolId, name: 'Escola Surf', wa_number: '' };
-    const defaultUrl    = schoolId === 'escola-teste'
-      ? `https://auditoria-25b.pages.dev/surf`
-      : `https://auditoria-25b.pages.dev/surf?escola=${encodeURIComponent(schoolId)}`;
-    // Use saved custom QR URL if available, otherwise default booking URL
-    const bookingUrl    = school.qr_url || defaultUrl;
-    const wa            = school.wa_number ? '+' + school.wa_number.replace(/\D/g,'').replace(/^00/,'') : '';
-    const schoolEmail   = school.school_email || '';
-    const instagram     = school.instagram ? (school.instagram.startsWith('@') ? school.instagram : '@' + school.instagram) : '';
-    const website       = school.website || '';
+    const schoolId   = document.getElementById('f-school')?.value || SCHOOLS[0]?.id || 'escola-teste';
+    _qrSchool        = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0] || { id: schoolId, name: 'Escola Surf', wa_number: '' };
+    const defaultUrl = schoolId === 'escola-teste'
+      ? 'https://auditoria-25b.pages.dev/surf'
+      : 'https://auditoria-25b.pages.dev/surf?escola=' + encodeURIComponent(schoolId);
+    _qrCurrentUrl = _qrSchool.qr_url || defaultUrl;
 
-    const popup = window.open('', '_blank', 'width=580,height=920,scrollbars=yes');
-    if (!popup) { alert('Permite popups para imprimir o cartão QR.'); return; }
-    popup.document.write(`<!DOCTYPE html><html lang="pt"><head>
-<meta charset="UTF-8"/>
-<title>Cartão QR · ${school.name}</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Inter',sans-serif;background:#050D1A;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 16px 40px}
-  .toolbar{width:100%;max-width:460px;display:flex;gap:.5rem;margin-bottom:14px;flex-wrap:wrap;align-items:center}
-  .btn{background:linear-gradient(135deg,#0070F3,#00CFFD);border:none;border-radius:9px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 22px;cursor:pointer;flex-shrink:0}
-  .btn-img{background:rgba(134,239,172,.15);border:1px solid rgba(134,239,172,.35);border-radius:9px;color:#86efac;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 16px;cursor:pointer;flex-shrink:0}
-  .btn-wa{background:#25D366;border:none;border-radius:9px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 18px;cursor:pointer;flex-shrink:0;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
-  .btn-mail{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:9px;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:9px 18px;cursor:pointer;flex-shrink:0;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
-  .btn-share{background:rgba(167,139,250,.18);border:1px solid rgba(167,139,250,.35);border-radius:9px;color:#c4b5fd;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:9px 16px;cursor:pointer;flex-shrink:0}
-  .btn-save-url{background:rgba(0,207,253,.15);border:1px solid rgba(0,207,253,.4);border-radius:9px;color:#00CFFD;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 16px;cursor:pointer;flex-shrink:0}
-  .btn-sec{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:9px;color:#94a3b8;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:8px 16px;cursor:pointer;flex-shrink:0}
-  .hint{font-size:.7rem;color:rgba(255,255,255,.35);width:100%;text-align:center;margin-top:2px}
-  #capture-status{font-size:.72rem;color:#86efac;margin-top:4px;display:none;width:100%;text-align:center}
-  .url-edit-row{width:100%;max-width:460px;display:flex;gap:.4rem;margin-bottom:10px;align-items:center}
-  .url-edit-row input{flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(0,207,253,.3);border-radius:8px;padding:8px 12px;color:#fff;font-family:monospace;font-size:12px;outline:none;min-width:0}
-  .url-edit-row input:focus{border-color:#00CFFD}
-  /* CARD */
-  .card{width:100%;max-width:420px;background:linear-gradient(160deg,#0A1A30,#0D2040);border:1px solid rgba(0,207,253,.3);border-radius:24px;padding:32px 28px 28px;text-align:center;position:relative;overflow:hidden}
-  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#0070F3,#00CFFD,#0070F3)}
-  /* Photo area */
-  .photo-wrap{width:80px;height:80px;border-radius:50%;margin:0 auto 14px;overflow:hidden;border:2px solid rgba(0,207,253,.35);cursor:pointer;position:relative;background:rgba(255,255,255,.05)}
-  .photo-wrap img{width:100%;height:100%;object-fit:cover}
-  .photo-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;font-size:.6rem;color:rgba(255,255,255,.3);gap:3px}
-  .photo-placeholder span{font-size:22px}
-  /* Editable fields */
-  [contenteditable]{outline:none;cursor:text;border-radius:6px;transition:background .15s}
-  [contenteditable]:hover{background:rgba(255,255,255,.06)}
-  [contenteditable]:focus{background:rgba(0,207,253,.08);outline:1px dashed rgba(0,207,253,.4)}
-  .school-name{font-size:22px;font-weight:900;background:linear-gradient(135deg,#fff 30%,#00CFFD);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;min-height:1.2em}
-  .school-name:focus{-webkit-text-fill-color:#fff}
-  .tagline{font-size:.8rem;color:rgba(255,255,255,.45);margin-bottom:6px;min-height:1.1em}
-  .address{font-size:.75rem;color:rgba(255,255,255,.35);margin-bottom:20px;min-height:1em}
-  .cta{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#00CFFD;margin-bottom:10px}
-  .qr-wrap{display:inline-block;background:#fff;border-radius:14px;padding:7px;margin-bottom:16px}
-  .qr-wrap canvas{display:block;border-radius:7px}
-  .url-text{font-size:.68rem;color:rgba(255,255,255,.4);font-family:monospace;margin-bottom:18px;padding:6px 10px;background:rgba(255,255,255,.04);border-radius:7px}
-  .sep{width:100%;height:1px;background:rgba(255,255,255,.08);margin:14px 0}
-  .info{display:flex;flex-direction:column;gap:7px}
-  .info-row{display:flex;align-items:center;justify-content:center;gap:7px;font-size:.8rem;color:rgba(255,255,255,.6)}
-  .info-row strong,[contenteditable]{color:#fff}
-  .info-row .icon{flex-shrink:0;width:18px;text-align:center}
-  /* Hidden file input */
-  #photo-input{display:none}
-  /* Extra fields toggled by toolbar */
-  .extra-field{display:none}
-  .extra-field.visible{display:flex}
-  @media print{
-    body{background:#fff;color:#000;padding:0;margin:0}
-    .toolbar{display:none}
-    .card{border:1.5px solid #ccc;background:#fff;color:#000;max-width:none;border-radius:12px;padding:28px 24px}
-    .card::before{background:linear-gradient(90deg,#0070F3,#00CFFD)}
-    .school-name{-webkit-text-fill-color:#050D1A;background:none;color:#050D1A}
-    .tagline,.address,.cta,.url-text,.info-row{color:#444}
-    .info-row strong,[contenteditable]{color:#111}
-    .sep{background:#ddd}
-    .photo-placeholder{display:none}
-    [contenteditable]{outline:none;background:none !important}
-  }
-</style></head><body>
-<input type="file" id="photo-input" accept="image/*"/>
-<div class="toolbar">
-  <button class="btn-sec" onclick="window.close()" style="background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.3);color:#fca5a5">✕ Fechar</button>
-  <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
-  <button class="btn-img" onclick="saveImage()">💾 Guardar Imagem</button>
-  <button class="btn-share" onclick="shareImage()">📤 Partilhar</button>
-  <button class="btn-sec" onclick="toggleExtra()">+ Morada / Redes</button>
-</div>
-<div class="url-edit-row">
-  <input type="url" id="qr-url-input" value="${bookingUrl}" placeholder="URL para o QR code" title="Edita o URL do QR code"/>
-  <button class="btn-save-url" onclick="applyQrUrl()">✓ Aplicar</button>
-  <a id="btn-wa-share" class="btn-wa" href="https://wa.me/?text=${encodeURIComponent('Reserve a sua aula de surf: ' + bookingUrl)}" target="_blank">💬 WA</a>
-  <a id="btn-email-share" class="btn-mail" href="mailto:?subject=${encodeURIComponent('Reserve uma aula — ' + school.name)}&body=${encodeURIComponent('Reserva online: ' + bookingUrl)}" target="_blank">✉️ Email</a>
-</div>
-<div id="capture-status"></div>
-<div class="card">
-  <!-- Photo -->
-  <div class="photo-wrap" onclick="document.getElementById('photo-input').click()" title="Clica para adicionar foto ou logo">
-    <div class="photo-placeholder" id="photo-ph"><span>📷</span>Foto / Logo</div>
-    <img id="photo-img" src="" style="display:none" alt=""/>
-  </div>
-  <!-- Name & tagline -->
-  <div class="school-name" contenteditable="true">${school.name}</div>
-  <div class="tagline" contenteditable="true">Reserve a sua aula de surf online</div>
-  <div class="address" contenteditable="true">${school.meeting_point ? '📍 ' + school.meeting_point : '📍 Clica para adicionar morada'}</div>
-  <!-- QR -->
-  <div class="cta">Aponte a câmara para reservar</div>
-  <div class="qr-wrap"><canvas id="qr-canvas"></canvas></div>
-  <div class="url-text" id="url-display">${bookingUrl}</div>
-  <div class="sep"></div>
-  <!-- Contacts -->
-  <div class="info">
-    <div class="info-row"><span class="icon">📱</span>WhatsApp <strong contenteditable="true">${wa || '+351 ...'}</strong></div>
-    <div class="info-row extra-field" id="row-email"><span class="icon">✉️</span>Email <strong contenteditable="true">${schoolEmail || 'email@escola.pt'}</strong></div>
-    <div class="info-row extra-field" id="row-insta"><span class="icon">📸</span>Instagram <strong contenteditable="true">${instagram || '@escola'}</strong></div>
-    <div class="info-row"><span class="icon">🌊</span><strong contenteditable="true">${website || 'auditoria-25b.pages.dev'}</strong></div>
-  </div>
-</div>
-<script>
-  let currentQrUrl = '${bookingUrl}';
+    document.getElementById('qr-card-name').textContent = _qrSchool.name;
+    document.getElementById('qr-url-field').value       = _qrCurrentUrl;
+    document.getElementById('qr-card-url').textContent  = _qrCurrentUrl;
+    document.getElementById('qr-modal-status').textContent = '';
+    _qrGenerate(_qrCurrentUrl);
 
-  document.getElementById('photo-input').addEventListener('change', function() {
-    const file = this.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      document.getElementById('photo-img').src = e.target.result;
-      document.getElementById('photo-img').style.display = 'block';
-      document.getElementById('photo-ph').style.display  = 'none';
-    };
-    reader.readAsDataURL(file);
-  });
-  function toggleExtra() {
-    document.querySelectorAll('.extra-field').forEach(el => el.classList.toggle('visible'));
-  }
-  const statusEl = document.getElementById('capture-status');
-  function setStatus(msg, duration) {
-    statusEl.textContent = msg; statusEl.style.display = 'block';
-    if (duration) setTimeout(() => { statusEl.style.display = 'none'; }, duration);
+    const bg = document.getElementById('qr-modal-bg');
+    bg.classList.add('open'); bg.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
   }
 
-  function generateQr(url) {
-    const canvas = document.getElementById('qr-canvas');
-    QRCode.toCanvas(canvas, url, { width: 200, margin: 1, color: { dark: '#050D1A', light: '#00CFFD' } });
+
+  function closeQrModal() {
+    const bg = document.getElementById('qr-modal-bg');
+    bg.classList.remove('open'); bg.setAttribute('aria-hidden','true');
+    document.body.classList.remove('modal-open');
   }
 
-  function applyQrUrl() {
-    const url = (document.getElementById('qr-url-input').value || '').trim();
+  function _qrGenerate(url) {
+    const canvas = document.getElementById('qr-main-canvas');
+    if (!canvas || typeof QRCode === 'undefined') return;
+    const avail = canvas.closest('.qr-card-visual')?.offsetWidth || 340;
+    const size  = Math.min(300, Math.max(200, avail - 40));
+    canvas.width = size; canvas.height = size;
+    QRCode.toCanvas(canvas, url || 'https://auditoria-25b.pages.dev/surf', {
+      width: size, margin: 1, color: { dark: '#050D1A', light: '#ffffff' }
+    });
+  }
+
+  function applyQrModalUrl() {
+    const url = (document.getElementById('qr-url-field').value || '').trim();
     if (!url) return;
-    currentQrUrl = url;
-    document.getElementById('url-display').textContent = url;
-    generateQr(url);
-    // Update share links
-    document.getElementById('btn-wa-share').href = 'https://wa.me/?text=' + encodeURIComponent('Reserve a sua aula de surf: ' + url);
-    document.getElementById('btn-email-share').href = 'mailto:?subject=' + encodeURIComponent('Reserve uma aula') + '&body=' + encodeURIComponent('Reserva online: ' + url);
-    // Notify parent window to save the URL
-    if (window.opener && window.opener.saveQrUrl) window.opener.saveQrUrl(url);
-    setStatus('✓ QR actualizado!', 2500);
+    _qrCurrentUrl = url;
+    document.getElementById('qr-card-url').textContent = url;
+    _qrGenerate(url);
+    if (_qrSchool) {
+      _qrSchool.qr_url = url;
+      try { localStorage.setItem('surfbook_qr_url_' + _qrSchool.id, url); } catch(_) {}
+      if (sb) sb.from('schools').update({ qr_url: url }).eq('id', _qrSchool.id)
+        .then(({ error }) => { if (!error) _qrSetStatus('✓ URL guardado!', 2000); });
+    }
+    _qrSetStatus('✓ QR actualizado!', 1800);
   }
 
-  // Allow Enter key in URL input
-  document.getElementById('qr-url-input').addEventListener('keydown', e => { if (e.key === 'Enter') applyQrUrl(); });
+  function _qrSetStatus(msg, ms) {
+    const el = document.getElementById('qr-modal-status');
+    if (!el) return;
+    el.textContent = msg;
+    if (ms) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, ms);
+  }
 
-  // Generate initial QR
-  generateQr(currentQrUrl);
-
-  // Draw the card directly with Canvas 2D API — avoids html2canvas/CORS issues entirely
-  async function captureCard() {
+  async function _qrCapture() {
     await document.fonts.ready;
-    const SC = 2, CW = 420, RADIUS = 24;
-    const txt = (sel, fb) => (document.querySelector(sel)?.textContent || fb || '').trim();
-    const schoolName = txt('.school-name', '');
-    const tagline    = txt('.tagline', '');
-    const address    = txt('.address', '');
-    const urlText    = txt('.url-text', '');
-    const photoImg   = document.getElementById('photo-img');
-    const hasPhoto   = photoImg && photoImg.style.display !== 'none' && photoImg.src;
-    const infoRows   = [...document.querySelectorAll('.info-row:not(.extra-field), .info-row.visible')];
-
-    // Calculate dynamic height
-    const CH = 80 + (hasPhoto?90:30) + 24+20+20+18+14+220+30+20+18 + infoRows.length*24 + 30;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = CW * SC; canvas.height = CH * SC;
-    const c = canvas.getContext('2d');
+    const qrCanvas = document.getElementById('qr-main-canvas');
+    const QS = qrCanvas ? qrCanvas.width : 260;
+    const SC = 2, CW = QS + 40, CH = 60 + QS + 50;
+    const c2 = document.createElement('canvas');
+    c2.width = CW * SC; c2.height = CH * SC;
+    const c = c2.getContext('2d');
     c.scale(SC, SC);
-
-    // ── Card background ──────────────────────────────────────────────
-    const bg = c.createLinearGradient(CW*0.4,0,0,CH);
-    bg.addColorStop(0,'#0A1A30'); bg.addColorStop(1,'#0D2040');
-    c.fillStyle = bg;
-    c.beginPath(); c.roundRect(0,0,CW,CH,RADIUS); c.fill();
-
-    // Top accent line
+    // White card background
+    c.fillStyle = '#ffffff';
+    c.beginPath(); c.roundRect(0, 0, CW, CH, 16); c.fill();
+    // Top accent bar
     const tl = c.createLinearGradient(0,0,CW,0);
     tl.addColorStop(0,'#0070F3'); tl.addColorStop(.5,'#00CFFD'); tl.addColorStop(1,'#0070F3');
-    c.fillStyle = tl; c.fillRect(0,0,CW,3);
-
-    let y = 40;
-
-    // ── Optional photo circle ────────────────────────────────────────
-    if (hasPhoto) {
-      c.save();
-      c.beginPath(); c.arc(CW/2, y+40, 40, 0, Math.PI*2); c.clip();
-      c.drawImage(photoImg, CW/2-40, y, 80, 80);
-      c.restore();
-      // ring
-      c.strokeStyle='rgba(0,207,253,.35)'; c.lineWidth=2;
-      c.beginPath(); c.arc(CW/2,y+40,41,0,Math.PI*2); c.stroke();
-      y += 100;
-    } else { y += 20; }
-
-    // ── School name ──────────────────────────────────────────────────
-    c.textAlign='center'; c.textBaseline='middle';
-    const grad = c.createLinearGradient(CW*.2,0,CW*.8,0);
-    grad.addColorStop(0,'#ffffff'); grad.addColorStop(1,'#00CFFD');
-    c.fillStyle=grad; c.font='900 22px Inter,system-ui,sans-serif';
-    c.fillText(schoolName, CW/2, y+12); y+=30;
-
-    // Tagline
-    c.fillStyle='rgba(255,255,255,.45)'; c.font='400 13px Inter,system-ui,sans-serif';
-    c.fillText(tagline, CW/2, y+8); y+=22;
-
-    // Address (only if edited)
-    if (address && !address.startsWith('📍 Clica')) {
-      c.fillStyle='rgba(255,255,255,.3)'; c.font='400 12px Inter,system-ui,sans-serif';
-      c.fillText(address, CW/2, y+8); y+=20;
-    }
-    y+=14;
-
-    // CTA text
-    c.fillStyle='#00CFFD'; c.font='700 10px Inter,system-ui,sans-serif';
-    c.fillText('APONTE A CÂMARA PARA RESERVAR', CW/2, y+7); y+=18;
-
-    // ── QR code ──────────────────────────────────────────────────────
-    const QS=200, qx=(CW-QS)/2, qy=y;
-    c.fillStyle='#ffffff';
-    c.beginPath(); c.roundRect(qx-7,qy-7,QS+14,QS+14,14); c.fill();
-    const qrCanvas=document.getElementById('qr-canvas');
-    if (qrCanvas) c.drawImage(qrCanvas, qx, qy, QS, QS);
-    y += QS+16;
-
+    c.fillStyle = tl; c.fillRect(0, 0, CW, 3);
+    // School name
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillStyle = '#050D1A'; c.font = '900 17px Inter,system-ui,sans-serif';
+    c.fillText((_qrSchool && _qrSchool.name) || 'Escola Surf', CW/2, 22);
+    // CTA
+    c.fillStyle = '#0070F3'; c.font = '700 9px Inter,system-ui,sans-serif';
+    c.fillText('APONTE A CÂMARA PARA RESERVAR', CW/2, 42);
+    // QR code
+    if (qrCanvas) c.drawImage(qrCanvas, 20, 54, QS, QS);
     // URL
-    c.fillStyle='rgba(255,255,255,.35)'; c.font='400 11px monospace,sans-serif';
-    c.fillText(urlText, CW/2, y+8); y+=24;
-
-    // Separator
-    c.strokeStyle='rgba(255,255,255,.08)'; c.lineWidth=1;
-    c.beginPath(); c.moveTo(24,y); c.lineTo(CW-24,y); c.stroke(); y+=18;
-
-    // ── Contact rows ─────────────────────────────────────────────────
-    c.font='400 13px Inter,system-ui,sans-serif'; c.fillStyle='rgba(255,255,255,.7)';
-    infoRows.forEach(row => {
-      c.fillText(row.textContent.trim().replace(/\s+/g,' '), CW/2, y+8); y+=24;
-    });
-
-    return canvas;
+    c.fillStyle = '#64748b'; c.font = '400 9px monospace,sans-serif';
+    const urlDisplay = _qrCurrentUrl.length > 60 ? _qrCurrentUrl.slice(0, 57) + '...' : _qrCurrentUrl;
+    c.fillText(urlDisplay, CW/2, 54 + QS + 22);
+    return c2;
   }
 
-  async function saveImage() {
-    setStatus('A gerar imagem…');
+  async function saveQrImage() {
+    _qrSetStatus('A gerar imagem…');
     try {
-      const canvas = await captureCard();
+      const c = await _qrCapture();
       const a = document.createElement('a');
-      a.download = 'cartao-surf.png';
-      a.href = canvas.toDataURL('image/png');
+      a.download = 'cartao-qr-surf.png';
+      a.href = c.toDataURL('image/png');
       a.click();
-      setStatus('✓ Imagem guardada!', 3000);
-    } catch(e) { console.error(e); setStatus('✗ Erro: ' + e.message, 4000); }
+      _qrSetStatus('✓ Guardado!', 2500);
+    } catch(e) { _qrSetStatus('✗ Erro: ' + e.message, 3000); }
   }
-  async function shareImage() {
-    setStatus('A gerar imagem…');
+
+  async function shareQrWa() {
+    _qrSetStatus('A preparar…');
     try {
-      const canvas = await captureCard();
-      canvas.toBlob(async blob => {
-        const file = new File([blob], 'cartao-surf.png', { type: 'image/png' });
+      const c = await _qrCapture();
+      c.toBlob(async blob => {
+        const file = new File([blob], 'cartao-qr-surf.png', { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: document.querySelector('.school-name').textContent });
-          statusEl.style.display = 'none';
+          await navigator.share({ files: [file], title: (_qrSchool?.name || '') + ' — Reservas', text: 'Reserve a sua aula: ' + _qrCurrentUrl });
+          _qrSetStatus('');
         } else {
-          const a = document.createElement('a');
-          a.download = 'cartao-surf.png';
-          a.href = canvas.toDataURL('image/png');
-          a.click();
-          setStatus('✓ Imagem guardada!', 4000);
+          window.open('https://wa.me/?text=' + encodeURIComponent('Reserve a sua aula de surf: ' + _qrCurrentUrl), '_blank');
+          _qrSetStatus('✓ A abrir WhatsApp…', 2000);
         }
       }, 'image/png');
-    } catch(e) { console.error(e); setStatus('✗ Erro. Verifica consola.', 4000); }
-  }
-<\/script>
-</body></html>`);
-    popup.document.close();
+    } catch(e) {
+      window.open('https://wa.me/?text=' + encodeURIComponent('Reserve: ' + _qrCurrentUrl), '_blank');
+      _qrSetStatus('');
+    }
   }
 
-  // Chamada pelo popup do QR para guardar o URL personalizado
-  function saveQrUrl(url) {
-    const schoolId = document.getElementById('f-school')?.value || SCHOOLS[0]?.id || 'escola-teste';
-    const school   = SCHOOLS.find(s => s.id === schoolId) || SCHOOLS[0];
-    if (!school) return;
-    school.qr_url = url;
-    try { localStorage.setItem(`surfbook_qr_url_${schoolId}`, url); } catch(_) {}
-    if (sb) {
-      sb.from('schools').update({ qr_url: url }).eq('id', schoolId).then(({ error }) => {
-        if (!error) showToast('URL do QR guardado ✓', 'success');
-      });
+  async function shareQrEmail() {
+    _qrSetStatus('A preparar…');
+    try {
+      const c = await _qrCapture();
+      c.toBlob(async blob => {
+        const file = new File([blob], 'cartao-qr-surf.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: (_qrSchool?.name || '') + ' — Reservas' });
+          _qrSetStatus('');
+        } else {
+          const s = encodeURIComponent('Reserve uma aula — ' + (_qrSchool?.name || 'Escola Surf'));
+          const b = encodeURIComponent('Reserva online: ' + _qrCurrentUrl);
+          window.open('mailto:?subject=' + s + '&body=' + b, '_blank');
+          _qrSetStatus('✓ A abrir email…', 2000);
+        }
+      }, 'image/png');
+    } catch(e) {
+      const s = encodeURIComponent('Reserve uma aula');
+      const b = encodeURIComponent('Reserva online: ' + _qrCurrentUrl);
+      window.open('mailto:?subject=' + s + '&body=' + b, '_blank');
+      _qrSetStatus('');
     }
+  }
+
+  function printQrCard() {
+    const visual = document.getElementById('qr-card-visual');
+    if (!visual) return;
+    const w = window.open('', '_blank', 'width=420,height=520');
+    if (!w) { alert('Permite popups para imprimir.'); return; }
+    const name = (_qrSchool?.name || 'Escola Surf').replace(/</g,'&lt;');
+    w.document.write('<html><head><title>QR ' + name + '</title><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}@media print{body{background:#fff;padding:0}}</style></head><body>' + visual.outerHTML + '</body></html>');
+    w.document.close();
+    setTimeout(() => { w.focus(); w.print(); }, 600);
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -4521,6 +4471,7 @@
         { el: document.getElementById('reschedule-modal-bg'),  close: () => window.closeReschedule && closeReschedule() },
         { el: document.getElementById('manual-booking-modal-bg'), close: () => window.closeManualBooking && closeManualBooking() },
         { el: document.getElementById('report-modal-bg'),      close: () => window.closeReportModal && closeReportModal() },
+        { el: document.getElementById('qr-modal-bg'),          close: () => window.closeQrModal && closeQrModal() },
       ];
       for (const m of classModals) {
         if (m.el && m.el.classList.contains('open')) return m;
@@ -4539,7 +4490,7 @@
       else document.body.classList.remove('modal-open');
     }
 
-    const targets = ['detail-modal-bg','reschedule-modal-bg','manual-booking-modal-bg','report-modal-bg','pass-modal']
+    const targets = ['detail-modal-bg','reschedule-modal-bg','manual-booking-modal-bg','report-modal-bg','qr-modal-bg','pass-modal']
       .map(id => document.getElementById(id)).filter(Boolean);
     const mo = new MutationObserver(syncBodyLock);
     targets.forEach(t => mo.observe(t, { attributes: true, attributeFilter: ['class','style'] }));
