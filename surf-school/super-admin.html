@@ -82,8 +82,9 @@
     /* Top bar */
     .topbar {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 1rem 2rem; background: rgba(0,0,0,.35);
+      padding: 1rem 2rem; background: rgba(5,13,26,.92); backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(201,168,76,.2); flex-wrap: wrap; gap: 1rem;
+      position: sticky; top: 0; z-index: 800;
     }
     .topbar-logo { font-family: 'Playfair Display', serif; font-size: 1.15rem; display: flex; align-items: center; gap: .6rem; }
     .topbar-logo span { color: var(--gold); }
@@ -112,7 +113,10 @@
     .btn-proposta:hover { background: rgba(201,168,76,.22); border-color: var(--gold); }
 
     /* Main content */
-    .dash-content { flex: 1; padding: 2rem; max-width: 1500px; width: 100%; margin: 0 auto; }
+    .dash-content { flex: 1; padding: 2rem; max-width: 1280px; width: 100%; margin: 0 auto; }
+
+    /* Centra secções de análise / relatórios com largura legível */
+    #sa-analytics, #sa-reviews-section, #leads-section { max-width: 1100px; margin-left: auto; margin-right: auto; }
 
     /* Global Stats */
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
@@ -356,13 +360,38 @@
       padding: 1.8rem;
       width: 100%;
       max-width: 460px;
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
     .modal-box-wide {
       max-width: 500px;
-      max-height: 90vh;
-      overflow-y: auto;
     }
-    .modal-footer { display: flex; gap: .7rem; margin-top: 1.4rem; }
+    /* Cabeçalho do modal — fixo no topo */
+    .modal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: .6rem; flex-shrink: 0;
+    }
+    .modal-head-titles { min-width: 0; }
+    /* Corpo do modal — scroll interno */
+    .modal-body { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    /* Botão fechar (X) e Voltar */
+    .modal-close-x {
+      background: rgba(255,255,255,.06); border: 1px solid var(--border);
+      color: var(--gray); width: 36px; height: 36px; min-width: 36px; border-radius: 9px;
+      font-size: 1.1rem; cursor: pointer; font-family: 'Inter',sans-serif; line-height: 1;
+      display: flex; align-items: center; justify-content: center; transition: all .2s;
+    }
+    .modal-close-x:hover { border-color: var(--red); color: var(--red); }
+    .btn-back {
+      display: inline-flex; align-items: center; gap: .35rem;
+      background: transparent; border: 1px solid var(--border); border-radius: 9px;
+      color: var(--gray); font-size: .82rem; font-weight: 600; padding: .5rem .9rem;
+      cursor: pointer; font-family: 'Inter',sans-serif; transition: all .2s; min-height: 40px;
+    }
+    .btn-back:hover { border-color: var(--gold); color: var(--gold); }
+    .modal-footer { display: flex; gap: .7rem; margin-top: 1.4rem; flex-shrink: 0; flex-wrap: wrap; }
     .btn-modal-primary {
       flex: 1; padding: .7rem;
       border: none; border-radius: 10px;
@@ -434,7 +463,42 @@
       flex-wrap: wrap;
     }
 
+    /* Bloqueia scroll do body quando há modal aberto */
+    body.modal-open { overflow: hidden; }
+
+    /* Área de toque mínima ~40px em botões/links de ação */
+    .btn-login, .btn-logout, .btn-proposta, .btn-refresh, .school-tab,
+    .btn-analytics-sa, .btn-reviews, .sc-link, .sc-edit-comm-btn,
+    .btn-modal-primary, .btn-modal-cancel, .rev-pill, .lead-filter-btn,
+    .btn-lead-create, .btn-lead-review, .btn-lead-archive {
+      min-height: 40px;
+    }
+
     /* ── MOBILE ── */
+    @media(max-width: 768px) {
+      /* Topbar fixa garantida no topo */
+      .topbar { position: sticky; top: 0; z-index: 800; }
+
+      /* Modais em ecrã inteiro com header/footer fixos e corpo com scroll */
+      .modal-bg { padding: 0; align-items: stretch; justify-content: stretch; }
+      .modal-box, .modal-box-wide {
+        max-width: 100%; max-height: 100%; height: 100%; width: 100%;
+        border-radius: 0; padding: 1rem 1.1rem 0;
+      }
+      .modal-head {
+        position: sticky; top: 0; background: #0A1929; z-index: 2;
+        padding: .2rem 0 .8rem; border-bottom: 1px solid var(--border); margin: 0 -1.1rem .8rem;
+        padding-left: 1.1rem; padding-right: 1.1rem;
+      }
+      .modal-body { padding-bottom: 1rem; }
+      .modal-footer {
+        position: sticky; bottom: 0; background: #0A1929; z-index: 2;
+        margin: 0 -1.1rem; padding: .8rem 1.1rem;
+        border-top: 1px solid var(--border);
+        padding-bottom: calc(.8rem + env(safe-area-inset-bottom));
+      }
+    }
+
     @media(max-width: 480px) {
       .stats-grid { grid-template-columns: 1fr 1fr; }
       .sc-stats { grid-template-columns: 1fr 1fr 1fr; }
@@ -443,9 +507,30 @@
       .filters-bar { flex-direction: column; align-items: stretch; }
       .filter-group { width: 100%; }
       .btn-refresh { width: 100%; margin-left: 0; }
-      .table-scroll { font-size: .8rem; }
       th, td { padding: .6rem .7rem; }
-      .modal-box, .modal-box-wide { padding: 1.2rem; }
+
+      /* Tabela de marcações vira cards legíveis */
+      .table-scroll table, .table-scroll thead, .table-scroll tbody,
+      .table-scroll th, .table-scroll td, .table-scroll tr { display: block; }
+      .table-scroll thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+      .table-scroll tr {
+        background: rgba(255,255,255,.03); border: 1px solid var(--border);
+        border-radius: 12px; margin-bottom: .8rem; padding: .6rem .9rem;
+      }
+      .table-scroll tr:hover td { background: transparent; }
+      .table-scroll td {
+        border: none !important; padding: .35rem 0; text-align: right;
+        display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      }
+      .table-scroll td::before {
+        content: attr(data-label); color: var(--gray); font-size: .7rem;
+        text-transform: uppercase; letter-spacing: .06em; font-weight: 600;
+        text-align: left; flex-shrink: 0;
+      }
+      .table-scroll td small { display: inline; margin-top: 0; }
+      .table-scroll td.col-center { justify-content: space-between; }
+      .table-scroll .summary-row { background: rgba(201,168,76,.08); }
+      .table-scroll .summary-row td[colspan] { justify-content: flex-end; }
     }
   </style>
 </head>
@@ -686,9 +771,17 @@
 <!-- Tiers Config Modal (patamares globais default) -->
 <div id="tiers-modal-bg" class="modal-bg" role="dialog" aria-modal="true" aria-labelledby="tiers-modal-title" onclick="if(event.target===this)closeTiersModal()">
   <div class="modal-box" style="border:1px solid rgba(167,139,250,.25)">
-    <h3 id="tiers-modal-title" style="font-size:1rem;font-weight:700;color:#a78bfa;margin-bottom:.4rem">⚙️ Patamares Globais (Default)</h3>
-    <p style="font-size:.8rem;color:var(--gray);margin-bottom:1.2rem">Aplicados a escolas sem patamares personalizados. Ajusta por escola no botão ⚙️ de cada escola.</p>
-    <div id="tiers-rows" style="display:flex;flex-direction:column;gap:.8rem"></div>
+    <div class="modal-head">
+      <button class="btn-back" onclick="closeTiersModal()" aria-label="Voltar">← Voltar</button>
+      <div class="modal-head-titles" style="text-align:right;flex:1">
+        <h3 id="tiers-modal-title" style="font-size:1rem;font-weight:700;color:#a78bfa">⚙️ Patamares Globais (Default)</h3>
+      </div>
+      <button class="modal-close-x" onclick="closeTiersModal()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.8rem;color:var(--gray);margin:.8rem 0 1.2rem">Aplicados a escolas sem patamares personalizados. Ajusta por escola no botão ⚙️ de cada escola.</p>
+      <div id="tiers-rows" style="display:flex;flex-direction:column;gap:.8rem"></div>
+    </div>
     <div class="modal-footer">
       <button onclick="saveTiers()" class="btn-modal-primary" style="background:#a78bfa">Guardar</button>
       <button onclick="resetTiersDefault()" style="padding:.7rem 1rem;background:transparent;border:1px solid rgba(167,139,250,.3);border-radius:10px;color:#a78bfa;cursor:pointer;font-size:.82rem;font-family:Inter,sans-serif">↺ Default</button>
@@ -700,22 +793,30 @@
 <!-- Commission Edit Modal — por escola, guardado no Supabase -->
 <div id="comm-modal-bg" class="modal-bg" role="dialog" aria-modal="true" aria-labelledby="comm-modal-title" onclick="if(event.target===this)closeCommModal()">
   <div class="modal-box modal-box-wide" style="border:1px solid rgba(201,168,76,.2)">
-    <h3 id="comm-modal-title" style="font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:.3rem">⚙️ Comissões da Escola</h3>
-    <div id="comm-school-name" style="font-size:.95rem;font-weight:600;color:var(--white);margin-bottom:1.2rem"></div>
+    <div class="modal-head">
+      <button class="btn-back" onclick="closeCommModal()" aria-label="Voltar">← Voltar</button>
+      <div class="modal-head-titles" style="text-align:right;flex:1">
+        <h3 id="comm-modal-title" style="font-size:1rem;font-weight:700;color:var(--gold)">⚙️ Comissões da Escola</h3>
+        <div id="comm-school-name" style="font-size:.85rem;font-weight:600;color:var(--white)"></div>
+      </div>
+      <button class="modal-close-x" onclick="closeCommModal()" aria-label="Fechar">✕</button>
+    </div>
 
-    <!-- Estatísticas do mês -->
-    <div id="comm-month-stats" style="font-size:.8rem;padding:.6rem .9rem;background:rgba(0,207,253,.07);border:1px solid rgba(0,207,253,.2);border-radius:9px;color:var(--gray);margin-bottom:1.2rem;line-height:1.7"></div>
+    <div class="modal-body">
+      <!-- Estatísticas do mês -->
+      <div id="comm-month-stats" style="font-size:.8rem;padding:.6rem .9rem;background:rgba(0,207,253,.07);border:1px solid rgba(0,207,253,.2);border-radius:9px;color:var(--gray);margin:1rem 0 1.2rem;line-height:1.7"></div>
 
-    <!-- Patamares desta escola -->
-    <div class="modal-section-label" style="color:var(--gold)">Patamares desta escola</div>
-    <div id="comm-tiers-rows" style="display:flex;flex-direction:column;gap:.7rem;margin-bottom:1.2rem"></div>
-    <button onclick="addCommTier()" aria-label="Adicionar novo patamar de comissão" style="width:100%;padding:.45rem;background:rgba(201,168,76,.07);border:1px dashed rgba(201,168,76,.3);border-radius:8px;color:var(--gold);font-size:.8rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;margin-bottom:1.2rem">+ Adicionar patamar</button>
+      <!-- Patamares desta escola -->
+      <div class="modal-section-label" style="color:var(--gold)">Patamares desta escola</div>
+      <div id="comm-tiers-rows" style="display:flex;flex-direction:column;gap:.7rem;margin-bottom:1.2rem"></div>
+      <button onclick="addCommTier()" aria-label="Adicionar novo patamar de comissão" style="width:100%;padding:.45rem;background:rgba(201,168,76,.07);border:1px dashed rgba(201,168,76,.3);border-radius:8px;color:var(--gold);font-size:.8rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;margin-bottom:1.2rem;min-height:40px">+ Adicionar patamar</button>
 
-    <!-- Link da Proposta -->
-    <div class="modal-section-label" style="color:var(--cyan)">Link da Proposta</div>
-    <div style="display:flex;gap:.5rem;margin-bottom:1.3rem">
-      <input id="comm-proposta-link" readonly aria-label="URL da proposta comercial" style="flex:1;padding:.55rem .8rem;background:#0d1f3c;border:1px solid var(--border);border-radius:8px;color:var(--gray);font-size:.78rem;font-family:Inter,sans-serif;color-scheme:dark" />
-      <button onclick="copyPropostaLink()" aria-label="Copiar link da proposta" style="padding:.55rem .9rem;background:rgba(0,207,253,.1);border:1px solid rgba(0,207,253,.3);border-radius:8px;color:var(--cyan);font-size:.8rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap">📋 Copiar</button>
+      <!-- Link da Proposta -->
+      <div class="modal-section-label" style="color:var(--cyan)">Link da Proposta</div>
+      <div style="display:flex;gap:.5rem;margin-bottom:1.3rem">
+        <input id="comm-proposta-link" readonly aria-label="URL da proposta comercial" style="flex:1;padding:.55rem .8rem;background:#0d1f3c;border:1px solid var(--border);border-radius:8px;color:var(--gray);font-size:.78rem;font-family:Inter,sans-serif;color-scheme:dark" />
+        <button onclick="copyPropostaLink()" aria-label="Copiar link da proposta" style="padding:.55rem .9rem;background:rgba(0,207,253,.1);border:1px solid rgba(0,207,253,.3);border-radius:8px;color:var(--cyan);font-size:.8rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap;min-height:40px">📋 Copiar</button>
+      </div>
     </div>
 
     <div class="modal-footer" style="margin-top:.5rem">
@@ -1199,15 +1300,15 @@
         : '';
 
       return `<tr class="${suspicious ? 'row-suspicious' : ''}">
-        <td style="color:var(--gray);font-size:.8rem">#${b.booking_ref || (i+1)}</td>
-        <td><strong>${dateStr}</strong><small>${b.booking_time}</small></td>
-        <td><span class="school-chip">${schoolName}</span></td>
-        <td>${b.lesson_type} ${langFlag}</td>
-        <td>${b.client_name}<small>${b.client_phone}${b.client_email ? ' · ' + b.client_email : ''}</small>${b.wetsuit_size||b.client_weight ? `<small style="color:var(--gold)">👕 ${b.wetsuit_size||'—'} · ${b.client_weight?b.client_weight+'kg':'—'} · ${b.client_height?b.client_height+'cm':'—'}</small>` : ''}${suspicious ? `<span class="audit-note" title="${auditLines}">⚠️ ${auditLines}</span>` : ''}</td>
-        <td class="col-center">${b.num_people}</td>
-        <td class="col-price">€${price.toFixed(2)}</td>
-        <td class="col-commission">${suspicious ? `<span style="color:#ef4444;font-weight:700" title="Comissão em risco">€${com.toFixed(2)} ⚠️</span>` : `€${com.toFixed(2)}`}</td>
-        <td><span class="status-badge ${suspicious ? 'status-suspicious' : s.cls}">${s.label}${suspicious ? ' ⚠️' : ''}</span></td>
+        <td data-label="#" style="color:var(--gray);font-size:.8rem">#${b.booking_ref || (i+1)}</td>
+        <td data-label="Data / Hora"><strong>${dateStr}</strong><small>${b.booking_time}</small></td>
+        <td data-label="Escola"><span class="school-chip">${schoolName}</span></td>
+        <td data-label="Modalidade">${b.lesson_type} ${langFlag}</td>
+        <td data-label="Cliente">${b.client_name}<small>${b.client_phone}${b.client_email ? ' · ' + b.client_email : ''}</small>${b.wetsuit_size||b.client_weight ? `<small style="color:var(--gold)">👕 ${b.wetsuit_size||'—'} · ${b.client_weight?b.client_weight+'kg':'—'} · ${b.client_height?b.client_height+'cm':'—'}</small>` : ''}${suspicious ? `<span class="audit-note" title="${auditLines}">⚠️ ${auditLines}</span>` : ''}</td>
+        <td data-label="Pessoas" class="col-center">${b.num_people}</td>
+        <td data-label="Preço" class="col-price">€${price.toFixed(2)}</td>
+        <td data-label="Comissão" class="col-commission">${suspicious ? `<span style="color:#ef4444;font-weight:700" title="Comissão em risco">€${com.toFixed(2)} ⚠️</span>` : `€${com.toFixed(2)}`}</td>
+        <td data-label="Estado"><span class="status-badge ${suspicious ? 'status-suspicious' : s.cls}">${s.label}${suspicious ? ' ⚠️' : ''}</span></td>
       </tr>`;
     }).join('');
 
@@ -1235,6 +1336,21 @@
     setTimeout(() => t.classList.remove('show'), 3500);
   }
 
+  // ── MODAIS: bloqueio de scroll do body + tecla Escape ────────────────────────
+  function syncModalBodyLock() {
+    const anyOpen = Array.from(document.querySelectorAll('.modal-bg'))
+      .some(m => m.style.display === 'flex');
+    document.body.classList.toggle('modal-open', anyOpen);
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    const open = Array.from(document.querySelectorAll('.modal-bg'))
+      .filter(m => m.style.display === 'flex');
+    if (!open.length) return;
+    if (typeof closeTiersModal === 'function' && document.getElementById('tiers-modal-bg').style.display === 'flex') closeTiersModal();
+    if (typeof closeCommModal === 'function' && document.getElementById('comm-modal-bg').style.display === 'flex') closeCommModal();
+  });
+
   // ── TIERS CONFIG ──────────────────────────────────────────────────────────────
   function openTiersModal() {
     const tiers = getCommTiers();
@@ -1254,10 +1370,12 @@
         </div>
       </div>`).join('');
     document.getElementById('tiers-modal-bg').style.display = 'flex';
+    syncModalBodyLock();
   }
 
   function closeTiersModal() {
     document.getElementById('tiers-modal-bg').style.display = 'none';
+    syncModalBodyLock();
   }
 
   function saveTiers() {
@@ -1300,6 +1418,7 @@
   async function editCommission(schoolId) {
     const school = SCHOOLS.find(s => s.id === schoolId);
     document.getElementById('comm-modal-bg').style.display = 'flex';
+    syncModalBodyLock();
     document.getElementById('comm-modal-bg').dataset.schoolId = schoolId;
     document.getElementById('comm-school-name').textContent = school?.name || schoolId;
 
@@ -1454,6 +1573,7 @@
 
   function closeCommModal() {
     document.getElementById('comm-modal-bg').style.display = 'none';
+    syncModalBodyLock();
   }
 
   // Keep these stubs so existing callers don't break
