@@ -1154,7 +1154,10 @@ function expEmail(data){
     const cbs=r.sessoes.filter(s=>s.codBarras).map(s=>s.codBarras).join(', ');
     const envio=r.talao&&r.dataDeposito?'<span style="color:#065f46;font-weight:700">✓ SIM</span>':'<span style="color:#9ca3af">—</span>';
     const sesStr=r.sessoes.map(s=>'<div style="font-size:8.5px;color:#6b7280;line-height:1.4">'+fd(s.dataVendas)+' · Sess.'+( s.sessao||'—')+' · <b>'+fmt(s.valor)+'</b>'+(s.codBarras?' · 📦'+s.codBarras:'')+' </div>').join('');
-    bodyRows+=`<tr style="vertical-align:top">
+    const fotoEmailCell=r.foto
+      ?`<img src="${r.foto}" style="width:70px;height:48px;object-fit:cover;border-radius:4px;border:1.5px solid #e5e7eb;display:block">`
+      :`<span style="color:#d1d5db;font-size:9px">Sem foto</span>`;
+    bodyRows+=`<tr style="vertical-align:middle">
       <td style="text-align:center;color:#6b7280;font-size:9px;padding:6px 3px">${idx+1}</td>
       <td style="padding:6px 5px">${sesStr}</td>
       <td style="text-align:center;padding:6px 3px;color:#374151">${r.sessoes.length}</td>
@@ -1167,6 +1170,7 @@ function expEmail(data){
       <td style="text-align:center;padding:6px 3px">${envio}</td>
       <td style="padding:6px 5px"><span style="background:${bc};color:${fc};padding:2px 6px;border-radius:4px;font-size:8.5px;font-weight:700;white-space:nowrap;display:inline-block">${est.label}</span></td>
       <td style="padding:6px 5px;font-size:8.5px;color:#6b7280">${r.obs||''}</td>
+      <td style="padding:4px;text-align:center">${fotoEmailCell}</td>
     </tr>`;
   });
 
@@ -1179,24 +1183,7 @@ function expEmail(data){
     lojaRows+=`<tr><td style="padding:6px 8px;font-weight:700">${l}</td><td style="text-align:center;padding:6px">${ld.length}</td><td style="text-align:right;padding:6px 8px;font-weight:700;color:#1e40af">${fmt(lt)}</td><td style="text-align:right;padding:6px 8px;color:#065f46;font-weight:700">${fmt(ldep)}</td><td style="text-align:right;padding:6px 8px;color:#92400e">${fmt(lt-ldep)}</td><td style="text-align:center;padding:6px">${pct}%</td><td style="text-align:center;padding:6px;color:#065f46">${ld.filter(r=>calcEstado(r).s==='ok').length}</td><td style="text-align:center;padding:6px;color:#92400e">${ld.filter(r=>calcEstado(r).s==='warn').length}</td><td style="text-align:center;padding:6px;color:#7f1d1d">${ld.filter(r=>calcEstado(r).s==='err').length}</td></tr>`;
   });
 
-  let fotosHtml='';
-  if(withPhotos.length){
-    fotosHtml=`<div style="margin-top:24px"><div style="font-size:11px;font-weight:800;color:#1e40af;text-transform:uppercase;letter-spacing:.5px;border-left:3px solid #1e40af;padding-left:8px;margin-bottom:12px">📷 Comprovativos de Depósito (${withPhotos.length} fotografias)</div>
-    <div style="display:flex;flex-wrap:wrap;gap:10px">`;
-    withPhotos.forEach(r=>{
-      const ml2=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
-      const dr=ml2.length>1?fd(ml2[0])+'→'+fd(ml2[ml2.length-1]):fd(ml2[0]||'');
-      fotosHtml+=`<div style="border:1.5px solid #e5e7eb;border-radius:8px;overflow:hidden;width:200px">
-        <img src="${r.foto}" style="width:100%;height:130px;object-fit:cover;display:block">
-        <div style="padding:6px 8px;background:#f9fafb">
-          <div style="font-size:9px;font-weight:700;color:#1e40af">${r.loja}</div>
-          <div style="font-size:8.5px;color:#374151">${dr} · ${r.tipo||''}</div>
-          <div style="font-size:8.5px;color:#374151">Talão: <b>${r.talao||'—'}</b> · ${fmt(totalValor(r))}</div>
-        </div>
-      </div>`;
-    });
-    fotosHtml+='</div></div>';
-  }
+  const fotosHtml='';
 
   const reportHTML=`<!DOCTYPE html>
 <html lang="pt"><head><meta charset="UTF-8">
@@ -1277,13 +1264,14 @@ ${erros>0?`<div class="alert-box" style="background:#fee2e2;color:#7f1d1d;border
     <th>Cód. Barras / Saco</th><th style="width:78px;text-align:right">Valor (€)</th>
     <th style="width:90px">Nº Talão / Ref.</th><th style="width:78px">Responsável</th>
     <th style="width:34px;text-align:center">Env.</th><th style="width:108px">Estado</th><th>Observações</th>
+    <th style="width:80px;text-align:center">📷 Comprovativo</th>
   </tr></thead>
   <tbody>
     ${bodyRows}
     <tr class="tr-total">
       <td colspan="6" style="text-align:right;padding:7px 5px">TOTAL GERAL</td>
       <td style="text-align:right;padding:7px 5px">${fmt(total)}</td>
-      <td colspan="5" style="padding:7px 5px">${data.length} depósito(s) · ${data.reduce((s,r)=>s+r.sessoes.length,0)} sessão(ões)</td>
+      <td colspan="6" style="padding:7px 5px">${data.length} depósito(s) · ${data.reduce((s,r)=>s+r.sessoes.length,0)} sessão(ões) · ${withPhotos.length} comprovativo(s)</td>
     </tr>
   </tbody>
 </table>
@@ -1380,6 +1368,12 @@ function expPrint(data){
     const envio=r.talao&&r.dataDeposito?'✓':'';
     const rowBg=n%2===0?'#f8fafc':'#ffffff';
     const border=isFirst&&si===0?'border-top:2px solid #cbd5e1':'';
+    // Photo cell: shown only on first row of each deposit
+    const fotoCell=isFirst
+      ?(r.foto
+        ?`<img src="${r.foto}" style="width:72px;height:50px;object-fit:cover;border-radius:4px;border:1.5px solid #cbd5e1;display:block">`
+        :`<span style="color:#cbd5e1;font-size:9px">Sem foto</span>`)
+      :'';
     return`<tr style="background:${rowBg}">
       <td style="text-align:center;color:#94a3b8;font-weight:600;${border}">${isFirst?n:''}</td>
       <td style="font-weight:700;color:#1e293b;${border}">${fd(s.dataVendas)}</td>
@@ -1393,21 +1387,11 @@ function expPrint(data){
       <td style="text-align:center;font-weight:700;color:#16a34a;${border}">${isFirst?envio:''}</td>
       <td style="${border}">${isFirst?`<span style="background:${bc};color:${fc};padding:2px 7px;border-radius:4px;font-size:8.5px;font-weight:700;white-space:nowrap">${est.label}</span>`:''}</td>
       <td style="color:#64748b;font-size:8.5px;${border}">${isFirst?(r.obs||''):''}</td>
+      <td style="text-align:center;vertical-align:middle;padding:4px;${border}">${fotoCell}</td>
     </tr>`;
   }).join('');
 
-  let fotosHtml='';
-  if(withPhotos.length){
-    fotosHtml=`<div style="margin-top:22px;padding-top:16px;border-top:2px solid #e2e8f0">
-    <div style="font-size:10px;font-weight:800;color:#1e40af;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">📷 Comprovativos (${withPhotos.length})</div>
-    <div style="display:flex;flex-wrap:wrap;gap:10px">
-    ${withPhotos.map(r=>{
-      const ml2=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
-      const dr=ml2.length>1?fd(ml2[0])+'→'+fd(ml2[ml2.length-1]):fd(ml2[0]||'');
-      return`<div style="width:160px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden"><img src="${r.foto}" style="width:100%;height:110px;object-fit:cover;display:block"><div style="padding:5px 7px;background:#f8fafc"><div style="font-size:8.5px;font-weight:700;color:#1e40af">${fd(ml2[0]||'')}</div><div style="font-size:8px;color:#475569">Talão: ${r.talao||'—'} · ${fmt(totalValor(r))}</div></div></div>`;
-    }).join('')}
-    </div></div>`;
-  }
+  const fotosHtml='';
 
   const html=`<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
 <title>Folha Depósitos ${loja} ${ml}</title>
@@ -1493,13 +1477,14 @@ tbody td{padding:6px 7px;border-bottom:1px solid #f1f5f9}
     <th style="width:30px;text-align:center">Env.</th>
     <th style="width:120px">Estado</th>
     <th>Observações</th>
+    <th style="width:82px;text-align:center">📷 Comprovativo</th>
   </tr></thead>
   <tbody>
     ${trows}
     <tr class="tfoot">
       <td colspan="6" style="text-align:right">TOTAL</td>
       <td class="r">${fmt(total)}</td>
-      <td colspan="5">${data.length} depósito(s) &nbsp;·&nbsp; ${data.reduce((s,r)=>s+r.sessoes.length,0)} sessão(ões)</td>
+      <td colspan="6">${data.length} depósito(s) &nbsp;·&nbsp; ${data.reduce((s,r)=>s+r.sessoes.length,0)} sessão(ões) &nbsp;·&nbsp; ${withPhotos.length} comprovativo(s)</td>
     </tr>
   </tbody>
 </table>
