@@ -196,6 +196,15 @@ select{
 .ptbl td{padding:6px 8px;border-bottom:1px solid var(--g100)}
 .ptbl tr:nth-child(even) td{background:var(--g50)}
 .ptbl .tr td{font-weight:700;background:var(--bl);border-top:2px solid var(--blue)}
+/* EMAIL PREVIEW */
+.ep-field{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--g100);align-items:flex-start}
+.ep-field:last-of-type{border-bottom:none}
+.ep-lbl{font-size:11px;font-weight:800;color:var(--g400);min-width:58px;padding-top:1px;text-transform:uppercase;letter-spacing:.3px}
+.ep-val{font-size:13px;color:var(--g700);font-weight:600;flex:1;word-break:break-all}
+.ep-body{background:var(--g50);border-radius:10px;padding:12px 13px;margin-top:10px;font-size:12px;color:var(--g600);line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;border:1.5px solid var(--g200)}
+.ep-mobile-note{background:var(--gl);border:1.5px solid #6ee7b7;border-radius:10px;padding:11px 13px;margin-top:10px;font-size:12px;color:#065f46;font-weight:600;line-height:1.5}
+.ep-desktop-note{background:var(--ol);border:1.5px solid #fcd34d;border-radius:10px;padding:11px 13px;margin-top:10px;font-size:12px;color:var(--orange-dark);font-weight:600;line-height:1.5}
+.ep-copy-btn{background:var(--bl);color:var(--blue-dark);border:1.5px solid #bfdbfe;border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation;width:100%;margin-top:8px;min-height:44px}
 
 /* SETTINGS */
 .tag{display:inline-flex;align-items:center;gap:5px;background:var(--bl);color:var(--blue-dark);padding:6px 11px;border-radius:20px;font-size:12px;font-weight:700;margin:3px}
@@ -469,22 +478,38 @@ select{
     </div>
     <div class="eo" id="opt-email" onclick="seExp('email')">
       <div class="ei" style="background:var(--bl)"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#1a56db" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
-      <div><strong style="display:block;font-size:14px;font-weight:700">📧 Email para Contabilidade</strong><span style="font-size:12px;color:var(--g500)">Abre email com PDF em anexo</span></div>
+      <div><strong style="display:block;font-size:14px;font-weight:700">📧 Email para Contabilidade</strong><span style="font-size:12px;color:var(--g500)">Texto e assunto preenchidos · PDF em anexo (mobile: partilha direta)</span></div>
     </div>
     <div class="eo" id="opt-xlsx" onclick="seExp('xlsx')">
       <div class="ei" style="background:#e8f5e9"><svg width="22" height="22" viewBox="0 0 24 24"><rect width="24" height="24" rx="3" fill="#217346"/><text x="2" y="17" font-family="Arial" font-size="11" font-weight="bold" fill="white">XLS</text></svg></div>
       <div><strong style="display:block;font-size:14px;font-weight:700">Excel (.xlsx)</strong><span style="font-size:12px;color:var(--g500)">Requer Excel ou LibreOffice compatível</span></div>
     </div>
   </div>
+  <div id="email-prev-card" class="card" style="display:none">
+    <div class="ct">📧 Email que será enviado</div>
+    <div class="ep-field"><span class="ep-lbl">Para</span><span class="ep-val" id="ep-to">—</span></div>
+    <div class="ep-field"><span class="ep-lbl">CC</span><span class="ep-val" id="ep-cc">—</span></div>
+    <div class="ep-field"><span class="ep-lbl">Assunto</span><span class="ep-val" id="ep-sub">—</span></div>
+    <div class="ep-field"><span class="ep-lbl">Texto</span><span class="ep-val" style="color:var(--g400);font-size:11px">ver abaixo ↓</span></div>
+    <div class="ep-body" id="ep-body"></div>
+    <button class="ep-copy-btn" onclick="epCopy()">📋 Copiar texto do email</button>
+    <div id="ep-mobile-note" class="ep-mobile-note" style="display:none">
+      📱 <strong>No telemóvel:</strong> o PDF é partilhado diretamente — escolhe o teu email e fica logo em anexo.
+    </div>
+    <div id="ep-desktop-note" class="ep-desktop-note" style="display:none">
+      💻 <strong>No computador:</strong> o PDF descarrega automaticamente para a pasta Downloads — anexa-o manualmente ao email que abre.
+    </div>
+  </div>
+
   <div id="prev-wrap" style="display:none">
     <div class="card">
       <div class="ct">Pré-visualização</div>
       <div class="preview-scroll"><table class="ptbl" id="prev-tbl"></table></div>
     </div>
   </div>
-  <button class="btn bs" onclick="doExp()">
+  <button class="btn bs" id="exp-btn" onclick="doExp()">
     <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-    Exportar
+    <span id="exp-btn-lbl">Exportar</span>
   </button>
 </div>
 
@@ -1209,8 +1234,83 @@ async function delR(id){if(!confirm('Eliminar este depósito?'))return;const ok=
 
 // ─── EXPORT ──────────────────────────────────────────
 let expFmt='print';
-function seExp(f){expFmt=f;document.querySelectorAll('.eo').forEach(o=>o.classList.remove('sel'));document.getElementById('opt-'+f).classList.add('sel');updPrev()}
-function rExpSel(){popSel();document.getElementById('e-loja').addEventListener('change',updPrev);seExp(expFmt);updPrev()}
+function seExp(f){
+  expFmt=f;
+  document.querySelectorAll('.eo').forEach(o=>o.classList.remove('sel'));
+  document.getElementById('opt-'+f).classList.add('sel');
+  const epc=document.getElementById('email-prev-card');
+  const lbl=document.getElementById('exp-btn-lbl');
+  if(f==='email'){epc.style.display='block';updEmailPrev();if(lbl)lbl.textContent='Enviar Email';}
+  else{epc.style.display='none';if(lbl)lbl.textContent=f==='xlsx'?'Exportar Excel':'Exportar PDF';}
+  updPrev();
+}
+function rExpSel(){popSel();document.getElementById('e-loja').addEventListener('change',()=>{updPrev();if(expFmt==='email')updEmailPrev();});document.getElementById('e-mes').addEventListener('change',()=>{updPrev();if(expFmt==='email')updEmailPrev();});seExp(expFmt);}
+function updEmailPrev(){
+  const data=getFiltExp();
+  const epc=document.getElementById('email-prev-card');
+  if(!data.length){epc.style.display='none';return;}
+  epc.style.display='block';
+  const mes=document.getElementById('e-mes').value||curMesStr();
+  const loja=document.getElementById('e-loja').value||'Todas as Lojas';
+  const empresa=cfg.emp||'Empresa';
+  const nif=cfg.nif||'';
+  const dest=cfg.email||'(não configurado)';
+  const cc=[cfg.emailCC,cfg.emailCC2].filter(Boolean).join(', ')||'—';
+  const ml=mesLabel(mes);
+  const total=data.reduce((s,r)=>s+totalValor(r),0);
+  const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+  const erros=data.filter(r=>calcEstado(r).s==='err').length;
+  const avisos=data.filter(r=>calcEstado(r).s==='warn').length;
+  const subj=`Folha Depósitos – ${loja} – ${ml} – ${empresa}`;
+  const bodyLines=[
+    `Exmo(a). Departamento de Contabilidade,`,
+    ``,
+    `Envio em anexo a folha de controlo de depósitos de ${loja}, referente a ${ml}.`,
+    ``,
+    `RESUMO DO PERÍODO`,
+    `─────────────────`,
+    `Empresa: ${empresa}${nif?' · NIF '+nif:''}`,
+    `Loja: ${loja}`,
+    `Período: ${ml}`,
+    `Total Registado: ${fmt(total)}`,
+    `Total Depositado: ${fmt(totalDep)}`,
+    `Por Depositar: ${fmt(total-totalDep)}`,
+    `Nº Depósitos: ${data.length}`,
+    `Nº Sessões: ${data.reduce((s,r)=>s+r.sessoes.length,0)}`,
+    erros>0?`⚠️ Depósitos em atraso: ${erros} (ver folha em anexo)`:`✅ Sem problemas`,
+    avisos>0?`ℹ️ Avisos: ${avisos}`:'',
+    ``,
+    `📎 ANEXO`,
+    `  • FolhaDepositos_${loja.replace(/ /g,'_')}_${mes}.html — Folha completa com fotos dos talões`,
+    ``,
+    `Por favor confirmar receção e validação.`,
+    ``,
+    `Com os melhores cumprimentos,`,
+    `${sbProfile?.nome||loja} — ${empresa}`,
+  ].filter(l=>l!==null).join('\n');
+  document.getElementById('ep-to').textContent=dest;
+  document.getElementById('ep-cc').textContent=cc;
+  document.getElementById('ep-sub').textContent=subj;
+  document.getElementById('ep-body').textContent=bodyLines;
+  // Mobile vs desktop hint
+  const isMobile=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  document.getElementById('ep-mobile-note').style.display=isMobile?'block':'none';
+  document.getElementById('ep-desktop-note').style.display=isMobile?'none':'block';
+  // Store body for copy
+  document.getElementById('ep-body').dataset.body=bodyLines;
+  document.getElementById('ep-body').dataset.subj=subj;
+}
+function epCopy(){
+  const body=document.getElementById('ep-body')?.dataset.body||'';
+  const subj=document.getElementById('ep-body')?.dataset.subj||'';
+  const full=`Assunto: ${subj}\n\n${body}`;
+  if(navigator.clipboard){navigator.clipboard.writeText(full).then(()=>toast('✓ Texto copiado!')).catch(()=>epCopyFallback(full));}
+  else{epCopyFallback(full);}
+}
+function epCopyFallback(text){
+  const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;top:-999px;opacity:0';
+  document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✓ Texto copiado!');
+}
 function getFiltExp(){
   const loja=document.getElementById('e-loja').value;
   const mes=document.getElementById('e-mes').value;
@@ -1423,7 +1523,7 @@ function expEmail(data){
   const mes=document.getElementById('e-mes').value||curMesStr();
   const loja=document.getElementById('e-loja').value||'Todas as Lojas';
   const empresa=cfg.emp||'Empresa'; const nif=cfg.nif||'';
-  const dest=cfg.email||''; const cc=cfg.emailCC||'';
+  const dest=cfg.email||''; const cc=cfg.emailCC||''; const cc2=cfg.emailCC2||'';
   const total=data.reduce((s,r)=>s+totalValor(r),0);
   const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
   const ml=mesLabel(mes);
@@ -1587,45 +1687,47 @@ ${fotosHtml}
 <div class="footer">${empresa}${nif?' · NIF '+nif:''} &nbsp;·&nbsp; Documento gerado automaticamente · ${new Date().toLocaleString('pt-PT')} &nbsp;·&nbsp; Este documento substitui a folha manual de controlo de depósitos</div>
 </div></body></html>`;
 
-  // Try Web Share API first (mobile — sends as real file attachment)
+  // Build file blob for sharing/download
   const blob=new Blob([reportHTML],{type:'text/html'});
   const fileName=`FolhaDepositos_${loja.replace(/ /g,'_')}_${mes}.html`;
   const file=new File([blob],fileName,{type:'text/html'});
 
-  const shareData={
-    title:`Folha Depósitos – ${loja} – ${ml}`,
-    text:`${empresa} · ${loja} · ${ml}\nTotal: ${fmt(total)} · Depositado: ${fmt(totalDep)}\n\nFolha completa em anexo.`,
-    files:[file]
-  };
+  // Get the pre-built body text from the preview panel (already rendered)
+  const bodyText=document.getElementById('ep-body')?.dataset.body||
+    `Envio em anexo a folha de depósitos de ${loja} referente a ${ml}.\nTotal: ${fmt(total)} · Depositado: ${fmt(totalDep)}\n\nCom os melhores cumprimentos,\n${sbProfile?.nome||loja} — ${empresa}`;
+  const subjText=`Folha Depósitos – ${loja} – ${ml} – ${empresa}`;
 
-  if(navigator.share&&navigator.canShare&&navigator.canShare(shareData)){
-    // Mobile: native share sheet — user picks Email, WhatsApp, Drive, etc.
-    expXLSX(data);
-    setTimeout(()=>navigator.share(shareData).catch(()=>fallbackExport(reportHTML,fileName,data,mes,loja,dest,cc,cc2)),600);
+  const shareData={title:subjText,text:bodyText,files:[file]};
+
+  const isMobile=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+  if(isMobile&&navigator.share&&navigator.canShare&&navigator.canShare(shareData)){
+    // ── MOBILE: native share sheet — file is already attached ──
+    navigator.share(shareData).then(()=>{
+      toast('✓ Partilhado! Escolhe o teu email — o PDF vai em anexo.');
+    }).catch(err=>{
+      if(err.name!=='AbortError')fallbackDesktop(blob,fileName,subjText,bodyText,dest,cc,cc2);
+    });
   } else {
-    fallbackExport(reportHTML,fileName,data,mes,loja,dest,cc,cc2);
-    expXLSX(data);
+    // ── DESKTOP: download + open email client with pre-filled body ──
+    fallbackDesktop(blob,fileName,subjText,bodyText,dest,cc,cc2);
   }
 }
 
-function fallbackExport(reportHTML,fileName,data,mes,loja,dest,cc,cc2=''){
-  // Desktop fallback: download HTML report + open email
-  const blob=new Blob([reportHTML],{type:'text/html'});
+function fallbackDesktop(blob,fileName,subjText,bodyText,dest,cc,cc2=''){
+  // 1. Download the HTML report
   const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download=fileName;a.click();
-  URL.revokeObjectURL(url);
-  const empresa=cfg.emp||'Empresa';
-  const ml=mesLabel(mes);
-  const total=data.reduce((s,r)=>s+totalValor(r),0);
-  const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-  const erros=data.filter(r=>calcEstado(r).s==='err').length;
+  const a=document.createElement('a');a.href=url;a.download=fileName;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  // 2. Open email client with pre-filled subject + body (1 s delay so download starts first)
   setTimeout(()=>{
-    const subj=encodeURIComponent(`Folha Depósitos – ${loja} – ${ml} – ${empresa}`);
-    const body=encodeURIComponent(`Exmo(a). Departamento de Contabilidade,\n\nEnvio em anexo a folha de controlo de depósitos de ${loja}, referente a ${ml}.\n\nRESUMO DO PERÍODO\n─────────────────\nEmpresa: ${empresa}\nLoja: ${loja}\nPeríodo: ${ml}\nTotal Registado: ${fmt(total)}\nTotal Depositado: ${fmt(totalDep)}\nPor Depositar: ${fmt(total-totalDep)}\nNº Depósitos: ${data.length}\n${erros>0?'⚠️ Problemas: '+erros+' (ver folha em anexo)':'✅ Sem problemas'}\n\n📎 ANEXOS\n  1. ${fileName} — Folha completa com fotos dos talões\n  2. Depositos_${loja.replace(/ /g,'_')}_${mes}.xlsx — Ficheiro Excel\n  (Ambos os ficheiros foram descarregados para a pasta Downloads)\n\nPor favor confirmar receção e validação.\n\nCom os melhores cumprimentos,\n${loja} — ${empresa}`);
-    const ccs=[cc,cc2].filter(Boolean).join(',');  const ccStr=ccs?`&cc=${encodeURIComponent(ccs)}`:'';
-    window.location.href=`mailto:${dest}?subject=${subj}${ccStr}&body=${body}`;
-    toast('✓ Folha + Excel descarregados. Anexe ambos ao email.');
-  },1000);
+    const subj=encodeURIComponent(subjText);
+    const body=encodeURIComponent(bodyText);
+    const ccs=[cc,cc2].filter(Boolean).join(',');
+    const ccStr=ccs?`&cc=${encodeURIComponent(ccs)}`:'';
+    window.location.href=`mailto:${dest||''}?subject=${subj}${ccStr}&body=${body}`;
+    toast('✓ PDF descarregado — anexa à pasta Downloads e envia o email que abriu.');
+  },800);
 }
 
 function expPrint(data){
