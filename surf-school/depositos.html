@@ -1799,7 +1799,7 @@ function expPrint(data){
   const html=`<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
 <title>Folha Depósitos ${loja} ${ml}</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
 body{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;color:#1e293b;background:#fff}
 .wrap{max-width:980px;margin:0 auto;padding:14px 18px}
 .hdr{display:flex;justify-content:space-between;align-items:stretch;margin-bottom:12px;gap:10px}
@@ -1828,7 +1828,7 @@ tbody tr:hover td{background:#f8faff}
 .pbar{background:#1d4ed8;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
 .pbar button{background:#fff;color:#1d4ed8;border:none;padding:8px 16px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;min-height:38px;touch-action:manipulation}
 .pbar .cls{background:rgba(255,255,255,.18);color:#fff;margin-left:8px}
-@media print{.pbar{display:none!important}body{padding:0}@page{margin:8mm;size:A4 landscape}}
+@media print{.pbar{display:none!important}body{padding:0}.wrap{max-width:none;padding:6px 8px}thead th{background:#1d4ed8!important;color:#fff!important}.hdr-main{background:linear-gradient(135deg,#1e3a8a,#2563eb)!important;color:#fff!important}.tfoot td{background:#eff6ff!important}@page{margin:8mm;size:A4 landscape}}
 </style></head><body>
 
 <div class="pbar">
@@ -1895,7 +1895,7 @@ ${erros>0?`<div class="alert-box">⚠️ ATENÇÃO: <b>${erros} depósito(s) em 
     ${DB.get('assinatura',null)
       ? `<img src="${DB.get('assinatura',null)}" style="max-height:52px;max-width:100%;border-bottom:1.5px solid #334155;display:block;margin-bottom:4px;filter:contrast(1.2)">`
       : '<div class="sl" style="margin-top:28px">Assinatura: ___________________________</div>'}
-    <div class="sl">Nome: ${sbProfile?.nome||'___________________________'}</div>
+    <div class="sl">Nome: ${[...new Set(data.map(r=>r.responsavel).filter(Boolean))].join(' / ')||'___________________________'}</div>
     <div class="sl">Data: ${new Date().toLocaleDateString('pt-PT')}</div>
   </div>
   <div class="sig">
