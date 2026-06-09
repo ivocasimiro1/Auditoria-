@@ -522,6 +522,18 @@ select{
     <div class="fg"><label>CC fixo (sempre incluído)</label><input type="email" id="c-emailcc" placeholder="ivo@despomar.com" oninput="sc()"></div>
     <div class="fg"><label>CC adicional da loja (opcional)</label><input type="email" id="c-emailcc2" placeholder="outro@empresa.pt" oninput="sc()"></div>
     <div class="fg"><label>NIF</label><input type="text" id="c-nif" placeholder="999999999" oninput="sc()"></div>
+    <div class="fg"><label>Dia levantamento Câmbio <span style="font-size:11px;color:var(--g400)">(se aplicável)</span></label>
+      <select id="c-cambio-dia" oninput="sc()">
+        <option value="">— Esta loja não usa Câmbio —</option>
+        <option value="1">Segunda-feira</option>
+        <option value="2">Terça-feira</option>
+        <option value="3">Quarta-feira</option>
+        <option value="4">Quinta-feira</option>
+        <option value="5">Sexta-feira</option>
+        <option value="6">Sábado</option>
+        <option value="0">Domingo</option>
+      </select>
+    </div>
     <button class="btn bs" onclick="scBtn()">✓ Guardar Configurações</button>
   </div>
   <div class="card">
@@ -558,7 +570,7 @@ select{
     <div class="ct" style="color:#065f46">📋 Regras de Negócio</div>
     <p style="font-size:13px;color:var(--g600);line-height:1.6"><strong>Depósito Direto:</strong> deve ser feito a cada 2 dias. Mais de 3 sessões numa só entrega = tardio + justificação obrigatória.</p>
     <p style="font-size:13px;color:var(--g600);line-height:1.6;margin-top:8px"><strong>Prosegur / Lomis:</strong> passam na loja a levantar a cada 7 dias. Não necessita de ir ao banco.</p>
-    <p style="font-size:13px;color:var(--g600);line-height:1.6;margin-top:8px"><strong>Câmbio:</strong> prazo 7 dias.</p>
+    <p style="font-size:13px;color:var(--g600);line-height:1.6;margin-top:8px" id="cambio-rule-txt"><strong>Câmbio:</strong> prazo 7 dias. Configura o dia de levantamento acima para acompanhamento preciso.</p>
   </div>
   <div class="card" style="background:var(--bl)">
     <div class="ct" style="color:var(--blue)">ℹ️ Histórico &amp; Armazenamento</div>
@@ -713,7 +725,7 @@ async function doReset(){
 // ─── STORAGE ─────────────────────────────────────────
 const DB={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
 let regs=DB.get('regs',[]);
-let cfg=DB.get('cfg',{emp:'Despomar',email:'contab@despomar.com',nif:'',lojas:['ESS FARO','BB Lagos','BB Portimão'],resps:['João Silva','Maria Santos','Pedro Costa','Ana Lopes']});
+let cfg=DB.get('cfg',{emp:'Despomar',email:'contab@despomar.com',nif:'',cambioDia:'',lojas:['ESS FARO','BB Lagos','BB Portimão'],resps:['João Silva','Maria Santos','Pedro Costa','Ana Lopes']});
 const saveR=()=>DB.set('regs',regs);
 const saveCfg=()=>DB.set('cfg',cfg);
 
@@ -1233,7 +1245,7 @@ function cm(){document.getElementById('mod').classList.remove('open')}
 async function delR(id){if(!confirm('Eliminar este depósito?'))return;const ok=await sbDel(id);if(!ok)return;regs=regs.filter(x=>x.id!==id);saveR();cm();rLista();rDash();toast('Eliminado')}
 
 // ─── EXPORT ──────────────────────────────────────────
-let expFmt='print';
+let expFmt='print',exportCfg=null;
 function seExp(f){
   expFmt=f;
   document.querySelectorAll('.eo').forEach(o=>o.classList.remove('sel'));
@@ -1245,17 +1257,26 @@ function seExp(f){
   updPrev();
 }
 function rExpSel(){popSel();document.getElementById('e-loja').addEventListener('change',()=>{updPrev();if(expFmt==='email')updEmailPrev();});document.getElementById('e-mes').addEventListener('change',()=>{updPrev();if(expFmt==='email')updEmailPrev();});seExp(expFmt);}
-function updEmailPrev(){
+async function updEmailPrev(){
   const data=getFiltExp();
   const epc=document.getElementById('email-prev-card');
   if(!data.length){epc.style.display='none';return;}
   epc.style.display='block';
   const mes=document.getElementById('e-mes').value||curMesStr();
   const loja=document.getElementById('e-loja').value||'Todas as Lojas';
-  const empresa=cfg.emp||'Empresa';
-  const nif=cfg.nif||'';
-  const dest=cfg.email||'(não configurado)';
-  const cc=[cfg.emailCC,cfg.emailCC2].filter(Boolean).join(', ')||'—';
+  // Super-admin: load config from the selected store, not from 'super'
+  if(isSA){
+    const storeIds=[...new Set(data.map(r=>r.store_id).filter(Boolean))];
+    if(storeIds.length===1){
+      const{data:sc}=await SB.from('dep_config').select('*').eq('store_id',storeIds[0]).maybeSingle();
+      exportCfg=sc?{emp:sc.emp||cfg.emp,email:sc.email||'',emailCC:sc.email_cc||'',emailCC2:sc.email_cc2||'',nif:sc.nif||cfg.nif}:null;
+    }else{exportCfg=null;}
+  }else{exportCfg=null;}
+  const activeCfg=exportCfg||cfg;
+  const empresa=activeCfg.emp||'Empresa';
+  const nif=activeCfg.nif||'';
+  const dest=activeCfg.email||'(não configurado)';
+  const cc=[activeCfg.emailCC,activeCfg.emailCC2].filter(Boolean).join(', ')||'—';
   const ml=mesLabel(mes);
   const total=data.reduce((s,r)=>s+totalValor(r),0);
   const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
@@ -1286,7 +1307,7 @@ function updEmailPrev(){
     `Por favor confirmar receção e validação.`,
     ``,
     `Com os melhores cumprimentos,`,
-    `${sbProfile?.nome||loja} — ${empresa}`,
+    `${loja} — ${empresa}`,
   ].filter(l=>l!==null).join('\n');
   document.getElementById('ep-to').textContent=dest;
   document.getElementById('ep-cc').textContent=cc;
@@ -1513,7 +1534,7 @@ async function expXLSX(data){
   const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;
-  a.download=`Depositos_${loja.replace(/ /g,'_')}_${mes}.xlsx`;
+  a.download=`Depositos_${loja.replace(/ /g,'_')}_${mes}_exp${new Date().toISOString().split('T')[0]}.xlsx`;
   document.body.appendChild(a);a.click();
   document.body.removeChild(a);URL.revokeObjectURL(url);
   toast('✓ Excel profissional exportado!');
@@ -1522,13 +1543,15 @@ async function expXLSX(data){
 function expEmail(data){
   const mes=document.getElementById('e-mes').value||curMesStr();
   const loja=document.getElementById('e-loja').value||'Todas as Lojas';
-  const empresa=cfg.emp||'Empresa'; const nif=cfg.nif||'';
-  const dest=cfg.email||''; const cc=cfg.emailCC||''; const cc2=cfg.emailCC2||'';
+  const eCfg=exportCfg||cfg;
+  const empresa=eCfg.emp||'Empresa'; const nif=eCfg.nif||'';
+  const dest=eCfg.email||''; const cc=eCfg.emailCC||''; const cc2=eCfg.emailCC2||'';
   const total=data.reduce((s,r)=>s+totalValor(r),0);
   const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
   const ml=mesLabel(mes);
   const erros=data.filter(r=>calcEstado(r).s==='err').length;
   const avisos=data.filter(r=>calcEstado(r).s==='warn').length;
+  const expDate=new Date().toISOString().split('T')[0];
 
   // Build professional HTML report
   const withPhotos=data.filter(r=>r.foto);
@@ -1689,7 +1712,7 @@ ${fotosHtml}
 
   // Build file blob for sharing/download
   const blob=new Blob([reportHTML],{type:'text/html'});
-  const fileName=`FolhaDepositos_${loja.replace(/ /g,'_')}_${mes}.html`;
+  const fileName=`FolhaDepositos_${loja.replace(/ /g,'_')}_${mes}_exp${expDate}.html`;
   const file=new File([blob],fileName,{type:'text/html'});
 
   // Get the pre-built body text from the preview panel (already rendered)
@@ -1733,7 +1756,9 @@ function fallbackDesktop(blob,fileName,subjText,bodyText,dest,cc,cc2=''){
 function expPrint(data){
   const mes=document.getElementById('e-mes').value||curMesStr();
   const loja=document.getElementById('e-loja').value||cfg.lojas[0]||'Loja';
-  const empresa=cfg.emp||'Empresa'; const nif=cfg.nif||'';
+  const pCfg=exportCfg||cfg;
+  const empresa=pCfg.emp||'Empresa'; const nif=pCfg.nif||'';
+  const expDate=new Date().toISOString().split('T')[0];
   const total=data.reduce((s,r)=>s+totalValor(r),0);
   // A session is "sent/deposited" if it has a talão (own or deposit-level) + deposit date
   const getSessTalao=(r,s)=>s.talao||r.talao||'';
@@ -1797,7 +1822,7 @@ function expPrint(data){
   }).join('');
 
   const html=`<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
-<title>Folha Depósitos ${loja} ${ml}</title>
+<title>Depositos_${loja.replace(/ /g,'_')}_${mes}_exp${expDate}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
 body{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;color:#1e293b;background:#fff}
@@ -1933,13 +1958,13 @@ function remL(n){if(!confirm(`Remover loja "${n}"?`))return;cfg.lojas=cfg.lojas.
 function addR(){const i=document.getElementById('nr');const n=i.value.trim();if(!n)return;if(cfg.resps.includes(n)){toast('Já existe');return}cfg.resps.push(n);saveCfg();sbSaveCfgSB();i.value='';popSel();rSettings();toast('Responsável adicionado ✓')}
 function remR(n){cfg.resps=cfg.resps.filter(x=>x!==n);saveCfg();sbSaveCfgSB();popSel();rSettings()}
 function rSettings(){
-  document.getElementById('c-emp').value=cfg.emp||'';document.getElementById('c-email').value=cfg.email||'';const ccEl=document.getElementById('c-emailcc');if(ccEl)ccEl.value=cfg.emailCC||'';const cc2El=document.getElementById('c-emailcc2');if(cc2El)cc2El.value=cfg.emailCC2||'';document.getElementById('c-nif').value=cfg.nif||'';
+  document.getElementById('c-emp').value=cfg.emp||'';document.getElementById('c-email').value=cfg.email||'';const ccEl=document.getElementById('c-emailcc');if(ccEl)ccEl.value=cfg.emailCC||'';const cc2El=document.getElementById('c-emailcc2');if(cc2El)cc2El.value=cfg.emailCC2||'';document.getElementById('c-nif').value=cfg.nif||'';const cdEl=document.getElementById('c-cambio-dia');if(cdEl)cdEl.value=cfg.cambioDia||'';
   document.getElementById('ltags').innerHTML=cfg.lojas.map(l=>`<span class="tag">${l}<button onclick="remL('${l.replace(/'/g,"\\'")}')">×</button></span>`).join('');
   document.getElementById('rtags').innerHTML=cfg.resps.map(r=>`<span class="tag" style="background:var(--gl);color:var(--green)">${r}<button onclick="remR('${r.replace(/'/g,"\\'")}')">×</button></span>`).join('');
   sigInit();
 }
 async function scBtn(){sc();await sbSaveCfgSB();toast('✓ Configurações guardadas!');}
-function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
+function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
 
 // ─── SIGNATURE PAD ────────────────────────────────────
 let sigDrawing=false,sigCtx=null,sigCanvas=null,sigLastX=0,sigLastY=0;
