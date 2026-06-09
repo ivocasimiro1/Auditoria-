@@ -391,10 +391,6 @@ select{
       <div class="fg"><label>Tipo de Serviço *</label>
         <select id="f-tipo" onchange="onTipoChange()">
           <option value="">Selecionar...</option>
-          <option>Depósito Direto</option>
-          <option>Prosegur</option>
-          <option>Lomis</option>
-          <option>Câmbio</option>
         </select>
       </div>
     </div>
@@ -821,7 +817,20 @@ function sp(name){
 }
 
 // ─── SELECTS ─────────────────────────────────────────
+function popTipo(){
+  const el=document.getElementById('f-tipo');if(!el)return;
+  const cur=el.value;
+  const opts=['Depósito Direto'];
+  if(cfg.prosegurDay)opts.push('Prosegur');
+  if(cfg.lomisDay)opts.push('Lomis');
+  if(cfg.cambioDia)opts.push('Câmbio');
+  if(opts.length===1){opts.push('Prosegur');opts.push('Lomis');opts.push('Câmbio');}
+  el.innerHTML='<option value="">Selecionar...</option>'+opts.map(o=>`<option value="${o}">${o}</option>`).join('');
+  if(cur&&opts.includes(cur))el.value=cur;
+  else if(opts.length===1)el.value=opts[0];
+}
 function popSel(){
+  popTipo();
   ['f-loja','fl-loj','e-loja','dash-loja'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const v=el.value;
