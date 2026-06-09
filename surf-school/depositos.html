@@ -466,51 +466,40 @@ select{
 <!-- ═══ EXPORTAR ═══ -->
 <div class="page" id="page-exp">
   <div class="card">
-    <div class="ct">Selecionar Período</div>
-    <div class="fg"><label>Loja</label><select id="e-loja"><option value="">Todas as lojas</option></select></div>
-    <div class="fg"><label>Mês</label><select id="e-mes" onchange="updPrev()"></select></div>
-  </div>
-  <div class="card">
-    <div class="ct">Formato</div>
-    <div class="eo sel" id="opt-print" onclick="seExp('print')">
+    <div class="ct">Exportar</div>
+    <div class="fg"><label>Loja</label><select id="e-loja" onchange="updPrev();if(expFmt==='email')updEmailPrev()"></select></div>
+    <div class="fg"><label>Mês</label><select id="e-mes" onchange="updPrev();if(expFmt==='email')updEmailPrev()"></select></div>
+    <div class="eo sel" id="opt-print" onclick="seExp('print')" style="margin-top:8px">
       <div class="ei" style="background:#dbeafe"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#1a56db" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg></div>
-      <div><strong style="display:block;font-size:14px;font-weight:700">📄 PDF / Imprimir</strong><span style="font-size:12px;color:var(--g500)">Funciona em todos os sistemas — enviar por email ou guardar</span></div>
+      <div><strong style="display:block;font-size:14px;font-weight:700">📄 PDF / Imprimir</strong><span style="font-size:12px;color:var(--g500)">Abre janela de impressão — guardar como PDF</span></div>
     </div>
     <div class="eo" id="opt-email" onclick="seExp('email')">
       <div class="ei" style="background:var(--bl)"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#1a56db" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
-      <div><strong style="display:block;font-size:14px;font-weight:700">📧 Email para Contabilidade</strong><span style="font-size:12px;color:var(--g500)">Texto e assunto preenchidos · PDF em anexo (mobile: partilha direta)</span></div>
+      <div><strong style="display:block;font-size:14px;font-weight:700">📧 Email para Contabilidade</strong><span style="font-size:12px;color:var(--g500)">Abre PDF + email pré-preenchido</span></div>
     </div>
     <div class="eo" id="opt-xlsx" onclick="seExp('xlsx')">
       <div class="ei" style="background:#e8f5e9"><svg width="22" height="22" viewBox="0 0 24 24"><rect width="24" height="24" rx="3" fill="#217346"/><text x="2" y="17" font-family="Arial" font-size="11" font-weight="bold" fill="white">XLS</text></svg></div>
-      <div><strong style="display:block;font-size:14px;font-weight:700">Excel (.xlsx)</strong><span style="font-size:12px;color:var(--g500)">Requer Excel ou LibreOffice compatível</span></div>
+      <div><strong style="display:block;font-size:14px;font-weight:700">Excel (.xlsx)</strong><span style="font-size:12px;color:var(--g500)">Requer Excel ou LibreOffice</span></div>
     </div>
+    <button class="btn bs" id="exp-btn" onclick="doExp()" style="margin-top:12px">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      <span id="exp-btn-lbl">Exportar PDF</span>
+    </button>
   </div>
   <div id="email-prev-card" class="card" style="display:none">
     <div class="ct">📧 Email que será enviado</div>
     <div class="ep-field"><span class="ep-lbl">Para</span><span class="ep-val" id="ep-to">—</span></div>
     <div class="ep-field"><span class="ep-lbl">CC</span><span class="ep-val" id="ep-cc">—</span></div>
     <div class="ep-field"><span class="ep-lbl">Assunto</span><span class="ep-val" id="ep-sub">—</span></div>
-    <div class="ep-field"><span class="ep-lbl">Texto</span><span class="ep-val" style="color:var(--g400);font-size:11px">ver abaixo ↓</span></div>
     <div class="ep-body" id="ep-body"></div>
-    <button class="ep-copy-btn" onclick="epCopy()">📋 Copiar texto do email</button>
-    <div id="ep-mobile-note" class="ep-mobile-note" style="display:none">
-      📱 <strong>No telemóvel:</strong> o PDF é partilhado diretamente — escolhe o teu email e fica logo em anexo.
-    </div>
-    <div id="ep-desktop-note" class="ep-desktop-note" style="display:none">
-      💻 <strong>No computador:</strong> o PDF descarrega automaticamente para a pasta Downloads — anexa-o manualmente ao email que abre.
-    </div>
+    <button class="ep-copy-btn" onclick="epCopy()">📋 Copiar texto</button>
   </div>
-
   <div id="prev-wrap" style="display:none">
     <div class="card">
       <div class="ct">Pré-visualização</div>
       <div class="preview-scroll"><table class="ptbl" id="prev-tbl"></table></div>
     </div>
   </div>
-  <button class="btn bs" id="exp-btn" onclick="doExp()">
-    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-    <span id="exp-btn-lbl">Exportar</span>
-  </button>
 </div>
 
 <!-- ═══ SETTINGS ═══ -->
@@ -836,9 +825,12 @@ function popSel(){
   ['f-loja','fl-loj','e-loja','dash-loja'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const v=el.value;
-    el.innerHTML=id==='f-loja'?'<option value="">Selecionar loja...</option>':'<option value="">Todas</option>';
+    if(id==='f-loja')el.innerHTML='<option value="">Selecionar loja...</option>';
+    else if(id==='e-loja')el.innerHTML='';
+    else el.innerHTML='<option value="">Todas</option>';
     cfg.lojas.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;el.appendChild(o)});
     if(v)el.value=v;
+    else if(id==='e-loja'&&cfg.lojas.length)el.value=cfg.lojas[0];
   });
   ['dash-mes','fl-mes','e-mes'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
@@ -1293,7 +1285,7 @@ async function updEmailPrev(){
     const storeIds=[...new Set(data.map(r=>r.store_id).filter(Boolean))];
     if(storeIds.length===1){
       const{data:sc}=await SB.from('dep_config').select('*').eq('store_id',storeIds[0]).maybeSingle();
-      exportCfg=sc?{emp:sc.emp||cfg.emp,email:sc.email||'',emailCC:sc.email_cc||'',emailCC2:sc.email_cc2||'',nif:sc.nif||cfg.nif}:null;
+      exportCfg=sc?{emp:sc.emp||cfg.emp,email:sc.email||cfg.email||'',emailCC:sc.email_cc||cfg.emailCC||'',emailCC2:sc.email_cc2||cfg.emailCC2||'',nif:sc.nif||cfg.nif}:null;
     }else{exportCfg=null;}
   }else{exportCfg=null;}
   const activeCfg=exportCfg||cfg;
@@ -1587,6 +1579,7 @@ function expPrint(data){
   },0);
   const ml=mesLabel(mes);
   const erros=data.filter(r=>calcEstado(r).s==='err').length;
+  const withPhotos=data.filter(r=>r.foto);
 
   const rows=[];
   data.forEach(r=>{
@@ -1688,7 +1681,13 @@ ${erros>0?`<div class="err-bar">⚠️ ${erros} depósito(s) em atraso — verif
   </tbody>
 </table>
 
-<div class="footer">${empresa}${nif?' · NIF '+nif:''} &nbsp;·&nbsp; ${loja} &nbsp;·&nbsp; ${ml} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleString('pt-PT')}</div>
+${withPhotos.length?`
+<div style="font-size:9px;font-weight:800;color:#1d4ed8;text-transform:uppercase;letter-spacing:.5px;border-left:3px solid #2563eb;padding-left:7px;margin:10px 0 6px">Comprovativos (${withPhotos.length})</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px">
+${(()=>{let ph='';let idx=0;data.forEach(r=>{if(!r.foto)return;idx++;const sessTalao=r.talao||r.sessoes.map(s=>s.talao).filter(Boolean)[0]||'';ph+=`<div style="border:1px solid #e2e8f0;border-radius:5px;overflow:hidden;background:#f8fafc"><img src="${r.foto}" style="width:100%;height:75px;object-fit:cover;display:block"><div style="padding:3px 5px;font-size:7px;color:#475569"><b style="color:#1d4ed8">#${idx}</b> ${fd(r.dataDeposito)} · ${sessTalao||r.loja}</div></div>`;});return ph;})()}
+</div>`:''}
+
+<div class="footer" style="margin-top:8px">${empresa}${nif?' · NIF '+nif:''} &nbsp;·&nbsp; ${loja} &nbsp;·&nbsp; ${ml} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleString('pt-PT')}</div>
 
 </body></html>`;
 
