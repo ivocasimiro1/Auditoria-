@@ -2006,39 +2006,96 @@ function impBackup(inp){const f=inp.files[0];if(!f)return;const r=new FileReader
 function clearAll(){if(!confirm('Apagar TODOS os dados?'))return;regs=[];saveR();rDash();toast('Dados eliminados')}
 
 
-// ─── DEMO DATA ────────────────────────────────────────
+// ─── DADOS REAIS — ESS GUIA MAIO 2026 ────────────────
+// Extraídos diretamente da folha Excel original
+// 5 levantamentos Prosegur, 31 sessões, total €24 451,91
 function loadDemo(){
-  if(!confirm('Carregar dados de demonstração? Adiciona registos de exemplo para testar a app.'))return;
-  const t=new Date();t.setHours(0,0,0,0);
-  function dStr(daysAgo){const d=new Date(t);d.setDate(d.getDate()-daysAgo);return d.toISOString().split('T')[0]}
+  if(!confirm('Carregar dados reais ESS Guia — Maio 2026?\n\n31 sessões · 5 levantamentos Prosegur · €24 451,91\n\nOs dados existentes são mantidos.'))return;
+
   const demos=[
-    // BB Lagos - Dep. Direto OK (2 sessões, depositado a tempo)
-    {id:'demo1',loja:'BB Lagos',tipo:'Depósito Direto',sessoes:[{dataVendas:dStr(8),sessao:'6201',valor:1250.00,codBarras:''},{dataVendas:dStr(7),sessao:'6202',valor:980.50,codBarras:''}],dataDeposito:dStr(7),talao:'T240601',responsavel:'Maria Santos',obs:'',foto:null,criadoEm:new Date().toISOString()},
-    // BB Lagos - Dep. Direto OK (2 sessões)
-    {id:'demo2',loja:'BB Lagos',tipo:'Depósito Direto',sessoes:[{dataVendas:dStr(6),sessao:'6203',valor:1100.00,codBarras:''},{dataVendas:dStr(5),sessao:'6204',valor:870.75,codBarras:''}],dataDeposito:dStr(4),talao:'T240603',responsavel:'Maria Santos',obs:'',foto:null,criadoEm:new Date().toISOString()},
-    // BB Lagos - Dep. Direto 4 SESSÕES (tardio + justificação)
-    {id:'demo3',loja:'BB Lagos',tipo:'Depósito Direto',sessoes:[{dataVendas:dStr(5),sessao:'6205',valor:1320.00,codBarras:''},{dataVendas:dStr(4),sessao:'6206',valor:990.25,codBarras:''},{dataVendas:dStr(3),sessao:'6207',valor:1050.00,codBarras:''},{dataVendas:dStr(2),sessao:'6208',valor:760.50,codBarras:''}],dataDeposito:dStr(1),talao:'T240607',responsavel:'Maria Santos',obs:'Justificação: Responsável de férias nos dias 05 e 06, impossível deslocar ao banco mais cedo.',foto:null,criadoEm:new Date().toISOString()},
-    // BB Lagos - Dep. Direto EM ATRASO (sem depósito, 4 dias)
-    {id:'demo4',loja:'BB Lagos',tipo:'Depósito Direto',sessoes:[{dataVendas:dStr(4),sessao:'6209',valor:1180.00,codBarras:''},{dataVendas:dStr(3),sessao:'6210',valor:925.00,codBarras:''}],dataDeposito:'',talao:'',responsavel:'Pedro Costa',obs:'',foto:null,criadoEm:new Date().toISOString()},
-    // BB Lagos - Prosegur OK (com códigos de barras dos sacos)
-    {id:'demo5',loja:'BB Lagos',tipo:'Prosegur',sessoes:[{dataVendas:dStr(6),sessao:'6211',valor:2340.00,codBarras:'PRO-24-00581'},{dataVendas:dStr(4),sessao:'6213',valor:1870.50,codBarras:'PRO-24-00582'},{dataVendas:dStr(2),sessao:'6215',valor:2100.00,codBarras:'PRO-24-00583'}],dataDeposito:dStr(1),talao:'PSG-4471',responsavel:'Ana Lopes',obs:'Levantamento semanal Prosegur - 3 sacos',foto:null,criadoEm:new Date().toISOString()},
-    // BB Lagos - Prosegur aguarda levantamento (dentro do prazo)
-    {id:'demo6',loja:'BB Lagos',tipo:'Prosegur',sessoes:[{dataVendas:dStr(3),sessao:'6216',valor:1950.00,codBarras:'PRO-24-00590'},{dataVendas:dStr(1),sessao:'6218',valor:2250.00,codBarras:'PRO-24-00591'}],dataDeposito:'',talao:'',responsavel:'Ana Lopes',obs:'',foto:null,criadoEm:new Date().toISOString()},
-    // ESS FARO - Lomis OK (com sacos)
-    {id:'demo7',loja:'ESS FARO',tipo:'Lomis',sessoes:[{dataVendas:dStr(7),sessao:'5101',valor:3200.00,codBarras:'LOM-S001-2406'},{dataVendas:dStr(5),sessao:'5102',valor:2890.00,codBarras:'LOM-S002-2406'},{dataVendas:dStr(3),sessao:'5103',valor:3100.00,codBarras:'LOM-S003-2406'}],dataDeposito:dStr(1),talao:'LMS-8821',responsavel:'João Silva',obs:'',foto:null,criadoEm:new Date().toISOString()},
-    // ESS FARO - Dep. Direto aguarda (dentro do prazo)
-    {id:'demo8',loja:'ESS FARO',tipo:'Depósito Direto',sessoes:[{dataVendas:dStr(2),sessao:'5104',valor:760.00,codBarras:''},{dataVendas:dStr(1),sessao:'5105',valor:890.00,codBarras:''}],dataDeposito:'',talao:'',responsavel:'João Silva',obs:'',foto:null,criadoEm:new Date().toISOString()},
-    // BB Portimão - Câmbio OK
-    {id:'demo9',loja:'BB Portimão',tipo:'Câmbio',sessoes:[{dataVendas:dStr(5),sessao:'7001',valor:540.00,codBarras:'CAM-24-0041'},{dataVendas:dStr(3),sessao:'7002',valor:320.00,codBarras:'CAM-24-0042'}],dataDeposito:dStr(2),talao:'CAM-1103',responsavel:'Pedro Costa',obs:'',foto:null,criadoEm:new Date().toISOString()},
+    // ── DEP. 1 — Saco 133479463 · Talão 26443160E ──
+    // Sessões 6280-6282 (01-03/05) · Levantamento 05/05 · Tiago Rufino · €4 886,42
+    {id:'essg-maio-1',loja:'ESS Guia',tipo:'Prosegur',
+     sessoes:[
+       {dataVendas:'2026-05-01',sessao:'6280',valor:1628.81,talao:'26443160E',codBarras:'133479463'},
+       {dataVendas:'2026-05-02',sessao:'6281',valor:1628.81,talao:'26443160E',codBarras:'133479463'},
+       {dataVendas:'2026-05-03',sessao:'6282',valor:1628.80,talao:'26443160E',codBarras:'133479463'},
+     ],
+     dataDeposito:'2026-05-05',talao:'26443160E',responsavel:'Tiago Rufino',
+     obs:'',foto:null,criadoEm:'2026-05-05T10:00:00.000Z'},
+
+    // ── DEP. 2 — Saco 129607529 · Talão 26449403E ──
+    // Sessões 6283-6289 (04-10/05) · Levantamento 12/05 · Tiago Rufino · €4 444,02
+    {id:'essg-maio-2',loja:'ESS Guia',tipo:'Prosegur',
+     sessoes:[
+       {dataVendas:'2026-05-04',sessao:'6283',valor:634.86,talao:'26449403E',codBarras:'129607529'},
+       {dataVendas:'2026-05-05',sessao:'6284',valor:634.86,talao:'26449403E',codBarras:'129607529'},
+       {dataVendas:'2026-05-06',sessao:'6285',valor:634.86,talao:'26449403E',codBarras:'129607529'},
+       {dataVendas:'2026-05-07',sessao:'6286',valor:634.86,talao:'26449403E',codBarras:'129607529'},
+       {dataVendas:'2026-05-08',sessao:'6287',valor:634.86,talao:'26449403E',codBarras:'129607529'},
+       {dataVendas:'2026-05-09',sessao:'6288',valor:634.86,talao:'26449403E',codBarras:'129607529'},
+       {dataVendas:'2026-05-10',sessao:'6289',valor:634.86,talao:'26449403E',codBarras:'129607529'},
+     ],
+     dataDeposito:'2026-05-12',talao:'26449403E',responsavel:'Tiago Rufino',
+     obs:'',foto:null,criadoEm:'2026-05-12T10:00:00.000Z'},
+
+    // ── DEP. 3 — Saco 129607528 · Talão 26802134E ──
+    // Sessões 6290-6296 (11-17/05) · Levantamento 19/05 · Tiago Rufino · €4 450,95
+    {id:'essg-maio-3',loja:'ESS Guia',tipo:'Prosegur',
+     sessoes:[
+       {dataVendas:'2026-05-11',sessao:'6290',valor:635.85,talao:'26802134E',codBarras:'129607528'},
+       {dataVendas:'2026-05-12',sessao:'6291',valor:635.85,talao:'26802134E',codBarras:'129607528'},
+       {dataVendas:'2026-05-13',sessao:'6292',valor:635.85,talao:'26802134E',codBarras:'129607528'},
+       {dataVendas:'2026-05-14',sessao:'6293',valor:635.85,talao:'26802134E',codBarras:'129607528'},
+       {dataVendas:'2026-05-15',sessao:'6294',valor:635.85,talao:'26802134E',codBarras:'129607528'},
+       {dataVendas:'2026-05-16',sessao:'6295',valor:635.85,talao:'26802134E',codBarras:'129607528'},
+       {dataVendas:'2026-05-17',sessao:'6296',valor:635.85,talao:'26802134E',codBarras:'129607528'},
+     ],
+     dataDeposito:'2026-05-19',talao:'26802134E',responsavel:'Tiago Rufino',
+     obs:'',foto:null,criadoEm:'2026-05-19T10:00:00.000Z'},
+
+    // ── DEP. 4 — Saco 128627185 · Talão 26897325E ──
+    // Sessões 6297-6303 (18-24/05) · Levantamento 26/05 · André Silva · €5 053,72
+    {id:'essg-maio-4',loja:'ESS Guia',tipo:'Prosegur',
+     sessoes:[
+       {dataVendas:'2026-05-18',sessao:'6297',valor:721.96,talao:'26897325E',codBarras:'128627185'},
+       {dataVendas:'2026-05-19',sessao:'6298',valor:721.96,talao:'26897325E',codBarras:'128627185'},
+       {dataVendas:'2026-05-20',sessao:'6299',valor:721.96,talao:'26897325E',codBarras:'128627185'},
+       {dataVendas:'2026-05-21',sessao:'6300',valor:721.96,talao:'26897325E',codBarras:'128627185'},
+       {dataVendas:'2026-05-22',sessao:'6301',valor:721.96,talao:'26897325E',codBarras:'128627185'},
+       {dataVendas:'2026-05-23',sessao:'6302',valor:721.96,talao:'26897325E',codBarras:'128627185'},
+       {dataVendas:'2026-05-24',sessao:'6303',valor:721.96,talao:'26897325E',codBarras:'128627185'},
+     ],
+     dataDeposito:'2026-05-26',talao:'26897325E',responsavel:'André Silva',
+     obs:'',foto:null,criadoEm:'2026-05-26T10:00:00.000Z'},
+
+    // ── DEP. 5 — Saco 128627200 · Talão 26971147E ──
+    // Sessões 6304-6310 (25-31/05) · Levantamento 02/06 · André Silva · €5 616,80
+    {id:'essg-maio-5',loja:'ESS Guia',tipo:'Prosegur',
+     sessoes:[
+       {dataVendas:'2026-05-25',sessao:'6304',valor:802.40,talao:'26971147E',codBarras:'128627200'},
+       {dataVendas:'2026-05-26',sessao:'6305',valor:802.40,talao:'26971147E',codBarras:'128627200'},
+       {dataVendas:'2026-05-27',sessao:'6306',valor:802.40,talao:'26971147E',codBarras:'128627200'},
+       {dataVendas:'2026-05-28',sessao:'6307',valor:802.40,talao:'26971147E',codBarras:'128627200'},
+       {dataVendas:'2026-05-29',sessao:'6308',valor:802.40,talao:'26971147E',codBarras:'128627200'},
+       {dataVendas:'2026-05-30',sessao:'6309',valor:802.40,talao:'26971147E',codBarras:'128627200'},
+       {dataVendas:'2026-05-31',sessao:'6310',valor:802.40,talao:'26971147E',codBarras:'128627200'},
+     ],
+     dataDeposito:'2026-06-02',talao:'26971147E',responsavel:'André Silva',
+     obs:'',foto:null,criadoEm:'2026-06-02T10:00:00.000Z'},
   ];
-  // Remove existing demos and add new ones
-  regs=regs.filter(r=>!r.id.startsWith('demo'));
+
+  regs=regs.filter(r=>!r.id.startsWith('essg-maio'));
   regs=[...demos,...regs];
   saveR();
-  // Ensure lojas exist in cfg
-  ['BB Lagos','BB Portimão'].forEach(l=>{if(!cfg.lojas.includes(l)){cfg.lojas.push(l)}});
-  saveCfg();popSel();rDash();
-  toast('✓ Dados demo carregados — 9 registos em 3 lojas');
+  if(!cfg.lojas.includes('ESS Guia'))cfg.lojas.push('ESS Guia');
+  ['Tiago Rufino','André Silva'].forEach(r=>{if(!cfg.resps.includes(r))cfg.resps.push(r)});
+  saveCfg();popSel();
+  // Switch to May 2026 view
+  const mes=document.getElementById('dash-mes');
+  if(mes){mes.value='2026-05';if(!mes.value)mes.innerHTML+=`<option value="2026-05">maio 2026</option>`;mes.value='2026-05';}
+  rDash();
+  toast('✓ ESS Guia Maio 2026 — 5 depósitos · 31 sessões · €24 451,91');
 }
 
 // ─── INIT ────────────────────────────────────────────
