@@ -135,12 +135,11 @@ select{
 .ks{font-size:10px;color:var(--g400);margin-top:4px}
 .kpi.blue .kv{color:var(--blue-dark)}.kpi.green .kv{color:var(--green-dark)}.kpi.orange .kv{color:var(--orange-dark)}.kpi.red .kv{color:var(--red-dark)}
 
-/* TYPE CARDS — scrollable row */
+/* TYPE CARDS — 2×2 fixed grid */
 .type-sect{margin-bottom:14px}
 .type-sect .ct{margin-bottom:8px}
-.type-scroll{display:flex;gap:9px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.type-scroll::-webkit-scrollbar{display:none}
-.tc{flex-shrink:0;min-width:148px;background:#fff;border-radius:13px;padding:13px 14px;box-shadow:var(--sh-sm);border-top:3px solid var(--g200)}
+.type-scroll{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.tc{background:#fff;border-radius:13px;padding:13px 14px;box-shadow:var(--sh-sm);border-top:3px solid var(--g200)}
 .tc.tc-dir{border-top-color:var(--blue)}.tc.tc-pro{border-top-color:#7c3aed}.tc.tc-lom{border-top-color:#0891b2}.tc.tc-cam{border-top-color:var(--orange)}
 .tc-name{font-size:11px;font-weight:800;color:var(--g500);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px}
 .tc-val{font-size:19px;font-weight:800;color:var(--g800);line-height:1.1}
@@ -231,6 +230,17 @@ select{
 .mtbl td{padding:8px;border-bottom:1px solid var(--g100);vertical-align:middle}
 .mtbl .tr-sub td{background:#f8fafc;font-size:10px;color:var(--g500)}.mtbl .tr-sub td:first-child{background:#f8fafc}
 .mtbl tr.ok-row td{border-left:3px solid var(--green)}.mtbl tr.warn-row td{border-left:3px solid var(--orange)}.mtbl tr.err-row td{border-left:3px solid var(--red)}.mtbl tr.prog-row td{border-left:3px solid var(--g300)}
+
+/* SIGNATURE PAD */
+.sig-pad-wrap{border:2px solid var(--g200);border-radius:12px;overflow:hidden;background:#fafbfc;position:relative;touch-action:none}
+.sig-pad-wrap canvas{display:block;width:100%;height:120px;cursor:crosshair;touch-action:none}
+.sig-pad-wrap.has-sig{border-color:var(--green)}
+.sig-actions{display:flex;gap:8px;margin-top:8px}
+.sig-clear{background:var(--rl);color:var(--red);border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation;min-height:40px}
+.sig-save{background:var(--gl);color:var(--green);border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation;flex:1;min-height:40px}
+.sig-preview{border-radius:8px;background:#fff;padding:6px;border:1.5px solid var(--g200);margin-top:8px;text-align:center}
+.sig-preview img{max-height:60px;max-width:100%}
+.sig-hint{font-size:11px;color:var(--g400);text-align:center;margin-top:6px}
 
 .empty{text-align:center;padding:40px 16px;color:var(--g400);background:#fff;border-radius:var(--r);box-shadow:var(--sh-sm)}
 .empty svg{width:44px;height:44px;margin-bottom:12px;opacity:.4}
@@ -499,6 +509,26 @@ select{
     <div id="rtags"></div>
     <div class="ar"><input type="text" id="nr" placeholder="Nome do responsável"><button class="btn bp bsm" onclick="addR()">+ Adicionar</button></div>
   </div>
+  <div class="card">
+    <div class="ct">✍️ Assinatura Digital</div>
+    <p style="font-size:13px;color:var(--g500);margin-bottom:12px;line-height:1.5">Assina com o dedo — fica guardada e é incluída automaticamente no PDF enviado à contabilidade.</p>
+    <div id="sig-stored" style="display:none" class="sig-preview">
+      <img id="sig-img" alt="Assinatura guardada">
+      <div style="font-size:10px;color:var(--green);font-weight:700;margin-top:4px">✓ Assinatura guardada</div>
+    </div>
+    <div id="sig-pad-area">
+      <div class="sig-pad-wrap" id="sig-wrap">
+        <canvas id="sig-canvas"></canvas>
+      </div>
+      <p class="sig-hint">Assina com o dedo ou rato na área acima</p>
+      <div class="sig-actions">
+        <button class="sig-clear" onclick="sigClear()">🗑️ Limpar</button>
+        <button class="sig-save" onclick="sigSave()">✓ Guardar Assinatura</button>
+      </div>
+    </div>
+    <button id="sig-change-btn" style="display:none;margin-top:10px;width:100%" class="btn bo" onclick="sigChange()">✏️ Alterar Assinatura</button>
+  </div>
+
   <div class="card" style="background:#f0fdf4;border:1.5px solid #6ee7b7">
     <div class="ct" style="color:#065f46">📋 Regras de Negócio</div>
     <p style="font-size:13px;color:var(--g600);line-height:1.6"><strong>Depósito Direto:</strong> deve ser feito a cada 2 dias. Mais de 3 sessões numa só entrega = tardio + justificação obrigatória.</p>
@@ -1760,14 +1790,16 @@ ${erros>0?`<div class="alert-box">⚠️ ATENÇÃO: <b>${erros} depósito(s) em 
 <div class="sigs">
   <div class="sig">
     <div class="st">Responsável de Loja</div>
-    <div class="sl">Nome: ___________________________</div>
-    <div class="sl">Assinatura: ___________________________</div>
-    <div class="sl">Data: ___/___/______</div>
+    ${DB.get('assinatura',null)
+      ? `<img src="${DB.get('assinatura',null)}" style="max-height:52px;max-width:100%;border-bottom:1.5px solid #334155;display:block;margin-bottom:4px;filter:contrast(1.2)">`
+      : '<div class="sl" style="margin-top:28px">Assinatura: ___________________________</div>'}
+    <div class="sl">Nome: ${sbProfile?.nome||'___________________________'}</div>
+    <div class="sl">Data: ${new Date().toLocaleDateString('pt-PT')}</div>
   </div>
   <div class="sig">
     <div class="st">Gerência</div>
+    <div class="sl" style="margin-top:28px">Assinatura: ___________________________</div>
     <div class="sl">Nome: ___________________________</div>
-    <div class="sl">Assinatura: ___________________________</div>
     <div class="sl">Data: ___/___/______</div>
   </div>
   <div class="sig">
@@ -1802,9 +1834,71 @@ function rSettings(){
   document.getElementById('c-emp').value=cfg.emp||'';document.getElementById('c-email').value=cfg.email||'';const ccEl=document.getElementById('c-emailcc');if(ccEl)ccEl.value=cfg.emailCC||'';const cc2El=document.getElementById('c-emailcc2');if(cc2El)cc2El.value=cfg.emailCC2||'';document.getElementById('c-nif').value=cfg.nif||'';
   document.getElementById('ltags').innerHTML=cfg.lojas.map(l=>`<span class="tag">${l}<button onclick="remL('${l.replace(/'/g,"\\'")}')">×</button></span>`).join('');
   document.getElementById('rtags').innerHTML=cfg.resps.map(r=>`<span class="tag" style="background:var(--gl);color:var(--green)">${r}<button onclick="remR('${r.replace(/'/g,"\\'")}')">×</button></span>`).join('');
+  sigInit();
 }
 async function scBtn(){sc();await sbSaveCfgSB();toast('✓ Configurações guardadas!');}
 function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
+
+// ─── SIGNATURE PAD ────────────────────────────────────
+let sigDrawing=false,sigCtx=null,sigCanvas=null,sigLastX=0,sigLastY=0;
+function sigInit(){
+  const stored=DB.get('assinatura',null);
+  const imgEl=document.getElementById('sig-img');
+  const storedDiv=document.getElementById('sig-stored');
+  const padArea=document.getElementById('sig-pad-area');
+  const changeBtn=document.getElementById('sig-change-btn');
+  if(stored&&imgEl){
+    imgEl.src=stored;storedDiv.style.display='block';padArea.style.display='none';changeBtn.style.display='block';
+  }else{
+    storedDiv.style.display='none';padArea.style.display='block';changeBtn.style.display='none';
+    sigSetup();
+  }
+}
+function sigSetup(){
+  sigCanvas=document.getElementById('sig-canvas');if(!sigCanvas)return;
+  const wrap=document.getElementById('sig-wrap');
+  const dpr=window.devicePixelRatio||1;
+  const w=wrap.clientWidth||320;
+  sigCanvas.width=w*dpr;sigCanvas.height=120*dpr;
+  sigCanvas.style.width=w+'px';sigCanvas.style.height='120px';
+  sigCtx=sigCanvas.getContext('2d');
+  sigCtx.scale(dpr,dpr);
+  sigCtx.strokeStyle='#1e293b';sigCtx.lineWidth=2.2;sigCtx.lineCap='round';sigCtx.lineJoin='round';
+  sigCtx.fillStyle='#fafbfc';sigCtx.fillRect(0,0,w,120);
+  sigCanvas.addEventListener('mousedown',sigStart);sigCanvas.addEventListener('mousemove',sigMove);sigCanvas.addEventListener('mouseup',sigEnd);sigCanvas.addEventListener('mouseleave',sigEnd);
+  sigCanvas.addEventListener('touchstart',sigTStart,{passive:false});
+  sigCanvas.addEventListener('touchmove',sigTMove,{passive:false});
+  sigCanvas.addEventListener('touchend',sigEnd);
+}
+function sigPt(e){const r=sigCanvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+function sigStart(e){sigDrawing=true;const p=sigPt(e);sigLastX=p.x;sigLastY=p.y;sigCtx.beginPath();sigCtx.arc(p.x,p.y,1,0,Math.PI*2);sigCtx.fillStyle='#1e293b';sigCtx.fill();}
+function sigMove(e){if(!sigDrawing)return;const p=sigPt(e);sigCtx.beginPath();sigCtx.moveTo(sigLastX,sigLastY);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();sigLastX=p.x;sigLastY=p.y;}
+function sigEnd(){sigDrawing=false;}
+function sigTStart(e){e.preventDefault();const t=e.touches[0];const r=sigCanvas.getBoundingClientRect();sigDrawing=true;sigLastX=t.clientX-r.left;sigLastY=t.clientY-r.top;sigCtx.beginPath();sigCtx.arc(sigLastX,sigLastY,1,0,Math.PI*2);sigCtx.fillStyle='#1e293b';sigCtx.fill();}
+function sigTMove(e){e.preventDefault();if(!sigDrawing)return;const t=e.touches[0];const r=sigCanvas.getBoundingClientRect();const x=t.clientX-r.left,y=t.clientY-r.top;sigCtx.beginPath();sigCtx.moveTo(sigLastX,sigLastY);sigCtx.lineTo(x,y);sigCtx.stroke();sigLastX=x;sigLastY=y;}
+function sigClear(){if(sigCtx&&sigCanvas){sigCtx.fillStyle='#fafbfc';sigCtx.fillRect(0,0,sigCanvas.width,sigCanvas.height);document.getElementById('sig-wrap').classList.remove('has-sig');}}
+function sigSave(){
+  if(!sigCanvas)return;
+  // Check if anything was drawn (compare to blank)
+  const blank=document.createElement('canvas');blank.width=sigCanvas.width;blank.height=sigCanvas.height;const bCtx=blank.getContext('2d');bCtx.fillStyle='#fafbfc';bCtx.fillRect(0,0,blank.width,blank.height);
+  if(sigCanvas.toDataURL()===blank.toDataURL()){toast('⚠️ Assina primeiro antes de guardar');return;}
+  const dataUrl=sigCanvas.toDataURL('image/png');
+  DB.set('assinatura',dataUrl);
+  document.getElementById('sig-wrap').classList.add('has-sig');
+  toast('✓ Assinatura guardada!');
+  // Show preview
+  setTimeout(()=>{
+    const imgEl=document.getElementById('sig-img');const storedDiv=document.getElementById('sig-stored');const padArea=document.getElementById('sig-pad-area');const changeBtn=document.getElementById('sig-change-btn');
+    if(imgEl){imgEl.src=dataUrl;storedDiv.style.display='block';padArea.style.display='none';changeBtn.style.display='block';}
+  },400);
+}
+function sigChange(){
+  document.getElementById('sig-stored').style.display='none';
+  document.getElementById('sig-pad-area').style.display='block';
+  document.getElementById('sig-change-btn').style.display='none';
+  DB.set('assinatura',null);
+  requestAnimationFrame(sigSetup);
+}
 function expBackup(){const b={regs,cfg,v:3,at:new Date().toISOString()};const blob=new Blob([JSON.stringify(b,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`backup_depositos_${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(url);toast('✓ Backup exportado!')}
 function impBackup(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.regs){regs=d.regs;saveR()}if(d.cfg){cfg=d.cfg;saveCfg()}popSel();rSettings();rDash();toast('✓ Importado!')}catch{toast('⚠️ Ficheiro inválido')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Apagar TODOS os dados?'))return;regs=[];saveR();rDash();toast('Dados eliminados')}
