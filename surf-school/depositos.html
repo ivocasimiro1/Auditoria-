@@ -522,7 +522,32 @@ select{
     <div class="fg"><label>CC fixo (sempre incluído)</label><input type="email" id="c-emailcc" placeholder="ivo@despomar.com" oninput="sc()"></div>
     <div class="fg"><label>CC adicional da loja (opcional)</label><input type="email" id="c-emailcc2" placeholder="outro@empresa.pt" oninput="sc()"></div>
     <div class="fg"><label>NIF</label><input type="text" id="c-nif" placeholder="999999999" oninput="sc()"></div>
-    <div class="fg"><label>Dia levantamento Câmbio <span style="font-size:11px;color:var(--g400)">(se aplicável)</span></label>
+    <div style="font-size:11px;font-weight:700;color:var(--g500);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.4px">Dia de levantamento semanal por serviço</div>
+    <div class="fg"><label>Prosegur</label>
+      <select id="c-prosegur-dia" oninput="sc()">
+        <option value="">— Esta loja não usa Prosegur —</option>
+        <option value="1">Segunda-feira</option>
+        <option value="2">Terça-feira</option>
+        <option value="3">Quarta-feira</option>
+        <option value="4">Quinta-feira</option>
+        <option value="5">Sexta-feira</option>
+        <option value="6">Sábado</option>
+        <option value="0">Domingo</option>
+      </select>
+    </div>
+    <div class="fg"><label>Lomis</label>
+      <select id="c-lomis-dia" oninput="sc()">
+        <option value="">— Esta loja não usa Lomis —</option>
+        <option value="1">Segunda-feira</option>
+        <option value="2">Terça-feira</option>
+        <option value="3">Quarta-feira</option>
+        <option value="4">Quinta-feira</option>
+        <option value="5">Sexta-feira</option>
+        <option value="6">Sábado</option>
+        <option value="0">Domingo</option>
+      </select>
+    </div>
+    <div class="fg"><label>Câmbio</label>
       <select id="c-cambio-dia" oninput="sc()">
         <option value="">— Esta loja não usa Câmbio —</option>
         <option value="1">Segunda-feira</option>
@@ -569,8 +594,7 @@ select{
   <div class="card" style="background:#f0fdf4;border:1.5px solid #6ee7b7">
     <div class="ct" style="color:#065f46">📋 Regras de Negócio</div>
     <p style="font-size:13px;color:var(--g600);line-height:1.6"><strong>Depósito Direto:</strong> deve ser feito a cada 2 dias. Mais de 3 sessões numa só entrega = tardio + justificação obrigatória.</p>
-    <p style="font-size:13px;color:var(--g600);line-height:1.6;margin-top:8px"><strong>Prosegur / Lomis:</strong> passam na loja a levantar a cada 7 dias. Não necessita de ir ao banco.</p>
-    <p style="font-size:13px;color:var(--g600);line-height:1.6;margin-top:8px" id="cambio-rule-txt"><strong>Câmbio:</strong> prazo 7 dias. Configura o dia de levantamento acima para acompanhamento preciso.</p>
+    <p style="font-size:13px;color:var(--g600);line-height:1.6;margin-top:8px"><strong>Prosegur / Lomis / Câmbio:</strong> passam na loja semanalmente. Não necessita de ir ao banco. Configura o dia de levantamento de cada serviço acima para que o sistema calcule automaticamente os prazos.</p>
   </div>
   <div class="card" style="background:var(--bl)">
     <div class="ct" style="color:var(--blue)">ℹ️ Histórico &amp; Armazenamento</div>
@@ -637,7 +661,7 @@ async function sbLoad(){
   try{
     if(!isSA){
       const{data:c}=await SB.from('dep_config').select('*').eq('store_id',sbProfile.store_id).maybeSingle();
-      if(c)cfg={emp:c.emp||'Despomar',email:c.email||'',emailCC:c.email_cc||'',emailCC2:c.email_cc2||'',nif:c.nif||'',lojas:c.lojas||[],resps:c.resps||[]};
+      if(c)cfg={emp:c.emp||'Despomar',email:c.email||'',emailCC:c.email_cc||'',emailCC2:c.email_cc2||'',nif:c.nif||'',cambioDia:c.cambio_dia||'',prosegurDay:c.prosegur_day||'',lomisDay:c.lomis_day||'',lojas:c.lojas||[],resps:c.resps||[]};
     }else{
       const{data:cs}=await SB.from('dep_config').select('lojas,resps');
       if(cs?.length){
@@ -658,7 +682,7 @@ async function sbSave(r){const{error}=await SB.from('dep_registos').upsert(regTo
 async function sbDel(id){const{error}=await SB.from('dep_registos').delete().eq('id',id);if(error){toast('⚠️ Erro: '+error.message);return false;}return true;}
 async function sbSaveCfgSB(){
   if(!sbProfile||isSA)return;
-  await SB.from('dep_config').upsert({store_id:sbProfile.store_id,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',lojas:cfg.lojas||[],resps:cfg.resps||[]});
+  await SB.from('dep_config').upsert({store_id:sbProfile.store_id,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',lojas:cfg.lojas||[],resps:cfg.resps||[]});
 }
 async function doLogin(){
   const email=document.getElementById('auth-email').value.trim();
@@ -725,7 +749,7 @@ async function doReset(){
 // ─── STORAGE ─────────────────────────────────────────
 const DB={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
 let regs=DB.get('regs',[]);
-let cfg=DB.get('cfg',{emp:'Despomar',email:'contab@despomar.com',nif:'',cambioDia:'',lojas:['ESS FARO','BB Lagos','BB Portimão'],resps:['João Silva','Maria Santos','Pedro Costa','Ana Lopes']});
+let cfg=DB.get('cfg',{emp:'Despomar',email:'contab@despomar.com',nif:'',cambioDia:'',prosegurDay:'',lomisDay:'',lojas:['ESS FARO','BB Lagos','BB Portimão'],resps:['João Silva','Maria Santos','Pedro Costa','Ana Lopes']});
 const saveR=()=>DB.set('regs',regs);
 const saveCfg=()=>DB.set('cfg',cfg);
 
@@ -1283,32 +1307,7 @@ async function updEmailPrev(){
   const erros=data.filter(r=>calcEstado(r).s==='err').length;
   const avisos=data.filter(r=>calcEstado(r).s==='warn').length;
   const subj=`Folha Depósitos – ${loja} – ${ml} – ${empresa}`;
-  const bodyLines=[
-    `Exmo(a). Departamento de Contabilidade,`,
-    ``,
-    `Envio em anexo a folha de controlo de depósitos de ${loja}, referente a ${ml}.`,
-    ``,
-    `RESUMO DO PERÍODO`,
-    `─────────────────`,
-    `Empresa: ${empresa}${nif?' · NIF '+nif:''}`,
-    `Loja: ${loja}`,
-    `Período: ${ml}`,
-    `Total Registado: ${fmt(total)}`,
-    `Total Depositado: ${fmt(totalDep)}`,
-    `Por Depositar: ${fmt(total-totalDep)}`,
-    `Nº Depósitos: ${data.length}`,
-    `Nº Sessões: ${data.reduce((s,r)=>s+r.sessoes.length,0)}`,
-    erros>0?`⚠️ Depósitos em atraso: ${erros} (ver folha em anexo)`:`✅ Sem problemas`,
-    avisos>0?`ℹ️ Avisos: ${avisos}`:'',
-    ``,
-    `📎 ANEXO`,
-    `  • FolhaDepositos_${loja.replace(/ /g,'_')}_${mes}.html — Folha completa com fotos dos talões`,
-    ``,
-    `Por favor confirmar receção e validação.`,
-    ``,
-    `Com os melhores cumprimentos,`,
-    `${loja} — ${empresa}`,
-  ].filter(l=>l!==null).join('\n');
+  const bodyLines=`Exmo(a). Departamento de Contabilidade,\n\nEnvio em anexo a folha de depósitos de ${loja}, referente a ${ml}.\n\nEmpresa: ${empresa}${nif?' · NIF '+nif:''}\nLoja: ${loja} · Período: ${ml}\nTotal: ${fmt(total)} · Depositado: ${fmt(totalDep)} · Por depositar: ${fmt(total-totalDep)}\nNº Depósitos: ${data.length} · Sessões: ${data.reduce((s,r)=>s+r.sessoes.length,0)}\n${erros>0?`⚠️ Depósitos em atraso: ${erros} — verificar folha em anexo.`:`✅ Sem problemas.`}\n\nCom os melhores cumprimentos,\n${loja} — ${empresa}`;
   document.getElementById('ep-to').textContent=dest;
   document.getElementById('ep-cc').textContent=cc;
   document.getElementById('ep-sub').textContent=subj;
@@ -1357,7 +1356,15 @@ function updPrev(){
   const total=data.reduce((s,r)=>s+totalValor(r),0);
   document.getElementById('prev-tbl').innerHTML=`<thead><tr>${hs.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}<tr class="tr"><td colspan="6">TOTAL</td><td style="text-align:right">${fmt(total)}</td><td colspan="3">${data.length} reg.</td></tr></tbody>`;
 }
-function doExp(){const data=getFiltExp();if(!data.length){toast('⚠️ Sem dados');return}if(expFmt==='xlsx'){toast('A gerar Excel...');expXLSX(data).catch(e=>{toast('⚠️ Erro: '+e.message)});}else if(expFmt==='email')expEmail(data);else expPrint(data)}
+function doExp(){
+  const loja=document.getElementById('e-loja').value;
+  if(!loja){toast('⚠️ Selecciona uma loja específica para exportar');return;}
+  const data=getFiltExp();
+  if(!data.length){toast('⚠️ Sem dados para esta loja/mês');return;}
+  if(expFmt==='xlsx'){toast('A gerar Excel...');expXLSX(data).catch(e=>{toast('⚠️ Erro: '+e.message)});}
+  else if(expFmt==='email')expEmail(data);
+  else expPrint(data);
+}
 
 async function expXLSX(data){
   // Load ExcelJS dynamically if not already loaded
@@ -1542,7 +1549,7 @@ async function expXLSX(data){
 
 function expEmail(data){
   const mes=document.getElementById('e-mes').value||curMesStr();
-  const loja=document.getElementById('e-loja').value||'Todas as Lojas';
+  const loja=document.getElementById('e-loja').value||'Loja';
   const eCfg=exportCfg||cfg;
   const empresa=eCfg.emp||'Empresa'; const nif=eCfg.nif||'';
   const dest=eCfg.email||''; const cc=eCfg.emailCC||''; const cc2=eCfg.emailCC2||'';
@@ -1550,208 +1557,21 @@ function expEmail(data){
   const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
   const ml=mesLabel(mes);
   const erros=data.filter(r=>calcEstado(r).s==='err').length;
-  const avisos=data.filter(r=>calcEstado(r).s==='warn').length;
-  const expDate=new Date().toISOString().split('T')[0];
+  // Open the PDF in a new window (user saves as PDF from print dialog)
+  expPrint(data);
 
-  // Build professional HTML report
-  const withPhotos=data.filter(r=>r.foto);
-  let bodyRows='';
-  data.forEach((r,idx)=>{
-    const est=calcEstado(r); const tv=totalValor(r);
-    const ml2=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
-    const dateRange=ml2.length>1?fd(ml2[0])+' → '+fd(ml2[ml2.length-1]):fd(ml2[0]||'');
-    const bc=est.s==='ok'?'#d1fae5':est.s==='warn'?'#fed7aa':est.s==='err'?'#fee2e2':'#f3f4f6';
-    const fc=est.s==='ok'?'#065f46':est.s==='warn'?'#92400e':est.s==='err'?'#7f1d1d':'#374151';
-    const cbs=r.sessoes.filter(s=>s.codBarras).map(s=>s.codBarras).join(', ');
-    const envio=r.talao&&r.dataDeposito?'<span style="color:#065f46;font-weight:700">✓ SIM</span>':'<span style="color:#9ca3af">—</span>';
-    const sesStr=r.sessoes.map(s=>'<div style="font-size:8.5px;color:#6b7280;line-height:1.4">'+fd(s.dataVendas)+' · Sess.'+( s.sessao||'—')+' · <b>'+fmt(s.valor)+'</b>'+(s.codBarras?' · 📦'+s.codBarras:'')+' </div>').join('');
-    const fotoEmailCell=r.foto
-      ?`<img src="${r.foto}" style="width:70px;height:48px;object-fit:cover;border-radius:4px;border:1.5px solid #e5e7eb;display:block">`
-      :`<span style="color:#d1d5db;font-size:9px">Sem foto</span>`;
-    bodyRows+=`<tr style="vertical-align:middle">
-      <td style="text-align:center;color:#6b7280;font-size:9px;padding:6px 3px">${idx+1}</td>
-      <td style="padding:6px 5px">${sesStr}</td>
-      <td style="text-align:center;padding:6px 3px;color:#374151">${r.sessoes.length}</td>
-      <td style="padding:6px 5px;white-space:nowrap">${fd(r.dataDeposito)}</td>
-      <td style="padding:6px 5px;font-size:9px">${r.tipo||'—'}</td>
-      <td style="padding:6px 5px;font-size:8.5px;color:#374151">${cbs||'—'}</td>
-      <td style="text-align:right;font-weight:700;padding:6px 5px;color:#1e40af">${fmt(tv)}</td>
-      <td style="padding:6px 5px;font-size:9px;font-family:monospace">${r.talao||'<span style="color:#ef4444">SEM TALÃO</span>'}</td>
-      <td style="padding:6px 5px;font-size:9px">${r.responsavel}</td>
-      <td style="text-align:center;padding:6px 3px">${envio}</td>
-      <td style="padding:6px 5px"><span style="background:${bc};color:${fc};padding:2px 6px;border-radius:4px;font-size:8.5px;font-weight:700;white-space:nowrap;display:inline-block">${est.label}</span></td>
-      <td style="padding:6px 5px;font-size:8.5px;color:#6b7280">${r.obs||''}</td>
-      <td style="padding:4px;text-align:center">${fotoEmailCell}</td>
-    </tr>`;
-  });
-
-  let lojaRows='';
-  cfg.lojas.forEach(l=>{
-    const ld=data.filter(r=>r.loja===l);if(!ld.length)return;
-    const lt=ld.reduce((s,r)=>s+totalValor(r),0);
-    const ldep=ld.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-    const pct=lt>0?Math.round(ldep/lt*100):0;
-    lojaRows+=`<tr><td style="padding:6px 8px;font-weight:700">${l}</td><td style="text-align:center;padding:6px">${ld.length}</td><td style="text-align:right;padding:6px 8px;font-weight:700;color:#1e40af">${fmt(lt)}</td><td style="text-align:right;padding:6px 8px;color:#065f46;font-weight:700">${fmt(ldep)}</td><td style="text-align:right;padding:6px 8px;color:#92400e">${fmt(lt-ldep)}</td><td style="text-align:center;padding:6px">${pct}%</td><td style="text-align:center;padding:6px;color:#065f46">${ld.filter(r=>calcEstado(r).s==='ok').length}</td><td style="text-align:center;padding:6px;color:#92400e">${ld.filter(r=>calcEstado(r).s==='warn').length}</td><td style="text-align:center;padding:6px;color:#7f1d1d">${ld.filter(r=>calcEstado(r).s==='err').length}</td></tr>`;
-  });
-
-  const fotosHtml='';
-
-  const reportHTML=`<!DOCTYPE html>
-<html lang="pt"><head><meta charset="UTF-8">
-<title>Folha de Depósitos — ${loja} — ${ml}</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,Helvetica,sans-serif;font-size:10px;color:#111;background:#fff}
-.page{max-width:900px;margin:0 auto;padding:20px}
-.hdr{background:linear-gradient(135deg,#1e40af,#1d4ed8);color:#fff;padding:18px 22px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0}
-.hdr h1{font-size:18px;font-weight:800;margin-bottom:4px}
-.hdr .sub{font-size:11px;opacity:.85;line-height:1.6}
-.hdr .val{font-size:28px;font-weight:800;text-align:right}
-.hdr .val-label{font-size:10px;opacity:.75;text-align:right;margin-top:2px}
-.meta{background:#1e3a8a;color:#fff;padding:8px 22px;border-radius:0 0 10px 10px;display:flex;gap:20px;font-size:10px;opacity:.9;margin-bottom:16px;flex-wrap:wrap}
-.meta span{opacity:.7}
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
-.kpi{border-radius:8px;padding:10px 12px;text-align:center}
-.kpi .kl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;opacity:.75}
-.kpi .kv{font-size:17px;font-weight:800;margin-top:3px}
-.sec{font-size:11px;font-weight:800;color:#1e40af;text-transform:uppercase;letter-spacing:.5px;border-left:3px solid #1e40af;padding-left:8px;margin:18px 0 10px}
-table{width:100%;border-collapse:collapse;font-size:9.5px}
-th{background:#1e40af;color:#fff;padding:7px 5px;font-weight:700;text-align:left;white-space:nowrap}
-tr:nth-child(even) td{background:#f8faff}
-.tr-total td{font-weight:700;background:#dbeafe;border-top:2px solid #1e40af;font-size:10.5px}
-.sig{display:flex;gap:16px;margin-top:28px}
-.sig-box{flex:1;border-top:1.5px solid #374151;padding-top:8px}
-.sig-box .title{font-size:10px;font-weight:800;color:#1e40af;margin-bottom:20px}
-.sig-box .line{font-size:9px;color:#6b7280;margin-top:8px}
-.stamp{border:1.5px solid #d1d5db;border-radius:6px;padding:8px;text-align:center}
-.stamp .sl{font-size:8.5px;color:#6b7280;display:block;margin-bottom:4px}
-.stamp .sv{font-size:10px;font-weight:700;color:#374151}
-.footer{text-align:center;font-size:8.5px;color:#9ca3af;margin-top:20px;padding-top:10px;border-top:1px solid #e5e7eb}
-.alert-box{padding:10px 14px;border-radius:7px;margin-bottom:14px;font-size:10px;font-weight:700}
-@media print{@page{margin:10mm;size:A4 landscape}.no-print{display:none!important}}
-</style></head>
-<body><div class="page">
-
-<div class="no-print" style="background:#1e40af;color:#fff;padding:10px 16px;border-radius:8px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
-  <span style="font-weight:700;font-size:13px">📄 Folha profissional — Guardar como PDF e anexar ao email</span>
-  <button onclick="window.print()" style="background:#fff;color:#1e40af;border:none;padding:8px 18px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer">🖨️ Guardar como PDF</button>
-</div>
-
-${erros>0?`<div class="alert-box" style="background:#fee2e2;color:#7f1d1d;border:1.5px solid #fca5a5">⚠️ ATENÇÃO: Existem <strong>${erros} depósito(s) com problemas</strong> que necessitam de resolução urgente antes do envio para a contabilidade.</div>`:''}
-
-<div class="hdr">
-  <div>
-    <div style="font-size:11px;opacity:.75;margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px">Folha de Depósitos</div>
-    <h1>${empresa}</h1>
-    <div class="sub">${nif?'NIF: '+nif+' &nbsp;·&nbsp; ':''}<strong>${loja}</strong> &nbsp;·&nbsp; Período: <strong>${ml}</strong></div>
-  </div>
-  <div>
-    <div class="val">${fmt(total)}</div>
-    <div class="val-label">Total Registado</div>
-    <div style="margin-top:6px;text-align:right;font-size:10px"><span style="opacity:.75">${fmt(totalDep)} depositado &nbsp;·&nbsp; ${fmt(total-totalDep)} por depositar</span></div>
-  </div>
-</div>
-<div class="meta">
-  <span>Loja: <strong style="opacity:1">${loja}</strong></span>
-  <span>Período: <strong style="opacity:1">${ml}</strong></span>
-  <span>Depósitos: <strong style="opacity:1">${data.length}</strong></span>
-  <span>Sessões: <strong style="opacity:1">${data.reduce((s,r)=>s+r.sessoes.length,0)}</strong></span>
-  <span>Emitido: <strong style="opacity:1">${new Date().toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'})} ${new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</strong></span>
-</div>
-
-<div class="kpis">
-  <div class="kpi" style="background:#dbeafe"><div class="kl">Total</div><div class="kv" style="color:#1e40af">${fmt(total)}</div></div>
-  <div class="kpi" style="background:#d1fae5"><div class="kl">✅ Depositado</div><div class="kv" style="color:#065f46">${fmt(totalDep)}</div></div>
-  <div class="kpi" style="background:#fed7aa"><div class="kl">⚠️ Por Depositar</div><div class="kv" style="color:#92400e">${fmt(total-totalDep)}</div></div>
-  <div class="kpi" style="background:${erros>0?'#fee2e2':'#d1fae5'}"><div class="kl">${erros>0?'🔴 Erros':'✅ Conformes'}</div><div class="kv" style="color:${erros>0?'#7f1d1d':'#065f46'}">${erros>0?erros:data.filter(r=>calcEstado(r).s==='ok').length}</div></div>
-  <div class="kpi" style="background:#f3f4f6"><div class="kl">⚠️ Avisos</div><div class="kv" style="color:#92400e">${avisos}</div></div>
-</div>
-
-<div class="sec">Detalhe dos Depósitos</div>
-<table>
-  <thead><tr>
-    <th style="width:22px">#</th><th>DIA / DATA DAS SESSÕES</th><th style="width:32px">Sess.</th>
-    <th style="width:70px">Data Depósito</th><th style="width:88px">Tipo Serviço</th>
-    <th>Cód. Barras / Saco</th><th style="width:78px;text-align:right">Valor (€)</th>
-    <th style="width:90px">Nº Talão / Ref.</th><th style="width:78px">Responsável</th>
-    <th style="width:34px;text-align:center">Env.</th><th style="width:108px">Estado</th><th>Observações</th>
-    <th style="width:80px;text-align:center">📷 Comprovativo</th>
-  </tr></thead>
-  <tbody>
-    ${bodyRows}
-    <tr class="tr-total">
-      <td colspan="6" style="text-align:right;padding:7px 5px">TOTAL GERAL</td>
-      <td style="text-align:right;padding:7px 5px">${fmt(total)}</td>
-      <td colspan="6" style="padding:7px 5px">${data.length} depósito(s) · ${data.reduce((s,r)=>s+r.sessoes.length,0)} sessão(ões) · ${withPhotos.length} comprovativo(s)</td>
-    </tr>
-  </tbody>
-</table>
-
-${cfg.lojas.filter(l=>data.some(r=>r.loja===l)).length>1?`
-<div class="sec">Resumo por Loja</div>
-<table>
-  <thead><tr><th>Loja</th><th style="text-align:center">Dep.</th><th style="text-align:right">Total</th><th style="text-align:right">Depositado</th><th style="text-align:right">Por Dep.</th><th style="text-align:center">%</th><th style="text-align:center">✅</th><th style="text-align:center">⚠️</th><th style="text-align:center">🔴</th></tr></thead>
-  <tbody>${lojaRows}</tbody>
-</table>`:''}
-
-${fotosHtml}
-
-<div class="sig">
-  <div class="sig-box"><div class="title">RESPONSÁVEL DE LOJA</div><div class="line">Nome: ___________________________</div><div class="line">Assinatura: ___________________________</div><div class="line">Data: ___/___/______</div></div>
-  <div class="sig-box"><div class="title">GERÊNCIA</div><div class="line">Nome: ___________________________</div><div class="line">Assinatura: ___________________________</div><div class="line">Data: ___/___/______</div></div>
-  <div class="sig-box"><div class="title">CONTABILIDADE</div>
-    <div class="stamp">
-      <span class="sl">Recebido em</span><span class="sv">___/___/______</span>
-      <span class="sl" style="margin-top:8px">Validado por</span><span class="sv">___________________________</span>
-    </div>
-  </div>
-</div>
-
-<div class="footer">${empresa}${nif?' · NIF '+nif:''} &nbsp;·&nbsp; Documento gerado automaticamente · ${new Date().toLocaleString('pt-PT')} &nbsp;·&nbsp; Este documento substitui a folha manual de controlo de depósitos</div>
-</div></body></html>`;
-
-  // Build file blob for sharing/download
-  const blob=new Blob([reportHTML],{type:'text/html'});
-  const fileName=`FolhaDepositos_${loja.replace(/ /g,'_')}_${mes}_exp${expDate}.html`;
-  const file=new File([blob],fileName,{type:'text/html'});
-
-  // Get the pre-built body text from the preview panel (already rendered)
-  const bodyText=document.getElementById('ep-body')?.dataset.body||
-    `Envio em anexo a folha de depósitos de ${loja} referente a ${ml}.\nTotal: ${fmt(total)} · Depositado: ${fmt(totalDep)}\n\nCom os melhores cumprimentos,\n${sbProfile?.nome||loja} — ${empresa}`;
-  const subjText=`Folha Depósitos – ${loja} – ${ml} – ${empresa}`;
-
-  const shareData={title:subjText,text:bodyText,files:[file]};
-
-  const isMobile=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-
-  if(isMobile&&navigator.share&&navigator.canShare&&navigator.canShare(shareData)){
-    // ── MOBILE: native share sheet — file is already attached ──
-    navigator.share(shareData).then(()=>{
-      toast('✓ Partilhado! Escolhe o teu email — o PDF vai em anexo.');
-    }).catch(err=>{
-      if(err.name!=='AbortError')fallbackDesktop(blob,fileName,subjText,bodyText,dest,cc,cc2);
-    });
-  } else {
-    // ── DESKTOP: download + open email client with pre-filled body ──
-    fallbackDesktop(blob,fileName,subjText,bodyText,dest,cc,cc2);
-  }
-}
-
-function fallbackDesktop(blob,fileName,subjText,bodyText,dest,cc,cc2=''){
-  // 1. Download the HTML report
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download=fileName;
-  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-  // 2. Open email client with pre-filled subject + body (1 s delay so download starts first)
+  // After a short delay, open email client with pre-filled subject and short body
+  const shortBody=`Exmo(a). Departamento de Contabilidade,\n\nEnvio em anexo a folha de depósitos de ${loja}, referente a ${ml}.\n\nEmpresa: ${empresa}${nif?' · NIF '+nif:''}\nTotal: ${fmt(total)} · Depositado: ${fmt(totalDep)} · Por depositar: ${fmt(total-totalDep)}\nNº Depósitos: ${data.length}${erros>0?'\n⚠️ '+erros+' depósito(s) com problemas.':'\n✅ Sem problemas.'}\n\nCom os melhores cumprimentos,\n${loja} — ${empresa}`;
+  const subj=encodeURIComponent(`Folha Depósitos – ${loja} – ${ml} – ${empresa}`);
+  const emailBody=encodeURIComponent(shortBody);
+  const ccs=[cc,cc2].filter(Boolean).join(',');
+  const ccStr=ccs?`&cc=${encodeURIComponent(ccs)}`:'';
   setTimeout(()=>{
-    const subj=encodeURIComponent(subjText);
-    const body=encodeURIComponent(bodyText);
-    const ccs=[cc,cc2].filter(Boolean).join(',');
-    const ccStr=ccs?`&cc=${encodeURIComponent(ccs)}`:'';
-    window.location.href=`mailto:${dest||''}?subject=${subj}${ccStr}&body=${body}`;
-    toast('✓ PDF descarregado — anexa à pasta Downloads e envia o email que abriu.');
-  },800);
+    window.location.href=`mailto:${dest}?subject=${subj}${ccStr}&body=${emailBody}`;
+    toast('1. Guarda como PDF no diálogo que abriu  2. Anexa ao email');
+  },1200);
 }
+
 
 function expPrint(data){
   const mes=document.getElementById('e-mes').value||curMesStr();
@@ -1760,7 +1580,6 @@ function expPrint(data){
   const empresa=pCfg.emp||'Empresa'; const nif=pCfg.nif||'';
   const expDate=new Date().toISOString().split('T')[0];
   const total=data.reduce((s,r)=>s+totalValor(r),0);
-  // A session is "sent/deposited" if it has a talão (own or deposit-level) + deposit date
   const getSessTalao=(r,s)=>s.talao||r.talao||'';
   const totalDep=data.reduce((s,r)=>{
     if(!r.dataDeposito)return s;
@@ -1768,56 +1587,32 @@ function expPrint(data){
   },0);
   const ml=mesLabel(mes);
   const erros=data.filter(r=>calcEstado(r).s==='err').length;
-  const tardios=data.filter(r=>calcEstado(r).s==='err');
-  const valorTardio=tardios.reduce((s,r)=>s+totalValor(r),0);
-  // Count unique talões (per session + deposit level)
-  const allTaloes=new Set();
-  data.forEach(r=>{
-    r.sessoes.forEach(s=>{const t=getSessTalao(r,s);if(t)allTaloes.add(t);});
-  });
-  const withPhotos=data.filter(r=>r.foto);
 
-  // One row per session, sorted by date
   const rows=[];
   data.forEach(r=>{
-    const est=calcEstado(r);
-    r.sessoes.forEach((s,si)=>{
-      rows.push({r,s,si,est,isFirst:si===0,nSess:r.sessoes.length});
-    });
+    r.sessoes.forEach((s,si)=>{rows.push({r,s,si,est:calcEstado(r),isFirst:si===0});});
   });
-  rows.sort((a,b)=>(a.s.dataVendas||'') < (b.s.dataVendas||'') ? -1 : 1);
+  rows.sort((a,b)=>(a.s.dataVendas||'')<(b.s.dataVendas||'')?-1:1);
 
   let n=0;
-  const trows=rows.map(({r,s,si,est,isFirst,nSess})=>{
+  const trows=rows.map(({r,s,si,est,isFirst})=>{
     if(isFirst)n++;
     const bc=est.s==='ok'?'#dcfce7':est.s==='warn'?'#fef9c3':est.s==='err'?'#fee2e2':'#f8fafc';
     const fc=est.s==='ok'?'#166534':est.s==='warn'?'#854d0e':est.s==='err'?'#991b1b':'#64748b';
     const sessTalao=getSessTalao(r,s);
-    const envio=sessTalao&&r.dataDeposito?'S':'';
-    const rowBg=n%2===0?'#f8fafc':'#ffffff';
-    const isLate=est.s==='err';
-    const rowStyle=`background:${rowBg};${isFirst&&si>0?'border-top:1px dashed #e2e8f0':''}`;
-    const fotoCell=isFirst
-      ?(r.foto?`<img src="${r.foto}" style="width:68px;height:48px;object-fit:cover;border-radius:4px;border:1.5px solid #cbd5e1;display:block">`
-        :`<span style="color:#cbd5e1;font-size:8px;display:block;text-align:center;padding:4px">—</span>`)
-      :'';
-    const talaoCel=sessTalao
-      ?`<b style="font-family:monospace;font-size:9px">${sessTalao}</b>`
-      :`<span style="color:#ef4444;font-size:8.5px;font-weight:700">SEM TALÃO</span>`;
-    const stateCel=isFirst?`<span style="background:${bc};color:${fc};padding:2px 7px;border-radius:4px;font-size:8px;font-weight:800;white-space:nowrap;display:inline-block">${isLate?'⚠️ TARDIO':est.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}</span>`:'';
-    return`<tr style="${rowStyle}">
-      <td style="text-align:center;color:#94a3b8;font-weight:600;font-size:9px">${isFirst?n:''}</td>
-      <td style="font-weight:700;color:#0f172a;font-size:10px">${fd(s.dataVendas)}</td>
-      <td style="text-align:center;color:#475569;font-size:9px">${s.sessao||'—'}</td>
-      <td style="font-size:9px;color:#334155">${isFirst?fd(r.dataDeposito):'↑'}</td>
-      <td style="font-size:8.5px;color:#475569">${isFirst?(r.tipo||'—'):''}</td>
-      <td style="text-align:right;font-weight:800;font-size:11px;color:#1d4ed8">${fmt(s.valor)}</td>
-      <td>${talaoCel}</td>
-      <td style="font-size:9px;color:#475569">${isFirst?r.responsavel:''}</td>
-      <td style="text-align:center;font-weight:800;color:#16a34a;font-size:10px">${isFirst?envio:''}</td>
-      <td>${stateCel}</td>
-      <td style="font-size:8.5px;color:#64748b">${isFirst?(r.obs||''):''}</td>
-      <td style="text-align:center;vertical-align:middle;padding:3px">${fotoCell}</td>
+    const rowBg=n%2===0?'#f0f7ff':'#ffffff';
+    return`<tr style="background:${rowBg}${isFirst&&si>0?';border-top:1px dashed #e2e8f0':''}">
+      <td style="text-align:center;color:#94a3b8;font-size:7px">${isFirst?n:''}</td>
+      <td style="font-weight:700;color:#0f172a">${fd(s.dataVendas)}</td>
+      <td style="text-align:center;color:#475569">${s.sessao||'—'}</td>
+      <td>${isFirst?fd(r.dataDeposito):'↑'}</td>
+      <td style="font-size:7.5px;color:#475569">${isFirst?(r.tipo||'—'):''}</td>
+      <td style="text-align:right;font-weight:800;color:#1d4ed8">${fmt(s.valor)}</td>
+      <td style="font-family:monospace;font-size:7.5px">${sessTalao||'<span style="color:#ef4444;font-weight:700">SEM</span>'}</td>
+      <td style="font-size:7.5px;color:#475569">${isFirst?r.responsavel:''}</td>
+      <td style="text-align:center;font-weight:800;color:#16a34a">${isFirst&&sessTalao&&r.dataDeposito?'✓':''}</td>
+      <td>${isFirst?`<span style="background:${bc};color:${fc};padding:1px 5px;border-radius:3px;font-size:7px;font-weight:800;white-space:nowrap">${est.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}</span>`:''}</td>
+      <td style="color:#64748b;font-size:7px">${isFirst?(r.obs||''):''}</td>
     </tr>`;
   }).join('');
 
@@ -1825,131 +1620,83 @@ function expPrint(data){
 <title>Depositos_${loja.replace(/ /g,'_')}_${mes}_exp${expDate}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-body{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;color:#1e293b;background:#fff}
-.wrap{max-width:980px;margin:0 auto;padding:14px 18px}
-.hdr{display:flex;justify-content:space-between;align-items:stretch;margin-bottom:12px;gap:10px}
-.hdr-main{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;border-radius:10px;padding:14px 18px;flex:1}
-.hdr-main .co{font-size:17px;font-weight:800;margin-bottom:3px}
-.hdr-main .inf{font-size:10px;opacity:.85;line-height:1.8}
-.resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;width:280px}
-.rk{border-radius:8px;padding:9px 10px}
-.rk .rl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;opacity:.7;margin-bottom:2px}
-.rk .rv{font-size:16px;font-weight:800}
-.sec{font-size:10px;font-weight:800;color:#1d4ed8;text-transform:uppercase;letter-spacing:.5px;border-left:3px solid #2563eb;padding-left:7px;margin:14px 0 8px}
+body{font-family:Arial,sans-serif;font-size:8px;color:#1e293b;background:#fff}
+.hdr{background:#1e3a8a!important;color:#fff;padding:7px 10px;border-radius:5px;display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.hdr h1{font-size:12px;font-weight:800;margin-bottom:2px}
+.hdr .sub{font-size:7.5px;opacity:.85}
+.stats{display:flex;gap:6px;font-size:7.5px;flex-shrink:0}
+.stat{text-align:center;background:rgba(255,255,255,.15)!important;padding:3px 8px;border-radius:4px}
+.stat .v{font-size:11px;font-weight:800;display:block}
+.err-bar{background:#fee2e2!important;border:1px solid #fca5a5;border-radius:4px;padding:4px 8px;margin-bottom:5px;font-size:8px;font-weight:700;color:#991b1b}
 table{width:100%;border-collapse:collapse}
-thead th{background:#1d4ed8;color:#fff;padding:7px 7px;font-weight:700;font-size:9px;text-align:left;white-space:nowrap;letter-spacing:.2px;text-transform:uppercase}
+thead th{background:#1d4ed8!important;color:#fff!important;padding:4px 5px;font-weight:700;font-size:7.5px;text-align:left;white-space:nowrap;border-right:1px solid rgba(255,255,255,.15)}
 thead th.r{text-align:right}
-tbody td{padding:6px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
-tbody tr:hover td{background:#f8faff}
-.tfoot td{background:#eff6ff;font-weight:800;font-size:10.5px;padding:8px 7px;border-top:2.5px solid #1d4ed8}
-.tfoot .r{text-align:right;color:#1d4ed8}
-.alert-box{background:#fee2e2;border:1.5px solid #fca5a5;border-radius:8px;padding:9px 12px;margin-bottom:12px;font-size:10px;font-weight:700;color:#991b1b}
-.sigs{display:flex;gap:14px;margin-top:24px;padding-top:16px;border-top:2px solid #e2e8f0;page-break-inside:avoid}
-.sig{flex:1;padding-top:28px;border-top:1.5px solid #334155}
-.sig .st{font-size:9px;font-weight:800;color:#1d4ed8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
-.sig .sl{font-size:9px;color:#64748b;margin-top:8px}
-.stamp{border:1.5px solid #cbd5e1;border-radius:6px;padding:8px;text-align:center;margin-top:4px}
-.footer{text-align:center;font-size:8px;color:#94a3b8;margin-top:12px;padding-top:8px;border-top:1px solid #f1f5f9}
-.pbar{background:#1d4ed8;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
-.pbar button{background:#fff;color:#1d4ed8;border:none;padding:8px 16px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;min-height:38px;touch-action:manipulation}
-.pbar .cls{background:rgba(255,255,255,.18);color:#fff;margin-left:8px}
-@media print{.pbar{display:none!important}body{padding:0}.wrap{max-width:none;padding:6px 8px}thead th{background:#1d4ed8!important;color:#fff!important}.hdr-main{background:linear-gradient(135deg,#1e3a8a,#2563eb)!important;color:#fff!important}.tfoot td{background:#eff6ff!important}@page{margin:8mm;size:A4 landscape}}
+tbody td{padding:3px 5px;border-bottom:1px solid #f1f5f9;vertical-align:middle;font-size:8px}
+tbody tr:nth-child(even) td{background:#f8fafc!important}
+.tf td{background:#dbeafe!important;font-weight:800;font-size:8.5px;padding:4px 5px;border-top:2px solid #1d4ed8}
+.tf .r{text-align:right;color:#1d4ed8}
+.footer{text-align:center;font-size:7px;color:#94a3b8;margin-top:5px;padding-top:4px;border-top:1px solid #f1f5f9}
+.np{background:#1d4ed8;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-radius:5px;font-size:12px}
+.np button{background:#fff;color:#1d4ed8;border:none;padding:6px 14px;border-radius:5px;font-weight:700;cursor:pointer;font-size:12px}
+@media print{.np{display:none!important}@page{margin:6mm;size:A4 landscape}}
 </style></head><body>
 
-<div class="pbar">
-  <span style="font-weight:700;font-size:13px">📄 ${empresa} · ${loja} · ${ml}</span>
-  <div>
-    <button onclick="window.print()">🖨️ Guardar PDF / Imprimir</button>
-    <button class="cls" onclick="document.getElementById('print-ov').remove()">✕ Fechar</button>
+<div class="np">
+  <span><b>${empresa}</b> · ${loja} · ${ml}</span>
+  <div style="display:flex;gap:8px">
+    <button onclick="window.print()">🖨️ Guardar PDF</button>
+    <button onclick="window.close()" style="background:rgba(255,255,255,.2);color:#fff;border:none;padding:6px 14px;border-radius:5px;font-weight:700;cursor:pointer">✕ Fechar</button>
   </div>
 </div>
-
-<div class="wrap">
-
-${erros>0?`<div class="alert-box">⚠️ ATENÇÃO: <b>${erros} depósito(s) em atraso</b> — verificar antes de enviar à contabilidade.</div>`:''}
 
 <div class="hdr">
-  <div class="hdr-main">
-    <div class="co">${empresa}${nif?' <span style="font-size:11px;opacity:.75">· NIF '+nif+'</span>':''}</div>
-    <div class="inf">
-      LOJA: <b>${loja}</b> &nbsp;·&nbsp; PERÍODO: <b>${ml.toUpperCase()}</b><br>
-      Emitido: <b>${new Date().toLocaleDateString('pt-PT')}</b> às ${new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}
-      &nbsp;·&nbsp; ${data.length} depósito(s) · ${rows.length} sessão(ões)
-      &nbsp;·&nbsp; ${erros>0?`<b style="background:rgba(255,100,100,.3);padding:1px 7px;border-radius:3px">⚠️ ${erros} em atraso</b>`:'<b>✅ Sem problemas</b>'}
-    </div>
+  <div>
+    <h1>${empresa}${nif?' <span style="font-size:9px;opacity:.75">· NIF '+nif+'</span>':''}</h1>
+    <div class="sub">LOJA: <b>${loja}</b> &nbsp;·&nbsp; PERÍODO: <b>${ml.toUpperCase()}</b> &nbsp;·&nbsp; Emitido: ${new Date().toLocaleDateString('pt-PT')} ${new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})} &nbsp;·&nbsp; ${data.length} dep. · ${rows.length} sessões</div>
   </div>
-  <div class="resumo">
-    <div class="rk" style="background:#dbeafe;grid-column:1/3"><div class="rl">💰 Total Registado</div><div class="rv" style="color:#1d4ed8">${fmt(total)}</div></div>
-    <div class="rk" style="background:#dcfce7"><div class="rl">✅ Depositado</div><div class="rv" style="color:#166534">${fmt(totalDep)}</div></div>
-    <div class="rk" style="background:#fef9c3"><div class="rl">⚠️ Por Dep.</div><div class="rv" style="color:#854d0e">${fmt(total-totalDep)}</div></div>
-    <div class="rk" style="background:#f1f5f9"><div class="rl">🏦 Talões Únicos</div><div class="rv" style="color:#334155">${allTaloes.size}</div></div>
-    <div class="rk" style="background:${erros>0?'#fee2e2':'#f1f5f9'}"><div class="rl">📋 Dep. Tardios</div><div class="rv" style="color:${erros>0?'#991b1b':'#334155'}">${tardios.length}</div></div>
-    <div class="rk" style="background:${valorTardio>0?'#fff7ed':'#f1f5f9'}"><div class="rl">⏰ Val. Tardios</div><div class="rv" style="color:${valorTardio>0?'#9a3412':'#334155'}">${fmt(valorTardio)}</div></div>
+  <div class="stats">
+    <div class="stat"><span class="v">${fmt(total)}</span>Total</div>
+    <div class="stat" style="background:rgba(22,163,74,.4)!important"><span class="v">${fmt(totalDep)}</span>Depositado</div>
+    <div class="stat" style="background:rgba(180,83,9,.4)!important"><span class="v">${fmt(total-totalDep)}</span>Por dep.</div>
+    <div class="stat" style="background:${erros>0?'rgba(220,38,38,.4)':'rgba(255,255,255,.15)'}!important"><span class="v">${erros>0?erros:'✅'}</span>${erros>0?'Em atraso':'OK'}</div>
   </div>
 </div>
 
-<div class="sec">📋 Detalhe das Sessões</div>
+${erros>0?`<div class="err-bar">⚠️ ${erros} depósito(s) em atraso — verificar antes de enviar à contabilidade.</div>`:''}
+
 <table>
   <thead><tr>
-    <th style="width:20px">#</th>
-    <th style="width:70px">📅 Dia / Data</th>
-    <th style="width:55px;text-align:center">✏️ Nº Sessão</th>
-    <th style="width:72px">✏️ Data Depósito</th>
-    <th style="width:90px">🔒 Tipo Serviço</th>
-    <th class="r" style="width:82px">✏️ Valor (€)</th>
-    <th style="width:105px">✏️ Nº Talão / Ref.</th>
-    <th style="width:84px">✏️ Responsável</th>
-    <th style="width:30px;text-align:center">🔒 Envio?</th>
-    <th style="width:110px">🔒 Estado</th>
-    <th>✏️ Observações</th>
-    <th style="width:78px;text-align:center">📷 Comprovativo</th>
+    <th style="width:18px">#</th>
+    <th style="width:60px">Data</th>
+    <th style="width:40px;text-align:center">Sess.</th>
+    <th style="width:64px">Depósito</th>
+    <th style="width:78px">Tipo</th>
+    <th class="r" style="width:70px">Valor</th>
+    <th style="width:90px">Talão/Ref.</th>
+    <th style="width:74px">Resp.</th>
+    <th style="width:26px;text-align:center">Env</th>
+    <th style="width:90px">Estado</th>
+    <th>Obs.</th>
   </tr></thead>
   <tbody>
     ${trows}
-    <tr class="tfoot">
-      <td colspan="6" style="text-align:right">TOTAL</td>
+    <tr class="tf">
+      <td colspan="5" style="text-align:right">TOTAL</td>
       <td class="r">${fmt(total)}</td>
-      <td colspan="6">${data.length} depósito(s) &nbsp;·&nbsp; ${data.reduce((s,r)=>s+r.sessoes.length,0)} sessão(ões) &nbsp;·&nbsp; ${withPhotos.length} comprovativo(s)</td>
+      <td colspan="5">${data.length} dep. · ${data.reduce((s,r)=>s+r.sessoes.length,0)} sessões · ${erros>0?'⚠️ '+erros+' em atraso':'✅ OK'}</td>
     </tr>
   </tbody>
 </table>
 
-<div class="sigs">
-  <div class="sig">
-    <div class="st">Responsável de Loja</div>
-    ${DB.get('assinatura',null)
-      ? `<img src="${DB.get('assinatura',null)}" style="max-height:52px;max-width:100%;border-bottom:1.5px solid #334155;display:block;margin-bottom:4px;filter:contrast(1.2)">`
-      : '<div class="sl" style="margin-top:28px">Assinatura: ___________________________</div>'}
-    <div class="sl">Nome: ${[...new Set(data.map(r=>r.responsavel).filter(Boolean))].join(' / ')||'___________________________'}</div>
-    <div class="sl">Data: ${new Date().toLocaleDateString('pt-PT')}</div>
-  </div>
-  <div class="sig">
-    <div class="st">Gerência</div>
-    <div class="sl" style="margin-top:28px">Assinatura: ___________________________</div>
-    <div class="sl">Nome: ___________________________</div>
-    <div class="sl">Data: ___/___/______</div>
-  </div>
-  <div class="sig">
-    <div class="st">Contabilidade</div>
-    <div class="stamp">
-      <span class="sl" style="display:block">Recebido em</span>
-      <span style="font-size:9px;font-weight:700;display:block;margin-top:2px">___/___/______</span>
-      <span class="sl" style="display:block;margin-top:8px">Validado por</span>
-      <span style="font-size:9px;font-weight:700;display:block;margin-top:2px">___________________________</span>
-    </div>
-  </div>
-</div>
+<div class="footer">${empresa}${nif?' · NIF '+nif:''} &nbsp;·&nbsp; ${loja} &nbsp;·&nbsp; ${ml} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleString('pt-PT')}</div>
 
-<div class="footer">
-  ${empresa}${nif?' · NIF '+nif:''} &nbsp;·&nbsp; ${loja} &nbsp;·&nbsp; ${ml} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleString('pt-PT')}
-</div>
+</body></html>`;
 
-</div></body></html>`;
-
-  let ov=document.getElementById('print-ov');
-  if(!ov){ov=document.createElement('div');ov.id='print-ov';ov.style.cssText='position:fixed;inset:0;z-index:9999;background:#fff;overflow-y:auto;-webkit-overflow-scrolling:touch';document.body.appendChild(ov);}
-  ov.innerHTML=html;
-  window.scrollTo(0,0);
+  const pw=window.open('about:blank','_blank');
+  if(!pw){toast('⚠️ Popup bloqueado — permite popups para esta página.');return;}
+  pw.document.write(html);
+  pw.document.close();
+  setTimeout(()=>{pw.focus();pw.print();},400);
 }
 
 // ─── SETTINGS ────────────────────────────────────────
@@ -1958,13 +1705,13 @@ function remL(n){if(!confirm(`Remover loja "${n}"?`))return;cfg.lojas=cfg.lojas.
 function addR(){const i=document.getElementById('nr');const n=i.value.trim();if(!n)return;if(cfg.resps.includes(n)){toast('Já existe');return}cfg.resps.push(n);saveCfg();sbSaveCfgSB();i.value='';popSel();rSettings();toast('Responsável adicionado ✓')}
 function remR(n){cfg.resps=cfg.resps.filter(x=>x!==n);saveCfg();sbSaveCfgSB();popSel();rSettings()}
 function rSettings(){
-  document.getElementById('c-emp').value=cfg.emp||'';document.getElementById('c-email').value=cfg.email||'';const ccEl=document.getElementById('c-emailcc');if(ccEl)ccEl.value=cfg.emailCC||'';const cc2El=document.getElementById('c-emailcc2');if(cc2El)cc2El.value=cfg.emailCC2||'';document.getElementById('c-nif').value=cfg.nif||'';const cdEl=document.getElementById('c-cambio-dia');if(cdEl)cdEl.value=cfg.cambioDia||'';
+  document.getElementById('c-emp').value=cfg.emp||'';document.getElementById('c-email').value=cfg.email||'';const ccEl=document.getElementById('c-emailcc');if(ccEl)ccEl.value=cfg.emailCC||'';const cc2El=document.getElementById('c-emailcc2');if(cc2El)cc2El.value=cfg.emailCC2||'';document.getElementById('c-nif').value=cfg.nif||'';const cdEl=document.getElementById('c-cambio-dia');if(cdEl)cdEl.value=cfg.cambioDia||'';const pdEl=document.getElementById('c-prosegur-dia');if(pdEl)pdEl.value=cfg.prosegurDay||'';const ldEl=document.getElementById('c-lomis-dia');if(ldEl)ldEl.value=cfg.lomisDay||'';
   document.getElementById('ltags').innerHTML=cfg.lojas.map(l=>`<span class="tag">${l}<button onclick="remL('${l.replace(/'/g,"\\'")}')">×</button></span>`).join('');
   document.getElementById('rtags').innerHTML=cfg.resps.map(r=>`<span class="tag" style="background:var(--gl);color:var(--green)">${r}<button onclick="remR('${r.replace(/'/g,"\\'")}')">×</button></span>`).join('');
   sigInit();
 }
 async function scBtn(){sc();await sbSaveCfgSB();toast('✓ Configurações guardadas!');}
-function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
+function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';cfg.prosegurDay=document.getElementById('c-prosegur-dia')?.value||'';cfg.lomisDay=document.getElementById('c-lomis-dia')?.value||'';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
 
 // ─── SIGNATURE PAD ────────────────────────────────────
 let sigDrawing=false,sigCtx=null,sigCanvas=null,sigLastX=0,sigLastY=0;

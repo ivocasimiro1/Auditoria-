@@ -43,9 +43,17 @@ CREATE TABLE IF NOT EXISTS dep_config (
   email_cc TEXT DEFAULT '',
   email_cc2 TEXT DEFAULT '',
   nif TEXT DEFAULT '',
+  cambio_dia TEXT DEFAULT '',      -- dia da semana do levantamento Câmbio (0=Dom..6=Sáb)
+  prosegur_day TEXT DEFAULT '',    -- dia da semana do levantamento Prosegur
+  lomis_day TEXT DEFAULT '',       -- dia da semana do levantamento Lomis
   lojas JSONB DEFAULT '[]',        -- array de nomes de lojas desta store
   resps JSONB DEFAULT '[]'         -- array de nomes de responsáveis
 );
+
+-- Se a tabela já existir, adicionar as colunas novas:
+ALTER TABLE dep_config ADD COLUMN IF NOT EXISTS cambio_dia TEXT DEFAULT '';
+ALTER TABLE dep_config ADD COLUMN IF NOT EXISTS prosegur_day TEXT DEFAULT '';
+ALTER TABLE dep_config ADD COLUMN IF NOT EXISTS lomis_day TEXT DEFAULT '';
 
 -- -------------------------------------------------------------
 -- 2. FUNÇÕES HELPER (SECURITY DEFINER para evitar recursão RLS)
