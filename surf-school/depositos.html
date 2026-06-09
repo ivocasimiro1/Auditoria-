@@ -7,6 +7,7 @@
 <meta name="theme-color" content="#1a56db">
 <title>Controlo de Depósitos</title>
 <!-- ExcelJS loaded dynamically on export -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 :root{
   --blue:#1a56db;--bl:#e8f0fe;
@@ -215,9 +216,39 @@ select{
 .empty p{font-size:14px;font-weight:500}
 .empty small{font-size:12px;display:block;margin-top:4px}
 .hr{border:none;border-top:2px solid var(--g100);margin:12px 0}
+
+/* AUTH */
+#auth-screen{position:fixed;inset:0;background:var(--blue);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.auth-box{background:#fff;border-radius:20px;padding:28px 22px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.auth-logo{text-align:center;margin-bottom:22px}
+.auth-logo .ai{font-size:36px;margin-bottom:6px}
+.auth-logo .at{font-size:20px;font-weight:800;color:var(--blue)}
+.auth-logo .as{font-size:13px;color:var(--g500);margin-top:3px}
+#auth-err{display:none;background:var(--rl);color:var(--red);padding:10px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px}
+/* LOADING */
+#load-ov{display:none;position:fixed;inset:0;background:rgba(255,255,255,.88);z-index:600;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.spin{width:36px;height:36px;border:4px solid var(--g200);border-top-color:var(--blue);border-radius:50%;animation:_sp .7s linear infinite}
+@keyframes _sp{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body ontouchstart="">
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="ai">📊</div>
+      <div class="at">Controlo de Depósitos</div>
+      <div class="as">Despomar</div>
+    </div>
+    <div id="auth-err"></div>
+    <div class="fg"><label>Email</label><input type="email" id="auth-email" placeholder="loja@despomar.com" inputmode="email" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('auth-pass').focus()"></div>
+    <div class="fg"><label>Password</label><input type="password" id="auth-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn bp" id="auth-btn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+<!-- LOADING -->
+<div id="load-ov"><div class="spin"></div><div style="font-size:13px;color:var(--g500);font-weight:600">A carregar...</div></div>
 
 <div class="topbar">
   <div><h1 id="ttitle">📊 Dashboard</h1><div class="sub" id="tsub">Despomar</div></div>
@@ -400,6 +431,11 @@ select{
     <button class="btn" style="background:#f3f4f6;color:#4b5563;border:2px dashed #d1d5db" onclick="loadDemo()">🧪 Carregar Dados Demo</button>
     <button class="btn bd" onclick="clearAll()">🗑️ Limpar Todos os Dados</button>
   </div>
+  <div class="card" id="logout-card" style="display:none">
+    <div class="ct">Sessão</div>
+    <div id="user-info" style="font-size:13px;color:var(--g600);margin-bottom:12px;padding:10px 12px;background:var(--bl);border-radius:8px"></div>
+    <button class="btn bd" onclick="doLogout()">🚪 Terminar Sessão</button>
+  </div>
 </div>
 
 <nav class="bnav">
@@ -432,6 +468,81 @@ select{
 </div>
 
 <script>
+// ─── SUPABASE ─────────────────────────────────────────
+const SB=supabase.createClient(
+  'https://ubeqidccuvsjhjphybxz.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U'
+);
+let sbUser=null,sbProfile=null,isSA=false;
+const rowToReg=row=>({id:row.id,store_id:row.store_id,loja:row.loja,tipo:row.tipo,sessoes:row.sessoes||[],dataDeposito:row.data_deposito||'',talao:row.talao||'',responsavel:row.responsavel||'',obs:row.obs||'',foto:row.foto||null,criadoEm:row.criado_em||''});
+const regToRow=r=>({id:r.id,store_id:sbProfile?.store_id||r.store_id||'',loja:r.loja,tipo:r.tipo||'',sessoes:r.sessoes||[],data_deposito:r.dataDeposito||'',talao:r.talao||'',responsavel:r.responsavel||'',obs:r.obs||'',foto:r.foto||null,criado_em:r.criadoEm||new Date().toISOString()});
+function setLoad(on){document.getElementById('load-ov').style.display=on?'flex':'none'}
+async function sbLoad(){
+  setLoad(true);
+  try{
+    if(!isSA){
+      const{data:c}=await SB.from('dep_config').select('*').eq('store_id',sbProfile.store_id).maybeSingle();
+      if(c)cfg={emp:c.emp||'Despomar',email:c.email||'',emailCC:c.email_cc||'',emailCC2:c.email_cc2||'',nif:c.nif||'',lojas:c.lojas||[],resps:c.resps||[]};
+    }else{
+      const{data:cs}=await SB.from('dep_config').select('lojas,resps');
+      if(cs?.length){
+        const aL=[...new Set(cs.flatMap(c=>c.lojas||[]))];
+        const aR=[...new Set(cs.flatMap(c=>c.resps||[]))];
+        if(aL.length)cfg.lojas=aL;if(aR.length)cfg.resps=aR;
+      }
+    }
+    let q=SB.from('dep_registos').select('*').order('criado_em',{ascending:false});
+    if(!isSA)q=q.eq('store_id',sbProfile.store_id);
+    const{data:rows,error}=await q;if(error)throw error;
+    regs=(rows||[]).map(rowToReg);
+    DB.set('regs',regs);DB.set('cfg',cfg);
+  }catch(e){toast('⚠️ Sem ligação — dados locais: '+e.message);}
+  setLoad(false);
+}
+async function sbSave(r){const{error}=await SB.from('dep_registos').upsert(regToRow(r));if(error){toast('⚠️ Erro ao guardar: '+error.message);return false;}return true;}
+async function sbDel(id){const{error}=await SB.from('dep_registos').delete().eq('id',id);if(error){toast('⚠️ Erro: '+error.message);return false;}return true;}
+async function sbSaveCfgSB(){
+  if(!sbProfile||isSA)return;
+  await SB.from('dep_config').upsert({store_id:sbProfile.store_id,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',lojas:cfg.lojas||[],resps:cfg.resps||[]});
+}
+async function doLogin(){
+  const email=document.getElementById('auth-email').value.trim();
+  const pass=document.getElementById('auth-pass').value;
+  if(!email||!pass){showAE('Preencha email e password');return;}
+  const btn=document.getElementById('auth-btn');
+  btn.textContent='A entrar...';btn.disabled=true;hideAE();
+  const{data,error}=await SB.auth.signInWithPassword({email,password:pass});
+  if(error){showAE(error.message.includes('Invalid')?'Email ou password incorretos':error.message);btn.textContent='Entrar';btn.disabled=false;return;}
+  await afterLogin(data.user);
+}
+async function afterLogin(user){
+  sbUser=user;
+  const{data:p,error}=await SB.from('dep_users').select('*').eq('id',user.id).single();
+  if(error||!p){showAE('Conta sem permissões. Contacte o administrador.');await SB.auth.signOut();document.getElementById('auth-btn').textContent='Entrar';document.getElementById('auth-btn').disabled=false;return;}
+  sbProfile=p;isSA=(p.role==='super_admin');
+  await sbLoad();
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('tsub').textContent=isSA?('⭐ '+(p.nome||'Super Admin')):(p.nome||p.store_id||cfg.emp||'Depósitos');
+  const lc=document.getElementById('logout-card');if(lc)lc.style.display='block';
+  const ui=document.getElementById('user-info');
+  if(ui)ui.innerHTML=`<strong>${p.nome||p.store_id}</strong> · ${isSA?'Super Admin':'Staff'}<br><span style="font-size:11px;color:var(--g400)">${user.email}</span>`;
+  popSel();rDash();
+}
+async function doLogout(){
+  if(!confirm('Terminar sessão?'))return;
+  await SB.auth.signOut();
+  sbUser=null;sbProfile=null;isSA=false;regs=[];
+  cfg={emp:'Despomar',email:'',nif:'',lojas:[],resps:[]};
+  const lc=document.getElementById('logout-card');if(lc)lc.style.display='none';
+  const as=document.getElementById('auth-screen');as.style.display='flex';
+  document.getElementById('auth-btn').textContent='Entrar';
+  document.getElementById('auth-btn').disabled=false;
+  document.getElementById('auth-email').value='';
+  document.getElementById('auth-pass').value='';
+}
+function showAE(m){const e=document.getElementById('auth-err');e.textContent='⚠️ '+m;e.style.display='block';}
+function hideAE(){document.getElementById('auth-err').style.display='none';}
+
 // ─── STORAGE ─────────────────────────────────────────
 const DB={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
 let regs=DB.get('regs',[]);
@@ -634,7 +745,7 @@ function checkSesAlert(){
 
 function handlePhoto(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{fotoB64=e.target.result;document.getElementById('pp').src=fotoB64;document.getElementById('pp').style.display='block';document.getElementById('pa').classList.add('has');document.getElementById('pl').textContent='✓ '+f.name};r.readAsDataURL(f)}
 
-function guardar(){
+async function guardar(){
   const loja=document.getElementById('f-loja').value;
   const tipo=document.getElementById('f-tipo').value;
   const resp=document.getElementById('f-resp').value;
@@ -660,10 +771,13 @@ function guardar(){
   if(editingId){
     const idx=regs.findIndex(x=>x.id===editingId);
     if(idx>=0)regs[idx]={...regs[idx],...reg,id:editingId};
+    reg.id=editingId;
     editingId=null;
   } else {
     regs.unshift(reg);
   }
+  const saved=await sbSave(reg);
+  if(!saved)return;
   saveR();
   // Reset save button
   const btn=document.querySelector('#page-novo .btn.bp');
@@ -908,16 +1022,18 @@ function editDD(id){
   document.body.appendChild(wrap);
   wrap.addEventListener('click',e=>{if(e.target===wrap)wrap.remove()});
 }
-function saveDD(id){
+async function saveDD(id){
   const r=regs.find(x=>x.id===id);if(!r)return;
   const dd=document.getElementById('qdd')?.value||'';
   const tal=document.getElementById('qtal')?.value||'';
   if(dd)r.dataDeposito=dd;
   r.talao=tal;
-  saveR();document.querySelectorAll('[style*="position:fixed"][style*="z-index:300"]').forEach(e=>e.remove());rLista();rDash();toast('✓ Atualizado');
+  saveR();
+  await sbSave(r);
+  document.querySelectorAll('[style*="position:fixed"][style*="z-index:300"]').forEach(e=>e.remove());rLista();rDash();toast('✓ Atualizado');
 }
 function cm(){document.getElementById('mod').classList.remove('open')}
-function delR(id){if(!confirm('Eliminar este depósito?'))return;regs=regs.filter(x=>x.id!==id);saveR();cm();rLista();rDash();toast('Eliminado')}
+async function delR(id){if(!confirm('Eliminar este depósito?'))return;const ok=await sbDel(id);if(!ok)return;regs=regs.filter(x=>x.id!==id);saveR();cm();rLista();rDash();toast('Eliminado')}
 
 // ─── EXPORT ──────────────────────────────────────────
 let expFmt='print';
@@ -1506,16 +1622,16 @@ ${fotosHtml}
 }
 
 // ─── SETTINGS ────────────────────────────────────────
-function addL(){const i=document.getElementById('nl');const n=i.value.trim();if(!n)return;if(cfg.lojas.includes(n)){toast('Já existe');return}cfg.lojas.push(n);saveCfg();i.value='';popSel();rSettings();toast('Loja adicionada ✓')}
-function remL(n){if(!confirm(`Remover loja "${n}"?`))return;cfg.lojas=cfg.lojas.filter(x=>x!==n);saveCfg();popSel();rSettings()}
-function addR(){const i=document.getElementById('nr');const n=i.value.trim();if(!n)return;if(cfg.resps.includes(n)){toast('Já existe');return}cfg.resps.push(n);saveCfg();i.value='';popSel();rSettings();toast('Responsável adicionado ✓')}
-function remR(n){cfg.resps=cfg.resps.filter(x=>x!==n);saveCfg();popSel();rSettings()}
+function addL(){const i=document.getElementById('nl');const n=i.value.trim();if(!n)return;if(cfg.lojas.includes(n)){toast('Já existe');return}cfg.lojas.push(n);saveCfg();sbSaveCfgSB();i.value='';popSel();rSettings();toast('Loja adicionada ✓')}
+function remL(n){if(!confirm(`Remover loja "${n}"?`))return;cfg.lojas=cfg.lojas.filter(x=>x!==n);saveCfg();sbSaveCfgSB();popSel();rSettings()}
+function addR(){const i=document.getElementById('nr');const n=i.value.trim();if(!n)return;if(cfg.resps.includes(n)){toast('Já existe');return}cfg.resps.push(n);saveCfg();sbSaveCfgSB();i.value='';popSel();rSettings();toast('Responsável adicionado ✓')}
+function remR(n){cfg.resps=cfg.resps.filter(x=>x!==n);saveCfg();sbSaveCfgSB();popSel();rSettings()}
 function rSettings(){
   document.getElementById('c-emp').value=cfg.emp||'';document.getElementById('c-email').value=cfg.email||'';const ccEl=document.getElementById('c-emailcc');if(ccEl)ccEl.value=cfg.emailCC||'';const cc2El=document.getElementById('c-emailcc2');if(cc2El)cc2El.value=cfg.emailCC2||'';document.getElementById('c-nif').value=cfg.nif||'';
   document.getElementById('ltags').innerHTML=cfg.lojas.map(l=>`<span class="tag">${l}<button onclick="remL('${l.replace(/'/g,"\\'")}')">×</button></span>`).join('');
   document.getElementById('rtags').innerHTML=cfg.resps.map(r=>`<span class="tag" style="background:var(--gl);color:var(--green)">${r}<button onclick="remR('${r.replace(/'/g,"\\'")}')">×</button></span>`).join('');
 }
-function scBtn(){sc();toast('✓ Configurações guardadas!');}
+async function scBtn(){sc();await sbSaveCfgSB();toast('✓ Configurações guardadas!');}
 function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
 function expBackup(){const b={regs,cfg,v:3,at:new Date().toISOString()};const blob=new Blob([JSON.stringify(b,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`backup_depositos_${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(url);toast('✓ Backup exportado!')}
 function impBackup(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.regs){regs=d.regs;saveR()}if(d.cfg){cfg=d.cfg;saveCfg()}popSel();rSettings();rDash();toast('✓ Importado!')}catch{toast('⚠️ Ficheiro inválido')}};r.readAsText(f)}
@@ -1558,10 +1674,12 @@ function loadDemo(){
 }
 
 // ─── INIT ────────────────────────────────────────────
-function init(){
-  popSel();rDash();
-  addSes();
+async function init(){
+  popSel();addSes();
   document.getElementById('tsub').textContent=cfg.emp||'Depósitos';
+  const{data:{session}}=await SB.auth.getSession();
+  if(session?.user){await afterLogin(session.user);}
+  else{document.getElementById('auth-screen').style.display='flex';}
 }
 init();
 </script>
