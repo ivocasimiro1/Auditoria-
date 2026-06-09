@@ -274,114 +274,85 @@ export async function seedStickers(): Promise<void> {
   const alreadyDone = await queryOne<{ id: string }>("SELECT id FROM stickers WHERE id = 'MEX1'");
   if (alreadyDone) return;
 
-  // Build idMap: old sticker id → new sticker id
-  const idMap: Record<string, string> = {};
+  console.log('Running sticker migration to WC2026 Panini format...');
+
+  // --- Build all sticker rows in memory first ---
+  type Row = [string, number, string, string, string, string | null, string, string, string | null];
+  const rows: Row[] = [];
+  let num = 1;
+
+  for (let i = 0; i < FWC_OPENING.length; i++) {
+    const fwc = FWC_OPENING[i];
+    const id = `FWC${i + 1}`;
+    rows.push([id, num++, 'SPECIAL', 'Especial', 'ESPECIAL', fwc.name, fwc.type, fwc.rarity, null]);
+  }
 
   for (const team of TEAMS) {
+    rows.push([`${team.code}1`, num++, team.code, team.name, team.group, null, 'badge', 'foil', null]);
+    rows.push([`${team.code}2`, num++, team.code, team.name, team.group, null, 'logo', 'common', null]);
+    for (let i = 0; i < team.players.length; i++) {
+      rows.push([`${team.code}${i + 3}`, num++, team.code, team.name, team.group, team.players[i], 'player', 'common', null]);
+    }
+    const firstPlaceholder = team.players.length + 3;
+    for (let sn = firstPlaceholder; sn <= 20; sn++) {
+      rows.push([`${team.code}${sn}`, num++, team.code, team.name, team.group, null, 'player', 'common', null]);
+    }
+  }
+
+  for (let i = 0; i < FWC_CLOSING.length; i++) {
+    const fwc = FWC_CLOSING[i];
+    const id = `FWC${i + 9}`;
+    rows.push([id, num++, 'SPECIAL', 'Especial', 'ESPECIAL', fwc.name, fwc.type, fwc.rarity, null]);
+  }
+
+  for (let i = 0; i < CC_CARDS.length; i++) {
+    const cc = CC_CARDS[i];
+    const id = `CC${i + 1}`;
+    rows.push([id, num++, 'SPECIAL', 'Especial', 'ESPECIAL', cc.name, cc.type, cc.rarity, null]);
+  }
+
+  // --- Build idMap: old sticker id → new sticker id ---
+  const idMap: Record<string, string> = {};
+  for (const team of TEAMS) {
     const oldCode = team.code === 'CPV' ? 'CMV' : team.code === 'KSA' ? 'SAU' : team.code;
-    // Badge
     idMap[`${oldCode}-BADGE`] = `${team.code}1`;
-    // Logo
     idMap[`${oldCode}-LOGO`] = `${team.code}2`;
-    // Players
     for (let i = 0; i < team.players.length; i++) {
       idMap[`${oldCode}-P${String(i + 1).padStart(2, '0')}`] = `${team.code}${i + 3}`;
     }
   }
-
-  // Manually added SWE-P14 (Viktor Gyökeres) → SWE16 (index 13 → 13+3=16)
   idMap['SWE-P14'] = 'SWE16';
-
-  // Special cards SP-001…SP-019 → FWC1…FWC19, SP-020 → CC1
   for (let i = 1; i <= 19; i++) {
     idMap[`SP-${String(i).padStart(3, '0')}`] = `FWC${i}`;
   }
   idMap['SP-020'] = 'CC1';
 
   await transaction(async (client) => {
-    // --- 1. Insert all new stickers ---
-    let num = 1;
-
-    // FWC opening (FWC1–FWC8)
-    for (let i = 0; i < FWC_OPENING.length; i++) {
-      const fwc = FWC_OPENING[i];
-      const id = `FWC${i + 1}`;
+    // --- 1. Batch-insert all stickers (200 per query instead of 993 round-trips) ---
+    const CHUNK = 200;
+    for (let i = 0; i < rows.length; i += CHUNK) {
+      const chunk = rows.slice(i, i + CHUNK);
+      const ph = chunk.map((_, j) => {
+        const b = j * 9;
+        return `($${b+1},$${b+2},$${b+3},$${b+4},$${b+5},$${b+6},$${b+7},$${b+8},$${b+9})`;
+      }).join(',');
       await client.query(
-        `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
-        [id, num++, 'SPECIAL', 'Especial', 'ESPECIAL', fwc.name, fwc.type, fwc.rarity, `/img/specials/${id.toLowerCase()}.svg`]
+        `INSERT INTO stickers (id,number,team_code,team_name,group_name,player_name,card_type,rarity,image_url)
+         VALUES ${ph} ON CONFLICT (id) DO NOTHING`,
+        chunk.flat()
       );
     }
 
-    // Team stickers
-    for (const team of TEAMS) {
-      // Badge (code+1)
-      await client.query(
-        `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
-        [`${team.code}1`, num++, team.code, team.name, team.group, null, 'badge', 'foil', `/img/badges/${team.code.toLowerCase()}.svg`]
-      );
-
-      // Logo (code+2)
-      await client.query(
-        `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
-        [`${team.code}2`, num++, team.code, team.name, team.group, null, 'logo', 'common', `/img/logos/${team.code.toLowerCase()}.svg`]
-      );
-
-      // Players (code+3 … code+(players.length+2))
-      for (let i = 0; i < team.players.length; i++) {
-        const stickerNum = i + 3;
-        await client.query(
-          `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
-          [`${team.code}${stickerNum}`, num++, team.code, team.name, team.group, team.players[i], 'player', 'common', `/img/players/${team.code.toLowerCase()}_${i + 1}.svg`]
-        );
-      }
-
-      // Placeholder slots (code+(players.length+3) … code+20)
-      const firstPlaceholder = team.players.length + 3;
-      for (let stickerNum = firstPlaceholder; stickerNum <= 20; stickerNum++) {
-        await client.query(
-          `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
-          [`${team.code}${stickerNum}`, num++, team.code, team.name, team.group, null, 'player', 'common', null]
-        );
-      }
-    }
-
-    // FWC closing (FWC9–FWC19)
-    for (let i = 0; i < FWC_CLOSING.length; i++) {
-      const fwc = FWC_CLOSING[i];
-      const id = `FWC${i + 9}`;
-      await client.query(
-        `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
-        [id, num++, 'SPECIAL', 'Especial', 'ESPECIAL', fwc.name, fwc.type, fwc.rarity, `/img/specials/${id.toLowerCase()}.svg`]
-      );
-    }
-
-    // CC cards (CC1–CC14)
-    for (let i = 0; i < CC_CARDS.length; i++) {
-      const cc = CC_CARDS[i];
-      const id = `CC${i + 1}`;
-      await client.query(
-        `INSERT INTO stickers (id, number, team_code, team_name, group_name, player_name, card_type, rarity, image_url)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING`,
-        [id, num++, 'SPECIAL', 'Especial', 'ESPECIAL', cc.name, cc.type, cc.rarity, `/img/specials/${id.toLowerCase()}.svg`]
-      );
-    }
-
-    // --- 2. Migrate user_stickers ---
+    // --- 2. Migrate user_stickers from old IDs to new IDs ---
     for (const [oldId, newId] of Object.entries(idMap)) {
       await client.query(
-        `UPDATE user_stickers SET sticker_id = $1 WHERE sticker_id = $2
-         AND NOT EXISTS (SELECT 1 FROM user_stickers u2 WHERE u2.user_id = user_stickers.user_id AND u2.sticker_id = $1)`,
+        `UPDATE user_stickers SET sticker_id=$1 WHERE sticker_id=$2
+         AND NOT EXISTS(SELECT 1 FROM user_stickers u2 WHERE u2.user_id=user_stickers.user_id AND u2.sticker_id=$1)`,
         [newId, oldId]
       );
     }
 
-    // --- 3. Delete old stickers ---
+    // --- 3. Delete old-format stickers ---
     await client.query(
       `DELETE FROM stickers WHERE id LIKE '%-BADGE' OR id LIKE '%-LOGO' OR id ~ '^[A-Z]+-P[0-9]+$' OR id LIKE 'SP-%'`
     );
@@ -392,5 +363,5 @@ export async function seedStickers(): Promise<void> {
     );
   });
 
-  console.log('Stickers seeded successfully (WC2026 Panini format)');
+  console.log(`Sticker migration complete: ${rows.length} stickers (WC2026 Panini format)`);
 }

@@ -27,7 +27,7 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 
     next();
   } catch {
-    res.status(403).json({ error: 'Token inválido ou expirado' });
+    res.status(401).json({ error: 'Token inválido ou expirado' });
   }
 }
 

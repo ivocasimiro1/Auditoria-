@@ -3,12 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#050D1A" />
+  <meta name="color-scheme" content="dark" />
   <title>Painel de Controlo · Escola Surf Teste</title>
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Painel de Controlo · Escola Surf" />
+  <meta property="og:description" content="Gestão de marcações e aulas de surf" />
+  <meta property="og:type" content="website" />
+
+  <!-- Pré-ligações de performance -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://ubeqidccuvsjhjphybxz.supabase.co" />
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+  <link rel="dns-prefetch" href="https://api.open-meteo.com" />
+
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js" defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -16,9 +31,30 @@
       --teal: #00A896; --white: #FFFFFF; --gray: #8B9AB0;
       --card: rgba(255,255,255,0.05); --border: rgba(255,255,255,0.1);
       --green: #22c55e; --red: #ef4444; --yellow: #eab308; --orange: #f97316;
+      --gold: #C9A84C;
       color-scheme: dark;
     }
-    html, body { height: 100%; }
+
+    /* ── SKIP LINK (acessibilidade) ── */
+    .skip-link {
+      position: absolute; top: -100%; left: 50%; transform: translateX(-50%);
+      background: var(--cyan); color: var(--navy); padding: .5rem 1.2rem;
+      border-radius: 0 0 10px 10px; font-weight: 700; font-size: .9rem;
+      z-index: 99999; text-decoration: none; transition: top .15s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── FOCUS VISIBLE (navegação por teclado) ── */
+    :focus-visible {
+      outline: 2px solid #C9A84C;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible {
+      outline: 2px solid #C9A84C;
+      outline-offset: 2px;
+    }
+    html, body { height: 100%; overflow-x: hidden; }
     body { font-family: 'Inter', sans-serif; background: var(--navy); color: var(--white); }
 
     /* ── LOGIN ── */
@@ -435,7 +471,7 @@
     .slot-clients { display: flex; flex-direction: column; gap: 3px; }
     .slot-client-row {
       display: flex; align-items: center; gap: 6px;
-      font-size: .75rem; color: var(--gray-light);
+      font-size: .75rem; color: var(--gray);
     }
     .slot-client-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
     .dot-confirmed { background: #22c55e; }
@@ -450,7 +486,7 @@
     .slot-cap-btns { display: flex; align-items: center; gap: 6px; }
     .cap-btn {
       width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border);
-      background: var(--card2); color: var(--white); font-size: 14px; font-weight: 700;
+      background: var(--card); color: var(--white); font-size: 14px; font-weight: 700;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       line-height: 1; transition: background .15s, border-color .15s;
     }
@@ -503,6 +539,25 @@
       .rev-pill { font-size: .62rem; padding: .18rem .45rem; }
       .settings-grid { grid-template-columns: 1fr; }
       .settings-grid .form-group[style*="span 2"] { grid-column: 1; }
+      /* KPI row — 2×2 grid on mobile */
+      .kpi-row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+      .kpi-tile { min-width: 0; }
+      .kpi-value { font-size: 1.1rem; }
+      /* Action buttons row — justify start so they don't overflow right edge */
+      .action-btns-row { justify-content: flex-start; }
+      .btn-analytics, .btn-reviews, .btn-settings, .btn-qr, .btn-report { font-size: .74rem; padding: .38rem .7rem; white-space: nowrap; }
+      /* Report modal on mobile */
+      #report-modal-bg { padding: .75rem; align-items: flex-end; }
+      #report-modal { border-radius: 20px 20px 16px 16px; max-height: 92vh; }
+      #report-modal .modal-body { padding: 1rem; }
+      /* Chart grid single column */
+      .chart-grid { grid-template-columns: 1fr; }
+      /* Chart month buttons smaller */
+      .chart-month-btn { font-size: .67rem; padding: .18rem .45rem; }
+    }
+    @media(max-width: 560px) {
+      /* Contacts grid → single column */
+      .contacts-grid { grid-template-columns: 1fr; }
     }
 
     /* ── MOBILE TABLE → CARDS ── */
@@ -554,6 +609,7 @@
     .chart-month-btn { padding: .22rem .6rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--gray); font-size: .72rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; transition: all .15s; }
     .chart-month-btn:hover { border-color: var(--cyan); color: var(--white); }
     .chart-month-btn.active { background: rgba(0,207,253,.15); border-color: var(--cyan); color: var(--cyan); }
+    .action-btns-row { margin-bottom:1rem; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:.4rem; }
     .btn-analytics { background: rgba(167,139,250,.12); border: 1px solid rgba(167,139,250,.3); color: #a78bfa; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
     .btn-reviews   { background: rgba(245,158,11,.11); border: 1px solid rgba(245,158,11,.3);  color: #fbbf24; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; margin-left: .5rem; transition: box-shadow .3s; }
     @keyframes pulse-gold { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.5)} 50%{box-shadow:0 0 0 6px rgba(245,158,11,0)} }
@@ -564,9 +620,11 @@
     .btn-report { background: rgba(134,239,172,.12); border: 1px solid rgba(134,239,172,.3); color: #86efac; border-radius: 8px; padding: .4rem .9rem; font-size: .78rem; font-weight: 600; cursor: pointer; font-family: 'Inter',sans-serif; }
 
     /* REPORT MODAL */
-    #report-modal-bg { display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9000;padding:1rem;overflow-y:auto;backdrop-filter:blur(6px) }
-    #report-modal { background:#0A1A30;border:1px solid rgba(255,255,255,.12);border-radius:20px;max-width:820px;margin:2rem auto;padding:0;overflow:hidden }
-    #report-modal .modal-head { padding:1.25rem 1.5rem;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between }
+    #report-modal-bg { display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9000;padding:1rem;align-items:center;justify-content:center;backdrop-filter:blur(6px) }
+    #report-modal-bg.open { display:flex; }
+    #report-modal { background:#0A1A30;border:1px solid rgba(255,255,255,.12);border-radius:20px;max-width:820px;width:100%;max-height:90vh;overflow-y:auto;padding:0; }
+    #report-modal .modal-head { position:sticky;top:0;z-index:10;background:#0A1A30;padding:1.1rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between }
+    #report-modal .modal-head button { min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center }
     #report-modal .modal-body { padding:1.4rem 1.5rem }
     .report-period-btns { display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.2rem }
     .rpb { padding:.5rem 1.1rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--gray);font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s }
@@ -595,6 +653,7 @@
     #report-print-frame { display:none }
     #settings-section { margin-bottom: 1.5rem; }
     .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .contacts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-bottom: .4rem; }
     .settings-slot-list { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: .6rem; }
     .settings-slot { display: flex; align-items: center; gap: .3rem; background: rgba(255,255,255,.06); border: 1px solid var(--border); border-radius: 7px; padding: .25rem .55rem; font-size: .82rem; }
     #reviews-section { margin-bottom: 1.5rem; }
@@ -644,9 +703,31 @@
       white-space: nowrap;
     }
     .btn-nova-marcacao:hover { transform: translateY(-1px); }
+
+    /* ── MODAL INPUT (reutilizável) ── */
+    .modal-input {
+      background: rgba(255,255,255,.07); border: 1px solid var(--border);
+      border-radius: 10px; padding: .8rem 1rem; color: var(--white);
+      font-family: 'Inter', sans-serif; font-size: .95rem; outline: none;
+      width: 100%; transition: border-color .2s; color-scheme: dark;
+    }
+    .modal-input:focus { border-color: var(--cyan); }
+
+    /* Melhorias mobile extra */
+    @media (max-width: 480px) {
+      .topbar { gap: .4rem; }
+      .btn-nova-marcacao { font-size: .75rem; padding: .4rem .7rem; }
+      .stat-value { font-size: 1.2rem; }
+      .detail-modal { padding: 1.2rem; }
+      #manual-booking-modal { padding: 1.2rem; }
+      #reschedule-modal { padding: 1.2rem; }
+    }
   </style>
 </head>
 <body>
+
+<!-- Skip link para acessibilidade de teclado -->
+<a href="#dash-content" class="skip-link">Saltar para o conteúdo principal</a>
 
 <!-- LOGIN SCREEN -->
 <div id="login-wrap">
@@ -656,16 +737,16 @@
 
     <h2 class="login-title">Iniciar Sessão</h2>
     <div class="form-group">
-      <label>Email</label>
-      <input type="email" id="l-email" placeholder="email@exemplo.com" autofocus onkeydown="if(event.key==='Enter')doLogin()" />
+      <label for="l-email">Email</label>
+      <input type="email" id="l-email" name="email" autocomplete="email" placeholder="email@exemplo.com" autofocus onkeydown="if(event.key==='Enter')doLogin()" />
     </div>
     <div class="form-group">
-      <label>Password</label>
-      <input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+      <label for="l-pass">Password</label>
+      <input type="password" id="l-pass" name="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
     </div>
     <button class="btn-login" onclick="doLogin()">Entrar →</button>
-    <div class="login-error" id="login-error"></div>
-    <div class="login-info"  id="login-info"></div>
+    <div class="login-error" id="login-error" role="alert" aria-live="assertive"></div>
+    <div class="login-info"  id="login-info"  role="status" aria-live="polite"></div>
     <p style="text-align:center;margin-top:1.2rem;font-size:.78rem;color:var(--gray)">
       Esqueceste? <a href="#" onclick="sendReset();return false" style="color:var(--cyan);text-decoration:none">Recuperar password</a>
     </p>
@@ -684,32 +765,32 @@
         <div class="user-role" id="user-role"></div>
       </div>
       <button class="btn-nova-marcacao" onclick="openManualBooking()">+ Nova Marcação</button>
-      <button class="btn-change-pass" onclick="showChangePass()" title="Alterar password">🔑</button>
-      <button class="btn-logout" onclick="logout()">Sair</button>
+      <button class="btn-change-pass" onclick="showChangePass()" title="Alterar password" aria-label="Alterar password">🔑</button>
+      <button class="btn-logout" onclick="logout()" aria-label="Terminar sessão">Sair</button>
     </div>
   </div>
 
   <!-- Change Password Modal -->
-  <div id="pass-modal" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div id="pass-modal" role="dialog" aria-modal="true" aria-labelledby="pass-modal-title" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:center;justify-content:center">
     <div style="background:#0A1929;border:1px solid var(--border);border-radius:20px;padding:2rem;width:100%;max-width:380px;margin:1rem">
-      <h3 style="margin-bottom:1.2rem;font-size:1.1rem">🔑 Alterar Password</h3>
+      <h3 id="pass-modal-title" style="margin-bottom:1.2rem;font-size:1.1rem">🔑 Alterar Password</h3>
       <div class="form-group">
-        <label>Nova password</label>
-        <input type="password" id="new-pass" placeholder="mínimo 6 caracteres" style="background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem;color:var(--white);font-family:'Inter',sans-serif;font-size:.95rem;outline:none;width:100%;transition:border-color .2s" />
+        <label for="new-pass">Nova password</label>
+        <input type="password" id="new-pass" name="new-password" autocomplete="new-password" placeholder="mínimo 6 caracteres" class="modal-input" />
       </div>
       <div class="form-group">
-        <label>Confirmar nova password</label>
-        <input type="password" id="new-pass2" placeholder="repetir password" style="background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem;color:var(--white);font-family:'Inter',sans-serif;font-size:.95rem;outline:none;width:100%;transition:border-color .2s" />
+        <label for="new-pass2">Confirmar nova password</label>
+        <input type="password" id="new-pass2" name="confirm-password" autocomplete="new-password" placeholder="repetir password" class="modal-input" />
       </div>
       <div id="pass-msg" style="font-size:.83rem;margin-bottom:.8rem;display:none"></div>
       <div style="display:flex;gap:.8rem">
         <button onclick="doChangePass()" style="flex:1;padding:.8rem;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;border-radius:10px;color:white;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">Guardar</button>
-        <button onclick="hideChangePass()" style="padding:.8rem 1.2rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-family:'Inter',sans-serif">Cancelar</button>
+        <button onclick="hideChangePass()" aria-label="Fechar modal de alteração de password" style="padding:.8rem 1.2rem;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-family:'Inter',sans-serif">Cancelar</button>
       </div>
     </div>
   </div>
 
-  <div class="dash-content">
+  <div class="dash-content" id="dash-content">
 
     <!-- Stats (clicáveis como filtros rápidos) -->
     <div class="stats-grid">
@@ -757,7 +838,7 @@
     </div>
 
     <!-- Analytics + Reviews + Settings buttons -->
-    <div style="margin-bottom:1rem;display:flex;justify-content:flex-end;flex-wrap:wrap;gap:.4rem">
+    <div class="action-btns-row">
       <button class="btn-settings"  id="btn-settings"  onclick="toggleSettings()">⚙️ Configurações</button>
       <button class="btn-reviews"   id="btn-reviews"   onclick="toggleReviews()">⭐ Avaliações</button>
       <button class="btn-analytics" onclick="toggleAnalytics()">📊 Ver Análise</button>
@@ -766,14 +847,14 @@
     </div>
 
     <!-- REPORT MODAL -->
-    <div id="report-modal-bg" onclick="if(event.target===this)closeReportModal()">
-      <div id="report-modal">
+    <div id="report-modal-bg" onclick="if(event.target===this)closeReportModal()" aria-hidden="true">
+      <div id="report-modal" role="dialog" aria-modal="true" aria-labelledby="report-title-label">
         <div class="modal-head">
           <div>
             <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--cyan);margin-bottom:2px">Relatório de Aulas</div>
             <div style="font-weight:800;font-size:1rem" id="report-title-label">Relatório Diário</div>
           </div>
-          <button onclick="closeReportModal()" style="background:none;border:none;color:var(--gray);font-size:1.3rem;cursor:pointer;padding:.2rem .5rem;font-family:'Inter',sans-serif">✕</button>
+          <button onclick="closeReportModal()" aria-label="Fechar relatório" style="background:none;border:none;color:var(--gray);font-size:1.3rem;cursor:pointer;padding:.2rem .5rem;font-family:'Inter',sans-serif">✕</button>
         </div>
         <div class="modal-body">
           <!-- Period selector -->
@@ -802,13 +883,39 @@
           <button class="btn-analytics" style="font-size:.78rem" data-save-btn onclick="saveSchoolSettings()">💾 Guardar</button>
         </div>
         <div class="settings-grid">
-          <div class="form-group">
-            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">WhatsApp (número)</label>
-            <input type="tel" id="cfg-wa" placeholder="351962800400" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.88rem;width:100%;outline:none;color-scheme:dark" />
+          <div class="form-group" style="grid-column:span 2">
+            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Máx. alunos por horário (padrão)</label>
+            <input type="number" id="cfg-maxslot" min="1" max="100" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.88rem;width:120px;outline:none;color-scheme:dark" />
           </div>
-          <div class="form-group">
-            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Máx. alunos por horário</label>
-            <input type="number" id="cfg-maxslot" min="1" max="100" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.88rem;width:100%;outline:none;color-scheme:dark" />
+          <div class="form-group" style="grid-column:span 2">
+            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Contactos & Notificações</label>
+            <div class="contacts-grid">
+              <div>
+                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.3rem">✉️ Email de notificações</div>
+                <input type="email" id="cfg-email" placeholder="geral@escola.pt" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.55rem .8rem;color:var(--white);font-family:Inter,sans-serif;font-size:.85rem;width:100%;outline:none;color-scheme:dark" />
+              </div>
+              <div>
+                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.3rem">✉️ Email de notificações 2 <span style="opacity:.5">(opcional)</span></div>
+                <input type="email" id="cfg-email2" placeholder="reservas@escola.pt" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.55rem .8rem;color:var(--white);font-family:Inter,sans-serif;font-size:.85rem;width:100%;outline:none;color-scheme:dark" />
+              </div>
+              <div>
+                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.3rem">📱 WA principal</div>
+                <input type="tel" id="cfg-wa" placeholder="351962800400" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.55rem .8rem;color:var(--white);font-family:Inter,sans-serif;font-size:.85rem;width:100%;outline:none;color-scheme:dark" />
+              </div>
+              <div>
+                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.3rem">📱 WA / Tel. alternativo <span style="opacity:.5">(opcional)</span></div>
+                <input type="tel" id="cfg-wa2" placeholder="351913000000" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.55rem .8rem;color:var(--white);font-family:Inter,sans-serif;font-size:.85rem;width:100%;outline:none;color-scheme:dark" />
+              </div>
+              <div>
+                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.3rem">📸 Instagram <span style="opacity:.5">(opcional)</span></div>
+                <input type="text" id="cfg-instagram" placeholder="@escolasurf" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.55rem .8rem;color:var(--white);font-family:Inter,sans-serif;font-size:.85rem;width:100%;outline:none;color-scheme:dark" />
+              </div>
+              <div>
+                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.3rem">🌐 Website <span style="opacity:.5">(opcional)</span></div>
+                <input type="url" id="cfg-website" placeholder="www.escolasurf.pt" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.55rem .8rem;color:var(--white);font-family:Inter,sans-serif;font-size:.85rem;width:100%;outline:none;color-scheme:dark" />
+              </div>
+            </div>
+            <div style="font-size:.7rem;color:var(--gray);margin-top:.25rem">📧 Estes emails recebem cópia de cada reserva nova e de cada confirmação/cancelamento. Os restantes campos aparecem no cartão QR e no site.</div>
           </div>
           <div class="form-group" style="grid-column:span 2">
             <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">Ponto de Encontro</label>
@@ -841,6 +948,44 @@
             <div style="font-size:.72rem;color:var(--gray);margin-top:.4rem">💡 Nome, preço e tipo (por pessoa / preço fixo). Reflectem-se no site de reservas ao guardar.</div>
           </div>
           <!-- Save button repeated at bottom for mobile -->
+          <div class="form-group" style="grid-column:span 2">
+            <label style="font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em">💬 Mensagens Automáticas</label>
+            <div style="font-size:.72rem;color:var(--gray);margin-bottom:.75rem">Personalize as mensagens enviadas ao cliente em português. Para outros idiomas (EN, FR, DE, ES, NL) são usadas as traduções automáticas.</div>
+            <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:.75rem">
+              <span style="font-size:.68rem;color:var(--gray)">Variáveis disponíveis:</span>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{nome}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{escola}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{data}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{hora}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{aula}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{pessoas}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{total}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{ponto}</code>
+              <code style="font-size:.68rem;background:rgba(255,255,255,.07);padding:.1rem .35rem;border-radius:4px;color:var(--cyan)">{contactos}</code>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:1rem">
+              <div>
+                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.3rem;font-weight:600">📱 WA Confirmação (PT)</div>
+                <textarea id="msg-wa-confirm" rows="9" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.65rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.8rem;width:100%;outline:none;resize:vertical;color-scheme:dark;line-height:1.6"></textarea>
+                <button onclick="resetMsgTemplate('wa-confirm')" style="margin-top:.3rem;font-size:.67rem;background:none;border:1px solid var(--border);border-radius:6px;color:var(--gray);padding:.25rem .6rem;cursor:pointer;font-family:Inter,sans-serif">↺ Restaurar padrão</button>
+              </div>
+              <div>
+                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.3rem;font-weight:600">📱 WA Cancelamento (PT)</div>
+                <textarea id="msg-wa-cancel" rows="7" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.65rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.8rem;width:100%;outline:none;resize:vertical;color-scheme:dark;line-height:1.6"></textarea>
+                <button onclick="resetMsgTemplate('wa-cancel')" style="margin-top:.3rem;font-size:.67rem;background:none;border:1px solid var(--border);border-radius:6px;color:var(--gray);padding:.25rem .6rem;cursor:pointer;font-family:Inter,sans-serif">↺ Restaurar padrão</button>
+              </div>
+              <div>
+                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.3rem;font-weight:600">✉️ Email Confirmação (PT)</div>
+                <textarea id="msg-email-confirm" rows="9" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.65rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.8rem;width:100%;outline:none;resize:vertical;color-scheme:dark;line-height:1.6"></textarea>
+                <button onclick="resetMsgTemplate('email-confirm')" style="margin-top:.3rem;font-size:.67rem;background:none;border:1px solid var(--border);border-radius:6px;color:var(--gray);padding:.25rem .6rem;cursor:pointer;font-family:Inter,sans-serif">↺ Restaurar padrão</button>
+              </div>
+              <div>
+                <div style="font-size:.68rem;color:var(--gray);margin-bottom:.3rem;font-weight:600">✉️ Email Cancelamento (PT)</div>
+                <textarea id="msg-email-cancel" rows="7" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:.65rem .9rem;color:var(--white);font-family:Inter,sans-serif;font-size:.8rem;width:100%;outline:none;resize:vertical;color-scheme:dark;line-height:1.6"></textarea>
+                <button onclick="resetMsgTemplate('email-cancel')" style="margin-top:.3rem;font-size:.67rem;background:none;border:1px solid var(--border);border-radius:6px;color:var(--gray);padding:.25rem .6rem;cursor:pointer;font-family:Inter,sans-serif">↺ Restaurar padrão</button>
+              </div>
+            </div>
+          </div>
           <div class="form-group" style="grid-column:span 2;margin-top:.25rem">
             <button data-save-btn onclick="saveSchoolSettings()" style="width:100%;padding:.75rem;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;border-radius:10px;color:white;font-weight:700;font-size:.95rem;cursor:pointer;font-family:Inter,sans-serif;letter-spacing:.02em">💾 Guardar Configurações</button>
           </div>
@@ -907,13 +1052,20 @@
           <div class="kpi-value" id="kpi-cancel">0%</div>
         </div>
       </div>
+      <div id="dash-filter-bar" style="display:none;align-items:center;gap:.6rem;padding:.45rem .85rem;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.28);border-radius:9px;font-size:.82rem;color:#a78bfa;margin-bottom:.5rem">
+        📊 <strong id="dash-filter-label"></strong>
+        <button onclick="clearDashFilter()" style="margin-left:auto;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);border-radius:6px;color:#a78bfa;padding:.15rem .6rem;cursor:pointer;font-size:.78rem;line-height:1.5">✕ Limpar</button>
+      </div>
       <div id="chart-filter-bar">
         🔍 Filtro: <strong id="chart-filter-label"></strong>
         <button onclick="clearChartFilter()">✕ Limpar</button>
       </div>
       <div class="chart-grid">
         <div class="chart-card">
-          <div class="chart-card-title"><span id="chart-monthly-title">Marcações por Mês</span></div>
+          <div class="chart-card-title">
+            <span id="chart-monthly-title">Marcações por Mês</span>
+            <button id="chart-monthly-back" onclick="resetToMonthView()" style="display:none;background:rgba(0,207,253,.1);border:1px solid rgba(0,207,253,.28);border-radius:6px;color:var(--cyan);font-size:.72rem;font-weight:700;padding:.2rem .65rem;cursor:pointer;font-family:inherit">← Meses</button>
+          </div>
           <canvas id="chart-monthly" style="max-height:200px"></canvas>
         </div>
         <div class="chart-card">
@@ -948,9 +1100,9 @@
           <div class="cal-header">
             <div class="cal-title" id="cal-title">—</div>
             <div class="cal-nav">
-              <button class="cal-nav-btn" onclick="calNavigate(-1)">‹</button>
+              <button class="cal-nav-btn" onclick="calNavigate(-1)" aria-label="Mês anterior">‹</button>
               <button class="cal-nav-btn cal-nav-today" onclick="calGoToday()">📅 Hoje</button>
-              <button class="cal-nav-btn" onclick="calNavigate(1)">›</button>
+              <button class="cal-nav-btn" onclick="calNavigate(1)" aria-label="Próximo mês">›</button>
             </div>
           </div>
           <div class="cal-grid" id="cal-grid"></div>
@@ -963,7 +1115,7 @@
               <div style="font-size:.95rem;font-weight:700">Ocupacao por Horario — <span id="slots-avail-date"></span></div>
               <div style="font-size:.72rem;color:var(--gray);margin-top:2px">Clique em + / − para ajustar vagas neste dia</div>
             </div>
-            <button onclick="closeSlotAvail()" style="font-size:.75rem;color:var(--gray);background:transparent;border:none;cursor:pointer">✕ Fechar</button>
+            <button onclick="closeSlotAvail()" aria-label="Fechar painel de disponibilidade" style="font-size:.75rem;color:var(--gray);background:transparent;border:none;cursor:pointer">✕ Fechar</button>
           </div>
           <div id="slots-avail-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.8rem"></div>
         </div>
@@ -985,21 +1137,21 @@
     <div class="filters-bar">
       <div class="filter-group admin-only" id="fg-school" style="display:none">
         <span class="filter-label">Escola</span>
-        <select id="f-school" class="filter-select" onchange="updateTopbarSchool();loadBookings()">
+        <select id="f-school" class="filter-select" aria-label="Selecionar escola" onchange="updateTopbarSchool();loadBookings()">
           <option value="">Todas</option>
         </select>
       </div>
       <div class="filter-group">
         <span class="filter-label">Mês</span>
-        <input type="month" id="f-month" class="filter-input" onchange="clearDayFilter();syncCalToMonth();applyFilters()" />
+        <input type="month" id="f-month" class="filter-input" aria-label="Filtrar por mês" onchange="clearDayFilter();syncCalToMonth();applyFilters()" />
       </div>
       <div class="filter-group">
         <span class="filter-label">Dia</span>
-        <input type="date" id="f-date" class="filter-input" onchange="applyFilters()" />
+        <input type="date" id="f-date" class="filter-input" aria-label="Filtrar por dia específico" onchange="applyFilters()" />
       </div>
       <div class="filter-group">
         <span class="filter-label">Estado</span>
-        <select id="f-status" class="filter-select" onchange="applyFilters()">
+        <select id="f-status" class="filter-select" aria-label="Filtrar por estado" onchange="applyFilters()">
           <option value="">Todos</option>
           <option value="pending">Pendente</option>
           <option value="confirmed">Confirmado</option>
@@ -1009,10 +1161,10 @@
       </div>
       <div class="filter-group" id="fg-search">
         <span class="filter-label">Pesquisar</span>
-        <input type="text" id="f-search" class="filter-input" placeholder="Nome ou telemóvel..." oninput="applyFilters()" />
+        <input type="text" id="f-search" class="filter-input" placeholder="Nome ou telemóvel..." aria-label="Pesquisar por nome ou telemóvel" oninput="applyFilters()" />
       </div>
-      <button class="btn-today" onclick="filterToday()">📅 Hoje</button>
-      <button class="btn-refresh" onclick="loadBookings()">↻ Atualizar</button>
+      <button class="btn-today" onclick="filterToday()" aria-label="Filtrar marcações de hoje">📅 Hoje</button>
+      <button class="btn-refresh" onclick="loadBookings()" aria-label="Atualizar lista de marcações">↻ Atualizar</button>
     </div>
 
     <!-- Table -->
@@ -1049,20 +1201,20 @@
 </div>
 
 <!-- Toast -->
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <!-- Reschedule Modal -->
-<div id="reschedule-modal-bg" onclick="if(event.target===this)closeReschedule()">
-  <div id="reschedule-modal">
-    <h3>📅 Remarcar Aula</h3>
+<div id="reschedule-modal-bg" onclick="if(event.target===this)closeReschedule()" aria-hidden="true">
+  <div id="reschedule-modal" role="dialog" aria-modal="true" aria-labelledby="rsch-modal-title">
+    <h3 id="rsch-modal-title">📅 Remarcar Aula</h3>
     <div class="rsch-info" id="rsch-info">—</div>
     <div class="rsch-fields">
       <div class="rsch-field">
-        <label>Nova Data</label>
+        <label for="rsch-date">Nova Data</label>
         <input type="date" id="rsch-date" />
       </div>
       <div class="rsch-field">
-        <label>Novo Horário</label>
+        <label for="rsch-time">Novo Horário</label>
         <select id="rsch-time"></select>
       </div>
     </div>
@@ -1072,26 +1224,26 @@
     </label>
     <div class="rsch-actions">
       <button onclick="saveReschedule()" style="flex:1;padding:.7rem;background:linear-gradient(135deg,var(--ocean),var(--cyan));border:none;border-radius:10px;color:var(--white);font-weight:700;cursor:pointer;font-size:.9rem">Confirmar Remarcação</button>
-      <button onclick="closeReschedule()" style="padding:.7rem 1.1rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-size:.9rem">Cancelar</button>
+      <button onclick="closeReschedule()" aria-label="Fechar modal de remarcação" style="padding:.7rem 1.1rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-size:.9rem">Cancelar</button>
     </div>
   </div>
 </div>
 
 <!-- Manual Booking Modal -->
-<div id="manual-booking-modal-bg" onclick="if(event.target===this)closeManualBooking()">
-  <div id="manual-booking-modal">
-    <h3>📋 Nova Marcação Manual</h3>
+<div id="manual-booking-modal-bg" onclick="if(event.target===this)closeManualBooking()" aria-hidden="true">
+  <div id="manual-booking-modal" role="dialog" aria-modal="true" aria-labelledby="mb-modal-title">
+    <h3 id="mb-modal-title">📋 Nova Marcação Manual</h3>
     <div class="mb-grid">
       <div class="mb-field">
-        <label>Data *</label>
+        <label for="mb-date">Data *</label>
         <input type="date" id="mb-date" required onchange="checkMBAvailability()" />
       </div>
       <div class="mb-field">
-        <label>Horário *</label>
+        <label for="mb-time">Horário *</label>
         <select id="mb-time" onchange="checkMBAvailability()"></select>
       </div>
       <div class="mb-field">
-        <label>Modalidade *</label>
+        <label for="mb-lesson">Modalidade *</label>
         <select id="mb-lesson" onchange="updateMBTotal()">
           <option value="Iniciante">Iniciante</option>
           <option value="Intermédio">Intermédio</option>
@@ -1101,7 +1253,7 @@
         </select>
       </div>
       <div class="mb-field">
-        <label>Nº Pessoas *</label>
+        <label for="mb-people">Nº Pessoas *</label>
         <select id="mb-people" onchange="buildMBEquipRows();updateMBTotal()">
           <option value="1" selected>1</option>
           <option value="2">2</option>
@@ -1118,31 +1270,31 @@
         <div id="mb-avail" style="padding:.45rem .6rem;border-radius:8px;background:rgba(255,255,255,.05);font-size:.82rem;color:var(--gray)">— escolhe data e hora —</div>
       </div>
       <div class="mb-field">
-        <label>Estado</label>
+        <label for="mb-status">Estado</label>
         <select id="mb-status">
           <option value="confirmed" selected>Confirmado</option>
           <option value="pending">Pendente</option>
         </select>
       </div>
       <div class="mb-field">
-        <label>Total (€)</label>
+        <label for="mb-total">Total (€)</label>
         <input type="number" id="mb-total" min="0" step="0.01" placeholder="0.00" />
       </div>
       <div class="mb-field">
-        <label>Nome Completo *</label>
-        <input type="text" id="mb-name" placeholder="Nome do cliente" />
+        <label for="mb-name">Nome Completo *</label>
+        <input type="text" id="mb-name" placeholder="Nome do cliente" autocomplete="name" />
       </div>
       <div class="mb-field">
-        <label>Telemóvel *</label>
-        <input type="text" id="mb-phone" placeholder="+351 912 345 678" />
+        <label for="mb-phone">Telemóvel *</label>
+        <input type="text" id="mb-phone" placeholder="+351 912 345 678" autocomplete="tel" />
       </div>
       <div class="mb-field">
-        <label>Email</label>
-        <input type="email" id="mb-email" placeholder="cliente@email.com" />
+        <label for="mb-email">Email</label>
+        <input type="email" id="mb-email" placeholder="cliente@email.com" autocomplete="email" />
       </div>
       <div class="mb-field">
-        <label>País</label>
-        <select id="mb-country">
+        <label for="mb-country">País</label>
+        <select id="mb-country" autocomplete="country-name">
           <option value="">— Selecionar —</option>
           <option value="🇵🇹 Portugal">🇵🇹 Portugal</option>
           <option value="🇬🇧 United Kingdom">🇬🇧 United Kingdom</option>
@@ -1165,7 +1317,7 @@
         </select>
       </div>
       <div class="mb-field">
-        <label>Idioma</label>
+        <label for="mb-language">Idioma</label>
         <select id="mb-language">
           <option value="pt" selected>🇵🇹 Português</option>
           <option value="pt-br">🇧🇷 Brasileiro</option>
@@ -1177,27 +1329,27 @@
         </select>
       </div>
       <div class="mb-field full" id="mb-equip-section">
-        <label>Equipamento por Pessoa</label>
-        <div id="mb-equip-rows"></div>
+        <label for="mb-equip-rows">Equipamento por Pessoa</label>
+        <div id="mb-equip-rows" aria-live="polite"></div>
       </div>
       <div class="mb-field full">
-        <label>Nota</label>
+        <label for="mb-notes">Nota</label>
         <textarea id="mb-notes" placeholder="Observações adicionais..."></textarea>
       </div>
     </div>
     <div class="mb-actions">
       <button onclick="saveManualBooking()" style="flex:1;padding:.7rem;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;border-radius:10px;color:var(--white);font-weight:700;cursor:pointer;font-size:.9rem;font-family:'Inter',sans-serif">Guardar</button>
-      <button onclick="closeManualBooking()" style="padding:.7rem 1.1rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-size:.9rem;font-family:'Inter',sans-serif">Cancelar</button>
+      <button onclick="closeManualBooking()" aria-label="Fechar modal de nova marcação" style="padding:.7rem 1.1rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-size:.9rem;font-family:'Inter',sans-serif">Cancelar</button>
     </div>
   </div>
 </div>
 
 <!-- Detail Modal -->
-<div class="detail-modal-bg" id="detail-modal-bg" onclick="closeDetail(event)">
-  <div class="detail-modal" id="detail-modal">
-    <h3>📋 Detalhes da Marcação</h3>
+<div class="detail-modal-bg" id="detail-modal-bg" onclick="closeDetail(event)" aria-hidden="true">
+  <div class="detail-modal" id="detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
+    <h3 id="detail-modal-title">📋 Detalhes da Marcação</h3>
     <div id="detail-content"></div>
-    <button onclick="closeDetailModal()" style="width:100%;margin-top:1rem;padding:.75rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-family:'Inter',sans-serif;font-size:.88rem">Fechar</button>
+    <button onclick="closeDetailModal()" aria-label="Fechar detalhes da marcação" style="width:100%;margin-top:1rem;padding:.75rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--gray);cursor:pointer;font-family:'Inter',sans-serif;font-size:.88rem">Fechar</button>
   </div>
 </div>
 
@@ -1524,51 +1676,67 @@
     const search = document.getElementById('f-search').value.toLowerCase();
 
     const filtered = allBookings.filter(b => {
-      if (day    && b.booking_date !== day)                  return false;  // day overrides month
-      if (!day && month && !b.booking_date.startsWith(month)) return false;
-      if (status && b.status !== status)                     return false;
+      if (day && b.booking_date !== day) return false;            // exact day overrides all
+      if (!day && tableWeekFilter && (b.booking_date < tableWeekFilter.start || b.booking_date > tableWeekFilter.end)) return false;
+      if (!day && !tableWeekFilter && month && !b.booking_date.startsWith(month)) return false;
+      if (status && b.status !== status)                          return false;
       if (search && !b.client_name.toLowerCase().includes(search) &&
-                    !b.client_phone.includes(search))        return false;
+                    !b.client_phone.includes(search))             return false;
       return true;
     });
 
-    renderStats(day ? null : month);
+    renderStats(day ? null : (tableWeekFilter ? null : month));
     renderTable(filtered);
   }
 
   function clearDayFilter() {
     document.getElementById('f-date').value = '';
+    tableWeekFilter = null;
   }
 
   function statFilter(type) {
-    // Remove active highlight from all cards
     document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
 
     if (type === 'today') {
       filterToday();
       document.getElementById('sc-today').classList.add('active');
+      dashFilter = { type:'today', date: todayStr, label: 'Aulas de Hoje' };
     } else if (type === 'pending') {
-      clearDayFilter();
+      // Clear ALL date filters — show pending bookings from any month
+      document.getElementById('f-date').value  = '';
+      document.getElementById('f-month').value = '';
       document.getElementById('f-status').value = 'pending';
       document.getElementById('f-search').value = '';
+      tableWeekFilter = null;
       applyFilters();
       document.getElementById('sc-pending').classList.add('active');
-      document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelector('.table-wrap').scrollIntoView({ behavior:'smooth', block:'start' });
+      dashFilter = { type:'status', status:'pending', label: 'Por Confirmar' };
     } else if (type === 'confirmed') {
-      clearDayFilter();
+      document.getElementById('f-date').value  = '';
+      document.getElementById('f-month').value = '';
       document.getElementById('f-status').value = 'confirmed';
       document.getElementById('f-search').value = '';
+      tableWeekFilter = null;
       applyFilters();
       document.getElementById('sc-confirmed').classList.add('active');
-      document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelector('.table-wrap').scrollIntoView({ behavior:'smooth', block:'start' });
+      dashFilter = { type:'status', status:'confirmed', label: 'Confirmadas' };
     } else {
-      clearDayFilter();
+      document.getElementById('f-date').value  = '';
+      document.getElementById('f-month').value = '';
       document.getElementById('f-status').value = '';
       document.getElementById('f-search').value = '';
+      tableWeekFilter = null;
       applyFilters();
       document.getElementById('sc-all').classList.add('active');
-      document.querySelector('.table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelector('.table-wrap').scrollIntoView({ behavior:'smooth', block:'start' });
+      dashFilter = null;
     }
+    _triggerChartsIfOpen();
   }
 
   let revPeriod = 'month';
@@ -1578,7 +1746,60 @@
     document.querySelectorAll('.rev-pill').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     updateRevCard();
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+
+    // Reset table status/search filters but keep date in sync with pill
+    document.getElementById('f-status').value = '';
+    document.getElementById('f-search').value = '';
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('sc-all')?.classList.add('active');
+
+    if (period === 'today') {
+      tableWeekFilter = null;
+      document.getElementById('f-date').value  = todayStr;
+      document.getElementById('f-month').value = '';
+      dashFilter = { type:'today', date: todayStr, label: 'Receita — Hoje' };
+      chartYear = now.getFullYear(); chartMonth = now.getMonth() + 1;
+    } else if (period === 'week') {
+      const dow = now.getDay(); const diff = now.getDate() - dow + (dow === 0 ? -6 : 1);
+      const mon = new Date(now.getFullYear(), now.getMonth(), diff);
+      const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
+      const fmt  = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      tableWeekFilter = { start: fmt(mon), end: fmt(sun) };
+      document.getElementById('f-date').value  = '';
+      document.getElementById('f-month').value = '';
+      dashFilter = { type:'week', start: fmt(mon), end: fmt(sun), label: 'Receita — Esta Semana' };
+      chartYear = now.getFullYear(); chartMonth = null;
+    } else if (period === 'month') {
+      const prefix = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+      tableWeekFilter = null;
+      document.getElementById('f-date').value  = '';
+      document.getElementById('f-month').value = prefix;
+      dashFilter = { type:'month', prefix, label: `Receita — ${months[now.getMonth()]} ${now.getFullYear()}` };
+      chartYear = now.getFullYear(); chartMonth = now.getMonth() + 1;
+    } else if (period === 'year') {
+      tableWeekFilter = null;
+      document.getElementById('f-date').value  = '';
+      document.getElementById('f-month').value = '';
+      dashFilter = null; chartYear = now.getFullYear(); chartMonth = null;
+    } else { // all
+      tableWeekFilter = null;
+      document.getElementById('f-date').value  = '';
+      document.getElementById('f-month').value = '';
+      dashFilter = null; chartYear = 'all'; chartMonth = null;
+    }
+    applyFilters();
+    // Update analytics year/month button states
+    const curY = new Date().getFullYear();
+    document.getElementById('chart-year-cur')?.classList.toggle('active', chartYear === curY);
+    document.getElementById('chart-year-prev')?.classList.toggle('active', chartYear === curY - 1);
+    document.getElementById('chart-year-all')?.classList.toggle('active', chartYear === 'all');
+    document.querySelectorAll('.chart-month-btn').forEach((b,i) => b.classList.toggle('active', chartMonth !== null ? i === chartMonth : i === 0));
+    _triggerChartsIfOpen();
   }
+  const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
   function updateRevCard() {
     const now = new Date();
@@ -1677,19 +1898,19 @@
       const langFlag = { pt:'🇵🇹', 'pt-br':'🇧🇷', en:'🇬🇧', fr:'🇫🇷', de:'🇩🇪', es:'🇪🇸', nl:'🇳🇱' }[b.language] || '';
 
       const actions = b.status === 'pending'
-        ? `<button class="act-btn act-confirm"  title="Confirmar"          onclick="updateStatus('${b.id}','confirmed')">✓</button>
-           <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`
+        ? `<button class="act-btn act-confirm"  title="Confirmar" aria-label="Confirmar marcação"          onclick="updateStatus('${b.id}','confirmed')">✓</button>
+           <button class="act-btn act-cancel"   title="Cancelar" aria-label="Cancelar marcação"            onclick="updateStatus('${b.id}','cancelled')">✕</button>`
         : b.status === 'confirmed'
         ? (isLessonPast(b)
-            ? `<button class="act-btn act-complete" title="Marcar concluído + pedir avaliação" onclick="completeAndReview('${b.id}')">★</button>
-               <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`
-            : `<button class="act-btn act-complete" title="Aula ainda não aconteceu — disponível após a hora marcada" disabled style="opacity:.3;cursor:not-allowed">★</button>
-               <button class="act-btn act-cancel"   title="Cancelar"           onclick="updateStatus('${b.id}','cancelled')">✕</button>`)
+            ? `<button class="act-btn act-complete" title="Marcar concluído + pedir avaliação" aria-label="Concluir e pedir avaliação" onclick="completeAndReview('${b.id}')">★</button>
+               <button class="act-btn act-cancel"   title="Cancelar" aria-label="Cancelar marcação"        onclick="updateStatus('${b.id}','cancelled')">✕</button>`
+            : `<button class="act-btn act-complete" title="Aula ainda não aconteceu — disponível após a hora marcada" aria-label="Concluir aula (ainda não disponível)" disabled style="opacity:.3;cursor:not-allowed">★</button>
+               <button class="act-btn act-cancel"   title="Cancelar" aria-label="Cancelar marcação"        onclick="updateStatus('${b.id}','cancelled')">✕</button>`)
 
         : b.status === 'completed'
-        ? `<span title="Concluído — bloqueado pelo sistema" style="font-size:.85rem;color:var(--gray);padding:.2rem .4rem;display:inline-block;line-height:1;cursor:default">🔒</span>`
+        ? `<span title="Concluído — bloqueado pelo sistema" aria-label="Aula concluída e bloqueada" style="font-size:.85rem;color:var(--gray);padding:.2rem .4rem;display:inline-block;line-height:1;cursor:default">🔒</span>`
         : b.status === 'cancelled'
-        ? `<button class="act-btn act-revert"   title="Reativar (pendente)" onclick="confirmRevert('${b.id}','pending','Reativar marcação como Pendente?')">↩</button>`
+        ? `<button class="act-btn act-revert" title="Reativar (pendente)" aria-label="Reativar marcação como pendente" onclick="confirmRevert('${b.id}','pending','Reativar marcação como Pendente?')">↩</button>`
         : '—';
 
       const schoolForRow = SCHOOLS.find(s => s.id === b.school_id) || SCHOOLS[0];
@@ -1723,9 +1944,9 @@
         <td><span class="status-badge ${s.cls}">${s.label}</span></td>
         <td style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
           ${actions}
-          <button class="act-btn act-detail" title="Ver detalhes" onclick="openDetail('${bJson}')">👁</button>
-          <a href="https://wa.me/${b.client_phone.replace(/\D/g,'')}?text=${waMsg}" target="_blank">
-            <button class="act-btn act-wa" title="WhatsApp">💬</button>
+          <button class="act-btn act-detail" title="Ver detalhes" aria-label="Ver detalhes da marcação" onclick="openDetail('${bJson}')">👁</button>
+          <a href="https://wa.me/${b.client_phone.replace(/\D/g,'')}?text=${waMsg}" target="_blank" aria-label="Enviar mensagem WhatsApp a ${b.client_name}">
+            <button class="act-btn act-wa" title="WhatsApp" aria-label="Enviar WhatsApp">💬</button>
           </a>
         </td>
       </tr>`;
@@ -1888,19 +2109,37 @@
     document.getElementById('cfg-wa').value      = school.wa_number      || '';
     document.getElementById('cfg-maxslot').value = school.max_per_slot   || 6;
     document.getElementById('cfg-meeting').value = school.meeting_point  || '';
-    cfgSlots = [...(school.slots || ['08:00','10:30','14:00','16:30'])];
+    // Slots — DB → localStorage → default
+    const lsSlots = (() => { try { const v = localStorage.getItem(`surfbook_slots_${school.id}`); return v ? JSON.parse(v) : null; } catch(_) { return null; } })();
+    cfgSlots = [...(school.slots?.length ? school.slots : lsSlots?.length ? lsSlots : ['08:00','10:30','14:00','16:30'])];
+    // Max slot — DB → localStorage → default
+    const lsMax = (() => { try { return parseInt(localStorage.getItem(`surfbook_maxslot_${school.id}`)) || 0; } catch(_) { return 0; } })();
+    document.getElementById('cfg-maxslot').value = school.max_per_slot || lsMax || 6;
     renderCfgSlots();
-    // Working days — from school object or localStorage fallback
+    // Working days — DB → localStorage → all days
     const wdSaved = school.working_days || (() => {
       try { const v = localStorage.getItem(`surfbook_wdays_${school.id}`); return v ? JSON.parse(v) : null; } catch(_) { return null; }
     })();
     cfgWorkingDays = wdSaved?.length ? [...wdSaved] : [0,1,2,3,4,5,6];
     renderCfgDays();
-    // Lesson types — from school object or LESSON_PRICES fallback
+    // Lesson types — DB → localStorage → hardcoded defaults
     const lt = school.lesson_types;
+    const lsLt = (() => { try { const v = localStorage.getItem(`surfbook_ltypes_${school.id}`); return v ? JSON.parse(v) : null; } catch(_) { return null; } })();
     cfgLessonTypes = lt?.length
       ? lt.map(x => ({ name:x.name, price:x.price, maxPax:x.max_pax||6, icon:x.icon||CFG_DEFAULT_ICONS[x.name]||'🏄' }))
-      : Object.entries(LESSON_PRICES).map(([name,lp]) => ({ name, price:lp.price, maxPax:lp.perPerson?(school.max_per_slot||6):1, icon:CFG_DEFAULT_ICONS[name]||'🏄' }));
+      : lsLt?.length
+        ? lsLt.map(x => ({ name:x.name, price:x.price, maxPax:x.max_pax||6, icon:x.icon||CFG_DEFAULT_ICONS[x.name]||'🏄' }))
+        : Object.entries(LESSON_PRICES).map(([name,lp]) => ({ name, price:lp.price, maxPax:lp.perPerson?(school.max_per_slot||6):1, icon:CFG_DEFAULT_ICONS[name]||'🏄' }));
+    // Contact fields — DB → localStorage → blank
+    const lsContacts = (() => { try { return JSON.parse(localStorage.getItem(`surfbook_contacts_${school.id}`) || 'null'); } catch(_) { return null; } })();
+    const c = lsContacts || {};
+    document.getElementById('cfg-wa').value        = school.wa_number      || c.wa    || '';
+    document.getElementById('cfg-wa2').value       = school.wa2_number     || c.wa2   || '';
+    document.getElementById('cfg-email').value     = school.school_email   || c.email || '';
+    document.getElementById('cfg-email2').value    = school.school_email2  || c.email2|| '';
+    document.getElementById('cfg-instagram').value      = school.instagram         || c.instagram    || '';
+    document.getElementById('cfg-website').value        = school.website           || c.website      || '';
+    loadMsgTemplates(school);
     renderCfgLessons();
   }
 
@@ -1908,7 +2147,7 @@
     document.getElementById('cfg-slots-list').innerHTML = cfgSlots.map(s => `
       <div class="settings-slot">
         <span>${s}</span>
-        <button onclick="cfgRemoveSlot('${s}')" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:.8rem;padding:0 .1rem">✕</button>
+        <button onclick="cfgRemoveSlot('${s}')" aria-label="Remover horário ${s}" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:.8rem;padding:0 .1rem">✕</button>
       </div>`).join('');
   }
 
@@ -2031,17 +2270,18 @@
         id:            school.id,
         name:          school.name,
         status:        school.status || 'active',
-        wa_number:     document.getElementById('cfg-wa').value.trim().replace(/\D/g,'') || school.wa_number,
+        wa_number:     (document.getElementById('cfg-wa')?.value||'').trim().replace(/\D/g,'') || school.wa_number,
         max_per_slot:  parseInt(document.getElementById('cfg-maxslot').value) || school.max_per_slot,
-        meeting_point: document.getElementById('cfg-meeting').value.trim() || school.meeting_point,
+        meeting_point: (document.getElementById('cfg-meeting')?.value||'').trim() || school.meeting_point,
         time_slots:    cfgSlots,
         lesson_types:  lessonTypesData,
         working_days:  cfgWorkingDays,
+        school_email:  (document.getElementById('cfg-email')?.value||'').trim(),
         updated_at:    new Date().toISOString(),
       };
       const upsertOpts = { onConflict: 'id' };
       let { error } = await sb.from('schools').upsert(payload, upsertOpts);
-      // Cascade retry: remove columns that don't exist in DB yet
+      // Cascade retry: strip columns that don't exist in DB yet, widest → narrowest
       if (error) {
         const msg = (error.message || '') + (error.details || '') + (error.hint || '');
         if (error.code === '42703' || msg.includes('working_days') || msg.includes('column') || msg.includes('does not exist')) {
@@ -2055,6 +2295,18 @@
         if (error.code === '42703' || msg.includes('lesson_types') || msg.includes('column') || msg.includes('does not exist')) {
           const { lesson_types, working_days, ...p3 } = payload;
           ({ error } = await sb.from('schools').upsert(p3, upsertOpts));
+          if (!error) {
+            localStorage.setItem(`surfbook_wdays_${school.id}`, JSON.stringify(cfgWorkingDays));
+            localStorage.setItem(`surfbook_ltypes_${school.id}`, JSON.stringify(lessonTypesData));
+          }
+        }
+      }
+      if (error) {
+        const msg = (error.message || '') + (error.details || '') + (error.hint || '');
+        if (error.code === '42703' || msg.includes('school_email') || msg.includes('column') || msg.includes('does not exist')) {
+          // Strip all new columns that may not exist in DB yet — save core data only
+          const { lesson_types, working_days, school_email, ...p4 } = payload;
+          ({ error } = await sb.from('schools').upsert(p4, upsertOpts));
           if (!error) {
             localStorage.setItem(`surfbook_wdays_${school.id}`, JSON.stringify(cfgWorkingDays));
             localStorage.setItem(`surfbook_ltypes_${school.id}`, JSON.stringify(lessonTypesData));
@@ -2081,12 +2333,32 @@
         meeting_point: payload.meeting_point, slots: payload.time_slots,
         lesson_types: lessonTypesData, working_days: cfgWorkingDays,
       });
+      // Garantir que school_email é sempre guardado no Supabase (pode ter sido retirado pelo cascade)
+      const emailVal  = (document.getElementById('cfg-email')?.value||'').trim();
+      const email2Val = (document.getElementById('cfg-email2')?.value||'').trim();
+      if (sb && emailVal) {
+        sb.from('schools').update({ school_email: emailVal, school_email2: email2Val || null })
+          .eq('id', school.id).then(({ error: e }) => {
+            if (!e) { school.school_email = emailVal; school.school_email2 = email2Val; }
+          });
+      }
       // Always persist to localStorage so booking site can read even if DB columns are missing
       try {
         localStorage.setItem(`surfbook_ltypes_${school.id}`, JSON.stringify(lessonTypesData));
         localStorage.setItem(`surfbook_wdays_${school.id}`,  JSON.stringify(cfgWorkingDays));
         localStorage.setItem(`surfbook_slots_${school.id}`,  JSON.stringify(cfgSlots));
         localStorage.setItem(`surfbook_maxslot_${school.id}`,String(payload.max_per_slot));
+        const contactsSnap = {
+          wa: payload.wa_number,
+          wa2: (document.getElementById('cfg-wa2')?.value||'').trim().replace(/\D/g,''),
+          email: payload.school_email,
+          email2: (document.getElementById('cfg-email2')?.value||'').trim(),
+          instagram: (document.getElementById('cfg-instagram')?.value||'').trim(),
+          website: (document.getElementById('cfg-website')?.value||'').trim(),
+        };
+        localStorage.setItem(`surfbook_contacts_${school.id}`, JSON.stringify(contactsSnap));
+        Object.assign(school, { wa2_number: contactsSnap.wa2, school_email2: contactsSnap.email2, instagram: contactsSnap.instagram, website: contactsSnap.website });
+        saveMsgTemplates(school);
       } catch(_) {}
       // Sync LESSON_PRICES and manual booking dropdown
       LESSON_PRICES = {};
@@ -2123,39 +2395,108 @@
     } catch(_) {}
   }
 
+  // Lesson name translation (PT canonical → client language)
+  const LESSON_TRANS = {
+    'Iniciante':  { en:'Beginner',      fr:'Débutant',       de:'Anfänger',        es:'Principiante', nl:'Beginner',    'pt-br':'Iniciante'    },
+    'Intermédio': { en:'Intermediate',  fr:'Intermédiaire',  de:'Mittelstufe',     es:'Intermedio',   nl:'Gemiddeld',   'pt-br':'Intermediário' },
+    'Avançado':   { en:'Advanced',      fr:'Avancé',         de:'Fortgeschritten', es:'Avanzado',     nl:'Gevorderd',   'pt-br':'Avançado'     },
+    'Privada':    { en:'Private',       fr:'Cours Particulier', de:'Privatstunde', es:'Clase Privada',nl:'Privéles',    'pt-br':'Privada'      },
+    'Bodyboard':  { en:'Bodyboard',     fr:'Bodyboard',      de:'Bodyboard',       es:'Bodyboard',    nl:'Bodyboard',   'pt-br':'Bodyboard'    },
+  };
+  function transLesson(rawPT, lang) {
+    const norm = normLesson(rawPT);
+    return LESSON_TRANS[norm]?.[lang] || rawPT;
+  }
+
   // WA messages per client language — school owner always sees PT dashboard
+  // ── CUSTOM MESSAGE TEMPLATES ──────────────────────────────────────────────
+  const MSG_DEFAULTS = {
+    'wa-confirm':    `*{escola} — Aula Confirmada*\n\nOla {nome},\n\nA sua aula de surf esta *confirmada*.\n\n*Data:* {data}\n*Hora:* {hora}\n*Modalidade:* {aula}\n*Pessoas:* {pessoas}\n*Total:* €{total}\n\n*Ponto de encontro:*\n{ponto}\nChegue 15 minutos antes da aula.\n\nVista o fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAte ja!\n{contactos}`,
+    'wa-cancel':     `*{escola}*\n\nOla {nome},\n\nInfelizmente nao foi possivel confirmar a sua marcacao para {data} as {hora}.\n\nPedimos desculpa pelo inconveniente. Contacte-nos para remarcar.\n\nObrigado pela compreensao.\n{contactos}`,
+    'email-confirm': `Ola {nome},\n\nA sua reserva esta confirmada!\n\nAula: {aula}\nData: {data}\nHorario: {hora}\nPessoas: {pessoas}\nTotal: €{total}\n\nPonto de encontro:\n{ponto}\n\nUse fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAte breve!\n{escola}`,
+    'email-cancel':  `Ola {nome},\n\nInfelizmente a sua reserva foi cancelada.\n\nAula: {aula}\nData: {data}\nHorario: {hora}\n\nPedimos desculpa pelo inconveniente. Contacte-nos para reagendar.\n\n{escola}`,
+  };
+  let customMsgs = {};
+
+  function applyMsgTpl(tpl, vars) {
+    return tpl
+      .replace(/\{nome\}/g,      vars.nome      || '')
+      .replace(/\{escola\}/g,    vars.escola    || '')
+      .replace(/\{data\}/g,      vars.data      || '')
+      .replace(/\{hora\}/g,      vars.hora      || '')
+      .replace(/\{aula\}/g,      vars.aula      || '')
+      .replace(/\{pessoas\}/g,   vars.pessoas   || '')
+      .replace(/\{total\}/g,     vars.total     || '')
+      .replace(/\{ponto\}/g,     vars.ponto     || '')
+      .replace(/\{contactos\}/g, vars.contactos || '');
+  }
+
+  function loadMsgTemplates(school) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(`surfbook_msgs_${school.id}`) || 'null') || {};
+      customMsgs = saved;
+      ['wa-confirm','wa-cancel','email-confirm','email-cancel'].forEach(k => {
+        const el = document.getElementById(`msg-${k}`);
+        if (el) el.value = saved[k] !== undefined ? saved[k] : (MSG_DEFAULTS[k] || '');
+      });
+    } catch(_) {}
+  }
+
+  function saveMsgTemplates(school) {
+    const saved = {};
+    ['wa-confirm','wa-cancel','email-confirm','email-cancel'].forEach(k => {
+      const v = (document.getElementById(`msg-${k}`)?.value || '').trim();
+      if (v) saved[k] = v;
+    });
+    localStorage.setItem(`surfbook_msgs_${school.id}`, JSON.stringify(saved));
+    customMsgs = saved;
+  }
+
+  function resetMsgTemplate(key) {
+    const el = document.getElementById(`msg-${key}`);
+    if (el) el.value = MSG_DEFAULTS[key] || '';
+    const school = SCHOOLS.find(s => s.id === (document.getElementById('f-school')?.value || SCHOOLS[0]?.id)) || SCHOOLS[0];
+    if (school) {
+      const saved = JSON.parse(localStorage.getItem(`surfbook_msgs_${school.id}`) || '{}');
+      delete saved[key];
+      localStorage.setItem(`surfbook_msgs_${school.id}`, JSON.stringify(saved));
+      delete customMsgs[key];
+    }
+    showToast('Texto reposto para o padrão', 'success');
+  }
+
   const WA_MSGS = {
     confirmed: {
-      pt: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Aula Confirmada*\n\nOla ${name},\n\nA sua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Hora:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\nChegue 15 minutos antes da aula.\n\nVista o fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAte ja!`,
-      en: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Lesson Confirmed*\n\nHi ${name},\n\nYour surf lesson is *confirmed*.\n\n*Date:* ${date}\n*Time:* ${time}\n*Activity:* ${lesson}\n*People:* ${people}\n*Total:* €${price}\n\n*Meeting point:*\n${meet}\nPlease arrive 15 minutes before the lesson.\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!`,
-      fr: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Cours Confirme*\n\nBonjour ${name},\n\nVotre cours de surf est *confirme*.\n\n*Date:* ${date}\n*Heure:* ${time}\n*Activite:* ${lesson}\n*Personnes:* ${people}\n*Total:* €${price}\n\n*Point de rendez-vous:*\n${meet}\nMerci d'arriver 15 minutes avant le cours.\n\nPortez votre maillot sous la combinaison. Apportez une serviette et de la creme solaire.\n\nA bientot!`,
-      de: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Kurs Bestatigt*\n\nHallo ${name},\n\nDein Surfkurs ist *bestatigt*.\n\n*Datum:* ${date}\n*Uhrzeit:* ${time}\n*Aktivitat:* ${lesson}\n*Personen:* ${people}\n*Gesamt:* €${price}\n\n*Treffpunkt:*\n${meet}\nBitte 15 Minuten vor der Stunde erscheinen.\n\nTrage deinen Badeanzug unter dem Neoprenanzug. Bring ein Handtuch und Sonnencreme mit.\n\nBis bald!`,
-      es: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Clase Confirmada*\n\nHola ${name},\n\nTu clase de surf esta *confirmada*.\n\n*Fecha:* ${date}\n*Hora:* ${time}\n*Actividad:* ${lesson}\n*Personas:* ${people}\n*Total:* €${price}\n\n*Punto de encuentro:*\n${meet}\nLlega 15 minutos antes de la clase.\n\nViste el banador debajo del traje de neopreno. Trae una toalla y protector solar.\n\n¡Hasta pronto!`,
-      nl: (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Les Bevestigd*\n\nHoi ${name},\n\nJe surfles is *bevestigd*.\n\n*Datum:* ${date}\n*Tijd:* ${time}\n*Activiteit:* ${lesson}\n*Personen:* ${people}\n*Totaal:* €${price}\n\n*Ontmoetingspunt:*\n${meet}\nKom 15 minuten voor de les.\n\nDraag je zwemkleding onder het wetsuit. Breng een handdoek en zonnebrand mee.\n\nTot snel!`,
-      'pt-br': (name, school, date, time, lesson, people, price, meet) =>
-        `*${school} — Aula Confirmada*\n\nOi ${name},\n\nSua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Horario:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\nChegue 15 minutos antes da aula.\n\nVista o sunga ou maio por baixo do wetsuit. Traga toalha e protetor solar.\n\nAte logo!`,
+      pt: (name, school, date, time, lesson, people, price, meet, contact) =>
+        `*${school} — Aula Confirmada*\n\nOla ${name},\n\nA sua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Hora:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\nChegue 15 minutos antes da aula.\n\nVista o fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAte ja!\n${contact}`,
+      en: (name, school, date, time, lesson, people, price, meet, contact) =>
+        `*${school} — Lesson Confirmed*\n\nHi ${name},\n\nYour surf lesson is *confirmed*.\n\n*Date:* ${date}\n*Time:* ${time}\n*Activity:* ${lesson}\n*People:* ${people}\n*Total:* €${price}\n\n*Meeting point:*\n${meet}\nPlease arrive 15 minutes before the lesson.\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!\n${contact}`,
+      fr: (name, school, date, time, lesson, people, price, meet, contact) =>
+        `*${school} — Cours Confirme*\n\nBonjour ${name},\n\nVotre cours de surf est *confirme*.\n\n*Date:* ${date}\n*Heure:* ${time}\n*Activite:* ${lesson}\n*Personnes:* ${people}\n*Total:* €${price}\n\n*Point de rendez-vous:*\n${meet}\nMerci d'arriver 15 minutes avant le cours.\n\nPortez votre maillot sous la combinaison. Apportez une serviette et de la creme solaire.\n\nA bientot!\n${contact}`,
+      de: (name, school, date, time, lesson, people, price, meet, contact) =>
+        `*${school} — Kurs Bestatigt*\n\nHallo ${name},\n\nDein Surfkurs ist *bestatigt*.\n\n*Datum:* ${date}\n*Uhrzeit:* ${time}\n*Aktivitat:* ${lesson}\n*Personen:* ${people}\n*Gesamt:* €${price}\n\n*Treffpunkt:*\n${meet}\nBitte 15 Minuten vor der Stunde erscheinen.\n\nTrage deinen Badeanzug unter dem Neoprenanzug. Bring ein Handtuch und Sonnencreme mit.\n\nBis bald!\n${contact}`,
+      es: (name, school, date, time, lesson, people, price, meet, contact) =>
+        `*${school} — Clase Confirmada*\n\nHola ${name},\n\nTu clase de surf esta *confirmada*.\n\n*Fecha:* ${date}\n*Hora:* ${time}\n*Actividad:* ${lesson}\n*Personas:* ${people}\n*Total:* €${price}\n\n*Punto de encuentro:*\n${meet}\nLlega 15 minutos antes de la clase.\n\nViste el banador debajo del traje de neopreno. Trae una toalla y protector solar.\n\n¡Hasta pronto!\n${contact}`,
+      nl: (name, school, date, time, lesson, people, price, meet, contact) =>
+        `*${school} — Les Bevestigd*\n\nHoi ${name},\n\nJe surfles is *bevestigd*.\n\n*Datum:* ${date}\n*Tijd:* ${time}\n*Activiteit:* ${lesson}\n*Personen:* ${people}\n*Totaal:* €${price}\n\n*Ontmoetingspunt:*\n${meet}\nKom 15 minuten voor de les.\n\nDraag je zwemkleding onder het wetsuit. Breng een handdoek en zonnebrand mee.\n\nTot snel!\n${contact}`,
+      'pt-br': (name, school, date, time, lesson, people, price, meet, contact) =>
+        `*${school} — Aula Confirmada*\n\nOi ${name},\n\nSua aula de surf esta *confirmada*.\n\n*Data:* ${date}\n*Horario:* ${time}\n*Modalidade:* ${lesson}\n*Pessoas:* ${people}\n*Total:* €${price}\n\n*Ponto de encontro:*\n${meet}\nChegue 15 minutos antes da aula.\n\nVista o sunga ou maio por baixo do wetsuit. Traga toalha e protetor solar.\n\nAte logo!\n${contact}`,
     },
     cancelled: {
-      pt: (name, school, date, time) =>
-        `*${school}*\n\nOla ${name},\n\nInfelizmente nao foi possivel confirmar a sua marcacao para ${date} as ${time}.\n\nPedimos desculpa pelo inconveniente. Contacte-nos para remarcar.\n\nObrigado pela compreensao.`,
-      en: (name, school, date, time) =>
-        `*${school}*\n\nHi ${name},\n\nUnfortunately we were unable to confirm your booking for ${date} at ${time}.\n\nWe apologise for the inconvenience. Please contact us to reschedule.\n\nThank you for your understanding.`,
-      fr: (name, school, date, time) =>
-        `*${school}*\n\nBonjour ${name},\n\nNous n'avons malheureusement pas pu confirmer votre reservation pour le ${date} a ${time}.\n\nNous nous excusons pour la gene occasionnee. Contactez-nous pour reprogrammer.\n\nMerci de votre comprehension.`,
-      de: (name, school, date, time) =>
-        `*${school}*\n\nHallo ${name},\n\nLeider konnten wir deine Buchung fur den ${date} um ${time} nicht bestatigen.\n\nWir entschuldigen uns fur die Unannehmlichkeiten. Bitte kontaktiere uns fur eine Umbuchung.\n\nVielen Dank fur dein Verstandnis.`,
-      es: (name, school, date, time) =>
-        `*${school}*\n\nHola ${name},\n\nLamentablemente no pudimos confirmar tu reserva para el ${date} a las ${time}.\n\nPedimos disculpas por los inconvenientes. Contactanos para reprogramar.\n\nGracias por tu comprension.`,
-      nl: (name, school, date, time) =>
-        `*${school}*\n\nHoi ${name},\n\nHelaas konden we je reservering voor ${date} om ${time} niet bevestigen.\n\nOns excuses voor het ongemak. Neem contact met ons op om opnieuw in te plannen.\n\nBedankt voor je begrip.`,
-      'pt-br': (name, school, date, time) =>
-        `*${school}*\n\nOi ${name},\n\nInfelizmente nao conseguimos confirmar sua reserva para ${date} as ${time}.\n\nPedimos desculpas pelo inconveniente. Entre em contato para remarcar.\n\nObrigado pela compreensao.`,
+      pt: (name, school, date, time, contact) =>
+        `*${school}*\n\nOla ${name},\n\nInfelizmente nao foi possivel confirmar a sua marcacao para ${date} as ${time}.\n\nPedimos desculpa pelo inconveniente. Contacte-nos para remarcar.\n\nObrigado pela compreensao.\n${contact}`,
+      en: (name, school, date, time, contact) =>
+        `*${school}*\n\nHi ${name},\n\nUnfortunately we were unable to confirm your booking for ${date} at ${time}.\n\nWe apologise for the inconvenience. Please contact us to reschedule.\n\nThank you for your understanding.\n${contact}`,
+      fr: (name, school, date, time, contact) =>
+        `*${school}*\n\nBonjour ${name},\n\nNous n'avons malheureusement pas pu confirmer votre reservation pour le ${date} a ${time}.\n\nNous nous excusons pour la gene occasionnee. Contactez-nous pour reprogrammer.\n\nMerci de votre comprehension.\n${contact}`,
+      de: (name, school, date, time, contact) =>
+        `*${school}*\n\nHallo ${name},\n\nLeider konnten wir deine Buchung fur den ${date} um ${time} nicht bestatigen.\n\nWir entschuldigen uns fur die Unannehmlichkeiten. Bitte kontaktiere uns fur eine Umbuchung.\n\nVielen Dank fur dein Verstandnis.\n${contact}`,
+      es: (name, school, date, time, contact) =>
+        `*${school}*\n\nHola ${name},\n\nLamentablemente no pudimos confirmar tu reserva para el ${date} a las ${time}.\n\nPedimos disculpas por los inconvenientes. Contactanos para reprogramar.\n\nGracias por tu comprension.\n${contact}`,
+      nl: (name, school, date, time, contact) =>
+        `*${school}*\n\nHoi ${name},\n\nHelaas konden we je reservering voor ${date} om ${time} niet bevestigen.\n\nOns excuses voor het ongemak. Neem contact met ons op om opnieuw in te plannen.\n\nBedankt voor je begrip.\n${contact}`,
+      'pt-br': (name, school, date, time, contact) =>
+        `*${school}*\n\nOi ${name},\n\nInfelizmente nao conseguimos confirmar sua reserva para ${date} as ${time}.\n\nPedimos desculpas pelo inconveniente. Entre em contato para remarcar.\n\nObrigado pela compreensao.\n${contact}`,
     },
   };
 
@@ -2198,51 +2539,86 @@
         // Infer language from country when saved as PT but client is foreign
         if (b.client_country) {
           const cn = b.client_country.replace(/^\S+\s/, '');
-          const COUNTRY_LANG = { 'United Kingdom':'en', 'USA':'en', 'Canada':'en', 'Ireland':'en',
-            'France':'fr', 'Belgium':'fr', 'Switzerland':'fr',
-            'Germany':'de', 'Austria':'de',
-            'Spain':'es', 'Netherlands':'nl', 'Brasil':'pt-br', 'Brazil':'pt-br' };
+          const COUNTRY_LANG = {
+            'Reino Unido':'en','Estados Unidos':'en','Canadá':'en','Irlanda':'en','Austrália':'en','Nova Zelândia':'en','África do Sul':'en',
+            'França':'fr','Bélgica':'fr','Suíça':'fr',
+            'Alemanha':'de','Áustria':'de',
+            'Espanha':'es',
+            'Holanda':'nl','Países Baixos':'nl',
+            'Brasil':'pt-br',
+            'United Kingdom':'en','USA':'en','Canada':'en','Ireland':'en','Australia':'en',
+            'France':'fr','Belgium':'fr','Switzerland':'fr',
+            'Germany':'de','Austria':'de',
+            'Spain':'es','Netherlands':'nl','Brazil':'pt-br',
+          };
           if (COUNTRY_LANG[cn]) lang = COUNTRY_LANG[cn];
         }
-        const msgs    = WA_MSGS[newStatus];
-        const fn      = msgs[lang] || msgs['pt'];
-        const msg     = newStatus === 'confirmed'
-          ? fn(b.client_name, school.name, dateStr, b.booking_time, b.lesson_type, b.num_people, price, school.meeting_point)
-          : fn(b.client_name, school.name, dateStr, b.booking_time);
+        const contacts2 = (() => { try { return JSON.parse(localStorage.getItem(`surfbook_contacts_${school.id}`) || 'null'); } catch(_) { return null; } })() || {};
+        const instag  = school.instagram  || contacts2.instagram || '';
+        const website = school.website    || contacts2.website   || '';
+        const contactLines = [
+          instag  ? `📸 ${instag}`  : '',
+          website ? `🌐 ${website}` : '',
+        ].filter(Boolean).join('\n');
+        const translatedLesson = transLesson(b.lesson_type, lang);
+        const tplVars = { nome:b.client_name, escola:school.name, data:dateStr, hora:b.booking_time,
+          aula:translatedLesson, pessoas:String(b.num_people), total:price, ponto:school.meeting_point, contactos:contactLines };
+        const isPT = !['en','fr','de','es','nl'].includes(lang);
+        const customWAKey = newStatus === 'confirmed' ? 'wa-confirm' : 'wa-cancel';
+        let msg;
+        if (isPT && customMsgs[customWAKey]) {
+          msg = applyMsgTpl(customMsgs[customWAKey], tplVars);
+        } else {
+          const msgs = WA_MSGS[newStatus];
+          const fn   = msgs[lang] || msgs['pt'];
+          msg = newStatus === 'confirmed'
+            ? fn(b.client_name, school.name, dateStr, b.booking_time, translatedLesson, b.num_people, price, school.meeting_point, contactLines)
+            : fn(b.client_name, school.name, dateStr, b.booking_time, contactLines);
+        }
         const phone = b.client_phone.replace(/\D/g, '');
         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
 
         // Email to client (if email provided)
         if (b.client_email) {
           const isConf = newStatus === 'confirmed';
-          const subjectPT = isConf
-            ? `✅ Reserva Confirmada — ${b.lesson_type} ${dateStr}`
-            : `❌ Reserva Cancelada — ${b.lesson_type} ${dateStr}`;
-          const subjectEN = isConf
-            ? `✅ Booking Confirmed — ${b.lesson_type} ${dateStr}`
-            : `❌ Booking Cancelled — ${b.lesson_type} ${dateStr}`;
           const useEN = ['en','fr','de','es','nl'].includes(lang);
-          const emailSubject = useEN ? subjectEN : subjectPT;
+          const lessonTrans = transLesson(b.lesson_type, lang);
+          const subjectPTf = isConf
+            ? `✅ Reserva Confirmada — ${lessonTrans} ${dateStr}`
+            : `❌ Reserva Cancelada — ${lessonTrans} ${dateStr}`;
+          const subjectENf = isConf
+            ? `✅ Booking Confirmed — ${lessonTrans} ${dateStr}`
+            : `❌ Booking Cancelled — ${lessonTrans} ${dateStr}`;
+          const emailSubject = useEN ? subjectENf : subjectPTf;
 
+          const emailTplVars = { nome:b.client_name, escola:school.name, data:dateStr, hora:b.booking_time,
+            aula:lessonTrans, pessoas:String(b.num_people), total:price, ponto:school.meeting_point, contactos:contactLines };
+          const customEmailKey = isConf ? 'email-confirm' : 'email-cancel';
           let emailBody;
-          if (isConf) {
+          if (!useEN && customMsgs[customEmailKey]) {
+            emailBody = applyMsgTpl(customMsgs[customEmailKey], emailTplVars);
+          } else if (isConf) {
             emailBody = useEN
-              ? `Hi ${b.client_name},\n\nYour surf lesson is confirmed!\n\nLesson: ${b.lesson_type}\nDate: ${dateStr}\nTime: ${b.booking_time}\nPeople: ${b.num_people}\nTotal: €${price}\n\nMeeting point:\n${school.meeting_point}\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!\n${school.name}`
-              : `Olá ${b.client_name},\n\nA sua reserva está confirmada!\n\nAula: ${b.lesson_type}\nData: ${dateStr}\nHorário: ${b.booking_time}\nPessoas: ${b.num_people}\nTotal: €${price}\n\nPonto de encontro:\n${school.meeting_point}\n\nUse fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAté breve!\n${school.name}`;
+              ? `Hi ${b.client_name},\n\nYour surf lesson is confirmed!\n\nLesson: ${lessonTrans}\nDate: ${dateStr}\nTime: ${b.booking_time}\nPeople: ${b.num_people}\nTotal: €${price}\n\nMeeting point:\n${school.meeting_point}\n\nWear your swimsuit under the wetsuit. Bring a towel and sunscreen.\n\nSee you soon!\n${school.name}`
+              : `Olá ${b.client_name},\n\nA sua reserva está confirmada!\n\nAula: ${lessonTrans}\nData: ${dateStr}\nHorário: ${b.booking_time}\nPessoas: ${b.num_people}\nTotal: €${price}\n\nPonto de encontro:\n${school.meeting_point}\n\nUse fato de banho por baixo do fato de surf. Traga toalha e protetor solar.\n\nAté breve!\n${school.name}`;
           } else {
             emailBody = useEN
-              ? `Hi ${b.client_name},\n\nUnfortunately your booking has been cancelled.\n\nLesson: ${b.lesson_type}\nDate: ${dateStr}\nTime: ${b.booking_time}\n\nWe apologise for the inconvenience. Please contact us to reschedule.\n\n${school.name}`
-              : `Olá ${b.client_name},\n\nInfelizmente a sua reserva foi cancelada.\n\nAula: ${b.lesson_type}\nData: ${dateStr}\nHorário: ${b.booking_time}\n\nPedimos desculpa pelo inconveniente. Contacte-nos para reagendar.\n\n${school.name}`;
+              ? `Hi ${b.client_name},\n\nUnfortunately your booking has been cancelled.\n\nLesson: ${lessonTrans}\nDate: ${dateStr}\nTime: ${b.booking_time}\n\nWe apologise for the inconvenience. Please contact us to reschedule.\n\n${school.name}`
+              : `Olá ${b.client_name},\n\nInfelizmente a sua reserva foi cancelada.\n\nAula: ${lessonTrans}\nData: ${dateStr}\nHorário: ${b.booking_time}\n\nPedimos desculpa pelo inconveniente. Contacte-nos para reagendar.\n\n${school.name}`;
           }
 
+          const contacts = (() => { try { return JSON.parse(localStorage.getItem(`surfbook_contacts_${school.id}`) || 'null'); } catch(_) { return null; } })() || {};
+          const schoolEmail  = school.school_email  || contacts.email  || '';
+          const schoolEmail2 = school.school_email2 || contacts.email2 || '';
+          const ccList = [b.client_email, schoolEmail, schoolEmail2].filter(Boolean).join(',');
           fetch('https://formsubmit.co/ajax/ivocasimiro@gmail.com', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({
               _subject: emailSubject,
               message: emailBody,
-              _replyto: 'ivocasimiro@gmail.com',
-              _cc: b.client_email,
+              _replyto: b.client_email || 'ivocasimiro@gmail.com',
+              _cc: ccList || undefined,
               _template: 'table',
             })
           }).catch(() => {});
@@ -2649,11 +3025,15 @@
       .map(t => `<option value="${t}" ${t === b.booking_time ? 'selected' : ''}>${t}</option>`)
       .join('');
 
-    document.getElementById('reschedule-modal-bg').classList.add('open');
+    const bg = document.getElementById('reschedule-modal-bg');
+    bg.classList.add('open');
+    bg.removeAttribute('aria-hidden');
   }
 
   function closeReschedule() {
-    document.getElementById('reschedule-modal-bg').classList.remove('open');
+    const bg = document.getElementById('reschedule-modal-bg');
+    bg.classList.remove('open');
+    bg.setAttribute('aria-hidden', 'true');
     rschBookingId = null;
   }
 
@@ -2677,10 +3057,18 @@
         let lang = (b.language || 'pt').toLowerCase();
         if (b.client_country) {
           const cn = b.client_country.replace(/^\S+\s/, '');
-          const COUNTRY_LANG = { 'United Kingdom':'en', 'USA':'en', 'Canada':'en', 'Ireland':'en',
-            'France':'fr', 'Belgium':'fr', 'Switzerland':'fr',
-            'Germany':'de', 'Austria':'de',
-            'Spain':'es', 'Netherlands':'nl', 'Brasil':'pt-br', 'Brazil':'pt-br' };
+          const COUNTRY_LANG = {
+            'Reino Unido':'en','Estados Unidos':'en','Canadá':'en','Irlanda':'en','Austrália':'en','Nova Zelândia':'en','África do Sul':'en',
+            'França':'fr','Bélgica':'fr','Suíça':'fr',
+            'Alemanha':'de','Áustria':'de',
+            'Espanha':'es',
+            'Holanda':'nl','Países Baixos':'nl',
+            'Brasil':'pt-br',
+            'United Kingdom':'en','USA':'en','Canada':'en','Ireland':'en','Australia':'en',
+            'France':'fr','Belgium':'fr','Switzerland':'fr',
+            'Germany':'de','Austria':'de',
+            'Spain':'es','Netherlands':'nl','Brazil':'pt-br',
+          };
           if (COUNTRY_LANG[cn]) lang = COUNTRY_LANG[cn];
         }
         const rschMsgs = {
@@ -2790,14 +3178,18 @@
       </div>
       ${equipHtml ? `<div class="detail-section"><div class="detail-section-title">👕 Equipamento</div>${equipHtml}</div>` : ''}
     `;
-    document.getElementById('detail-modal-bg').classList.add('open');
+    const bg = document.getElementById('detail-modal-bg');
+    bg.classList.add('open');
+    bg.removeAttribute('aria-hidden');
   }
 
   function closeDetail(e) {
     if (e.target === document.getElementById('detail-modal-bg')) closeDetailModal();
   }
   function closeDetailModal() {
-    document.getElementById('detail-modal-bg').classList.remove('open');
+    const bg = document.getElementById('detail-modal-bg');
+    bg.classList.remove('open');
+    bg.setAttribute('aria-hidden', 'true');
   }
 
   // ── MANUAL BOOKING ────────────────────────────────────────────
@@ -2923,13 +3315,17 @@
 
     buildMBEquipRows();
     updateMBTotal();
-    document.getElementById('manual-booking-modal-bg').classList.add('open');
+    const bg = document.getElementById('manual-booking-modal-bg');
+    bg.classList.add('open');
+    bg.removeAttribute('aria-hidden');
     setTimeout(() => document.getElementById('mb-name').focus(), 100);
     checkMBAvailability();
   }
 
   function closeManualBooking() {
-    document.getElementById('manual-booking-modal-bg').classList.remove('open');
+    const bg = document.getElementById('manual-booking-modal-bg');
+    bg.classList.remove('open');
+    bg.setAttribute('aria-hidden', 'true');
   }
 
   async function saveManualBooking() {
@@ -3014,6 +3410,8 @@
   let chartMonth = null; // null = all months
   let chartInstances = {};
   let chartFilter = null; // { field, value } — cross-filter active selection
+  let dashFilter  = null; // { type, label, start?, end?, prefix? } — dashboard card filter
+  let tableWeekFilter = null; // { start, end } YYYY-MM-DD — set by revenue pills
 
   const GNORM = {
     'H':'Homem','Homem':'Homem','homem':'Homem','h':'Homem','Masculino':'Homem','masculino':'Homem','male':'Homem','Male':'Homem','M':'Homem','m':'Homem',
@@ -3056,6 +3454,12 @@
     buildCharts();
   }
   function clearChartFilter() { chartFilter = null; buildCharts(); }
+  function clearDashFilter()  { dashFilter  = null; document.querySelectorAll('.stat-card').forEach(c=>c.classList.remove('active')); buildCharts(); }
+
+  function _triggerChartsIfOpen() {
+    const el = document.getElementById('analytics-section');
+    if (el && el.style.display !== 'none') buildCharts();
+  }
 
   // Register datalabels plugin globally
   if (typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
@@ -3072,6 +3476,14 @@
       if (prevBtn) { prevBtn.textContent = curY - 1; prevBtn.dataset.year = curY - 1; }
       buildCharts();
     }
+  }
+
+  function resetToMonthView() {
+    chartMonth = null;
+    if (chartFilter?.field === 'day') chartFilter = null;
+    document.querySelectorAll('.chart-month-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.chart-month-btn')?.classList.add('active');
+    buildCharts();
   }
 
   function setChartYear(y) {
@@ -3096,8 +3508,20 @@
   function buildCharts() {
     const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
+    // ── Dashboard source filter ────────────────────────────────
+    const dashBar = document.getElementById('dash-filter-bar');
+    const dashLbl = document.getElementById('dash-filter-label');
+    let sourceBookings = allBookings;
+    if (dashFilter) {
+      if (dashFilter.type === 'today')     sourceBookings = allBookings.filter(b => b.booking_date === dashFilter.date);
+      else if (dashFilter.type === 'week') sourceBookings = allBookings.filter(b => b.booking_date >= dashFilter.start && b.booking_date <= dashFilter.end);
+      else if (dashFilter.type === 'month')sourceBookings = allBookings.filter(b => b.booking_date?.startsWith(dashFilter.prefix));
+      else if (dashFilter.type === 'status')sourceBookings = allBookings.filter(b => b.status === dashFilter.status);
+      if (dashBar) { dashBar.style.display = 'flex'; if (dashLbl) dashLbl.textContent = dashFilter.label; }
+    } else if (dashBar) { dashBar.style.display = 'none'; }
+
     // All bookings in period (including cancelled — for cancellation rate)
-    let allPeriod = allBookings.filter(b => b.booking_date);
+    let allPeriod = sourceBookings.filter(b => b.booking_date);
     if (chartYear !== 'all') allPeriod = allPeriod.filter(b => b.booking_date.startsWith(String(chartYear)));
     if (chartMonth !== null) {
       const mm = String(chartMonth).padStart(2,'0');
@@ -3107,18 +3531,26 @@
     // Active bookings (non-cancelled) for revenue/occupancy charts
     let data = allPeriod.filter(b => b.status !== 'cancelled');
 
+    // ── Back button visibility ─────────────────────────────────
+    const backBtn = document.getElementById('chart-monthly-back');
+    if (backBtn) backBtn.style.display = chartMonth !== null ? 'inline-flex' : 'none';
+
     // ── Cross-filter ───────────────────────────────────────────
     const filterBar  = document.getElementById('chart-filter-bar');
     const filterLbl  = document.getElementById('chart-filter-label');
     if (chartFilter && filterBar) {
-      const fieldPT = { lesson_type:'Modalidade', booking_time:'Horário', gender:'Género', nat:'Nacionalidade', wetsuit_size:'Tamanho Fato' };
+      const fieldPT = { lesson_type:'Modalidade', booking_time:'Horário', gender:'Género', nat:'Nacionalidade', wetsuit_size:'Tamanho Fato', day:'Dia' };
+      const dispVal = chartFilter.field === 'day'
+        ? (() => { const [,m,d] = chartFilter.value.split('-'); return `${parseInt(d)} ${months[parseInt(m)-1]}`; })()
+        : chartFilter.value;
       filterBar.style.display = 'flex';
-      if (filterLbl) filterLbl.textContent = `${fieldPT[chartFilter.field]||chartFilter.field}: ${chartFilter.value}`;
+      if (filterLbl) filterLbl.textContent = `${fieldPT[chartFilter.field]||chartFilter.field}: ${dispVal}`;
       const { field, value } = chartFilter;
       data = data.filter(b => {
         if (field === 'gender') return (GNORM[(b.client_gender||'').trim()] || (b.client_gender||'').trim() || 'N/D') === value;
         if (field === 'nat')    return (b.client_country||'').replace(/^\S+\s/,'').trim() === value;
         if (field === 'lesson_type') return normLesson(b.lesson_type) === value;
+        if (field === 'day')         return b.booking_date === value;
         if (field === 'wetsuit_size') {
           const sizes = Array.isArray(b.equipment_list) ? b.equipment_list.map(p=>p.size).filter(Boolean) : (b.wetsuit_size ? [b.wetsuit_size] : []);
           return sizes.includes(value);
@@ -3227,7 +3659,21 @@
       data: { labels: timeLabels, datasets: [{ label: 'Marcações', data: timeData, backgroundColor: 'rgba(0,207,253,.6)', borderRadius: 4 }] },
       options: {
         onClick: (e, els) => {
-          if (!els.length || chartMonth !== null) return;
+          if (chartMonth !== null) {
+            if (els.length) {
+              // Day view: click a bar → cross-filter all charts for that day
+              const yr = chartYear === 'all' ? new Date().getFullYear() : chartYear;
+              const mm = String(chartMonth).padStart(2,'0');
+              const dd = String(els[0].index + 1).padStart(2,'0');
+              applyChartFilter('day', `${yr}-${mm}-${dd}`);
+            } else {
+              // Day view: click empty area → go back to month view
+              resetToMonthView();
+            }
+            return;
+          }
+          // Year view: click a month bar → drill down into that month
+          if (!els.length) return;
           const btn = document.querySelectorAll('.chart-month-btn')[els[0].index];
           if (btn) setChartMonth(els[0].index + 1, btn);
         },
@@ -3317,13 +3763,17 @@
   let reportInstructors = {}; // { 'YYYY-MM-DD|HH:MM': 'Nome Instrutor' }
 
   function openReportModal() {
-    document.getElementById('report-modal-bg').style.display = 'block';
+    const bg = document.getElementById('report-modal-bg');
+    bg.classList.add('open');
+    bg.removeAttribute('aria-hidden');
     document.body.style.overflow = 'hidden';
     buildReport();
   }
 
   function closeReportModal() {
-    document.getElementById('report-modal-bg').style.display = 'none';
+    const bg = document.getElementById('report-modal-bg');
+    bg.classList.remove('open');
+    bg.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   }
 
@@ -3337,15 +3787,17 @@
   }
 
   function getReportDates() {
-    const today = new Date(); today.setHours(0,0,0,0);
-    const fmt = d => d.toISOString().slice(0,10);
-    if (reportPeriod === 'today')    return [fmt(today)];
-    if (reportPeriod === 'tomorrow') { const t = new Date(today); t.setDate(t.getDate()+1); return [fmt(t)]; }
+    const now = new Date();
+    // Use local date to avoid UTC offset shifting the date (e.g. UTC+1 summer)
+    const localFmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // local midnight
+    if (reportPeriod === 'today')    return [localFmt(today)];
+    if (reportPeriod === 'tomorrow') { const t = new Date(today); t.setDate(t.getDate()+1); return [localFmt(t)]; }
     // week: Monday–Sunday of current week
     const days = [];
-    const dow = today.getDay(); // 0=Sun,1=Mon,...
+    const dow = today.getDay();
     const monday = new Date(today); monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
-    for (let i = 0; i < 7; i++) { const d = new Date(monday); d.setDate(monday.getDate()+i); days.push(fmt(d)); }
+    for (let i = 0; i < 7; i++) { const d = new Date(monday); d.setDate(monday.getDate()+i); days.push(localFmt(d)); }
     return days;
   }
 
@@ -3692,6 +4144,7 @@
 </style></head><body>
 <input type="file" id="photo-input" accept="image/*"/>
 <div class="toolbar">
+  <button class="btn-sec" onclick="window.close()" style="background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.3);color:#fca5a5">✕ Fechar</button>
   <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
   <button class="btn-img" onclick="saveImage()">💾 Guardar Imagem</button>
   <button class="btn-share" onclick="shareImage()">📤 Partilhar</button>
