@@ -1024,6 +1024,19 @@ async function guardar(){
   if(sessoes.some(s=>!s.dataVendas&&(s.valor>0||s.sessao))){toast('⚠️ Preencha a data de vendas em todas as sessões');return}
   if(sessoes.some(s=>!s.valor||s.valor<=0)){toast('⚠️ Preencha o valor em todas as sessões');return}
   if(sessoes.some(s=>!s.sessao)){toast('⚠️ Preencha o Nº Sessão de Caixa em todas as sessões');return}
+  // Datas de venda duplicadas na mesma entrega
+  const datas=sessoes.map(s=>s.dataVendas).filter(Boolean);
+  const datasUnicas=new Set(datas);
+  if(datasUnicas.size<datas.length){
+    const dup=[...datas].find((d,i)=>datas.indexOf(d)!==i);
+    toast('⚠️ Dia de venda duplicado: '+fd(dup)+' — cada dia só pode aparecer uma vez');return;
+  }
+  // Data depósito não pode ser anterior à data de venda mais recente
+  const dd=document.getElementById('f-dd').value;
+  if(dd){
+    const ultVenda=datas.sort().pop();
+    if(ultVenda&&dd<ultVenda){toast('⚠️ A data do depósito ('+fd(dd)+') não pode ser anterior ao último dia de venda ('+fd(ultVenda)+')');return;}
+  }
   const cnt=sessoes.length;
   const isTardio=tipo==='Depósito Direto'&&cnt>3;
   const just=(document.getElementById('f-just')?.value||'').trim();
@@ -1069,6 +1082,29 @@ async function guardar(){
 }
 
 // ─── DASHBOARD ───────────────────────────────────────
+
+function getMissingDays(mes,lojaFil){
+  const[year,month]=mes.split('-').map(Number);
+  const today=new Date();today.setHours(0,0,0,0);
+  const isCurrentMonth=mes===curMesStr();
+  // Only show missing days for current or past months up to today
+  const lastDay=isCurrentMonth?today.getDate():new Date(year,month,0).getDate();
+  // Gather all session dates for this loja in this month
+  const covered=new Set();
+  regs.forEach(r=>{
+    if(lojaFil&&r.loja!==lojaFil)return;
+    (r.sessoes||[]).forEach(s=>{
+      if(s.dataVendas&&s.dataVendas.startsWith(mes))covered.add(s.dataVendas);
+    });
+  });
+  const missing=[];
+  for(let d=1;d<=lastDay;d++){
+    const ds=`${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dt=new Date(ds);dt.setHours(0,0,0,0);
+    if(dt<=today&&!covered.has(ds))missing.push(ds);
+  }
+  return missing;
+}
 
 function getOverdueAlerts(lojaFil){
   // Find the most recent session date per loja+tipo across ALL records
@@ -1285,6 +1321,12 @@ function rDash(){
         <div class="dep-val">${fmt(tv)}</div>
       </div>`;
     }).join('');
+    // Missing days for this loja in selected month
+    const missing=getMissingDays(mes,loja);
+    const missingHtml=missing.length?`<div style="padding:8px 12px;border-bottom:1px solid var(--g100);background:#fffbeb">
+      <div style="font-size:10px;font-weight:800;color:var(--orange-dark);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">📅 ${missing.length} dia${missing.length!==1?'s':''} sem sessão registada${mes===curMesStr()?' (até hoje)':''}:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${missing.map(d=>`<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer" onclick="sp('novo')" title="Registar ${fd(d)}">${fd(d).split('/').slice(0,2).join('/')}</span>`).join('')}</div>
+    </div>`:'';
     return`<div class="loja-hdr"><span class="name">${loja}</span><span class="total">${fmt(lt)}</span></div>
     <div class="loja-body">
       <div class="loja-summary">
@@ -1294,6 +1336,7 @@ function rDash(){
         ${lprog?`<span class="ls blue">${lprog} 📅 Prog.</span>`:''}
         <span class="ls gray">Dep: ${fmt(ldep)}</span>
       </div>
+      ${missingHtml}
       ${rows}
     </div>`;
   }).join('');
@@ -1410,7 +1453,11 @@ async function saveDD(id){
   const r=regs.find(x=>x.id===id);if(!r)return;
   const dd=document.getElementById('qdd')?.value||'';
   const tal=document.getElementById('qtal')?.value||'';
-  if(dd)r.dataDeposito=dd;
+  if(dd){
+    const ultVenda=(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort().pop();
+    if(ultVenda&&dd<ultVenda){toast('⚠️ Data do depósito ('+fd(dd)+') anterior ao último dia de venda ('+fd(ultVenda)+')');return;}
+    r.dataDeposito=dd;
+  }
   r.talao=tal;
   saveR();
   await sbSave(r);
