@@ -828,6 +828,9 @@ function calcEstado(r){
   const nsess=(r.sessoes||[]).length;
   const tv=totalValor(r);
   if(!r.sessoes||!r.sessoes.length)return{s:'prog',label:'📅 Sem sessões'};
+  // Missing required session fields = error
+  if(r.sessoes.some(s=>!s.sessao||(parseFloat(s.valor)||0)<=0))
+    return{s:'err',label:'🔴 Dados incompletos'};
   const ma=maisAntigaData(r);
   if(!ma)return{s:'prog',label:'📅 Sem data de vendas'};
   if(ma>=today)return{s:'prog',label:'📅 Programado'};
@@ -1608,44 +1611,91 @@ async function updEmailPrev(){
       <div style="display:flex;flex-wrap:wrap;gap:4px">${missingInEmail.map(d=>`<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700">${fd(d).split('/').slice(0,2).join('/')}</span>`).join('')}</div>
     </div>`:`<div style="margin-top:8px;font-size:11px;color:#166534;font-weight:700">✅ Todos os dias registados</div>`;
   // Plain text body for mailto: — per-session table so accountant can verify each session
+  const sep='─'.repeat(52);
   const sessLines=allSess.map(({r,s,isFirst})=>{
-    const parts=[`  ${(fd(s.dataVendas)||'—').padEnd(12)}Sess.${(s.sessao||'?').toString().padEnd(7)}${fmt(s.valor||0).padStart(9)}`];
-    if(isFirst){parts.push(`  Dep: ${fd(r.dataDeposito)||'(pendente)'}`);if(r.talao)parts.push(`  Ref: ${r.talao}`);}
-    return parts.join('');
+    const dataStr=(fd(s.dataVendas)||'—').padEnd(12);
+    const sessStr=('Sess. '+(s.sessao||'?')).padEnd(12);
+    const valStr=fmt(s.valor||0).padStart(10);
+    let line=`  ${dataStr}${sessStr}${valStr}`;
+    if(isFirst){
+      line+=`  Dep: ${fd(r.dataDeposito)||'(pendente)'}`;
+      if(r.talao)line+=`  Ref: ${r.talao}`;
+      const est=calcEstado(r);
+      if(est.s==='err')line+=`  ⚠️ ${est.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}`;
+    }
+    return line;
   }).join('\n');
-  const missingLine=missingInEmail.length?`\nDias sem registo (${missingInEmail.length}): ${missingInEmail.map(d=>fd(d).split('/').slice(0,2).join('/')).join(', ')}`:`\nTodos os dias do mês registados ✅`;
-  const shortBody=`Exmo(a). Departamento de Contabilidade,\n\nFolha de depósitos — ${loja} — ${ml}\n${empresa}${nif?' | NIF '+nif:''}\n\n--- RESUMO ---\nTotal vendas:    ${fmt(total)}\nDepositado:      ${fmt(totalDep)}\nPor depositar:   ${fmt(total-totalDep)}\nDepósitos: ${data.length} | Sessões: ${allSess.length} | ${erros>0?'⚠️ '+erros+' em atraso':'✅ OK'}\n\n--- SESSÕES DE CAIXA ---\n  DATA        Nº SESS.  VALOR      DEPÓSITO/REF.\n${sessLines}${missingLine}\n\nCom os melhores cumprimentos,\n${loja} — ${empresa}`;
+  const missingLine=missingInEmail.length
+    ?`\n${sep}\n📅 DIAS SEM REGISTO (${missingInEmail.length}): ${missingInEmail.map(d=>fd(d).split('/').slice(0,2).join('/')).join(', ')}`
+    :`\n${sep}\n✅ Todos os dias do mês registados.`;
+  const shortBody=[
+    sep,
+    `FOLHA DE DEPÓSITOS — ${loja.toUpperCase()} — ${ml.toUpperCase()}`,
+    `${empresa}${nif?' | NIF '+nif:''}`,
+    sep,'',
+    'Exmo(a). Departamento de Contabilidade,','',
+    `Enviamos a folha de depósitos de ${loja}, referente a ${ml}.`,
+    '',sep,
+    'RESUMO',sep,
+    `  Total vendas:      ${fmt(total)}`,
+    `  Depositado:        ${fmt(totalDep)}`,
+    `  Por depositar:     ${fmt(total-totalDep)}`,
+    `  N.º depósitos:     ${data.length}`,
+    `  N.º sessões:       ${allSess.length}`,
+    `  Estado:            ${erros>0?'⚠️ '+erros+' depósito(s) em atraso — verificar urgente':avisos>0?'⚠️ '+avisos+' aviso(s)':'✅ Sem problemas'}`,
+    '',sep,
+    'DETALHE POR SESSÃO DE CAIXA',sep,
+    `  ${'DATA'.padEnd(12)}${'Nº SESSÃO'.padEnd(12)}${'VALOR'.padStart(10)}  DEPÓSITO / TALÃO`,
+    sep,
+    sessLines,
+    missingLine,'',sep,
+    'Com os melhores cumprimentos,',
+    `${loja} — ${empresa}`,
+    sep
+  ].join('\n');
   document.getElementById('ep-to').textContent=dest||'(não configurado)';
   document.getElementById('ep-cc').textContent=cc;
   document.getElementById('ep-sub').textContent=subj;
-  // Rich HTML preview
+  // Professional email preview (no session table — detail goes in the email body text)
+  const statusBg=erros>0?'#fee2e2':avisos>0?'#fffbeb':'#dcfce7';
+  const statusColor=erros>0?'#991b1b':avisos>0?'#854d0e':'#166534';
+  const statusMsg=erros>0?`🔴 ${erros} depósito(s) em atraso — verificar urgente`:avisos>0?`⚠️ ${avisos} aviso(s) — verificar antes de enviar`:'✅ Todos os depósitos em ordem';
   document.getElementById('ep-body').innerHTML=`
-    <div style="font-size:12px;color:#374151;margin-bottom:8px">Exmo(a). Departamento de Contabilidade,</div>
-    <div style="font-size:12px;color:#374151;margin-bottom:10px">Folha de depósitos: <strong>${loja}</strong> — <strong>${ml}</strong>${empresa?' | '+empresa:''}${nif?' | NIF '+nif:''}.</div>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:10px">
-      <thead><tr style="background:#1e3a8a">
-        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700;text-align:left">Data Vendas</th>
-        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700;text-align:center">Nº Sess.</th>
-        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Tipo</th>
-        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700;text-align:right">Valor</th>
-        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Data Dep.</th>
-        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Talão/Ref.</th>
-        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Estado</th>
-      </tr></thead>
-      <tbody>${depRows}</tbody>
-      <tfoot><tr style="background:#dbeafe;border-top:2px solid #1e3a8a">
-        <td colspan="3" style="padding:5px 6px;font-size:11px;font-weight:700;color:#1e3a8a">${data.length} dep. · ${allSess.length} sess.</td>
-        <td style="padding:5px 6px;font-size:12px;font-weight:800;color:#1e3a8a;text-align:right">${fmt(total)}</td>
-        <td colspan="3" style="padding:5px 6px;font-size:10px;color:${erros>0?'#991b1b':'#166534'};font-weight:700">${erros>0?'⚠️ '+erros+' em atraso':'✅ OK'}</td>
-      </tr></tfoot>
-    </table>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
-      <div style="background:#dbeafe;border-radius:7px;padding:7px 10px;text-align:center"><div style="font-size:10px;color:#1e40af;font-weight:700">Total</div><div style="font-size:14px;font-weight:800;color:#1e3a8a">${fmt(total)}</div></div>
-      <div style="background:#dcfce7;border-radius:7px;padding:7px 10px;text-align:center"><div style="font-size:10px;color:#166534;font-weight:700">Depositado</div><div style="font-size:14px;font-weight:800;color:#166534">${fmt(totalDep)}</div></div>
-      <div style="background:${erros>0?'#fee2e2':total-totalDep>0?'#fef9c3':'#dcfce7'};border-radius:7px;padding:7px 10px;text-align:center"><div style="font-size:10px;color:${erros>0?'#991b1b':'#854d0e'};font-weight:700">${erros>0?'Em atraso':'Por dep.'}</div><div style="font-size:14px;font-weight:800;color:${erros>0?'#991b1b':'#854d0e'}">${erros>0?erros+' dep.':fmt(total-totalDep)}</div></div>
-    </div>
-    ${missingEmailHtml}
-    <div style="font-size:11px;color:#6b7280;margin-top:10px">Com os melhores cumprimentos,<br><strong>${loja} — ${empresa}</strong></div>`;
+    <div style="border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+      <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:16px 18px;color:#fff">
+        <div style="font-size:14px;font-weight:800;letter-spacing:-.2px">${empresa||loja}</div>
+        <div style="font-size:11px;opacity:.8;margin-top:3px">Folha de Depósitos · ${loja} · ${ml}${nif?' · NIF '+nif:''}</div>
+      </div>
+      <div style="padding:16px 18px;background:#fff">
+        <div style="font-size:12.5px;color:#374151;line-height:1.6;margin-bottom:14px">Exmo(a). Departamento de Contabilidade,<br>
+        Enviamos em anexo a folha de depósitos da loja <strong>${loja}</strong> referente a <strong>${ml}</strong>. O detalhe completo por sessão de caixa encontra-se no corpo deste email.</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+          <div style="background:#eff6ff;border-radius:9px;padding:9px 10px;text-align:center;border:1px solid #bfdbfe">
+            <div style="font-size:9px;color:#1e40af;font-weight:800;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Total</div>
+            <div style="font-size:15px;font-weight:800;color:#1e3a8a">${fmt(total)}</div>
+          </div>
+          <div style="background:#f0fdf4;border-radius:9px;padding:9px 10px;text-align:center;border:1px solid #bbf7d0">
+            <div style="font-size:9px;color:#166534;font-weight:800;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Depositado</div>
+            <div style="font-size:15px;font-weight:800;color:#166534">${fmt(totalDep)}</div>
+          </div>
+          <div style="background:${total-totalDep>0?'#fffbeb':'#f0fdf4'};border-radius:9px;padding:9px 10px;text-align:center;border:1px solid ${total-totalDep>0?'#fde68a':'#bbf7d0'}">
+            <div style="font-size:9px;color:${total-totalDep>0?'#854d0e':'#166534'};font-weight:800;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Por dep.</div>
+            <div style="font-size:15px;font-weight:800;color:${total-totalDep>0?'#92400e':'#166534'}">${fmt(total-totalDep)}</div>
+          </div>
+        </div>
+        <div style="background:${statusBg};border-radius:8px;padding:9px 12px;font-size:12px;font-weight:700;color:${statusColor};margin-bottom:12px">${statusMsg}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;border-radius:8px;padding:8px 12px;font-size:11px;color:#64748b;margin-bottom:12px">
+          <span><strong style="color:#334155">${data.length}</strong> depósito${data.length!==1?'s':''}</span>
+          <span><strong style="color:#334155">${allSess.length}</strong> sessão${allSess.length!==1?'ões':''} de caixa</span>
+          <span>Período: <strong style="color:#334155">${ml}</strong></span>
+        </div>
+        ${missingEmailHtml}
+        <div style="font-size:11px;color:#94a3b8;margin-top:14px;padding-top:12px;border-top:1px solid #f1f5f9;line-height:1.6">
+          Com os melhores cumprimentos,<br>
+          <strong style="color:#334155">${loja}${empresa?' — '+empresa:''}</strong>
+        </div>
+      </div>
+    </div>`;
   // Store plain text for copy + mailto
   document.getElementById('ep-body').dataset.body=shortBody;
   document.getElementById('ep-body').dataset.subj=subj;
@@ -1914,6 +1964,13 @@ function expPrint(data){
   const ml=mesLabel(mes);
   const erros=data.filter(r=>calcEstado(r).s==='err').length;
 
+  // Detect duplicate sessions across records (same loja+day+sessao)
+  const _seen=new Set(),_dups=new Set();
+  data.forEach(r=>r.sessoes.forEach(s=>{
+    const k=`${r.loja}|${s.dataVendas}|${s.sessao}`;
+    if(_seen.has(k))_dups.add(k);else _seen.add(k);
+  }));
+
   const rows=[];
   data.forEach(r=>{
     r.sessoes.forEach((s,si)=>{rows.push({r,s,si,est:calcEstado(r),isFirst:si===0});});
@@ -1923,22 +1980,24 @@ function expPrint(data){
   let n=0;
   const trows=rows.map(({r,s,si,est,isFirst})=>{
     if(isFirst)n++;
-    const bc=est.s==='ok'?'#dcfce7':est.s==='warn'?'#fef9c3':est.s==='err'?'#fee2e2':'#f8fafc';
-    const fc=est.s==='ok'?'#166534':est.s==='warn'?'#854d0e':est.s==='err'?'#991b1b':'#64748b';
+    const isDup=_dups.has(`${r.loja}|${s.dataVendas}|${s.sessao}`);
+    const estEff=isDup?{s:'err',label:'🔴 Duplicado'}:est;
+    const bc=estEff.s==='ok'?'#dcfce7':estEff.s==='warn'?'#fef9c3':estEff.s==='err'?'#fee2e2':'#f8fafc';
+    const fc=estEff.s==='ok'?'#166534':estEff.s==='warn'?'#854d0e':estEff.s==='err'?'#991b1b':'#64748b';
     const sessTalao=getSessTalao(r,s);
-    const rowBg=n%2===0?'#f0f7ff':'#ffffff';
+    const rowBg=isDup?'#fff0f0':n%2===0?'#f0f7ff':'#ffffff';
     const photoCell=isFirst?(r.foto?`<td style="padding:2px;text-align:center"><img src="${r.foto}" style="height:34px;width:46px;object-fit:cover;border-radius:3px;display:block;margin:0 auto"></td>`:`<td style="text-align:center;color:#94a3b8;font-size:8px">—</td>`):`<td></td>`;
-    return`<tr style="background:${rowBg}${!isFirst?';border-top:1px dashed #e2e8f0':''}">
+    return`<tr style="background:${rowBg}${isDup?';border-left:3px solid #ef4444':''}${!isFirst?';border-top:1px dashed #e2e8f0':''}">
       <td style="text-align:center;color:#94a3b8;font-size:7px">${isFirst?n:''}</td>
-      <td style="font-weight:700;color:#0f172a">${fd(s.dataVendas)}</td>
-      <td style="text-align:center;color:#475569">${s.sessao||'—'}</td>
+      <td style="font-weight:700;color:${isDup?'#dc2626':'#0f172a'}">${fd(s.dataVendas)}${isDup?' ⚠️':''}</td>
+      <td style="text-align:center;color:${isDup?'#dc2626':'#475569'};font-weight:${isDup?'800':'400'}">${s.sessao||'—'}</td>
       <td>${isFirst?fd(r.dataDeposito):'↑'}</td>
       <td style="font-size:7.5px;color:#475569">${isFirst?(r.tipo||'—'):''}</td>
       <td style="text-align:right;font-weight:800;color:#1d4ed8">${fmt(s.valor)}</td>
       <td style="font-family:monospace;font-size:7.5px">${sessTalao||'<span style="color:#ef4444;font-weight:700">SEM</span>'}</td>
       <td style="font-size:7.5px;color:#475569">${isFirst?r.responsavel:''}</td>
       <td style="text-align:center;font-weight:800;color:#16a34a">${isFirst&&sessTalao&&r.dataDeposito?'✓':''}</td>
-      <td>${isFirst?`<span style="background:${bc};color:${fc};padding:1px 5px;border-radius:3px;font-size:7px;font-weight:800;white-space:nowrap">${est.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}</span>`:''}</td>
+      <td>${isFirst?`<span style="background:${bc};color:${fc};padding:1px 5px;border-radius:3px;font-size:7px;font-weight:800;white-space:nowrap">${(isDup?'DUPLICADO':estEff.label).replace(/[📅✅⚠️🔴]/gu,'').trim()}</span>`:isDup?`<span style="background:#fee2e2;color:#991b1b;padding:1px 5px;border-radius:3px;font-size:7px;font-weight:800">DUPLICADO</span>`:''}</td>
       ${photoCell}
     </tr>`;
   }).join('');
