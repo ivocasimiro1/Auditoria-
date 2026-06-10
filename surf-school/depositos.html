@@ -369,8 +369,9 @@ select{
     <div class="kpi blue"><div class="kl">Total Mês</div><div class="kv" id="d-total">€0</div><div class="ks" id="d-total-s"></div></div>
     <div class="kpi green"><div class="kl">✅ Depositado</div><div class="kv" id="d-dep">€0</div></div>
     <div class="kpi orange"><div class="kl">⏳ Por Depositar</div><div class="kv" id="d-pend">€0</div></div>
-    <div class="kpi red"><div class="kl">🔴 Em Atraso</div><div class="kv" id="d-err">0</div><div class="ks" id="d-err-s"></div></div>
+    <div class="kpi red"><div class="kl">🔴 Em Atraso / Falta</div><div class="kv" id="d-err">0</div><div class="ks" id="d-err-s"></div></div>
   </div>
+  <div id="dash-alerts"></div>
   <div id="dash-types"></div>
   <div id="dash-body"></div>
 </div>
@@ -904,9 +905,9 @@ function addSes(data){
       <div class="fg"><label style="font-size:11px">Data de Vendas *</label><input type="date" id="sv-${idx}" value="${data?.dataVendas||new Date().toISOString().split('T')[0]}" oninput="updSesTotal()"></div>
       <div class="fg"><label style="font-size:11px">Nº Sessão de Caixa *</label><input type="number" id="ss-${idx}" value="${data?.sessao||''}" placeholder="6255" inputmode="numeric"></div>
     </div>
-    <div class="grid2">
+    <div class="${showCB?'grid2':''}">
       <div class="fg"><label style="font-size:11px">Valor (€) *</label><div class="im"><input type="number" id="svl-${idx}" value="${data?.valor||''}" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="updSesTotal()"></div></div>
-      <div class="fg"><label style="font-size:11px">Nº Talão / Referência</label><input type="text" id="st-${idx}" value="${data?.talao||''}" placeholder="${showCB?'Cód. saco / ref.':'T240001234'}" autocomplete="off"></div>
+      ${showCB?`<div class="fg"><label style="font-size:11px">Nº Talão / Referência</label><input type="text" id="st-${idx}" value="${data?.talao||''}" placeholder="Cód. saco / ref." autocomplete="off"></div>`:''}
     </div>
     ${showCB?`<div class="fg"><label style="font-size:11px">📦 Cód. Barras / Nº Saco</label><input type="text" id="scb-${idx}" value="${data?.codBarras||''}" placeholder="Escanear ou digitar código" autocomplete="off"></div>`:''}
   `;
@@ -1069,6 +1070,57 @@ async function guardar(){
 
 // ─── DASHBOARD ───────────────────────────────────────
 
+function getOverdueAlerts(lojaFil){
+  // Find the most recent session date per loja+tipo across ALL records
+  const latestSess={};
+  regs.forEach(r=>{
+    if(!r.loja||!r.tipo)return;
+    const key=r.loja+'|'+r.tipo;
+    (r.sessoes||[]).forEach(s=>{
+      if(s.dataVendas&&(!latestSess[key]||s.dataVendas>latestSess[key]))
+        latestSess[key]=s.dataVendas;
+    });
+  });
+  const today=new Date();today.setHours(0,0,0,0);
+  const alerts=[];
+  Object.entries(latestSess).forEach(([key,lastStr])=>{
+    const sep=key.indexOf('|');
+    const loja=key.substring(0,sep);
+    const tipo=key.substring(sep+1);
+    if(lojaFil&&loja!==lojaFil)return;
+    const prazo=tipo==='Depósito Direto'?2:7;
+    const last=new Date(lastStr);last.setHours(0,0,0,0);
+    const dias=Math.floor((today-last)/86400000);
+    if(dias>prazo)alerts.push({loja,tipo,lastStr,dias,prazo});
+  });
+  // Also check lojas in cfg that have NO records at all this month
+  const mes=curMesStr();
+  cfg.lojas.forEach(loja=>{
+    if(lojaFil&&loja!==lojaFil)return;
+    const hasAnyRec=regs.some(r=>r.loja===loja);
+    if(!hasAnyRec)return; // never used, skip
+    const hasThisMes=regs.some(r=>{
+      if(r.loja!==loja)return false;
+      const ref=getRefDate(r);return ref.startsWith(mes);
+    });
+    if(!hasThisMes){
+      // Check if there's a recent record (last 30 days) for this loja
+      const thirtyAgo=new Date(today);thirtyAgo.setDate(thirtyAgo.getDate()-30);
+      const latestRec=regs.filter(r=>r.loja===loja).sort((a,b)=>{
+        const da=getRefDate(a);const db=getRefDate(b);return da>db?-1:1;
+      })[0];
+      if(latestRec){
+        const ref=new Date(getRefDate(latestRec));ref.setHours(0,0,0,0);
+        const dias=Math.floor((today-ref)/86400000);
+        if(dias>2&&!alerts.some(a=>a.loja===loja)){
+          alerts.push({loja,tipo:latestRec.tipo||'—',lastStr:getRefDate(latestRec),dias,prazo:2,noMesData:true});
+        }
+      }
+    }
+  });
+  return alerts.sort((a,b)=>b.dias-a.dias);
+}
+
 let dashView='cards';
 function setDashView(v){
   dashView=v;
@@ -1175,8 +1227,34 @@ function rDash(){
   const ts=document.getElementById('d-total-s');if(ts)ts.textContent=data.length+' dep. · '+data.reduce((s,r)=>s+r.sessoes.length,0)+' sessões';
   document.getElementById('d-dep').textContent=fmt(depositado);
   document.getElementById('d-pend').textContent=fmt(porDep);
-  document.getElementById('d-err').textContent=erros;
-  const es=document.getElementById('d-err-s');if(es)es.textContent=erros>0?data.filter(r=>calcEstado(r).s==='warn').length+' avisos':'';
+  const alertsCount=getOverdueAlerts(lojaFil).length;
+  document.getElementById('d-err').textContent=erros+(alertsCount>0?'+'+alertsCount:'');
+  const es=document.getElementById('d-err-s');if(es){
+    const parts=[];
+    if(erros>0)parts.push(erros+' registo(s) em atraso');
+    if(alertsCount>0)parts.push(alertsCount+' loja(s) sem novo registo');
+    es.textContent=parts.join(' · ');
+  }
+  // Overdue alerts — lojas sem registo há mais dias que o prazo
+  const dab=document.getElementById('dash-alerts');
+  if(dab){
+    const alerts=getOverdueAlerts(lojaFil);
+    if(alerts.length){
+      dab.innerHTML=`<div style="margin-bottom:10px">`+alerts.map(a=>{
+        const grave=a.dias>a.prazo*2;
+        const prazoLabel=a.tipo==='Depósito Direto'?`prazo: ${a.prazo} dias`:`levantamento a cada ${a.prazo} dias`;
+        return`<div class="alert-banner${grave?' red':''}" style="margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+          <div>
+            <strong>${a.loja}</strong>${a.tipo&&a.tipo!=='—'?` · <span style="font-size:11px">${a.tipo}</span>`:''}
+            <div style="font-size:11px;margin-top:2px">Sem novo registo desde <b>${fd(a.lastStr)}</b> — há <b>${a.dias} dia${a.dias!==1?'s':''}</b> <span style="opacity:.75">(${prazoLabel})</span></div>
+          </div>
+          <button onclick="sp('novo')" style="background:${grave?'#991b1b':'#b45309'};color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;touch-action:manipulation">➕ Registar</button>
+        </div>`;
+      }).join('')+'</div>';
+    }else{
+      dab.innerHTML='';
+    }
+  }
   rTypeCards(data);
   const el=document.getElementById('dash-body');
   if(dashView==='table'){el.innerHTML=rDashTable(data);return;}
