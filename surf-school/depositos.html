@@ -537,8 +537,13 @@ select{
 <div class="page" id="page-settings">
   <div class="card">
     <div class="ct">Empresa</div>
+    <div id="cfg-sync-note" style="display:none;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:10px 13px;margin-bottom:14px;font-size:12px;color:#1e40af;font-weight:600;line-height:1.5"></div>
     <div class="fg"><label>Nome da Empresa</label><input type="text" id="c-emp" placeholder="Despomar" oninput="sc()"></div>
-    <div class="fg"><label>Email Contabilidade (Para:)</label><input type="email" id="c-email" placeholder="contab@empresa.pt" oninput="sc()"></div>
+    <div class="fg">
+      <label id="c-email-lbl">Email Contabilidade (Para:)</label>
+      <input type="email" id="c-email" placeholder="contab@empresa.pt" oninput="sc()">
+      <div id="c-email-hint" style="display:none;font-size:11px;color:var(--g400);margin-top:4px;line-height:1.4"></div>
+    </div>
     <div class="fg"><label>CC fixo (sempre incluído)</label><input type="email" id="c-emailcc" placeholder="ivo@despomar.com" oninput="sc()"></div>
     <div class="fg"><label>CC adicional da loja (opcional)</label><input type="email" id="c-emailcc2" placeholder="outro@empresa.pt" oninput="sc()"></div>
     <div class="fg"><label>NIF</label><input type="text" id="c-nif" placeholder="999999999" oninput="sc()"></div>
@@ -663,7 +668,24 @@ async function sbLoad(){
       const{data:c}=await SB.from('dep_config').select('*').eq('store_id',sbProfile.store_id).maybeSingle();
       if(c)cfg={emp:c.emp||'Despomar',email:c.email||'',emailCC:c.email_cc||'',emailCC2:c.email_cc2||'',nif:c.nif||'',cambioDia:c.cambio_dia||'',prosegurDay:c.prosegur_day||'',lomisDay:c.lomis_day||'',lojas:c.lojas||[],resps:c.resps||[]};
     }else{
-      const{data:cs}=await SB.from('dep_config').select('lojas,resps');
+      // SA: load personal config from 'super' row + merge lojas/resps from all stores
+      const[{data:saRow},{data:cs}]=await Promise.all([
+        SB.from('dep_config').select('*').eq('store_id','super').maybeSingle(),
+        SB.from('dep_config').select('lojas,resps')
+      ]);
+      if(saRow){
+        cfg={
+          emp:saRow.emp||cfg.emp||'Despomar',
+          email:saRow.email||cfg.email||'',
+          emailCC:saRow.email_cc||cfg.emailCC||'',
+          emailCC2:saRow.email_cc2||cfg.emailCC2||'',
+          nif:saRow.nif||cfg.nif||'',
+          cambioDia:saRow.cambio_dia||cfg.cambioDia||'',
+          prosegurDay:saRow.prosegur_day||cfg.prosegurDay||'',
+          lomisDay:saRow.lomis_day||cfg.lomisDay||'',
+          lojas:cfg.lojas,resps:cfg.resps
+        };
+      }
       if(cs?.length){
         const aL=[...new Set(cs.flatMap(c=>c.lojas||[]))];
         const aR=[...new Set(cs.flatMap(c=>c.resps||[]))];
@@ -681,8 +703,10 @@ async function sbLoad(){
 async function sbSave(r){const{error}=await SB.from('dep_registos').upsert(regToRow(r));if(error){toast('⚠️ Erro ao guardar: '+error.message);return false;}return true;}
 async function sbDel(id){const{error}=await SB.from('dep_registos').delete().eq('id',id);if(error){toast('⚠️ Erro: '+error.message);return false;}return true;}
 async function sbSaveCfgSB(){
-  if(!sbProfile||isSA)return;
-  await SB.from('dep_config').upsert({store_id:sbProfile.store_id,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',lojas:cfg.lojas||[],resps:cfg.resps||[]});
+  if(!sbProfile)return;
+  const sid=isSA?'super':sbProfile.store_id;
+  const{error}=await SB.from('dep_config').upsert({store_id:sid,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',lojas:cfg.lojas||[],resps:cfg.resps||[]});
+  if(error)console.warn('sbSaveCfgSB:',error.message);
 }
 async function sbSyncLojasAll(){
   if(!isSA)return;
@@ -849,6 +873,10 @@ function getRefDate(r){const ma=maisAntigaData(r);return ma?ma.toISOString().spl
 // ─── NAV ─────────────────────────────────────────────
 function sp(name){
   try{
+    // Auto-save config when navigating away from Settings
+    if(document.getElementById('page-settings')?.classList.contains('active')&&name!=='settings'&&sbProfile){
+      sc();sbSaveCfgSB();
+    }
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
     const pg=document.getElementById('page-'+name);
@@ -1071,6 +1099,14 @@ async function guardar(){
   if(datasUnicas.size<datas.length){
     const dup=[...datas].find((d,i)=>datas.indexOf(d)!==i);
     toast('⚠️ Dia de venda duplicado: '+fd(dup)+' — cada dia só pode aparecer uma vez');return;
+  }
+  // Cross-check: same loja + same dataVendas + same sessao already exists in another record
+  const existingLoja=regs.filter(r=>r.loja===loja&&r.id!==(editingId||''));
+  for(const s of sessoes){
+    for(const er of existingLoja){
+      const dup2=er.sessoes.find(es=>es.dataVendas===s.dataVendas&&es.sessao&&s.sessao&&es.sessao.trim()===s.sessao.trim());
+      if(dup2){toast('⚠️ Sessão '+s.sessao+' de '+fd(s.dataVendas)+' já está registada. Edita esse registo em vez de criar um novo.');return;}
+    }
   }
   // Data depósito não pode ser anterior à data de venda mais recente
   const dd=document.getElementById('f-dd').value;
@@ -1548,52 +1584,68 @@ async function updEmailPrev(){
   const erros=data.filter(r=>calcEstado(r).s==='err').length;
   const avisos=data.filter(r=>calcEstado(r).s==='warn').length;
   const subj=`Folha Depósitos – ${loja} – ${ml} – ${empresa}`;
-  // Build rich month table for preview
-  const depRows=data.map((r,i)=>{
-    const est=calcEstado(r);const tv=totalValor(r);
-    const mld=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
-    const dr=mld.length>1?`${fd(mld[0])}→${fd(mld[mld.length-1])}`:fd(mld[0]||'');
+  // Per-session rows sorted by date (accountant needs to see each session)
+  const allSess=[];
+  data.forEach(r=>{r.sessoes.forEach((s,si)=>{allSess.push({r,s,si,isFirst:si===0,est:calcEstado(r)});});});
+  allSess.sort((a,b)=>(a.s.dataVendas||'')<(b.s.dataVendas||'')?-1:1);
+  const depRows=allSess.map(({r,s,si,isFirst,est})=>{
     const stC=est.s==='ok'?'#166534;background:#dcfce7':est.s==='warn'?'#854d0e;background:#fef9c3':est.s==='err'?'#991b1b;background:#fee2e2':'#475569;background:#f1f5f9';
+    const noTalao=isFirst&&!r.talao&&!s.talao;
     return`<tr style="border-bottom:1px solid #e5e7eb">
-      <td style="padding:4px 6px;font-size:11px;color:#6b7280">${i+1}</td>
-      <td style="padding:4px 6px;font-size:11px">${dr}</td>
-      <td style="padding:4px 6px;font-size:11px">${fd(r.dataDeposito)||'—'}</td>
-      <td style="padding:4px 6px;font-size:10px;font-family:monospace">${r.talao||'—'}</td>
-      <td style="padding:4px 6px;font-size:11px;text-align:right;font-weight:700;color:#1d4ed8">${fmt(tv)}</td>
-      <td style="padding:4px 6px"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;color:${stC}">${est.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}</span></td>
+      <td style="padding:4px 6px;font-size:11px;font-weight:700;color:#0f172a">${fd(s.dataVendas)}</td>
+      <td style="padding:4px 6px;font-size:11px;font-weight:800;color:#2563eb;text-align:center">${s.sessao||'—'}</td>
+      <td style="padding:4px 6px;font-size:10px;color:#475569">${r.tipo||'—'}</td>
+      <td style="padding:4px 6px;font-size:11px;text-align:right;font-weight:700;color:#1d4ed8">${fmt(s.valor||0)}</td>
+      <td style="padding:4px 6px;font-size:11px">${isFirst?(fd(r.dataDeposito)||'<span style="color:#ef4444;font-weight:700">Pendente</span>'):'<span style="color:#cbd5e1">↑</span>'}</td>
+      <td style="padding:4px 6px;font-size:10px;font-family:monospace">${isFirst?(noTalao?'<span style="color:#ef4444;font-weight:700">SEM</span>':(r.talao||'—')):''}</td>
+      ${isFirst?`<td style="padding:4px 6px"><span style="font-size:10px;font-weight:700;padding:2px 5px;border-radius:8px;color:${stC}">${est.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}</span></td>`:'<td></td>'}
     </tr>`;
   }).join('');
-  // Plain text for mailto body
-  const shortBody=`Exmo(a). Departamento de Contabilidade,\n\nEnvio em anexo a folha de depósitos de ${loja}, referente a ${ml}.\n\nEmpresa: ${empresa}${nif?' · NIF '+nif:''}\nTotal: ${fmt(total)} · Depositado: ${fmt(totalDep)} · Por depositar: ${fmt(total-totalDep)}\nNº Depósitos: ${data.length}${erros>0?'\n⚠️ '+erros+' depósito(s) com problemas.':'\n✅ Sem problemas.'}\n\nCom os melhores cumprimentos,\n${loja} — ${empresa}`;
+  const missingInEmail=getMissingDays(mes,loja==='Todas as Lojas'?null:loja);
+  const missingEmailHtml=missingInEmail.length?`
+    <div style="margin-top:10px;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:8px;padding:8px 10px">
+      <div style="font-size:11px;font-weight:800;color:#b45309;margin-bottom:5px">📅 ${missingInEmail.length} dia${missingInEmail.length!==1?'s':''} sem sessão registada:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${missingInEmail.map(d=>`<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700">${fd(d).split('/').slice(0,2).join('/')}</span>`).join('')}</div>
+    </div>`:`<div style="margin-top:8px;font-size:11px;color:#166534;font-weight:700">✅ Todos os dias registados</div>`;
+  // Plain text body for mailto: — per-session table so accountant can verify each session
+  const sessLines=allSess.map(({r,s,isFirst})=>{
+    const parts=[`  ${(fd(s.dataVendas)||'—').padEnd(12)}Sess.${(s.sessao||'?').toString().padEnd(7)}${fmt(s.valor||0).padStart(9)}`];
+    if(isFirst){parts.push(`  Dep: ${fd(r.dataDeposito)||'(pendente)'}`);if(r.talao)parts.push(`  Ref: ${r.talao}`);}
+    return parts.join('');
+  }).join('\n');
+  const missingLine=missingInEmail.length?`\nDias sem registo (${missingInEmail.length}): ${missingInEmail.map(d=>fd(d).split('/').slice(0,2).join('/')).join(', ')}`:`\nTodos os dias do mês registados ✅`;
+  const shortBody=`Exmo(a). Departamento de Contabilidade,\n\nFolha de depósitos — ${loja} — ${ml}\n${empresa}${nif?' | NIF '+nif:''}\n\n--- RESUMO ---\nTotal vendas:    ${fmt(total)}\nDepositado:      ${fmt(totalDep)}\nPor depositar:   ${fmt(total-totalDep)}\nDepósitos: ${data.length} | Sessões: ${allSess.length} | ${erros>0?'⚠️ '+erros+' em atraso':'✅ OK'}\n\n--- SESSÕES DE CAIXA ---\n  DATA        Nº SESS.  VALOR      DEPÓSITO/REF.\n${sessLines}${missingLine}\n\nCom os melhores cumprimentos,\n${loja} — ${empresa}`;
   document.getElementById('ep-to').textContent=dest||'(não configurado)';
   document.getElementById('ep-cc').textContent=cc;
   document.getElementById('ep-sub').textContent=subj;
   // Rich HTML preview
   document.getElementById('ep-body').innerHTML=`
     <div style="font-size:12px;color:#374151;margin-bottom:8px">Exmo(a). Departamento de Contabilidade,</div>
-    <div style="font-size:12px;color:#374151;margin-bottom:10px">Envio a folha de <strong>${loja}</strong> — <strong>${ml}</strong>. Empresa: ${empresa}${nif?' · NIF '+nif:''}.</div>
+    <div style="font-size:12px;color:#374151;margin-bottom:10px">Folha de depósitos: <strong>${loja}</strong> — <strong>${ml}</strong>${empresa?' | '+empresa:''}${nif?' | NIF '+nif:''}.</div>
     <table style="width:100%;border-collapse:collapse;margin-bottom:10px">
       <thead><tr style="background:#1e3a8a">
-        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">#</th>
-        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Datas Vendas</th>
-        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Data Dep.</th>
-        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Talão</th>
+        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700;text-align:left">Data Vendas</th>
+        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700;text-align:center">Nº Sess.</th>
+        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Tipo</th>
         <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700;text-align:right">Valor</th>
+        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Data Dep.</th>
+        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Talão/Ref.</th>
         <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Estado</th>
       </tr></thead>
       <tbody>${depRows}</tbody>
       <tfoot><tr style="background:#dbeafe;border-top:2px solid #1e3a8a">
-        <td colspan="4" style="padding:5px 6px;font-size:11px;font-weight:700;color:#1e3a8a">${data.length} dep. · ${data.reduce((s,r)=>s+r.sessoes.length,0)} sess.</td>
+        <td colspan="3" style="padding:5px 6px;font-size:11px;font-weight:700;color:#1e3a8a">${data.length} dep. · ${allSess.length} sess.</td>
         <td style="padding:5px 6px;font-size:12px;font-weight:800;color:#1e3a8a;text-align:right">${fmt(total)}</td>
-        <td style="padding:5px 6px;font-size:10px;color:${erros>0?'#991b1b':'#166534'};font-weight:700">${erros>0?'⚠️ '+erros+' prob.':'✅ OK'}</td>
+        <td colspan="3" style="padding:5px 6px;font-size:10px;color:${erros>0?'#991b1b':'#166534'};font-weight:700">${erros>0?'⚠️ '+erros+' em atraso':'✅ OK'}</td>
       </tr></tfoot>
     </table>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
       <div style="background:#dbeafe;border-radius:7px;padding:7px 10px;text-align:center"><div style="font-size:10px;color:#1e40af;font-weight:700">Total</div><div style="font-size:14px;font-weight:800;color:#1e3a8a">${fmt(total)}</div></div>
       <div style="background:#dcfce7;border-radius:7px;padding:7px 10px;text-align:center"><div style="font-size:10px;color:#166534;font-weight:700">Depositado</div><div style="font-size:14px;font-weight:800;color:#166534">${fmt(totalDep)}</div></div>
-      <div style="background:${erros>0?'#fee2e2':'#fef9c3'};border-radius:7px;padding:7px 10px;text-align:center"><div style="font-size:10px;color:${erros>0?'#991b1b':'#854d0e'};font-weight:700">${erros>0?'Em atraso':'Por dep.'}</div><div style="font-size:14px;font-weight:800;color:${erros>0?'#991b1b':'#854d0e'}">${erros>0?erros:fmt(total-totalDep)}</div></div>
+      <div style="background:${erros>0?'#fee2e2':total-totalDep>0?'#fef9c3':'#dcfce7'};border-radius:7px;padding:7px 10px;text-align:center"><div style="font-size:10px;color:${erros>0?'#991b1b':'#854d0e'};font-weight:700">${erros>0?'Em atraso':'Por dep.'}</div><div style="font-size:14px;font-weight:800;color:${erros>0?'#991b1b':'#854d0e'}">${erros>0?erros+' dep.':fmt(total-totalDep)}</div></div>
     </div>
-    <div style="font-size:11px;color:#6b7280">Com os melhores cumprimentos,<br><strong>${loja} — ${empresa}</strong></div>`;
+    ${missingEmailHtml}
+    <div style="font-size:11px;color:#6b7280;margin-top:10px">Com os melhores cumprimentos,<br><strong>${loja} — ${empresa}</strong></div>`;
   // Store plain text for copy + mailto
   document.getElementById('ep-body').dataset.body=shortBody;
   document.getElementById('ep-body').dataset.subj=subj;
@@ -1891,6 +1943,12 @@ function expPrint(data){
     </tr>`;
   }).join('');
 
+  const missingInPdf=getMissingDays(mes,loja);
+  const missingPdfHtml=missingInPdf.length?`
+<div style="margin-top:8px;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:5px;padding:6px 10px;page-break-inside:avoid">
+  <div style="font-size:8.5px;font-weight:800;color:#b45309;margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px">📅 Dias sem sessão registada — ${missingInPdf.length} dia${missingInPdf.length!==1?'s':''} em falta</div>
+  <div style="display:flex;flex-wrap:wrap;gap:3px">${missingInPdf.map(d=>`<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:3px;padding:1px 6px;font-size:8px;font-weight:700">${fd(d)}</span>`).join('')}</div>
+</div>`:`<div style="margin-top:8px;font-size:8px;color:#166534;font-weight:700">✅ Todos os dias do mês registados.</div>`;
   const html=`<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
 <title>Depositos_${loja.replace(/ /g,'_')}_${mes}_exp${expDate}</title>
 <style>
@@ -1963,6 +2021,8 @@ ${erros>0?`<div class="err-bar">⚠️ ${erros} depósito(s) em atraso — verif
   </tbody>
 </table>
 
+${missingPdfHtml}
+
 <div class="footer" style="margin-top:8px">${empresa}${nif?' · NIF '+nif:''} &nbsp;·&nbsp; ${loja} &nbsp;·&nbsp; ${ml} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleString('pt-PT')}</div>
 
 </body></html>`;
@@ -1980,7 +2040,32 @@ function remL(n){if(!confirm(`Remover loja "${n}"?`))return;cfg.lojas=cfg.lojas.
 function addR(){const i=document.getElementById('nr');const n=i.value.trim();if(!n)return;if(cfg.resps.includes(n)){toast('Já existe');return}cfg.resps.push(n);saveCfg();if(isSA)sbSyncLojasAll();else sbSaveCfgSB();i.value='';popSel();rSettings();toast('Responsável adicionado ✓')}
 function remR(n){cfg.resps=cfg.resps.filter(x=>x!==n);saveCfg();if(isSA)sbSyncLojasAll();else sbSaveCfgSB();popSel();rSettings()}
 function rSettings(){
-  document.getElementById('c-emp').value=cfg.emp||'';document.getElementById('c-email').value=cfg.email||'';const ccEl=document.getElementById('c-emailcc');if(ccEl)ccEl.value=cfg.emailCC||'';const cc2El=document.getElementById('c-emailcc2');if(cc2El)cc2El.value=cfg.emailCC2||'';document.getElementById('c-nif').value=cfg.nif||'';const cdEl=document.getElementById('c-cambio-dia');if(cdEl)cdEl.value=cfg.cambioDia||'';const pdEl=document.getElementById('c-prosegur-dia');if(pdEl)pdEl.value=cfg.prosegurDay||'';const ldEl=document.getElementById('c-lomis-dia');if(ldEl)ldEl.value=cfg.lomisDay||'';
+  document.getElementById('c-emp').value=cfg.emp||'';
+  document.getElementById('c-email').value=cfg.email||'';
+  const ccEl=document.getElementById('c-emailcc');if(ccEl)ccEl.value=cfg.emailCC||'';
+  const cc2El=document.getElementById('c-emailcc2');if(cc2El)cc2El.value=cfg.emailCC2||'';
+  document.getElementById('c-nif').value=cfg.nif||'';
+  const cdEl=document.getElementById('c-cambio-dia');if(cdEl)cdEl.value=cfg.cambioDia||'';
+  const pdEl=document.getElementById('c-prosegur-dia');if(pdEl)pdEl.value=cfg.prosegurDay||'';
+  const ldEl=document.getElementById('c-lomis-dia');if(ldEl)ldEl.value=cfg.lomisDay||'';
+  // Contextual notes
+  const note=document.getElementById('cfg-sync-note');
+  const hint=document.getElementById('c-email-hint');
+  if(note){
+    if(isSA){
+      note.style.display='block';
+      note.innerHTML='⭐ Modo Super-Admin — as suas configurações ficam guardadas na nuvem e são partilhadas entre dispositivos. O email abaixo é o <strong>email de contabilidade por defeito</strong> usado quando uma loja específica não tem email próprio configurado.';
+    } else {
+      note.style.display='block';
+      note.innerHTML=`🏪 Configurações da loja <strong>${sbProfile?.store_id||''}</strong> — guardadas automaticamente na nuvem. Cada loja tem as suas próprias configurações de email.`;
+    }
+  }
+  if(hint){
+    hint.style.display='block';
+    hint.textContent=isSA
+      ?'Fallback usado no email de exportação quando a loja não tem email próprio. Cada loja configura o seu email na sua conta.'
+      :'Este email aparece no campo "Para:" quando exportar a folha de depósitos por email.';
+  }
   document.getElementById('ltags').innerHTML=cfg.lojas.map(l=>`<span class="tag">${l}<button onclick="remL('${l.replace(/'/g,"\\'")}')">×</button></span>`).join('');
   document.getElementById('rtags').innerHTML=cfg.resps.map(r=>`<span class="tag" style="background:var(--gl);color:var(--green)">${r}<button onclick="remR('${r.replace(/'/g,"\\'")}')">×</button></span>`).join('');
 }
