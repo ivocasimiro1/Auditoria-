@@ -1440,7 +1440,7 @@ function rDash(){
   if(!data.length){el.innerHTML=`<div class="empty"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>Sem registos para este período</p><small>Adicione o primeiro depósito no separador ➕</small></div>`;return}
   const lojas=lojaFil?[lojaFil]:cfg.lojas.filter(l=>data.some(r=>r.loja===l));
   el.innerHTML=lojas.map(loja=>{
-    const ld=data.filter(r=>r.loja===loja).sort((a,b)=>{const da=getRefDate(a);const db=getRefDate(b);return db<da?-1:db>da?1:0});
+    const ld=data.filter(r=>r.loja===loja).sort((a,b)=>{const da=getRefDate(a);const db=getRefDate(b);return da<db?-1:da>db?1:0});
     if(!ld.length)return'';
     const lt=ld.reduce((s,r)=>s+totalValor(r),0);
     const ldep=ld.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
@@ -1448,16 +1448,25 @@ function rDash(){
     const lwarn=ld.filter(r=>calcEstado(r).s==='warn').length;
     const lerr=ld.filter(r=>calcEstado(r).s==='err').length;
     const lprog=ld.filter(r=>calcEstado(r).s==='prog').length;
+    // Detect duplicate sessions across records for this loja
+    const _seen=new Set(),_dupRecs=new Set();
+    ld.forEach(r=>r.sessoes.forEach(s=>{
+      const k=`${s.dataVendas||''}|${(s.sessao||'').trim()}`;
+      if(s.sessao&&k.length>1){if(_seen.has(k))_dupRecs.add(r.id);else _seen.add(k);}
+    }));
     const rows=ld.map(r=>{
       const est=calcEstado(r);
       const tv=totalValor(r);
       const ns=r.sessoes.length;
-      const ma=maisAntigaData(r);const ml=r.sessoes.length>1?r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort():[];
+      const ml=r.sessoes.length>1?r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort():[];
       const dateRange=ml.length>1?`${fd(ml[0])} → ${fd(ml[ml.length-1])}`:fd(ml[0]||'');
-      return`<div class="dep-row" onclick="openDetail('${r.id}')">
+      const isDup=_dupRecs.has(r.id);
+      const dupBadge=isDup?` <span style="font-size:10px;color:#fff;background:#dc2626;border-radius:4px;padding:1px 6px;font-weight:700">⚠️ DUPLICADO</span>`:'';
+      const rowStyle=isDup?'border-left:3px solid #dc2626;background:#fff5f5':'';
+      return`<div class="dep-row" onclick="openDetail('${r.id}')" style="${rowStyle}">
         <div class="dep-dot ${est.s}"></div>
         <div class="dep-info">
-          <div class="dep-date">${dateRange||fd(r.criadoEm?.split('T')[0]||'')} <span style="font-size:10px;font-weight:600;color:var(--g400)">${r.tipo||''}</span></div>
+          <div class="dep-date">${dateRange||fd(r.criadoEm?.split('T')[0]||'')} <span style="font-size:10px;font-weight:600;color:var(--g400)">${r.tipo||''}</span>${dupBadge}</div>
           <div class="dep-detail">${ns} sessão${ns>1?'ões':''} · Talão: ${r.talao||'—'} ${r.dataDeposito?'· Dep: '+fd(r.dataDeposito):''}</div>
           <div style="margin-top:3px">${estBadge(est)}${ns>3&&r.tipo==='Depósito Direto'?` <span style="font-size:10px;color:var(--red);font-weight:700"> ⚠️ ${ns} sessões</span>`:''}</div>
         </div>
