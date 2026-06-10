@@ -660,7 +660,14 @@ const SB=supabase.createClient(
 );
 let sbUser=null,sbProfile=null,isSA=false,allStoreConfigs=[];
 const rowToReg=row=>({id:row.id,store_id:row.store_id,loja:row.loja,tipo:row.tipo,sessoes:row.sessoes||[],dataDeposito:row.data_deposito||'',talao:row.talao||'',responsavel:row.responsavel||'',obs:row.obs||'',foto:row.foto||null,criadoEm:row.criado_em||''});
-const regToRow=r=>({id:r.id,store_id:sbProfile?.store_id||r.store_id||'',loja:r.loja,tipo:r.tipo||'',sessoes:r.sessoes||[],data_deposito:r.dataDeposito||'',talao:r.talao||'',responsavel:r.responsavel||'',obs:r.obs||'',foto:r.foto||null,criado_em:r.criadoEm||new Date().toISOString()});
+function resolveStoreId(r){
+  if(!isSA)return sbProfile?.store_id||'';
+  // SA: keep existing valid store_id; otherwise derive from loja via allStoreConfigs
+  if(r.store_id&&r.store_id!=='super')return r.store_id;
+  const owner=allStoreConfigs.find(c=>(c.lojas||[]).includes(r.loja));
+  return owner?.store_id||sbProfile?.store_id||'';
+}
+const regToRow=r=>({id:r.id,store_id:resolveStoreId(r),loja:r.loja,tipo:r.tipo||'',sessoes:r.sessoes||[],data_deposito:r.dataDeposito||'',talao:r.talao||'',responsavel:r.responsavel||'',obs:r.obs||'',foto:r.foto||null,criado_em:r.criadoEm||new Date().toISOString()});
 function setLoad(on){document.getElementById('load-ov').style.display=on?'flex':'none'}
 async function sbLoad(){
   setLoad(true);
@@ -1556,7 +1563,7 @@ function rLista(){
         <div style="flex:1;cursor:pointer;min-width:0" onclick="openDetail('${r.id}')">
           <div class="dh"><div class="dl">${r.loja}</div><div class="dv">${fmt(tv)}</div></div>
           <div class="dm"><span>📅 ${dateRange}</span><span>${ns} sessão${ns>1?'ões':''}</span><span>👤 ${r.responsavel}</span>${r.talao?`<span>🧾 ${r.talao}</span>`:''} ${r.foto?'<span>📷</span>':''}</div>
-          <div style="margin-top:5px"><span class="badg ${bc}">${est.label}</span><span style="font-size:10px;color:var(--g500);margin-left:7px">${r.tipo||''}</span></div>
+          <div style="margin-top:5px"><span class="badg ${bc}">${est.label}</span><span style="font-size:10px;color:var(--g500);margin-left:7px">${r.tipo||''}</span>${isSA?`<span style="font-size:9px;color:var(--g400);margin-left:8px;background:var(--g100);padding:1px 6px;border-radius:4px">${r.store_id||'?'}</span>`:''}</div>
         </div>
         <button onclick="editFull('${r.id}')" style="background:var(--bl);color:var(--blue-dark);border:1.5px solid #bfdbfe;border-radius:9px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer;min-height:38px;flex-shrink:0;touch-action:manipulation;align-self:flex-start;margin-top:2px">✏️</button>
       </div>
