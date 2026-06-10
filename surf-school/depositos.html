@@ -465,7 +465,7 @@ select{
     </div>
     <div class="eo" id="opt-email" onclick="seExp('email')">
       <div class="ei" style="background:var(--bl)"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#1a56db" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
-      <div><strong style="display:block;font-size:14px;font-weight:700">📧 Email para Contabilidade</strong><span style="font-size:12px;color:var(--g500)">Abre PDF + email pré-preenchido</span></div>
+      <div><strong style="display:block;font-size:14px;font-weight:700">📧 Email para Contabilidade</strong><span style="font-size:12px;color:var(--g500)">Abre email pré-preenchido (Para/CC/Assunto/Corpo)</span></div>
     </div>
     <div class="eo" id="opt-xlsx" onclick="seExp('xlsx')">
       <div class="ei" style="background:#e8f5e9"><svg width="22" height="22" viewBox="0 0 24 24"><rect width="24" height="24" rx="3" fill="#217346"/><text x="2" y="17" font-family="Arial" font-size="11" font-weight="bold" fill="white">XLS</text></svg></div>
@@ -1758,19 +1758,15 @@ async function expEmail(data){
   const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
   const ml=mesLabel(mes);
   const erros=data.filter(r=>calcEstado(r).s==='err').length;
-  // Open the PDF in a new window (user saves as PDF from print dialog)
-  expPrint(data);
-
-  // After a short delay, open email client with pre-filled subject and short body
   const shortBody=`Exmo(a). Departamento de Contabilidade,\n\nEnvio em anexo a folha de depósitos de ${loja}, referente a ${ml}.\n\nEmpresa: ${empresa}${nif?' · NIF '+nif:''}\nTotal: ${fmt(total)} · Depositado: ${fmt(totalDep)} · Por depositar: ${fmt(total-totalDep)}\nNº Depósitos: ${data.length}${erros>0?'\n⚠️ '+erros+' depósito(s) com problemas.':'\n✅ Sem problemas.'}\n\nCom os melhores cumprimentos,\n${loja} — ${empresa}`;
   const subj=encodeURIComponent(`Folha Depósitos – ${loja} – ${ml} – ${empresa}`);
   const emailBody=encodeURIComponent(shortBody);
   const ccs=[cc,cc2].filter(Boolean).join(',');
   const ccStr=ccs?`&cc=${encodeURIComponent(ccs)}`:'';
-  setTimeout(()=>{
-    window.location.href=`mailto:${dest}?subject=${subj}${ccStr}&body=${emailBody}`;
-    toast('1. Guarda como PDF no diálogo que abriu  2. Anexa ao email');
-  },1200);
+  const mailtoUrl=`mailto:${dest}?subject=${subj}${ccStr}&body=${emailBody}`;
+  // Open email client directly — no print dialog
+  window.location.href=mailtoUrl;
+  toast('✓ A abrir cliente de email…');
 }
 
 
