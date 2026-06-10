@@ -16,7 +16,7 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;color:var(--g800);background:#fff;line-height:1.55}
 
 /* ── COVER ── */
-.cover{background:linear-gradient(145deg,#0f1f5c,#1e3a8a,#2563eb);color:#fff;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:40px 32px;page-break-after:always}
+.cover{background:linear-gradient(145deg,#0f1f5c,#1e3a8a,#2563eb);color:#fff;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:40px 32px;page-break-after:always;position:relative}
 .cover-logo{width:80px;height:80px;background:rgba(255,255,255,.15);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;border:2px solid rgba(255,255,255,.25)}
 .cover-logo svg{width:44px;height:44px}
 .cover h1{font-size:28px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
@@ -28,11 +28,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
 /* ── LAYOUT ── */
 .page{max-width:800px;margin:0 auto;padding:40px 32px}
 @media print{
-  .cover{page-break-after:always}
-  .section{page-break-inside:avoid}
+  @page{size:A4;margin:15mm 15mm 18mm 15mm}
+  @page:first{margin:0}
+  body{font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page{padding:0}
+  .cover{height:270mm;page-break-after:always;min-height:unset}
   .chapter{page-break-before:always}
-  body{font-size:11px}
-  .page{padding:20px 24px}
+  .chapter-title{page-break-after:avoid;page-break-inside:avoid}
+  h3{page-break-after:avoid}
+  .section{page-break-inside:auto}
+  .mockup{page-break-inside:avoid;max-width:340px!important}
+  .phone-wrap{page-break-inside:avoid}
+  table{page-break-inside:auto}
+  tr{page-break-inside:avoid}
+  .tip,.warning,.important,.success{page-break-inside:avoid}
+  .step-list li{page-break-inside:avoid}
+  .toc{page-break-inside:avoid;page-break-after:always}
+  .doc-footer{page-break-inside:avoid}
+  .cover-footer{display:none}
 }
 
 /* ── HEADINGS ── */
