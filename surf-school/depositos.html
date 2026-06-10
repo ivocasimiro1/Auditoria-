@@ -518,8 +518,8 @@ select{
     <div class="ep-field"><span class="ep-lbl">CC</span><span class="ep-val" id="ep-cc">—</span></div>
     <div class="ep-field"><span class="ep-lbl">Assunto</span><span class="ep-val" id="ep-sub">—</span></div>
     <div class="ep-body" id="ep-body"></div>
-    <div id="ep-mobile-note" class="ep-mobile-note" style="display:none">✅ Clica "Enviar Email" — abrirá a app de correio com tudo pré-preenchido (Para, Assunto, Corpo).</div>
-    <div id="ep-desktop-note" class="ep-desktop-note" style="display:none">💡 Clica "Enviar Email". Se não abrir o cliente de email automaticamente, usa "Copiar texto" e cola no email manualmente.</div>
+    <div id="ep-mobile-note" class="ep-mobile-note" style="display:none">📎 Ao clicar "Enviar Email": o relatório é <strong>guardado automaticamente</strong> em Downloads e o email abre pré-preenchido. Adiciona o ficheiro como anexo antes de enviar.</div>
+    <div id="ep-desktop-note" class="ep-desktop-note" style="display:none">📎 Ao clicar "Enviar Email": o relatório é <strong>guardado automaticamente</strong> na pasta de Downloads e o cliente de email abre pré-preenchido. Arrasta o ficheiro para o email como anexo antes de enviar.</div>
     <div style="display:flex;gap:8px;margin-top:10px">
       <button class="btn bs" style="flex:1;min-height:44px" onclick="expEmail()">✉️ Enviar Email</button>
       <button class="ep-copy-btn" style="flex:0 0 auto;width:auto;padding:10px 14px;margin-top:0" onclick="epCopy()">📋 Copiar</button>
@@ -1932,24 +1932,30 @@ async function expXLSX(data){
 }
 
 function expEmail(){
-  // Reads data already computed by updEmailPrev — keeps this function synchronous
-  // so browsers don't block the mailto: navigation (async after await = gesture lost)
+  // Synchronous — keeps mailto: in the direct click gesture so browsers don't block it
   const dest=(document.getElementById('ep-to')?.textContent||'').trim();
   if(!dest||dest==='(não configurado)'){
     toast('⚠️ Configure o email de contabilidade nas Configurações');
     sp('settings');
     return;
   }
+  // Step 1: Download the report as HTML file so user can attach it to the email
+  const data=getFiltExp();
+  let fname='';
+  if(data.length){
+    try{fname=expPrint(data,true)||'';}catch(e){console.warn('download:',e);}
+  }
+  // Step 2: Open email client (synchronous — no await allowed before this line)
   const subj=encodeURIComponent(document.getElementById('ep-sub')?.textContent||'');
   const body=encodeURIComponent(document.getElementById('ep-body')?.dataset.body||'');
   const ccRaw=(document.getElementById('ep-cc')?.textContent||'').trim();
   const ccStr=(ccRaw&&ccRaw!=='—')?`&cc=${encodeURIComponent(ccRaw)}`:'';
   window.location.href=`mailto:${dest}?subject=${subj}${ccStr}&body=${body}`;
-  toast('✓ A abrir cliente de email…');
+  toast(fname?`📎 "${fname}" guardado em Downloads — adiciona como anexo!`:'✓ A abrir email…');
 }
 
 
-function expPrint(data){
+function expPrint(data, asDownload=false){
   const mes=document.getElementById('e-mes').value||curMesStr();
   const loja=document.getElementById('e-loja').value||cfg.lojas[0]||'Loja';
   const pCfg=exportCfg||cfg;
@@ -2086,6 +2092,17 @@ ${missingPdfHtml}
 
 </body></html>`;
 
+  if(asDownload){
+    // Download as HTML file (to attach to email)
+    const fname=`Depositos_${loja.replace(/\s+/g,'_')}_${mes}.html`;
+    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=fname;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return fname;
+  }
   const pw=window.open('about:blank','_blank');
   if(!pw){toast('⚠️ Popup bloqueado — permite popups para esta página.');return;}
   pw.document.write(html);
