@@ -1468,26 +1468,34 @@ function rDash(){
     const lwarn=ld.filter(r=>calcEstado(r).s==='warn').length;
     const lerr=ld.filter(r=>calcEstado(r).s==='err').length;
     const lprog=ld.filter(r=>calcEstado(r).s==='prog').length;
-    // Detect duplicate sessions across records for this loja
-    const _seen=new Set(),_dupRecs=new Set();
+    // Detect duplicate sessions — two passes so BOTH records are flagged
+    const _seen=new Set(),_dupKeys=new Set(),_dupRecs=new Set();
     ld.forEach(r=>r.sessoes.forEach(s=>{
       const k=`${s.dataVendas||''}|${(s.sessao||'').trim()}`;
-      if(s.sessao&&k.length>1){if(_seen.has(k))_dupRecs.add(r.id);else _seen.add(k);}
+      if(s.sessao&&k.length>1){if(_seen.has(k))_dupKeys.add(k);else _seen.add(k);}
     }));
+    ld.forEach(r=>{if(r.sessoes.some(s=>_dupKeys.has(`${s.dataVendas||''}|${(s.sessao||'').trim()}`)))_dupRecs.add(r.id);});
     const rows=ld.map(r=>{
       const est=calcEstado(r);
       const tv=totalValor(r);
       const ns=r.sessoes.length;
-      const ml=r.sessoes.length>1?r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort():[];
-      const dateRange=ml.length>1?`${fd(ml[0])} → ${fd(ml[ml.length-1])}`:fd(ml[0]||'');
+      const sortedSess=r.sessoes.map(s=>s).sort((a,b)=>(a.dataVendas||'')<(b.dataVendas||'')?-1:1);
+      const ml=sortedSess.map(s=>s.dataVendas).filter(Boolean);
+      const dateRange=ml.length>1?`${fd(ml[0])} → ${fd(ml[ml.length-1])}`:ml.length===1?fd(ml[0]):'—';
       const isDup=_dupRecs.has(r.id);
       const dupBadge=isDup?` <span style="font-size:10px;color:#fff;background:#dc2626;border-radius:4px;padding:1px 6px;font-weight:700">⚠️ DUPLICADO</span>`:'';
       const rowStyle=isDup?'border-left:3px solid #dc2626;background:#fff5f5':'';
+      const sessDetail=sortedSess.map(s=>{
+        const sIsDup=s.sessao&&_dupKeys.has(`${s.dataVendas||''}|${(s.sessao||'').trim()}`);
+        const sc=sIsDup?'color:#dc2626;font-weight:800':'color:var(--g500)';
+        return`<span style="font-size:10px;${sc};white-space:nowrap">${fd(s.dataVendas)||'—'} <b>Sess.${s.sessao||'?'}</b></span>`;
+      }).join('<span style="color:var(--g300);margin:0 3px">·</span>');
       return`<div class="dep-row" onclick="openDetail('${r.id}')" style="${rowStyle}">
         <div class="dep-dot ${est.s}"></div>
         <div class="dep-info">
-          <div class="dep-date">${dateRange||fd(r.criadoEm?.split('T')[0]||'')} <span style="font-size:10px;font-weight:600;color:var(--g400)">${r.tipo||''}</span>${dupBadge}</div>
-          <div class="dep-detail">${ns} sessão${ns>1?'ões':''} · Talão: ${r.talao||'—'} ${r.dataDeposito?'· Dep: '+fd(r.dataDeposito):''}</div>
+          <div class="dep-date">${dateRange} <span style="font-size:10px;font-weight:600;color:var(--g400)">${r.tipo||''}</span>${dupBadge}</div>
+          <div style="margin-top:3px;margin-bottom:3px;display:flex;flex-wrap:wrap;gap:3px;align-items:center">${sessDetail}</div>
+          <div class="dep-detail">Talão: ${r.talao||'—'} ${r.dataDeposito?'· Dep: '+fd(r.dataDeposito):''}</div>
           <div style="margin-top:3px">${estBadge(est)}${ns>3&&r.tipo==='Depósito Direto'?` <span style="font-size:10px;color:var(--red);font-weight:700"> ⚠️ ${ns} sessões</span>`:''}</div>
         </div>
         <div class="dep-val">${fmt(tv)}</div>
