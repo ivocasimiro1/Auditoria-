@@ -201,7 +201,7 @@ select{
 .ep-field:last-of-type{border-bottom:none}
 .ep-lbl{font-size:11px;font-weight:800;color:var(--g400);min-width:58px;padding-top:1px;text-transform:uppercase;letter-spacing:.3px}
 .ep-val{font-size:13px;color:var(--g700);font-weight:600;flex:1;word-break:break-all}
-.ep-body{background:var(--g50);border-radius:10px;padding:12px 13px;margin-top:10px;font-size:12px;color:var(--g600);line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;border:1.5px solid var(--g200)}
+.ep-body{background:var(--g50);border-radius:10px;padding:12px 13px;margin-top:10px;font-size:12px;color:var(--g600);line-height:1.7;max-height:360px;overflow-y:auto;border:1.5px solid var(--g200)}
 .ep-mobile-note{background:var(--gl);border:1.5px solid #6ee7b7;border-radius:10px;padding:11px 13px;margin-top:10px;font-size:12px;color:#065f46;font-weight:600;line-height:1.5}
 .ep-desktop-note{background:var(--ol);border:1.5px solid #fcd34d;border-radius:10px;padding:11px 13px;margin-top:10px;font-size:12px;color:var(--orange-dark);font-weight:600;line-height:1.5}
 .ep-copy-btn{background:var(--bl);color:var(--blue-dark);border:1.5px solid #bfdbfe;border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation;width:100%;margin-top:8px;min-height:44px}
@@ -380,9 +380,9 @@ select{
   <div class="card">
     <div class="ct">Loja &amp; Tipo de Serviço</div>
     <div class="grid2">
-      <div class="fg"><label>Loja *</label><select id="f-loja"></select></div>
+      <div class="fg"><label>Loja *</label><select id="f-loja" onchange="checkGuardarBtn();checkPendingSuggestion()"></select></div>
       <div class="fg"><label>Tipo de Serviço *</label>
-        <select id="f-tipo" onchange="onTipoChange()">
+        <select id="f-tipo" onchange="onTipoChange();checkGuardarBtn()">
           <option value="">Selecionar...</option>
         </select>
       </div>
@@ -413,7 +413,7 @@ select{
       <div class="fg"><label>Data do Depósito</label><input type="date" id="f-dd"></div>
       <div class="fg"><label>Nº Talão / Referência</label><input type="text" id="f-talao" placeholder="T2024001234" autocomplete="off"></div>
     </div>
-    <div class="fg"><label>Responsável *</label><select id="f-resp"></select></div>
+    <div class="fg"><label>Responsável *</label><select id="f-resp" onchange="checkGuardarBtn()"></select></div>
     <div class="fg"><label>Observações</label><textarea id="f-obs" placeholder="Notas opcionais..." rows="2"></textarea></div>
     <div class="fg">
       <label>Foto do Talão</label>
@@ -423,9 +423,9 @@ select{
         <img id="pp" alt="">
       </div>
     </div>
-    <button class="btn bp" onclick="guardar()">
+    <button class="btn bp" id="guardar-btn" onclick="guardar()" disabled style="opacity:.5">
       <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-      Guardar Registo
+      <span id="guardar-lbl">Guardar Registo</span>
     </button>
   </div>
 </div>
@@ -642,6 +642,20 @@ async function sbSaveCfgSB(){
   if(!sbProfile||isSA)return;
   await SB.from('dep_config').upsert({store_id:sbProfile.store_id,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',lojas:cfg.lojas||[],resps:cfg.resps||[]});
 }
+async function sbSyncLojasAll(){
+  if(!isSA)return;
+  try{
+    const{data:all}=await SB.from('dep_config').select('store_id,lojas,resps');
+    if(!all?.length)return;
+    for(const sc of all){
+      const mL=[...new Set([...(sc.lojas||[]),...cfg.lojas])].filter(Boolean);
+      const mR=[...new Set([...(sc.resps||[]),...cfg.resps])].filter(Boolean);
+      const same=JSON.stringify(mL)===JSON.stringify(sc.lojas||[])&&JSON.stringify(mR)===JSON.stringify(sc.resps||[]);
+      if(!same)await SB.from('dep_config').upsert({store_id:sc.store_id,lojas:mL,resps:mR});
+    }
+    toast('✓ Lojas/Responsáveis sincronizados em todas as lojas');
+  }catch(e){console.warn('syncAll:',e);}
+}
 async function doLogin(){
   const email=document.getElementById('auth-email').value.trim();
   const pass=document.getElementById('auth-pass').value;
@@ -665,12 +679,28 @@ async function afterLogin(user){
   const ui=document.getElementById('user-info');
   if(ui)ui.innerHTML=`<strong>${p.nome||p.store_id}</strong> · ${isSA?'Super Admin':'Staff'}<br><span style="font-size:11px;color:var(--g400)">${user.email}</span>`;
   popSel();rDash();
+  sbSubscribeRT();
+}
+let _rtCh=null;
+function sbSubscribeRT(){
+  if(_rtCh)try{SB.removeChannel(_rtCh);}catch(e){}
+  _rtCh=SB.channel('dep_rt')
+    .on('postgres_changes',{event:'*',schema:'public',table:'dep_registos'},async()=>{
+      const prev=regs.length;
+      await sbLoad();
+      rDash();
+      if(document.getElementById('page-lista').classList.contains('active'))rLista();
+      if(regs.length>prev)toast('🔄 Novo registo recebido');
+    })
+    .subscribe();
 }
 async function doLogout(){
   if(!confirm('Terminar sessão?'))return;
   await SB.auth.signOut();
   sbUser=null;sbProfile=null;isSA=false;regs=[];
   cfg={emp:'Despomar',email:'',nif:'',lojas:[],resps:[]};
+  if(_rtCh)try{SB.removeChannel(_rtCh);}catch(e){}
+  _rtCh=null;
   const lc=document.getElementById('logout-card');if(lc)lc.style.display='none';
   const lb=document.getElementById('logout-btn');if(lb)lb.style.display='none';
   const as=document.getElementById('auth-screen');as.style.display='flex';
@@ -841,6 +871,7 @@ function onTipoChange(){
   if(existing.length>0){existing.forEach(s=>addSes(s));}
   else{addSes();}
   checkSesAlert();
+  checkPendingSuggestion();
 }
 
 function getSesSionsData(){
@@ -871,7 +902,7 @@ function addSes(data){
     </div>
     <div class="grid2">
       <div class="fg"><label style="font-size:11px">Data de Vendas *</label><input type="date" id="sv-${idx}" value="${data?.dataVendas||new Date().toISOString().split('T')[0]}" oninput="updSesTotal()"></div>
-      <div class="fg"><label style="font-size:11px">Nº Sessão de Caixa</label><input type="number" id="ss-${idx}" value="${data?.sessao||''}" placeholder="6255" inputmode="numeric"></div>
+      <div class="fg"><label style="font-size:11px">Nº Sessão de Caixa *</label><input type="number" id="ss-${idx}" value="${data?.sessao||''}" placeholder="6255" inputmode="numeric"></div>
     </div>
     <div class="grid2">
       <div class="fg"><label style="font-size:11px">Valor (€) *</label><div class="im"><input type="number" id="svl-${idx}" value="${data?.valor||''}" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="updSesTotal()"></div></div>
@@ -907,6 +938,7 @@ function updSesTotal(){
   ct.textContent=`${cnt} sessão${cnt>1?'ões':''}`;
   sm.textContent=fmt(total);
   checkSesAlert();
+  checkGuardarBtn();
 }
 
 function checkSesAlert(){
@@ -925,6 +957,56 @@ function checkSesAlert(){
   } else {
     al.style.display='none';jg.style.display='none';
   }
+}
+
+function checkGuardarBtn(){
+  const btn=document.getElementById('guardar-btn');
+  if(!btn)return;
+  const loja=document.getElementById('f-loja')?.value;
+  const tipo=document.getElementById('f-tipo')?.value;
+  const resp=document.getElementById('f-resp')?.value;
+  if(!loja||!tipo||!resp){btn.disabled=true;btn.style.opacity='.5';return;}
+  const sessoes=getSesSionsData();
+  if(!sessoes.length){btn.disabled=true;btn.style.opacity='.5';return;}
+  const allValid=sessoes.every(s=>s.dataVendas&&s.sessao&&s.valor>0);
+  if(!allValid){btn.disabled=true;btn.style.opacity='.5';return;}
+  if(tipo==='Depósito Direto'&&sessoes.length>3){
+    const just=(document.getElementById('f-just')?.value||'').trim();
+    if(!just){btn.disabled=true;btn.style.opacity='.5';return;}
+  }
+  btn.disabled=false;btn.style.opacity='1';
+}
+
+function checkPendingSuggestion(){
+  if(editingId)return;
+  const loja=document.getElementById('f-loja')?.value;
+  const tipo=document.getElementById('f-tipo')?.value;
+  if(!loja||!tipo)return;
+  const pending=regs.filter(r=>r.loja===loja&&r.tipo===tipo&&!r.dataDeposito&&!r.talao);
+  if(!pending.length)return;
+  const allSess=pending.flatMap(r=>r.sessoes||[]);
+  const total=allSess.reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
+  const al=document.getElementById('ses-alert');
+  al.style.display='block';
+  al.innerHTML=`<div class="alert-banner" style="background:#f0f9ff;border-color:#bae6fd;color:#0369a1">
+    💡 <strong>${pending.length} registo(s) pendente(s)</strong> para ${loja} — ${tipo}<br>
+    <span style="font-size:11px">${allSess.length} sessões · Total ${fmt(total)} por depositar</span><br>
+    <button onclick="importPendingSess()" style="background:#1d4ed8;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-top:6px;touch-action:manipulation">📥 Importar sessões pendentes</button>
+  </div>`;
+}
+
+function importPendingSess(){
+  const loja=document.getElementById('f-loja')?.value;
+  const tipo=document.getElementById('f-tipo')?.value;
+  if(!loja||!tipo)return;
+  const pending=regs.filter(r=>r.loja===loja&&r.tipo===tipo&&!r.dataDeposito&&!r.talao);
+  if(!pending.length)return;
+  // Clear current sessions and add all pending
+  document.getElementById('ses-list').innerHTML='';sesCount=0;
+  pending.forEach(r=>{(r.sessoes||[]).forEach(s=>addSes(s));});
+  const cnt=pending.flatMap(r=>r.sessoes||[]).length;
+  toast(`✓ ${cnt} sessões importadas`);
+  document.getElementById('ses-alert').style.display='none';
 }
 
 function handlePhoto(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{fotoB64=e.target.result;document.getElementById('pp').src=fotoB64;document.getElementById('pp').style.display='block';document.getElementById('pa').classList.add('has');document.getElementById('pl').textContent='✓ '+f.name};r.readAsDataURL(f)}
@@ -966,8 +1048,11 @@ async function guardar(){
   if(!saved)return;
   saveR();
   // Reset save button
-  const btn=document.querySelector('#page-novo .btn.bp');
-  if(btn)btn.innerHTML='<svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Guardar Registo';
+  const btn=document.getElementById('guardar-btn');
+  if(btn){btn.disabled=true;btn.style.opacity='.5';}
+  const lbl=document.getElementById('guardar-lbl');
+  if(lbl)lbl.textContent='Guardar Registo';
+  editingId=null;
   // Reset sessions
   document.getElementById('ses-list').innerHTML='';sesCount=0;addSes();
   document.getElementById('ses-alert').style.display='none';
@@ -1217,9 +1302,9 @@ function editFull(id){
   if(r.foto){fotoB64=r.foto;document.getElementById('pp').src=r.foto;document.getElementById('pp').style.display='block';document.getElementById('pa').classList.add('has');document.getElementById('pl').textContent='✓ Foto existente';}
   else{fotoB64=null;document.getElementById('pp').style.display='none';document.getElementById('pa').classList.remove('has');document.getElementById('pl').textContent='📷 Tirar foto / Escolher imagem';}
   checkSesAlert();
-  // Update save button
-  const btn=document.querySelector('#page-novo .btn.bp');
-  if(btn)btn.innerHTML='<svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Atualizar Registo';
+  const lbl=document.getElementById('guardar-lbl');
+  if(lbl)lbl.textContent='Atualizar Registo';
+  checkGuardarBtn();
   sp('novo');
   toast('A editar registo — altere e guarde');
 }
@@ -1295,18 +1380,59 @@ async function updEmailPrev(){
   const erros=data.filter(r=>calcEstado(r).s==='err').length;
   const avisos=data.filter(r=>calcEstado(r).s==='warn').length;
   const subj=`Folha Depósitos – ${loja} – ${ml} – ${empresa}`;
-  const bodyLines=`Exmo(a). Departamento de Contabilidade,\n\nEnvio em anexo a folha de depósitos de ${loja}, referente a ${ml}.\n\nEmpresa: ${empresa}${nif?' · NIF '+nif:''}\nLoja: ${loja} · Período: ${ml}\nTotal: ${fmt(total)} · Depositado: ${fmt(totalDep)} · Por depositar: ${fmt(total-totalDep)}\nNº Depósitos: ${data.length} · Sessões: ${data.reduce((s,r)=>s+r.sessoes.length,0)}\n${erros>0?`⚠️ Depósitos em atraso: ${erros} — verificar folha em anexo.`:`✅ Sem problemas.`}\n\nCom os melhores cumprimentos,\n${loja} — ${empresa}`;
+  // Build rich month table for preview
+  const depRows=data.map((r,i)=>{
+    const est=calcEstado(r);const tv=totalValor(r);
+    const mld=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
+    const dr=mld.length>1?`${fd(mld[0])}→${fd(mld[mld.length-1])}`:fd(mld[0]||'');
+    const stC=est.s==='ok'?'#166534;background:#dcfce7':est.s==='warn'?'#854d0e;background:#fef9c3':est.s==='err'?'#991b1b;background:#fee2e2':'#475569;background:#f1f5f9';
+    return`<tr style="border-bottom:1px solid #e5e7eb">
+      <td style="padding:4px 6px;font-size:11px;color:#6b7280">${i+1}</td>
+      <td style="padding:4px 6px;font-size:11px">${dr}</td>
+      <td style="padding:4px 6px;font-size:11px">${fd(r.dataDeposito)||'—'}</td>
+      <td style="padding:4px 6px;font-size:10px;font-family:monospace">${r.talao||'—'}</td>
+      <td style="padding:4px 6px;font-size:11px;text-align:right;font-weight:700;color:#1d4ed8">${fmt(tv)}</td>
+      <td style="padding:4px 6px"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;color:${stC}">${est.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}</span></td>
+    </tr>`;
+  }).join('');
+  // Plain text for mailto body
+  const shortBody=`Exmo(a). Departamento de Contabilidade,\n\nEnvio em anexo a folha de depósitos de ${loja}, referente a ${ml}.\n\nEmpresa: ${empresa}${nif?' · NIF '+nif:''}\nTotal: ${fmt(total)} · Depositado: ${fmt(totalDep)} · Por depositar: ${fmt(total-totalDep)}\nNº Depósitos: ${data.length}${erros>0?'\n⚠️ '+erros+' depósito(s) com problemas.':'\n✅ Sem problemas.'}\n\nCom os melhores cumprimentos,\n${loja} — ${empresa}`;
   document.getElementById('ep-to').textContent=dest;
   document.getElementById('ep-cc').textContent=cc;
   document.getElementById('ep-sub').textContent=subj;
-  document.getElementById('ep-body').textContent=bodyLines;
+  // Rich HTML preview
+  document.getElementById('ep-body').innerHTML=`
+    <div style="font-size:12px;color:#374151;margin-bottom:8px">Exmo(a). Departamento de Contabilidade,</div>
+    <div style="font-size:12px;color:#374151;margin-bottom:10px">Envio a folha de <strong>${loja}</strong> — <strong>${ml}</strong>. Empresa: ${empresa}${nif?' · NIF '+nif:''}.</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:10px">
+      <thead><tr style="background:#1e3a8a">
+        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">#</th>
+        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Datas Vendas</th>
+        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Data Dep.</th>
+        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Talão</th>
+        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700;text-align:right">Valor</th>
+        <th style="padding:4px 6px;font-size:10px;color:#fff;font-weight:700">Estado</th>
+      </tr></thead>
+      <tbody>${depRows}</tbody>
+      <tfoot><tr style="background:#dbeafe;border-top:2px solid #1e3a8a">
+        <td colspan="4" style="padding:5px 6px;font-size:11px;font-weight:700;color:#1e3a8a">${data.length} dep. · ${data.reduce((s,r)=>s+r.sessoes.length,0)} sess.</td>
+        <td style="padding:5px 6px;font-size:12px;font-weight:800;color:#1e3a8a;text-align:right">${fmt(total)}</td>
+        <td style="padding:5px 6px;font-size:10px;color:${erros>0?'#991b1b':'#166534'};font-weight:700">${erros>0?'⚠️ '+erros+' prob.':'✅ OK'}</td>
+      </tr></tfoot>
+    </table>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+      <div style="background:#dbeafe;border-radius:7px;padding:7px 10px;text-align:center"><div style="font-size:10px;color:#1e40af;font-weight:700">Total</div><div style="font-size:14px;font-weight:800;color:#1e3a8a">${fmt(total)}</div></div>
+      <div style="background:#dcfce7;border-radius:7px;padding:7px 10px;text-align:center"><div style="font-size:10px;color:#166534;font-weight:700">Depositado</div><div style="font-size:14px;font-weight:800;color:#166534">${fmt(totalDep)}</div></div>
+      <div style="background:${erros>0?'#fee2e2':'#fef9c3'};border-radius:7px;padding:7px 10px;text-align:center"><div style="font-size:10px;color:${erros>0?'#991b1b':'#854d0e'};font-weight:700">${erros>0?'Em atraso':'Por dep.'}</div><div style="font-size:14px;font-weight:800;color:${erros>0?'#991b1b':'#854d0e'}">${erros>0?erros:fmt(total-totalDep)}</div></div>
+    </div>
+    <div style="font-size:11px;color:#6b7280">Com os melhores cumprimentos,<br><strong>${loja} — ${empresa}</strong></div>`;
+  // Store plain text for copy + mailto
+  document.getElementById('ep-body').dataset.body=shortBody;
+  document.getElementById('ep-body').dataset.subj=subj;
   // Mobile vs desktop hint
   const isMobile=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
   document.getElementById('ep-mobile-note').style.display=isMobile?'block':'none';
   document.getElementById('ep-desktop-note').style.display=isMobile?'none':'block';
-  // Store body for copy
-  document.getElementById('ep-body').dataset.body=bodyLines;
-  document.getElementById('ep-body').dataset.subj=subj;
 }
 function epCopy(){
   const body=document.getElementById('ep-body')?.dataset.body||'';
@@ -1698,10 +1824,10 @@ ${erros>0?`<div class="err-bar">⚠️ ${erros} depósito(s) em atraso — verif
 }
 
 // ─── SETTINGS ────────────────────────────────────────
-function addL(){const i=document.getElementById('nl');const n=i.value.trim();if(!n)return;if(cfg.lojas.includes(n)){toast('Já existe');return}cfg.lojas.push(n);saveCfg();sbSaveCfgSB();i.value='';popSel();rSettings();toast('Loja adicionada ✓')}
-function remL(n){if(!confirm(`Remover loja "${n}"?`))return;cfg.lojas=cfg.lojas.filter(x=>x!==n);saveCfg();sbSaveCfgSB();popSel();rSettings()}
-function addR(){const i=document.getElementById('nr');const n=i.value.trim();if(!n)return;if(cfg.resps.includes(n)){toast('Já existe');return}cfg.resps.push(n);saveCfg();sbSaveCfgSB();i.value='';popSel();rSettings();toast('Responsável adicionado ✓')}
-function remR(n){cfg.resps=cfg.resps.filter(x=>x!==n);saveCfg();sbSaveCfgSB();popSel();rSettings()}
+function addL(){const i=document.getElementById('nl');const n=i.value.trim();if(!n)return;if(cfg.lojas.includes(n)){toast('Já existe');return}cfg.lojas.push(n);saveCfg();if(isSA)sbSyncLojasAll();else sbSaveCfgSB();i.value='';popSel();rSettings();toast('Loja adicionada ✓')}
+function remL(n){if(!confirm(`Remover loja "${n}"?`))return;cfg.lojas=cfg.lojas.filter(x=>x!==n);saveCfg();if(isSA)sbSyncLojasAll();else sbSaveCfgSB();popSel();rSettings()}
+function addR(){const i=document.getElementById('nr');const n=i.value.trim();if(!n)return;if(cfg.resps.includes(n)){toast('Já existe');return}cfg.resps.push(n);saveCfg();if(isSA)sbSyncLojasAll();else sbSaveCfgSB();i.value='';popSel();rSettings();toast('Responsável adicionado ✓')}
+function remR(n){cfg.resps=cfg.resps.filter(x=>x!==n);saveCfg();if(isSA)sbSyncLojasAll();else sbSaveCfgSB();popSel();rSettings()}
 function rSettings(){
   document.getElementById('c-emp').value=cfg.emp||'';document.getElementById('c-email').value=cfg.email||'';const ccEl=document.getElementById('c-emailcc');if(ccEl)ccEl.value=cfg.emailCC||'';const cc2El=document.getElementById('c-emailcc2');if(cc2El)cc2El.value=cfg.emailCC2||'';document.getElementById('c-nif').value=cfg.nif||'';const cdEl=document.getElementById('c-cambio-dia');if(cdEl)cdEl.value=cfg.cambioDia||'';const pdEl=document.getElementById('c-prosegur-dia');if(pdEl)pdEl.value=cfg.prosegurDay||'';const ldEl=document.getElementById('c-lomis-dia');if(ldEl)ldEl.value=cfg.lomisDay||'';
   document.getElementById('ltags').innerHTML=cfg.lojas.map(l=>`<span class="tag">${l}<button onclick="remL('${l.replace(/'/g,"\\'")}')">×</button></span>`).join('');
