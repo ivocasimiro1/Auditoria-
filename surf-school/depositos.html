@@ -403,6 +403,7 @@ select{
     <div class="kpi orange"><div class="kl">⏳ Por Depositar</div><div class="kv" id="d-pend">€0</div></div>
     <div class="kpi red"><div class="kl">🔴 Em Atraso / Falta</div><div class="kv" id="d-err">0</div><div class="ks" id="d-err-s"></div></div>
   </div>
+  <div id="sa-stores-panel"></div>
   <div id="dash-alerts"></div>
   <div id="dash-types"></div>
   <div id="dash-body"></div>
@@ -657,7 +658,7 @@ const SB=supabase.createClient(
   'https://ubeqidccuvsjhjphybxz.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U'
 );
-let sbUser=null,sbProfile=null,isSA=false;
+let sbUser=null,sbProfile=null,isSA=false,allStoreConfigs=[];
 const rowToReg=row=>({id:row.id,store_id:row.store_id,loja:row.loja,tipo:row.tipo,sessoes:row.sessoes||[],dataDeposito:row.data_deposito||'',talao:row.talao||'',responsavel:row.responsavel||'',obs:row.obs||'',foto:row.foto||null,criadoEm:row.criado_em||''});
 const regToRow=r=>({id:r.id,store_id:sbProfile?.store_id||r.store_id||'',loja:r.loja,tipo:r.tipo||'',sessoes:r.sessoes||[],data_deposito:r.dataDeposito||'',talao:r.talao||'',responsavel:r.responsavel||'',obs:r.obs||'',foto:r.foto||null,criado_em:r.criadoEm||new Date().toISOString()});
 function setLoad(on){document.getElementById('load-ov').style.display=on?'flex':'none'}
@@ -671,7 +672,7 @@ async function sbLoad(){
       // SA: load personal config from 'super' row + merge lojas/resps from all stores
       const[{data:saRow},{data:cs}]=await Promise.all([
         SB.from('dep_config').select('*').eq('store_id','super').maybeSingle(),
-        SB.from('dep_config').select('lojas,resps')
+        SB.from('dep_config').select('*')
       ]);
       if(saRow){
         cfg={
@@ -687,6 +688,7 @@ async function sbLoad(){
         };
       }
       if(cs?.length){
+        allStoreConfigs=cs.filter(c=>c.store_id&&c.store_id!=='super');
         const aL=[...new Set(cs.flatMap(c=>c.lojas||[]))];
         const aR=[...new Set(cs.flatMap(c=>c.resps||[]))];
         if(aL.length)cfg.lojas=aL;if(aR.length)cfg.resps=aR;
@@ -899,14 +901,9 @@ function sp(name){
 function popTipo(){
   const el=document.getElementById('f-tipo');if(!el)return;
   const cur=el.value;
-  const opts=['Depósito Direto'];
-  if(cfg.prosegurDay)opts.push('Prosegur');
-  if(cfg.lomisDay)opts.push('Lomis');
-  if(cfg.cambioDia)opts.push('Câmbio');
-  if(opts.length===1){opts.push('Prosegur');opts.push('Lomis');opts.push('Câmbio');}
+  const opts=['Depósito Direto','Prosegur','Lomis','Câmbio'];
   el.innerHTML='<option value="">Selecionar...</option>'+opts.map(o=>`<option value="${o}">${o}</option>`).join('');
   if(cur&&opts.includes(cur))el.value=cur;
-  else if(opts.length===1)el.value=opts[0];
 }
 function popSel(){
   popTipo();
@@ -1325,6 +1322,71 @@ function rDashTable(data){
     </table>
   </div>`;
 }
+function rStoresStatus(){
+  const panel=document.getElementById('sa-stores-panel');
+  if(!panel||!isSA){if(panel)panel.innerHTML='';return;}
+  const mes=document.getElementById('dash-mes')?.value||curMesStr();
+  const storeStats={};
+  regs.forEach(r=>{
+    const sid=r.store_id;if(!sid)return;
+    if(!storeStats[sid])storeStats[sid]={total:0,thisMes:0,lastDate:''};
+    const s=storeStats[sid];s.total++;
+    const ref=r.criadoEm||'';
+    if(ref.startsWith(mes))s.thisMes++;
+    if(!s.lastDate||ref>s.lastDate)s.lastDate=ref;
+  });
+  const knownStores=new Map();
+  allStoreConfigs.forEach(c=>{knownStores.set(c.store_id,{emp:c.emp||c.store_id,email:c.email||''});});
+  Object.keys(storeStats).forEach(sid=>{if(!knownStores.has(sid))knownStores.set(sid,{emp:sid,email:''});});
+  if(!knownStores.size){panel.innerHTML='';return;}
+  const list=[...knownStores.entries()].map(([sid,info])=>{
+    const st=storeStats[sid]||{total:0,thisMes:0,lastDate:''};
+    const status=st.total===0?'never':st.thisMes>0?'active':'idle';
+    return{sid,info,st,status};
+  }).sort((a,b)=>{
+    const o={active:0,idle:1,never:2};
+    return(o[a.status]-o[b.status])||((b.st.lastDate||'').localeCompare(a.st.lastDate||''));
+  });
+  const activeCount=list.filter(x=>x.status==='active').length;
+  const idleCount=list.filter(x=>x.status==='idle').length;
+  const neverCount=list.filter(x=>x.status==='never').length;
+  const mesLabel=new Date(mes+'-01').toLocaleDateString('pt-PT',{month:'long',year:'numeric'});
+  const rows=list.map(({sid,info,st,status})=>{
+    const dot=status==='active'?'🟢':status==='idle'?'🟡':'⚪';
+    const lastStr=st.lastDate?fd(st.lastDate.split('T')[0]):'—';
+    const emailBadge=info.email?`<span style="color:var(--green);font-size:10px">✓ email</span>`:`<span style="color:var(--g400);font-size:10px">sem email</span>`;
+    const rightTop=st.thisMes>0
+      ?`<span style="font-size:12px;font-weight:700;color:var(--green)">${st.thisMes} reg. este mês</span>`
+      :(status==='idle'?`<span style="font-size:11px;color:var(--orange)">Inativo este mês</span>`
+      :`<span style="font-size:11px;color:var(--g400)">Nunca usou</span>`);
+    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--g100)">
+      <div style="font-size:18px;flex-shrink:0;line-height:1">${dot}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--g800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${info.emp||sid}</div>
+        <div style="font-size:11px;color:var(--g400);margin-top:2px;display:flex;gap:8px;align-items:center"><span>${sid}</span>${emailBadge}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        ${rightTop}
+        <div style="font-size:10px;color:var(--g400);margin-top:2px">Total: ${st.total} · Último: ${lastStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+  panel.innerHTML=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
+    <div style="padding:12px 14px 10px;background:linear-gradient(135deg,#f8fafc,#eff6ff);border-bottom:1px solid var(--g100);display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:6px">
+      <div>
+        <div class="ct" style="margin-bottom:4px">Lojas a Utilizar</div>
+        <div style="font-size:11px;color:var(--g500)">Atividade em ${mesLabel}</div>
+      </div>
+      <div style="display:flex;gap:10px;font-size:11px;color:var(--g600);flex-wrap:wrap">
+        ${activeCount?`<span>🟢 <strong>${activeCount}</strong> ativas</span>`:''}
+        ${idleCount?`<span>🟡 <strong>${idleCount}</strong> inativas</span>`:''}
+        ${neverCount?`<span>⚪ <strong>${neverCount}</strong> sem uso</span>`:''}
+      </div>
+    </div>
+    ${rows}
+  </div>`;
+}
+
 function rDash(){
   popSel();
   const mes=document.getElementById('dash-mes').value||curMesStr();
@@ -1372,6 +1434,7 @@ function rDash(){
     }
   }
   rTypeCards(data);
+  rStoresStatus();
   const el=document.getElementById('dash-body');
   if(dashView==='table'){el.innerHTML=rDashTable(data);return;}
   if(!data.length){el.innerHTML=`<div class="empty"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>Sem registos para este período</p><small>Adicione o primeiro depósito no separador ➕</small></div>`;return}
