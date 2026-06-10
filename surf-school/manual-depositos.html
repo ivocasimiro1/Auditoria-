@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Manual de Utilização — Controlo de Depósitos · Despomar</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#1e3a8a;--blue2:#2563eb;--blue-l:#eff6ff;
+  --green:#059669;--green-l:#ecfdf5;
+  --orange:#d97706;--orange-l:#fffbeb;
+  --red:#dc2626;--red-l:#fef2f2;
+  --g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;--g400:#94a3b8;--g500:#64748b;--g700:#334155;--g800:#1e293b;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;color:var(--g800);background:#fff;line-height:1.55}
+
+/* ── COVER ── */
+.cover{background:linear-gradient(145deg,#0f1f5c,#1e3a8a,#2563eb);color:#fff;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:40px 32px;page-break-after:always}
+.cover-logo{width:80px;height:80px;background:rgba(255,255,255,.15);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;border:2px solid rgba(255,255,255,.25)}
+.cover-logo svg{width:44px;height:44px}
+.cover h1{font-size:28px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
+.cover h2{font-size:16px;font-weight:400;opacity:.75;margin-bottom:32px}
+.cover-meta{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:16px 28px;font-size:13px;line-height:2;margin-bottom:32px}
+.cover-url{background:rgba(255,255,255,.2);border-radius:8px;padding:8px 20px;font-size:14px;font-weight:700;letter-spacing:.3px;font-family:monospace}
+.cover-footer{position:absolute;bottom:32px;font-size:11px;opacity:.5}
+
+/* ── LAYOUT ── */
+.page{max-width:800px;margin:0 auto;padding:40px 32px}
+@media print{
+  .cover{page-break-after:always}
+  .section{page-break-inside:avoid}
+  .chapter{page-break-before:always}
+  body{font-size:11px}
+  .page{padding:20px 24px}
+}
+
+/* ── HEADINGS ── */
+.chapter-title{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border-radius:12px;padding:18px 24px;margin-bottom:24px;margin-top:8px}
+.chapter-title .num{font-size:11px;font-weight:700;opacity:.7;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+.chapter-title h2{font-size:20px;font-weight:800;letter-spacing:-.3px}
+.chapter-title p{font-size:12px;opacity:.8;margin-top:4px}
+
+h3{font-size:13px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin:24px 0 12px;display:flex;align-items:center;gap:8px}
+h3::before{content:'';display:inline-block;width:4px;height:16px;background:var(--blue2);border-radius:2px;flex-shrink:0}
+
+/* ── SECTIONS ── */
+.section{margin-bottom:24px}
+.step-list{list-style:none;counter-reset:steps}
+.step-list li{counter-increment:steps;display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+.step-list li::before{content:counter(steps);background:var(--blue2);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px}
+.step-list li span{font-size:13px;line-height:1.5}
+.step-list li strong{color:var(--g800)}
+
+/* ── CALLOUTS ── */
+.tip{background:var(--blue-l);border-left:4px solid var(--blue2);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:12px;color:var(--blue)}
+.warning{background:var(--orange-l);border-left:4px solid var(--orange);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:12px;color:#92400e}
+.important{background:var(--red-l);border-left:4px solid var(--red);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:12px;color:#991b1b}
+.success{background:var(--green-l);border-left:4px solid var(--green);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:12px;color:#065f46}
+.tip b,.warning b,.important b,.success b{font-weight:800}
+
+/* ── MOCKUP SCREEN ── */
+.mockup{background:#fff;border:1.5px solid var(--g200);border-radius:14px;overflow:hidden;margin:16px 0;box-shadow:0 2px 16px rgba(0,0,0,.08)}
+.mockup-bar{background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;color:#fff}
+.mockup-bar .title{font-size:12px;font-weight:700}
+.mockup-bar .sub{font-size:10px;opacity:.7}
+.mockup-nav{background:#fff;border-bottom:1px solid var(--g100);display:flex;height:52px}
+.nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--g400);gap:2px;text-transform:uppercase;letter-spacing:.3px}
+.nav-tab.active{color:var(--blue2);border-bottom:2.5px solid var(--blue2)}
+.nav-tab .icon{font-size:16px}
+.mockup-body{padding:14px;background:var(--g50)}
+.mockup-kpi{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.kpi{background:#fff;border-radius:10px;padding:10px 12px;border:1px solid var(--g100)}
+.kpi .kl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--g500);margin-bottom:3px}
+.kpi .kv{font-size:16px;font-weight:800}
+.kpi.blue .kv{color:var(--blue2)}
+.kpi.green .kv{color:var(--green)}
+.kpi.orange .kv{color:var(--orange)}
+.kpi.red .kv{color:var(--red)}
+.mock-card{background:#fff;border-radius:10px;padding:10px 12px;border:1px solid var(--g100);margin-bottom:8px}
+.mock-row{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--g100)}
+.mock-row:last-child{border-bottom:none}
+.mock-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.mock-dot.ok{background:var(--green)}
+.mock-dot.warn{background:var(--orange)}
+.mock-dot.prog{background:var(--blue2)}
+.mock-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;display:inline-block}
+.mock-badge.ok{background:#dcfce7;color:#166534}
+.mock-badge.warn{background:#fef9c3;color:#854d0e}
+.mock-badge.prog{background:var(--blue-l);color:var(--blue)}
+.mock-badge.err{background:#fee2e2;color:#991b1b}
+.mock-field{margin-bottom:8px}
+.mock-field label{font-size:9px;font-weight:700;color:var(--g500);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
+.mock-input{border:1.5px solid var(--g200);border-radius:7px;padding:7px 10px;font-size:11px;color:var(--g800);background:#fff;width:100%}
+.mock-input.filled{border-color:var(--blue2)}
+.mock-btn{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:9px;padding:11px;font-size:12px;font-weight:700;width:100%;text-align:center;margin-top:8px}
+.mock-btn.green{background:linear-gradient(135deg,#047857,#059669)}
+.mock-divider{height:1px;background:var(--g100);margin:8px 0}
+.mock-ses-row{display:flex;gap:6px;align-items:flex-start;padding:8px;background:var(--g50);border-radius:8px;margin-bottom:6px;border:1px solid var(--g100)}
+.mock-ses-num{background:var(--blue2);color:#fff;border-radius:50%;width:18px;height:18px;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mock-grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tag{display:inline-block;background:var(--g100);color:var(--g500);font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;margin:2px 2px 2px 0}
+.tag.blue{background:var(--blue-l);color:var(--blue)}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}
+th{background:var(--g800);color:#fff;padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+td{padding:8px 12px;border-bottom:1px solid var(--g100)}
+tr:nth-child(even) td{background:var(--g50)}
+td strong{color:var(--g800);font-weight:700}
+td code{background:var(--g100);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:11px}
+
+/* ── INDEX ── */
+.toc{background:var(--g50);border-radius:12px;padding:20px 24px;margin:24px 0}
+.toc h3{margin-top:0}
+.toc ol{padding-left:20px;line-height:2.2}
+.toc li{font-size:13px;color:var(--g700)}
+.toc li a{color:var(--blue2);text-decoration:none;font-weight:600}
+
+/* ── STATUS PILLS ── */
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.pill.ok{background:#dcfce7;color:#166534}
+.pill.warn{background:#fef9c3;color:#854d0e}
+.pill.err{background:#fee2e2;color:#991b1b}
+.pill.prog{background:var(--blue-l);color:var(--blue)}
+
+/* ── MOBILE/DESKTOP BADGE ── */
+.device-badge{display:inline-flex;align-items:center;gap:6px;background:var(--g100);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--g600);margin-bottom:12px;margin-right:8px}
+
+/* ── SEPARATOR ── */
+.divider{border:none;border-top:1.5px solid var(--g100);margin:32px 0}
+
+/* ── PHONE FRAME ── */
+.phone-frame{background:#0f172a;border-radius:32px;padding:12px;width:240px;margin:0 auto 16px;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.phone-screen{border-radius:22px;overflow:hidden;background:#fff}
+.phone-notch{background:#0f172a;height:20px;display:flex;align-items:center;justify-content:center;margin-bottom:0}
+.phone-notch::after{content:'';width:60px;height:6px;background:#1e293b;border-radius:3px}
+.phone-wrap{display:flex;gap:24px;align-items:flex-start;justify-content:center;margin:16px 0;flex-wrap:wrap}
+.phone-label{text-align:center;font-size:11px;color:var(--g500);margin-top:8px;font-weight:600}
+
+/* ── FOOTER ── */
+.doc-footer{background:var(--g800);color:#fff;padding:24px 32px;margin-top:40px;border-radius:12px;text-align:center}
+.doc-footer p{font-size:12px;opacity:.7;margin-top:6px}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ CAPA ════════════════ -->
+<div class="cover">
+  <div class="cover-logo">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="27" r="15" stroke="white" stroke-width="2.5" fill="rgba(255,255,255,0.12)"/>
+      <path d="M37 21.5C35.8 20.5 34.3 20 32.5 20c-4 0-7 3-7 7s3 7 7 7c1.8 0 3.3-.5 4.5-1.5" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="24" y1="26" x2="34" y2="26" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="24" y1="29" x2="34" y2="29" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="32" y1="44" x2="32" y2="54" stroke="#93c5fd" stroke-width="3" stroke-linecap="round"/>
+      <polyline points="27,50 32,55 37,50" fill="none" stroke="#93c5fd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <h1>Controlo de Depósitos</h1>
+  <h2>Manual de Utilização · Despomar</h2>
+  <div class="cover-meta">
+    <div><strong>Aplicação:</strong> Controlo e Reporte de Depósitos por Loja</div>
+    <div><strong>Utilização:</strong> Computador e Telemóvel</div>
+    <div><strong>Versão:</strong> Junho 2026</div>
+    <div><strong>Grupo:</strong> Despomar / 58 Surf</div>
+  </div>
+  <div class="cover-url">https://auditoria-25b.pages.dev/depositos</div>
+</div>
+
+<!-- ════════════════ ÍNDICE ════════════════ -->
+<div class="page">
+  <div class="toc">
+    <h3>Índice</h3>
+    <ol>
+      <li><a href="#acesso">Acesso e Login</a></li>
+      <li><a href="#configuracoes">Configurações da Loja</a> <strong style="color:var(--red);font-size:11px">— OBRIGATÓRIO</strong></li>
+      <li><a href="#novo">Registar um Novo Depósito</a></li>
+      <li><a href="#dashboard">Dashboard — Resumo do Mês</a></li>
+      <li><a href="#lista">Lista de Registos e Edição</a></li>
+      <li><a href="#exportar">Exportar e Enviar para Contabilidade</a></li>
+      <li><a href="#estados">Significado dos Estados</a></li>
+      <li><a href="#mobile">Utilização no Telemóvel</a></li>
+      <li><a href="#faq">Perguntas Frequentes</a></li>
+    </ol>
+  </div>
+
+  <div class="tip"><b>ℹ️ Este manual aplica-se a todas as lojas do grupo Despomar.</b> Cada loja tem a sua conta individual com dados separados das restantes.</div>
+</div>
+
+<!-- ════════════════ 1. ACESSO ════════════════ -->
+<div class="page chapter" id="acesso">
+  <div class="chapter-title">
+    <div class="num">Capítulo 1</div>
+    <h2>Acesso e Login</h2>
+    <p>Como entrar na aplicação em computador ou telemóvel</p>
+  </div>
+
+  <div class="section">
+    <span class="device-badge">💻 Computador</span>
+    <span class="device-badge">📱 Telemóvel</span>
+    <p style="margin-bottom:14px;color:var(--g600)">O acesso é feito através do browser (Chrome, Safari, Firefox). Não é necessário instalar nada.</p>
+
+    <h3>Passos para entrar</h3>
+    <ol class="step-list">
+      <li><span>Abra o browser e aceda a <strong>https://auditoria-25b.pages.dev/depositos</strong></span></li>
+      <li><span>Introduza o seu <strong>email</strong> e <strong>password</strong> fornecidos pela Despomar</span></li>
+      <li><span>Clique em <strong>"Entrar"</strong></span></li>
+    </ol>
+
+    <!-- MOCKUP LOGIN -->
+    <div class="mockup" style="max-width:320px;margin:20px auto">
+      <div class="mockup-bar">
+        <div>
+          <div class="title">Controlo de Depósitos</div>
+          <div class="sub">Despomar · Grupo 58 Surf</div>
+        </div>
+        <svg width="28" height="28" viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="12" fill="rgba(255,255,255,.15)"/><circle cx="32" cy="27" r="12" stroke="white" stroke-width="2" fill="rgba(255,255,255,.1)"/><line x1="24" y1="26" x2="34" y2="26" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="24" y1="29" x2="34" y2="29" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="32" y1="43" x2="32" y2="51" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round"/><polyline points="28,48 32,52 36,48" fill="none" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div style="padding:20px;background:var(--g50)">
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:14px;font-weight:800;color:var(--g800)">Bem-vindo</div>
+          <div style="font-size:11px;color:var(--g500)">Introduza as suas credenciais</div>
+        </div>
+        <div class="mock-field">
+          <label>Email</label>
+          <div class="mock-input filled">loja@empresa.pt</div>
+        </div>
+        <div class="mock-field">
+          <label>Password</label>
+          <div class="mock-input filled">••••••••••</div>
+        </div>
+        <div class="mock-btn">Entrar</div>
+      </div>
+    </div>
+
+    <div class="important"><b>⚠️ Credenciais individuais:</b> Cada loja tem o seu próprio email e password. Não partilhe o acesso com outras lojas.</div>
+    <div class="tip"><b>💡 Guardar no telemóvel:</b> No iPhone, carregue em <em>Partilhar → Adicionar ao Ecrã de Início</em> para aceder como se fosse uma app. No Android, carregue em <em>Menu → Adicionar ao ecrã inicial</em>.</div>
+  </div>
+</div>
+
+<!-- ════════════════ 2. CONFIGURAÇÕES ════════════════ -->
+<div class="page chapter" id="configuracoes">
+  <div class="chapter-title">
+    <div class="num">Capítulo 2</div>
+    <h2>⚙️ Configurações da Loja</h2>
+    <p>Passo obrigatório antes de começar a utilizar — configurar uma vez, fica guardado</p>
+  </div>
+
+  <div class="important"><b>🔴 OBRIGATÓRIO:</b> Antes de registar qualquer depósito, a loja DEVE preencher as configurações. Sem elas, os prazos não são calculados corretamente e os emails não chegam à contabilidade.</div>
+
+  <div class="section">
+    <h3>Como aceder às Configurações</h3>
+    <ol class="step-list">
+      <li><span>Após o login, toque no ícone <strong>⚙️</strong> no canto superior direito da barra azul</span></li>
+      <li><span>Abre-se a página de Configurações da sua loja</span></li>
+    </ol>
+
+    <!-- MOCKUP TOPBAR -->
+    <div class="mockup" style="max-width:360px;margin:12px auto">
+      <div class="mockup-bar" style="justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <svg width="24" height="24" viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="10" fill="rgba(255,255,255,.15)"/><circle cx="32" cy="27" r="12" stroke="white" stroke-width="2" fill="rgba(255,255,255,.1)"/><line x1="25" y1="26" x2="35" y2="26" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="25" y1="29" x2="35" y2="29" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="32" y1="43" x2="32" y2="51" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round"/><polyline points="28,48 32,52 36,48" fill="none" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="title">📊 Dashboard</div>
+            <div class="sub">ESS Guia</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div style="background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:7px 11px;font-size:12px">🗑</div>
+          <div style="background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:7px 11px;font-size:12px">⚙️</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Campos a preencher</h3>
+    <table>
+      <thead><tr><th>Campo</th><th>O que preencher</th><th>Exemplo</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Empresa</strong></td><td>Nome da loja ou empresa</td><td>ESS Guia</td></tr>
+        <tr><td><strong>NIF</strong></td><td>Número de identificação fiscal</td><td>508 123 456</td></tr>
+        <tr><td><strong>Email Contabilidade</strong></td><td>Para onde vai a folha de depósitos</td><td>contab@empresa.pt</td></tr>
+        <tr><td><strong>CC Adicional</strong></td><td>Email extra em cópia (opcional)</td><td>gerente@empresa.pt</td></tr>
+        <tr><td><strong>Lojas</strong></td><td>Nome(s) da(s) loja(s) que vai controlar</td><td>ESS Guia</td></tr>
+        <tr><td><strong>Responsáveis</strong></td><td>Quem faz os depósitos na loja</td><td>Tiago, André</td></tr>
+        <tr><td><strong>Dia Prosegur</strong></td><td>Dia da semana em que a Prosegur passa</td><td>Terça-feira</td></tr>
+        <tr><td><strong>Dia Lomis</strong></td><td>Dia da semana em que a Lomis passa</td><td>Quinta-feira</td></tr>
+        <tr><td><strong>Dia Câmbio</strong></td><td>Se não usa — deixar em branco</td><td>—</td></tr>
+      </tbody>
+    </table>
+
+    <!-- MOCKUP SETTINGS -->
+    <div class="mockup" style="max-width:360px;margin:16px auto">
+      <div class="mockup-bar"><div class="title">⚙️ Configurações</div><div class="sub">ESS Guia</div></div>
+      <div style="padding:14px;background:var(--g50)">
+        <div class="mock-card">
+          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Dados da Empresa</div>
+          <div class="mock-field"><label>Empresa</label><div class="mock-input filled">ESS Guia</div></div>
+          <div class="mock-field"><label>NIF</label><div class="mock-input filled">508 123 456</div></div>
+          <div class="mock-field"><label>Email Contabilidade (Para:)</label><div class="mock-input filled">contabilidade@empresa.pt</div></div>
+        </div>
+        <div class="mock-card">
+          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Dia de Levantamento Semanal</div>
+          <div class="mock-field"><label>Prosegur</label><div class="mock-input filled" style="color:var(--green)">Terça-feira ✓</div></div>
+          <div class="mock-field"><label>Lomis</label><div class="mock-input" style="color:var(--g400)">— Esta loja não usa Lomis —</div></div>
+          <div class="mock-field"><label>Câmbio</label><div class="mock-input" style="color:var(--g400)">— Esta loja não usa Câmbio —</div></div>
+        </div>
+        <div class="mock-btn green" style="margin-top:4px">✓ Guardar Configurações</div>
+      </div>
+    </div>
+
+    <div class="warning"><b>⚠️ Dia de levantamento — porquê é crítico:</b> O sistema usa este dia para calcular automaticamente se os depósitos estão dentro do prazo. Se a Prosegur passa à Terça e não configurar esse dia, o sistema não sabe quando esperar o levantamento e não emite os alertas correctos.</div>
+
+    <div class="success"><b>✅ Fica guardado na nuvem.</b> Depois de configurar uma vez, os dados ficam guardados automaticamente. Não precisa de repetir em cada acesso, nem se usar outro dispositivo.</div>
+  </div>
+</div>
+
+<!-- ════════════════ 3. NOVO DEPÓSITO ════════════════ -->
+<div class="page chapter" id="novo">
+  <div class="chapter-title">
+    <div class="num">Capítulo 3</div>
+    <h2>➕ Registar um Novo Depósito</h2>
+    <p>Como registar as sessões de caixa e o depósito correspondente</p>
+  </div>
+
+  <div class="section">
+    <p style="margin-bottom:16px;color:var(--g600)">Cada <strong>registo de depósito</strong> pode conter uma ou mais sessões de caixa. Registe as sessões que estão a ser depositadas juntas.</p>
+
+    <h3>Passos</h3>
+    <ol class="step-list">
+      <li><span>Toque no separador <strong>➕</strong> na barra de navegação inferior</span></li>
+      <li><span>Selecione a <strong>Loja</strong> e o <strong>Tipo de Serviço</strong> (Prosegur, Depósito Direto, etc.)</span></li>
+      <li><span>Para cada sessão de caixa que vai depositar, clique em <strong>"Adicionar Sessão"</strong> e preencha: data de vendas, número de sessão e valor</span></li>
+      <li><span>Preencha a <strong>Data do Depósito</strong> e o <strong>Nº Talão / Referência</strong></span></li>
+      <li><span>Selecione o <strong>Responsável</strong> que fez o depósito</span></li>
+      <li><span>Opcionalmente, tire <strong>foto do talão</strong> com a câmara</span></li>
+      <li><span>Toque em <strong>"Guardar Registo"</strong></span></li>
+    </ol>
+
+    <!-- MOCKUP NOVO FORM -->
+    <div class="mockup" style="max-width:360px;margin:16px auto">
+      <div class="mockup-bar"><div class="title">➕ Novo Depósito</div></div>
+      <div style="padding:14px;background:var(--g50)">
+        <div class="mock-card">
+          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Loja &amp; Tipo de Serviço</div>
+          <div class="mock-grid2">
+            <div class="mock-field"><label>Loja *</label><div class="mock-input filled">ESS Guia</div></div>
+            <div class="mock-field"><label>Tipo *</label><div class="mock-input filled">Prosegur</div></div>
+          </div>
+        </div>
+        <div class="mock-card">
+          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Sessões de Venda</div>
+          <div class="mock-ses-row">
+            <div class="mock-ses-num">1</div>
+            <div style="flex:1">
+              <div class="mock-grid2">
+                <div><div style="font-size:9px;color:var(--g500);margin-bottom:2px">DATA VENDAS</div><div style="font-size:11px;font-weight:700">08/06/2026</div></div>
+                <div><div style="font-size:9px;color:var(--g500);margin-bottom:2px">Nº SESSÃO</div><div style="font-size:11px;font-weight:700">6290</div></div>
+              </div>
+              <div style="margin-top:4px"><div style="font-size:9px;color:var(--g500);margin-bottom:2px">VALOR</div><div style="font-size:12px;font-weight:800;color:var(--blue2)">€ 635,85</div></div>
+            </div>
+          </div>
+          <div class="mock-ses-row">
+            <div class="mock-ses-num">2</div>
+            <div style="flex:1">
+              <div class="mock-grid2">
+                <div><div style="font-size:9px;color:var(--g500);margin-bottom:2px">DATA VENDAS</div><div style="font-size:11px;font-weight:700">09/06/2026</div></div>
+                <div><div style="font-size:9px;color:var(--g500);margin-bottom:2px">Nº SESSÃO</div><div style="font-size:11px;font-weight:700">6291</div></div>
+              </div>
+              <div style="margin-top:4px"><div style="font-size:9px;color:var(--g500);margin-bottom:2px">VALOR</div><div style="font-size:12px;font-weight:800;color:var(--blue2)">€ 412,20</div></div>
+            </div>
+          </div>
+          <div style="border:1.5px dashed var(--g200);border-radius:8px;padding:8px;text-align:center;color:var(--blue2);font-size:11px;font-weight:700;cursor:pointer">+ Adicionar Sessão</div>
+        </div>
+        <div class="mock-card">
+          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Depósito</div>
+          <div class="mock-grid2">
+            <div class="mock-field"><label>Data Depósito</label><div class="mock-input filled">12/06/2026</div></div>
+            <div class="mock-field"><label>Nº Talão</label><div class="mock-input filled">26802134E</div></div>
+          </div>
+          <div class="mock-field"><label>Responsável *</label><div class="mock-input filled">Tiago Rufino</div></div>
+        </div>
+        <div class="mock-btn green" style="opacity:.5">Guardar Registo</div>
+      </div>
+    </div>
+
+    <h3>Tipos de serviço disponíveis</h3>
+    <table>
+      <thead><tr><th>Tipo</th><th>Quando usar</th><th>Prazo</th></tr></thead>
+      <tbody>
+        <tr><td><strong>🔒 Prosegur</strong></td><td>Quando a Prosegur levanta o dinheiro na loja</td><td>Semanal (dia configurado)</td></tr>
+        <tr><td><strong>🚚 Lomis</strong></td><td>Quando a Lomis levanta o dinheiro na loja</td><td>Semanal (dia configurado)</td></tr>
+        <tr><td><strong>💱 Câmbio</strong></td><td>Depósito em câmbio / bureau de change</td><td>Semanal (dia configurado)</td></tr>
+        <tr><td><strong>🏦 Depósito Direto</strong></td><td>Depósito feito diretamente no banco (quando o serviço não passa)</td><td>2 dias</td></tr>
+      </tbody>
+    </table>
+
+    <div class="tip"><b>💡 Serviço que não passou?</b> Se a Prosegur não veio na terça, use <strong>Depósito Direto</strong> e registe o depósito que foi feito manualmente ao banco. O sistema aceita sempre todos os tipos.</div>
+    <div class="warning"><b>⚠️ Depósito Direto — limite de sessões:</b> Não deve agrupar mais de 3 sessões de caixa num único depósito direto. Se o fizer, o sistema pede uma justificação obrigatória e marca o registo como tardio.</div>
+  </div>
+</div>
+
+<!-- ════════════════ 4. DASHBOARD ════════════════ -->
+<div class="page chapter" id="dashboard">
+  <div class="chapter-title">
+    <div class="num">Capítulo 4</div>
+    <h2>📊 Dashboard — Resumo do Mês</h2>
+    <p>Visão geral dos depósitos e alertas do mês selecionado</p>
+  </div>
+
+  <div class="section">
+    <h3>O que vê no Dashboard</h3>
+
+    <!-- MOCKUP DASHBOARD -->
+    <div class="mockup" style="max-width:400px;margin:16px auto">
+      <div class="mockup-bar"><div class="title">📊 Dashboard</div><div class="sub">junho 2026 · Todas</div></div>
+      <div class="mockup-nav">
+        <div class="nav-tab active"><div class="icon">📊</div>DASHBOARD</div>
+        <div class="nav-tab"><div class="icon">➕</div>NOVO</div>
+        <div class="nav-tab"><div class="icon">📋</div>LISTA</div>
+        <div class="nav-tab"><div class="icon">📤</div>EXPORTAR</div>
+      </div>
+      <div class="mockup-body">
+        <div class="mockup-kpi">
+          <div class="kpi blue"><div class="kl">Total Mês</div><div class="kv">€24.451</div><div style="font-size:9px;color:var(--g400);margin-top:2px">5 dep. · 31 sessões</div></div>
+          <div class="kpi green"><div class="kl">✅ Depositado</div><div class="kv">€24.451</div></div>
+          <div class="kpi orange"><div class="kl">⏳ Por Depositar</div><div class="kv">€0</div></div>
+          <div class="kpi red"><div class="kl">🔴 Em Atraso/Falta</div><div class="kv">0</div><div style="font-size:9px;color:var(--g400);margin-top:2px">✅ Tudo em ordem</div></div>
+        </div>
+        <div style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:8px;padding:8px 10px;margin-bottom:8px">
+          <div style="font-size:9px;font-weight:800;color:#92400e;margin-bottom:4px">📅 3 DIAS SEM SESSÃO REGISTADA:</div>
+          <div style="display:flex;gap:4px">
+            <span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:700">15/06</span>
+            <span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:700">16/06</span>
+            <span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:700">17/06</span>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:8px;padding:6px 10px;border:1px solid var(--g100)">
+          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;margin-bottom:6px">ESS Guia</div>
+          <div class="mock-row" style="font-size:10px">
+            <div class="mock-dot ok"></div>
+            <div style="flex:1"><div style="font-weight:700">01/06 → 07/06</div><div style="color:var(--g500)">Sess.6280 · Sess.6281 · Sess.6282</div><div style="color:var(--g500)">Talão: 26443160E · Dep: 05/06</div></div>
+            <div style="font-weight:800;color:var(--blue2)">€4.886</div>
+          </div>
+          <div class="mock-row" style="font-size:10px">
+            <div class="mock-dot ok"></div>
+            <div style="flex:1"><div style="font-weight:700">08/06 → 14/06</div><div style="color:var(--g500)">Sess.6290 · Sess.6291</div><div style="color:var(--g500)">Talão: 26802134E · Dep: 12/06</div></div>
+            <div style="font-weight:800;color:var(--blue2)">€4.451</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Funcionalidades interativas</h3>
+    <table>
+      <thead><tr><th>Elemento</th><th>Ação ao tocar / clicar</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill ok">1 ✅ OK</span> <span class="pill warn">2 ⚠️ Aviso</span></td><td>Filtra a Lista para mostrar apenas esses registos</td></tr>
+        <tr><td>Chips de dias em falta <span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700">01/06</span></td><td>Abre o formulário Novo com a data já preenchida</td></tr>
+        <tr><td>Card de um depósito</td><td>Abre o detalhe completo com opção de editar/apagar</td></tr>
+        <tr><td>Seletor de mês / loja (topo)</td><td>Filtra o dashboard para o período ou loja escolhidos</td></tr>
+      </tbody>
+    </table>
+    <div class="tip"><b>💡 Dias em falta:</b> Toque num chip amarelo (ex: 15/06) para abrir o registo novo com essa data já preenchida — poupa tempo.</div>
+  </div>
+</div>
+
+<!-- ════════════════ 5. LISTA ════════════════ -->
+<div class="page chapter" id="lista">
+  <div class="chapter-title">
+    <div class="num">Capítulo 5</div>
+    <h2>📋 Lista de Registos e Edição</h2>
+    <p>Consultar, editar ou apagar registos existentes</p>
+  </div>
+
+  <div class="section">
+    <h3>Como aceder</h3>
+    <p style="margin-bottom:12px;color:var(--g600)">Toque no separador <strong>📋</strong> na barra de navegação inferior.</p>
+
+    <h3>Filtros disponíveis</h3>
+    <table>
+      <thead><tr><th>Filtro</th><th>Opções</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Mês</strong></td><td>Selecionar mês específico ou "Todos os meses"</td></tr>
+        <tr><td><strong>Loja</strong></td><td>Filtrar por loja específica ou "Todas"</td></tr>
+        <tr><td><strong>Estado</strong></td><td>Todos · ✅ OK · ⚠️ Aviso · 🔴 Erro · 📅 Prog.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Editar um registo</h3>
+    <ol class="step-list">
+      <li><span>Localize o registo na lista</span></li>
+      <li><span>Toque no botão <strong>✏️</strong> à direita</span></li>
+      <li><span>Altere os dados pretendidos</span></li>
+      <li><span>Toque em <strong>"Guardar Registo"</strong></span></li>
+    </ol>
+
+    <h3>Apagar um registo</h3>
+    <ol class="step-list">
+      <li><span>Toque na linha do registo (não no ✏️)</span></li>
+      <li><span>Abre o painel de detalhe</span></li>
+      <li><span>Toque em <strong>"🗑 Eliminar"</strong></span></li>
+      <li><span>Confirme a eliminação</span></li>
+    </ol>
+    <div class="important"><b>⚠️ A eliminação é permanente.</b> Não é possível recuperar um registo apagado. Confirme sempre antes de eliminar.</div>
+  </div>
+</div>
+
+<!-- ════════════════ 6. EXPORTAR ════════════════ -->
+<div class="page chapter" id="exportar">
+  <div class="chapter-title">
+    <div class="num">Capítulo 6</div>
+    <h2>📤 Exportar e Enviar para Contabilidade</h2>
+    <p>Gerar a folha mensal e enviá-la por email ao departamento de contabilidade</p>
+  </div>
+
+  <div class="section">
+    <h3>Enviar por email</h3>
+    <ol class="step-list">
+      <li><span>Toque no separador <strong>📤</strong> na barra de navegação</span></li>
+      <li><span>Selecione o <strong>mês</strong> e a <strong>loja</strong> que pretende exportar</span></li>
+      <li><span>Escolha o formato <strong>Email</strong></span></li>
+      <li><span>Verifique o resumo da pré-visualização</span></li>
+      <li><span>Toque em <strong>"✉️ Enviar Email"</strong></span></li>
+      <li><span>O sistema descarrega automaticamente um ficheiro para anexar</span></li>
+      <li><span>O seu cliente de email abre com o destinatário, assunto e corpo já preenchidos — adicione o ficheiro descarregado como anexo e envie</span></li>
+    </ol>
+
+    <!-- MOCKUP EMAIL PREVIEW -->
+    <div class="mockup" style="max-width:360px;margin:16px auto">
+      <div class="mockup-bar"><div class="title">📤 Exportar</div></div>
+      <div style="padding:14px;background:var(--g50)">
+        <div class="mock-grid2" style="margin-bottom:10px">
+          <div class="mock-field"><label>Mês</label><div class="mock-input filled">junho 2026</div></div>
+          <div class="mock-field"><label>Loja</label><div class="mock-input filled">ESS Guia</div></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <div style="flex:1;background:#fff;border:2px solid var(--blue2);border-radius:8px;padding:7px;text-align:center;font-size:11px;font-weight:700;color:var(--blue2)">✉️ Email</div>
+          <div style="flex:1;background:#fff;border:1.5px solid var(--g200);border-radius:8px;padding:7px;text-align:center;font-size:11px;font-weight:700;color:var(--g500)">🖨️ PDF</div>
+          <div style="flex:1;background:#fff;border:1.5px solid var(--g200);border-radius:8px;padding:7px;text-align:center;font-size:11px;font-weight:700;color:var(--g500)">📊 Excel</div>
+        </div>
+        <div style="background:#fff;border:1.5px solid var(--g200);border-radius:10px;padding:12px;margin-bottom:10px">
+          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;margin-bottom:8px">Pré-visualização</div>
+          <div style="font-size:10px;color:var(--g500)"><b>Para:</b> contabilidade@empresa.pt</div>
+          <div style="font-size:10px;color:var(--g500)"><b>Assunto:</b> Folha Depósitos – ESS Guia – junho 2026</div>
+          <div class="mock-divider"></div>
+          <div style="font-size:9px;color:var(--g600);line-height:1.7">
+            Total: €24.451,91<br>
+            Depositado: €24.451,91<br>
+            Por depositar: €0,00<br>
+            N.º depósitos: 5<br>
+            Estado: ✅ Sem problemas
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <div class="mock-btn" style="flex:1;margin-top:0;font-size:11px">✉️ Enviar Email</div>
+          <div style="background:var(--g100);color:var(--g600);border-radius:9px;padding:10px 12px;font-size:11px;font-weight:700;text-align:center;cursor:pointer">📋</div>
+        </div>
+        <div style="background:#eff6ff;border-radius:8px;padding:8px 10px;margin-top:8px;font-size:10px;color:var(--blue)">
+          📎 O relatório é guardado nos Downloads — adicione como anexo no email!
+        </div>
+      </div>
+    </div>
+
+    <h3>Imprimir em PDF</h3>
+    <ol class="step-list">
+      <li><span>No separador Exportar, escolha o formato <strong>PDF</strong></span></li>
+      <li><span>Toque em <strong>"🖨️ Imprimir / Guardar PDF"</strong></span></li>
+      <li><span>O relatório abre numa nova janela — use a opção de impressão do browser (<kbd>Ctrl+P</kbd> ou <kbd>⌘P</kbd>) e selecione <em>"Guardar como PDF"</em></span></li>
+    </ol>
+
+    <div class="tip"><b>💡 Envio mensal:</b> O ideal é enviar a folha de depósitos à contabilidade no início do mês seguinte, referente ao mês que fechou.</div>
+    <div class="warning"><b>⚠️ Verifique antes de enviar:</b> Confirme que não há registos com estado 🔴 Erro ou ⚠️ DUPLICADO antes de enviar à contabilidade.</div>
+  </div>
+</div>
+
+<!-- ════════════════ 7. ESTADOS ════════════════ -->
+<div class="page chapter" id="estados">
+  <div class="chapter-title">
+    <div class="num">Capítulo 7</div>
+    <h2>🚦 Significado dos Estados</h2>
+    <p>O que significa cada cor e ícone na aplicação</p>
+  </div>
+
+  <div class="section">
+    <table>
+      <thead><tr><th>Estado</th><th>Significa</th><th>O que fazer</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="pill ok">✅ OK</span></td>
+          <td>Depósito feito dentro do prazo, com talão e data preenchidos</td>
+          <td>Nada — está em ordem</td>
+        </tr>
+        <tr>
+          <td><span class="pill warn">⚠️ OK, mas tardio</span></td>
+          <td>Depósito feito, mas fora do prazo (Prosegur semanal ou direto em 2 dias)</td>
+          <td>Registo aceite, mas deve evitar no futuro</td>
+        </tr>
+        <tr>
+          <td><span class="pill err">🔴 Em atraso</span></td>
+          <td>Passou o prazo e ainda não há talão ou data de depósito</td>
+          <td><strong>Depositar urgentemente</strong> e registar o talão</td>
+        </tr>
+        <tr>
+          <td><span class="pill err">🔴 Dados incompletos</span></td>
+          <td>Falta o número de sessão ou o valor numa sessão</td>
+          <td>Editar o registo e preencher os campos em falta</td>
+        </tr>
+        <tr>
+          <td><span class="pill prog">📅 Programado</span></td>
+          <td>A data de venda é futura (sessão ainda não encerrada)</td>
+          <td>Normal — aparecerá como OK quando a data chegar</td>
+        </tr>
+        <tr>
+          <td><span style="background:#fee2e2;color:#991b1b;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px">⚠️ DUPLICADO</span></td>
+          <td>Sessão com o mesmo número e data já existe noutro registo</td>
+          <td><strong>Verificar e apagar</strong> o registo duplicado</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Prazos por tipo de serviço</h3>
+    <table>
+      <thead><tr><th>Tipo</th><th>Prazo</th><th>Como é calculado</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Prosegur / Lomis / Câmbio</strong></td><td>Semanal</td><td>Baseado no dia configurado nas Configurações</td></tr>
+        <tr><td><strong>Depósito Direto</strong></td><td>2 dias</td><td>A contar da data de venda mais antiga nas sessões</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════ 8. MOBILE ════════════════ -->
+<div class="page chapter" id="mobile">
+  <div class="chapter-title">
+    <div class="num">Capítulo 8</div>
+    <h2>📱 Utilização no Telemóvel</h2>
+    <p>A aplicação funciona totalmente no telemóvel — iOS e Android</p>
+  </div>
+
+  <div class="section">
+    <h3>Adicionar ao ecrã inicial (recomendado)</h3>
+    <div class="mock-grid2" style="gap:20px;margin:16px 0">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--g700);margin-bottom:8px;text-align:center">🍎 iPhone (iOS / Safari)</div>
+        <ol class="step-list" style="font-size:12px">
+          <li><span>Abra Safari e vá a <code style="font-size:10px">auditoria-25b.pages.dev/depositos</code></span></li>
+          <li><span>Toque no ícone <strong>⬆️ Partilhar</strong> (barra inferior)</span></li>
+          <li><span>Deslize e toque em <strong>"Adicionar ao Ecrã de Início"</strong></span></li>
+          <li><span>Toque em <strong>"Adicionar"</strong></span></li>
+        </ol>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--g700);margin-bottom:8px;text-align:center">🤖 Android (Chrome)</div>
+        <ol class="step-list" style="font-size:12px">
+          <li><span>Abra Chrome e vá ao endereço da aplicação</span></li>
+          <li><span>Toque nos <strong>⋮ três pontos</strong> (canto superior direito)</span></li>
+          <li><span>Toque em <strong>"Adicionar ao ecrã inicial"</strong></span></li>
+          <li><span>Confirme com <strong>"Adicionar"</strong></span></li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- PHONE MOCKUP -->
+    <div class="phone-wrap">
+      <div>
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-notch"></div>
+            <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:8px 10px;color:#fff">
+              <div style="font-size:9px;font-weight:700">📊 Dashboard</div>
+              <div style="font-size:8px;opacity:.7">ESS Guia · junho 2026</div>
+            </div>
+            <div style="padding:8px;background:var(--g50)">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px">
+                <div style="background:#fff;border-radius:7px;padding:6px 8px;border:1px solid var(--g100)"><div style="font-size:7px;color:var(--g400);font-weight:700">TOTAL MÊS</div><div style="font-size:12px;font-weight:800;color:var(--blue2)">€24.4k</div></div>
+                <div style="background:#fff;border-radius:7px;padding:6px 8px;border:1px solid var(--g100)"><div style="font-size:7px;color:var(--g400);font-weight:700">DEPOSITADO</div><div style="font-size:12px;font-weight:800;color:var(--green)">€24.4k</div></div>
+              </div>
+              <div style="background:#fff;border-radius:7px;padding:6px 8px;border:1px solid var(--g100);font-size:8px">
+                <div style="font-weight:800;color:var(--g700);margin-bottom:3px">ESS Guia</div>
+                <div style="color:var(--g500);margin-bottom:2px">01/06→07/06 · Sess.6280 · €4.886</div>
+                <div style="color:var(--g500)">08/06→14/06 · Sess.6290 · €4.451</div>
+              </div>
+            </div>
+            <div style="display:flex;border-top:1px solid var(--g100);background:#fff">
+              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--blue2);font-size:7px;font-weight:700;border-bottom:2px solid var(--blue2)">📊<br>DASH</div>
+              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">➕<br>NOVO</div>
+              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📋<br>LISTA</div>
+              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📤<br>EXP.</div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-label">Dashboard</div>
+      </div>
+      <div>
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-notch"></div>
+            <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:8px 10px;color:#fff">
+              <div style="font-size:9px;font-weight:700">➕ Novo Depósito</div>
+            </div>
+            <div style="padding:8px;background:var(--g50)">
+              <div style="background:#fff;border-radius:7px;padding:8px;border:1px solid var(--g100);margin-bottom:5px">
+                <div style="font-size:7px;color:var(--g400);font-weight:700;margin-bottom:5px">LOJA &amp; TIPO</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+                  <div style="border:1px solid var(--blue2);border-radius:5px;padding:4px 6px;font-size:8px;font-weight:700;color:var(--blue2)">ESS Guia</div>
+                  <div style="border:1px solid var(--blue2);border-radius:5px;padding:4px 6px;font-size:8px;font-weight:700;color:var(--blue2)">Prosegur</div>
+                </div>
+              </div>
+              <div style="background:#fff;border-radius:7px;padding:8px;border:1px solid var(--g100);margin-bottom:5px">
+                <div style="font-size:7px;color:var(--g400);font-weight:700;margin-bottom:5px">SESSÃO 1</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:8px">
+                  <div><div style="color:var(--g400);font-size:7px">DATA</div><div style="font-weight:700">08/06/2026</div></div>
+                  <div><div style="color:var(--g400);font-size:7px">Nº SESSÃO</div><div style="font-weight:700">6290</div></div>
+                </div>
+                <div style="margin-top:3px;font-size:8px"><div style="color:var(--g400);font-size:7px">VALOR</div><div style="font-weight:800;color:var(--blue2)">€ 635,85</div></div>
+              </div>
+              <div style="background:linear-gradient(135deg,#047857,#059669);border-radius:7px;padding:7px;text-align:center;color:#fff;font-size:9px;font-weight:700">Guardar Registo</div>
+            </div>
+            <div style="display:flex;border-top:1px solid var(--g100);background:#fff">
+              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📊<br>DASH</div>
+              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--blue2);font-size:7px;font-weight:700;border-bottom:2px solid var(--blue2)">➕<br>NOVO</div>
+              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📋<br>LISTA</div>
+              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📤<br>EXP.</div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-label">Novo Depósito</div>
+      </div>
+    </div>
+
+    <div class="success"><b>✅ Otimizado para telemóvel.</b> Todos os botões têm tamanho mínimo de 44px para facilitar o toque. A câmara pode ser usada diretamente para fotografar o talão de depósito.</div>
+  </div>
+</div>
+
+<!-- ════════════════ 9. FAQ ════════════════ -->
+<div class="page chapter" id="faq">
+  <div class="chapter-title">
+    <div class="num">Capítulo 9</div>
+    <h2>❓ Perguntas Frequentes</h2>
+    <p>Respostas às dúvidas mais comuns</p>
+  </div>
+
+  <div class="section">
+    <table>
+      <thead><tr><th>Pergunta</th><th>Resposta</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Esqueci-me da password. O que faço?</strong></td>
+          <td>Contacte a Despomar: <code>ivo@despomar.com</code></td>
+        </tr>
+        <tr>
+          <td><strong>A Prosegur não veio hoje. Como registo?</strong></td>
+          <td>Se foi ao banco depositar, use <strong>Depósito Direto</strong>. Se ainda não depositou, não registe ainda — registe quando depositar.</td>
+        </tr>
+        <tr>
+          <td><strong>Posso registar sem o talão?</strong></td>
+          <td>Sim. Pode guardar o registo sem talão (fica como pendente), e preencher o nº do talão depois ao editar.</td>
+        </tr>
+        <tr>
+          <td><strong>Como corrijo um valor errado?</strong></td>
+          <td>Vá à <strong>Lista</strong>, toque em ✏️ no registo e edite o valor da sessão.</td>
+        </tr>
+        <tr>
+          <td><strong>Vi "DUPLICADO" numa sessão. O que faço?</strong></td>
+          <td>Significa que registou a mesma sessão duas vezes. Vá à Lista, encontre os dois registos e apague o duplicado.</td>
+        </tr>
+        <tr>
+          <td><strong>Posso ver os registos de meses anteriores?</strong></td>
+          <td>Sim. No Dashboard e na Lista, use o filtro de mês para ver qualquer mês anterior.</td>
+        </tr>
+        <tr>
+          <td><strong>A aplicação funciona sem internet?</strong></td>
+          <td>Não. Necessita de ligação à internet para guardar e consultar dados. Os dados ficam na nuvem.</td>
+        </tr>
+        <tr>
+          <td><strong>Quando devo enviar o email à contabilidade?</strong></td>
+          <td>No início do mês seguinte, referente ao mês que fechou. Ex: enviar os dados de junho no início de julho.</td>
+        </tr>
+        <tr>
+          <td><strong>Os meus dados são partilhados com outras lojas?</strong></td>
+          <td>Não. Cada loja só vê os seus próprios registos. Só a administração Despomar tem visão global.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="tip" style="margin-top:24px"><b>💬 Suporte:</b> Para qualquer dúvida ou problema, contacte Ivo Casimiro em <strong>ivo@despomar.com</strong> ou pelo WhatsApp do grupo.</div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="doc-footer" style="margin-top:40px">
+    <div style="font-size:16px;font-weight:800;letter-spacing:-.3px">Controlo de Depósitos · Despomar</div>
+    <p>Manual de Utilização · Junho 2026 · https://auditoria-25b.pages.dev/depositos</p>
+    <p style="margin-top:8px">Suporte: ivo@despomar.com</p>
+  </div>
+</div>
+
+</body>
+</html>
