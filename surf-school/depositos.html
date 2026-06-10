@@ -1683,17 +1683,29 @@ async function updEmailPrev(){
   const allSess=[];
   data.forEach(r=>{r.sessoes.forEach((s,si)=>{allSess.push({r,s,si,isFirst:si===0,est:calcEstado(r)});});});
   allSess.sort((a,b)=>(a.s.dataVendas||'')<(b.s.dataVendas||'')?-1:1);
+  // Detect duplicate sessions (same date+sessao) in the email data
+  const _eSeen=new Set(),_eDupKeys=new Set();
+  allSess.forEach(({s})=>{
+    const k=`${s.dataVendas||''}|${(s.sessao||'').trim()}`;
+    if(s.sessao&&k.length>1){if(_eSeen.has(k))_eDupKeys.add(k);else _eSeen.add(k);}
+  });
+  const isDupSess=s=>s.sessao&&_eDupKeys.has(`${s.dataVendas||''}|${(s.sessao||'').trim()}`);
   const depRows=allSess.map(({r,s,si,isFirst,est})=>{
-    const stC=est.s==='ok'?'#166534;background:#dcfce7':est.s==='warn'?'#854d0e;background:#fef9c3':est.s==='err'?'#991b1b;background:#fee2e2':'#475569;background:#f1f5f9';
+    const dup=isDupSess(s);
+    const rowBg=dup?'background:#fff0f0':isFirst?'':'';
+    const stC=dup?'#991b1b;background:#fee2e2':est.s==='ok'?'#166534;background:#dcfce7':est.s==='warn'?'#854d0e;background:#fef9c3':est.s==='err'?'#991b1b;background:#fee2e2':'#475569;background:#f1f5f9';
     const noTalao=isFirst&&!r.talao&&!s.talao;
-    return`<tr style="border-bottom:1px solid #e5e7eb">
-      <td style="padding:4px 6px;font-size:11px;font-weight:700;color:#0f172a">${fd(s.dataVendas)}</td>
-      <td style="padding:4px 6px;font-size:11px;font-weight:800;color:#2563eb;text-align:center">${s.sessao||'—'}</td>
+    const sessLabel=dup?`<span style="color:#dc2626;font-weight:800;border-left:3px solid #dc2626;padding-left:4px">${s.sessao||'—'}</span>`:`${s.sessao||'—'}`;
+    const statusCell=dup?`<td style="padding:4px 6px"><span style="font-size:10px;font-weight:800;padding:2px 6px;border-radius:8px;color:#991b1b;background:#fee2e2">⚠️ DUPLICADO</span></td>`
+      :isFirst?`<td style="padding:4px 6px"><span style="font-size:10px;font-weight:700;padding:2px 5px;border-radius:8px;color:${stC}">${est.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}</span></td>`:'<td></td>';
+    return`<tr style="border-bottom:1px solid #e5e7eb;${rowBg}">
+      <td style="padding:4px 6px;font-size:11px;font-weight:700;color:${dup?'#dc2626':'#0f172a'}">${fd(s.dataVendas)}</td>
+      <td style="padding:4px 6px;font-size:11px;text-align:center">${sessLabel}</td>
       <td style="padding:4px 6px;font-size:10px;color:#475569">${r.tipo||'—'}</td>
       <td style="padding:4px 6px;font-size:11px;text-align:right;font-weight:700;color:#1d4ed8">${fmt(s.valor||0)}</td>
       <td style="padding:4px 6px;font-size:11px">${isFirst?(fd(r.dataDeposito)||'<span style="color:#ef4444;font-weight:700">Pendente</span>'):'<span style="color:#cbd5e1">↑</span>'}</td>
       <td style="padding:4px 6px;font-size:10px;font-family:monospace">${isFirst?(noTalao?'<span style="color:#ef4444;font-weight:700">SEM</span>':(r.talao||'—')):''}</td>
-      ${isFirst?`<td style="padding:4px 6px"><span style="font-size:10px;font-weight:700;padding:2px 5px;border-radius:8px;color:${stC}">${est.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}</span></td>`:'<td></td>'}
+      ${statusCell}
     </tr>`;
   }).join('');
   const missingInEmail=getMissingDays(mes,loja==='Todas as Lojas'?null:loja);
@@ -1705,6 +1717,7 @@ async function updEmailPrev(){
   // Plain text body for mailto: — per-session table so accountant can verify each session
   const sep='─'.repeat(52);
   const sessLines=allSess.map(({r,s,isFirst})=>{
+    const dup=isDupSess(s);
     const dataStr=(fd(s.dataVendas)||'—').padEnd(12);
     const sessStr=('Sess. '+(s.sessao||'?')).padEnd(12);
     const valStr=fmt(s.valor||0).padStart(10);
@@ -1712,10 +1725,15 @@ async function updEmailPrev(){
     if(isFirst){
       line+=`  Dep: ${fd(r.dataDeposito)||'(pendente)'}`;
       if(r.talao)line+=`  Ref: ${r.talao}`;
-      const est=calcEstado(r);
-      const estTxt=est.label.replace(/[📅✅⚠️🔴]/gu,'').trim();
-      const estIcon=est.s==='ok'?'✅':est.s==='warn'?'⚠️':est.s==='err'?'🔴':'📅';
-      line+=`  ${estIcon} ${estTxt}`;
+      if(dup){line+=`  ⚠️ DUPLICADO`;}
+      else{
+        const est=calcEstado(r);
+        const estTxt=est.label.replace(/[📅✅⚠️🔴]/gu,'').trim();
+        const estIcon=est.s==='ok'?'✅':est.s==='warn'?'⚠️':est.s==='err'?'🔴':'📅';
+        line+=`  ${estIcon} ${estTxt}`;
+      }
+    } else if(dup){
+      line+=`  ⚠️ DUPLICADO`;
     }
     return line;
   }).join('\n');
