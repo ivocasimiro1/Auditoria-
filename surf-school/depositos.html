@@ -1621,7 +1621,9 @@ async function updEmailPrev(){
       line+=`  Dep: ${fd(r.dataDeposito)||'(pendente)'}`;
       if(r.talao)line+=`  Ref: ${r.talao}`;
       const est=calcEstado(r);
-      if(est.s==='err')line+=`  ⚠️ ${est.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}`;
+      const estTxt=est.label.replace(/[📅✅⚠️🔴]/gu,'').trim();
+      const estIcon=est.s==='ok'?'✅':est.s==='warn'?'⚠️':est.s==='err'?'🔴':'📅';
+      line+=`  ${estIcon} ${estTxt}`;
     }
     return line;
   }).join('\n');
