@@ -510,11 +510,20 @@ select{
   </div>
   <div id="email-prev-card" class="card" style="display:none">
     <div class="ct">📧 Email que será enviado</div>
+    <div id="ep-config-warn" style="display:none;background:#fef2f2;color:#991b1b;border:1.5px solid #fecaca;border-radius:10px;padding:11px 14px;margin-bottom:12px;font-size:13px;font-weight:600;line-height:1.5">
+      ⚠️ Email de destino não configurado nas Configurações.<br>
+      <button onclick="sp('settings')" style="background:none;border:none;color:#1d4ed8;font-weight:700;cursor:pointer;text-decoration:underline;font-size:13px;padding:0;margin-top:4px;touch-action:manipulation">Ir para Configurações →</button>
+    </div>
     <div class="ep-field"><span class="ep-lbl">Para</span><span class="ep-val" id="ep-to">—</span></div>
     <div class="ep-field"><span class="ep-lbl">CC</span><span class="ep-val" id="ep-cc">—</span></div>
     <div class="ep-field"><span class="ep-lbl">Assunto</span><span class="ep-val" id="ep-sub">—</span></div>
     <div class="ep-body" id="ep-body"></div>
-    <button class="ep-copy-btn" onclick="epCopy()">📋 Copiar texto</button>
+    <div id="ep-mobile-note" class="ep-mobile-note" style="display:none">✅ Clica "Enviar Email" — abrirá a app de correio com tudo pré-preenchido (Para, Assunto, Corpo).</div>
+    <div id="ep-desktop-note" class="ep-desktop-note" style="display:none">💡 Clica "Enviar Email". Se não abrir o cliente de email automaticamente, usa "Copiar texto" e cola no email manualmente.</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn bs" style="flex:1;min-height:44px" onclick="expEmail()">✉️ Enviar Email</button>
+      <button class="ep-copy-btn" style="flex:0 0 auto;width:auto;padding:10px 14px;margin-top:0" onclick="epCopy()">📋 Copiar</button>
+    </div>
   </div>
   <div id="prev-wrap" style="display:none">
     <div class="card">
@@ -1529,8 +1538,10 @@ async function updEmailPrev(){
   const activeCfg=exportCfg||cfg;
   const empresa=activeCfg.emp||'Empresa';
   const nif=activeCfg.nif||'';
-  const dest=activeCfg.email||'(não configurado)';
+  const dest=activeCfg.email||'';
   const cc=[activeCfg.emailCC,activeCfg.emailCC2].filter(Boolean).join(', ')||'—';
+  const cw=document.getElementById('ep-config-warn');
+  if(cw)cw.style.display=dest?'none':'block';
   const ml=mesLabel(mes);
   const total=data.reduce((s,r)=>s+totalValor(r),0);
   const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
@@ -1554,7 +1565,7 @@ async function updEmailPrev(){
   }).join('');
   // Plain text for mailto body
   const shortBody=`Exmo(a). Departamento de Contabilidade,\n\nEnvio em anexo a folha de depósitos de ${loja}, referente a ${ml}.\n\nEmpresa: ${empresa}${nif?' · NIF '+nif:''}\nTotal: ${fmt(total)} · Depositado: ${fmt(totalDep)} · Por depositar: ${fmt(total-totalDep)}\nNº Depósitos: ${data.length}${erros>0?'\n⚠️ '+erros+' depósito(s) com problemas.':'\n✅ Sem problemas.'}\n\nCom os melhores cumprimentos,\n${loja} — ${empresa}`;
-  document.getElementById('ep-to').textContent=dest;
+  document.getElementById('ep-to').textContent=dest||'(não configurado)';
   document.getElementById('ep-cc').textContent=cc;
   document.getElementById('ep-sub').textContent=subj;
   // Rich HTML preview
@@ -1633,7 +1644,7 @@ function doExp(){
   const data=getFiltExp();
   if(!data.length){toast('⚠️ Sem dados para esta loja/mês');return;}
   if(expFmt==='xlsx'){toast('A gerar Excel...');expXLSX(data).catch(e=>{toast('⚠️ Erro: '+e.message)});}
-  else if(expFmt==='email')expEmail(data);
+  else if(expFmt==='email')expEmail();
   else expPrint(data);
 }
 
@@ -1818,33 +1829,20 @@ async function expXLSX(data){
   toast('✓ Excel profissional exportado!');
 }
 
-async function expEmail(data){
-  const mes=document.getElementById('e-mes').value||curMesStr();
-  const loja=document.getElementById('e-loja').value||'Loja';
-  // Always re-fetch store config to ensure correct email (fixes SA seeing wrong Para:)
-  let eCfg=cfg;
-  if(isSA&&data.length){
-    const storeIds=[...new Set(data.map(r=>r.store_id).filter(Boolean))];
-    if(storeIds.length===1){
-      const{data:sc}=await SB.from('dep_config').select('*').eq('store_id',storeIds[0]).maybeSingle();
-      if(sc)eCfg={emp:sc.emp||cfg.emp,email:sc.email||'',emailCC:sc.email_cc||'',emailCC2:sc.email_cc2||'',nif:sc.nif||cfg.nif};
-    }
+function expEmail(){
+  // Reads data already computed by updEmailPrev — keeps this function synchronous
+  // so browsers don't block the mailto: navigation (async after await = gesture lost)
+  const dest=(document.getElementById('ep-to')?.textContent||'').trim();
+  if(!dest||dest==='(não configurado)'){
+    toast('⚠️ Configure o email de contabilidade nas Configurações');
+    sp('settings');
+    return;
   }
-  const empresa=eCfg.emp||'Empresa'; const nif=eCfg.nif||'';
-  const dest=eCfg.email||''; const cc=eCfg.emailCC||''; const cc2=eCfg.emailCC2||'';
-  if(!dest){toast('⚠️ Configure o email de contabilidade nas Configurações');sp('settings');return;}
-  const total=data.reduce((s,r)=>s+totalValor(r),0);
-  const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-  const ml=mesLabel(mes);
-  const erros=data.filter(r=>calcEstado(r).s==='err').length;
-  const shortBody=`Exmo(a). Departamento de Contabilidade,\n\nEnvio em anexo a folha de depósitos de ${loja}, referente a ${ml}.\n\nEmpresa: ${empresa}${nif?' · NIF '+nif:''}\nTotal: ${fmt(total)} · Depositado: ${fmt(totalDep)} · Por depositar: ${fmt(total-totalDep)}\nNº Depósitos: ${data.length}${erros>0?'\n⚠️ '+erros+' depósito(s) com problemas.':'\n✅ Sem problemas.'}\n\nCom os melhores cumprimentos,\n${loja} — ${empresa}`;
-  const subj=encodeURIComponent(`Folha Depósitos – ${loja} – ${ml} – ${empresa}`);
-  const emailBody=encodeURIComponent(shortBody);
-  const ccs=[cc,cc2].filter(Boolean).join(',');
-  const ccStr=ccs?`&cc=${encodeURIComponent(ccs)}`:'';
-  const mailtoUrl=`mailto:${dest}?subject=${subj}${ccStr}&body=${emailBody}`;
-  // Open email client directly — no print dialog
-  window.location.href=mailtoUrl;
+  const subj=encodeURIComponent(document.getElementById('ep-sub')?.textContent||'');
+  const body=encodeURIComponent(document.getElementById('ep-body')?.dataset.body||'');
+  const ccRaw=(document.getElementById('ep-cc')?.textContent||'').trim();
+  const ccStr=(ccRaw&&ccRaw!=='—')?`&cc=${encodeURIComponent(ccRaw)}`:'';
+  window.location.href=`mailto:${dest}?subject=${subj}${ccStr}&body=${body}`;
   toast('✓ A abrir cliente de email…');
 }
 
