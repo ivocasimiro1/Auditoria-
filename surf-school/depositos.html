@@ -240,16 +240,6 @@ select{
 .mtbl .tr-sub td{background:#f8fafc;font-size:10px;color:var(--g500)}.mtbl .tr-sub td:first-child{background:#f8fafc}
 .mtbl tr.ok-row td{border-left:3px solid var(--green)}.mtbl tr.warn-row td{border-left:3px solid var(--orange)}.mtbl tr.err-row td{border-left:3px solid var(--red)}.mtbl tr.prog-row td{border-left:3px solid var(--g300)}
 
-/* SIGNATURE PAD */
-.sig-pad-wrap{border:2px solid var(--g200);border-radius:12px;overflow:hidden;background:#fafbfc;position:relative;touch-action:none}
-.sig-pad-wrap canvas{display:block;width:100%;height:120px;cursor:crosshair;touch-action:none}
-.sig-pad-wrap.has-sig{border-color:var(--green)}
-.sig-actions{display:flex;gap:8px;margin-top:8px}
-.sig-clear{background:var(--rl);color:var(--red);border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation;min-height:40px}
-.sig-save{background:var(--gl);color:var(--green);border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation;flex:1;min-height:40px}
-.sig-preview{border-radius:8px;background:#fff;padding:6px;border:1.5px solid var(--g200);margin-top:8px;text-align:center}
-.sig-preview img{max-height:60px;max-width:100%}
-.sig-hint{font-size:11px;color:var(--g400);text-align:center;margin-top:6px}
 
 .empty{text-align:center;padding:40px 16px;color:var(--g400);background:#fff;border-radius:var(--r);box-shadow:var(--sh-sm)}
 .empty svg{width:44px;height:44px;margin-bottom:12px;opacity:.4}
@@ -358,7 +348,10 @@ select{
 
 <div class="topbar">
   <div><h1 id="ttitle">📊 Dashboard</h1><div class="sub" id="tsub">Despomar</div></div>
-  <button class="cfg-btn" onclick="sp('settings')">⚙️</button>
+  <div style="display:flex;gap:6px;align-items:center">
+    <button id="logout-btn" class="cfg-btn" onclick="doLogout()" style="display:none;background:rgba(220,38,38,.25);border-color:rgba(255,100,100,.3)" title="Terminar Sessão">🚪</button>
+    <button class="cfg-btn" onclick="sp('settings')">⚙️</button>
+  </div>
 </div>
 <div id="toast"></div>
 
@@ -556,26 +549,6 @@ select{
     <div id="rtags"></div>
     <div class="ar"><input type="text" id="nr" placeholder="Nome do responsável"><button class="btn bp bsm" onclick="addR()">+ Adicionar</button></div>
   </div>
-  <div class="card">
-    <div class="ct">✍️ Assinatura Digital</div>
-    <p style="font-size:13px;color:var(--g500);margin-bottom:12px;line-height:1.5">Assina com o dedo — fica guardada e é incluída automaticamente no PDF enviado à contabilidade.</p>
-    <div id="sig-stored" style="display:none" class="sig-preview">
-      <img id="sig-img" alt="Assinatura guardada">
-      <div style="font-size:10px;color:var(--green);font-weight:700;margin-top:4px">✓ Assinatura guardada</div>
-    </div>
-    <div id="sig-pad-area">
-      <div class="sig-pad-wrap" id="sig-wrap">
-        <canvas id="sig-canvas"></canvas>
-      </div>
-      <p class="sig-hint">Assina com o dedo ou rato na área acima</p>
-      <div class="sig-actions">
-        <button class="sig-clear" onclick="sigClear()">🗑️ Limpar</button>
-        <button class="sig-save" onclick="sigSave()">✓ Guardar Assinatura</button>
-      </div>
-    </div>
-    <button id="sig-change-btn" style="display:none;margin-top:10px;width:100%" class="btn bo" onclick="sigChange()">✏️ Alterar Assinatura</button>
-  </div>
-
   <div class="card" style="background:#f0fdf4;border:1.5px solid #6ee7b7">
     <div class="ct" style="color:#065f46">📋 Regras de Negócio</div>
     <p style="font-size:13px;color:var(--g600);line-height:1.6"><strong>Depósito Direto:</strong> deve ser feito a cada 2 dias. Mais de 3 sessões numa só entrega = tardio + justificação obrigatória.</p>
@@ -613,7 +586,7 @@ select{
   </button>
   <button class="nb" id="nb-lista" onclick="sp('lista')">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-    Lista
+    Lista/Ed.
   </button>
   <button class="nb" id="nb-exp" onclick="sp('exp')">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
@@ -688,6 +661,7 @@ async function afterLogin(user){
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('tsub').textContent=isSA?('⭐ '+(p.nome||'Super Admin')):(p.nome||p.store_id||cfg.emp||'Depósitos');
   const lc=document.getElementById('logout-card');if(lc)lc.style.display='block';
+  const lb=document.getElementById('logout-btn');if(lb)lb.style.display='flex';
   const ui=document.getElementById('user-info');
   if(ui)ui.innerHTML=`<strong>${p.nome||p.store_id}</strong> · ${isSA?'Super Admin':'Staff'}<br><span style="font-size:11px;color:var(--g400)">${user.email}</span>`;
   popSel();rDash();
@@ -698,6 +672,7 @@ async function doLogout(){
   sbUser=null;sbProfile=null;isSA=false;regs=[];
   cfg={emp:'Despomar',email:'',nif:'',lojas:[],resps:[]};
   const lc=document.getElementById('logout-card');if(lc)lc.style.display='none';
+  const lb=document.getElementById('logout-btn');if(lb)lb.style.display='none';
   const as=document.getElementById('auth-screen');as.style.display='flex';
   document.getElementById('auth-btn').textContent='Entrar';
   document.getElementById('auth-btn').disabled=false;
@@ -778,6 +753,7 @@ function calcEstado(r){
   const diasParaDep=Math.floor((dd-ma)/86400000);
   if(muitasSessoes)return{s:'warn',label:`⚠️ Tardio (${nsess} sessões)`};
   if(diasParaDep>prazo)return{s:'warn',label:'⚠️ OK, mas tardio'};
+  if(!r.foto)return{s:'warn',label:'⚠️ Sem comprovativo'};
   return{s:'ok',label:'✅ OK'};
 }
 function estBadge(est){const cl=est.s==='ok'?'bok':est.s==='warn'?'bwarn':est.s==='err'?'berr':'bprog';return`<span class="badg ${cl}">${est.label}</span>`}
@@ -806,7 +782,7 @@ function sp(name){
     const pg=document.getElementById('page-'+name);
     if(pg)pg.classList.add('active');
     const nb=document.getElementById('nb-'+name);if(nb)nb.classList.add('active');
-    const T={dash:'📊 Dashboard',novo:'➕ Novo Depósito',lista:'📋 Lista',exp:'📤 Exportar',settings:'⚙️ Configurações'};
+    const T={dash:'📊 Dashboard',novo:'➕ Novo Depósito',lista:'📋 Lista / Editar',exp:'📤 Exportar',settings:'⚙️ Configurações'};
     document.getElementById('ttitle').textContent=T[name]||'📦 Depósitos';
     window.scrollTo(0,0);
     if(name==='dash')rDash();
@@ -963,6 +939,8 @@ async function guardar(){
   const sessoes=getSesSionsData();
   if(!sessoes.length||!sessoes.some(s=>s.dataVendas)){toast('⚠️ Indique a data em pelo menos 1 sessão');return}
   if(sessoes.some(s=>!s.dataVendas&&(s.valor>0||s.sessao))){toast('⚠️ Preencha a data de vendas em todas as sessões');return}
+  if(sessoes.some(s=>!s.valor||s.valor<=0)){toast('⚠️ Preencha o valor em todas as sessões');return}
+  if(sessoes.some(s=>!s.sessao)){toast('⚠️ Preencha o Nº Sessão de Caixa em todas as sessões');return}
   const cnt=sessoes.length;
   const isTardio=tipo==='Depósito Direto'&&cnt>3;
   const just=(document.getElementById('f-just')?.value||'').trim();
@@ -1187,7 +1165,16 @@ function rLista(){
     const tv=totalValor(r);const ns=r.sessoes.length;
     const ml=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
     const dateRange=ml.length>1?`${fd(ml[0])} → ${fd(ml[ml.length-1])}`:fd(ml[0]||'');
-    return`<div class="di ${est.s}" onclick="openDetail('${r.id}')"><div class="dh"><div class="dl">${r.loja}</div><div class="dv">${fmt(tv)}</div></div><div class="dm"><span>📅 ${dateRange}</span><span>${ns} sessão${ns>1?'ões':''}</span><span>👤 ${r.responsavel}</span>${r.talao?`<span>🧾 ${r.talao}</span>`:''} ${r.foto?'<span>📷</span>':''}</div><div style="margin-top:5px"><span class="badg ${bc}">${est.label}</span><span style="font-size:10px;color:var(--g500);margin-left:7px">${r.tipo||''}</span></div></div>`;
+    return`<div class="di ${est.s}" style="cursor:default">
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div style="flex:1;cursor:pointer;min-width:0" onclick="openDetail('${r.id}')">
+          <div class="dh"><div class="dl">${r.loja}</div><div class="dv">${fmt(tv)}</div></div>
+          <div class="dm"><span>📅 ${dateRange}</span><span>${ns} sessão${ns>1?'ões':''}</span><span>👤 ${r.responsavel}</span>${r.talao?`<span>🧾 ${r.talao}</span>`:''} ${r.foto?'<span>📷</span>':''}</div>
+          <div style="margin-top:5px"><span class="badg ${bc}">${est.label}</span><span style="font-size:10px;color:var(--g500);margin-left:7px">${r.tipo||''}</span></div>
+        </div>
+        <button onclick="editFull('${r.id}')" style="background:var(--bl);color:var(--blue-dark);border:1.5px solid #bfdbfe;border-radius:9px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer;min-height:38px;flex-shrink:0;touch-action:manipulation;align-self:flex-start;margin-top:2px">✏️</button>
+      </div>
+    </div>`;
   }).join('');
 }
 
@@ -1548,12 +1535,21 @@ async function expXLSX(data){
   toast('✓ Excel profissional exportado!');
 }
 
-function expEmail(data){
+async function expEmail(data){
   const mes=document.getElementById('e-mes').value||curMesStr();
   const loja=document.getElementById('e-loja').value||'Loja';
-  const eCfg=exportCfg||cfg;
+  // Always re-fetch store config to ensure correct email (fixes SA seeing wrong Para:)
+  let eCfg=cfg;
+  if(isSA&&data.length){
+    const storeIds=[...new Set(data.map(r=>r.store_id).filter(Boolean))];
+    if(storeIds.length===1){
+      const{data:sc}=await SB.from('dep_config').select('*').eq('store_id',storeIds[0]).maybeSingle();
+      if(sc)eCfg={emp:sc.emp||cfg.emp,email:sc.email||'',emailCC:sc.email_cc||'',emailCC2:sc.email_cc2||'',nif:sc.nif||cfg.nif};
+    }
+  }
   const empresa=eCfg.emp||'Empresa'; const nif=eCfg.nif||'';
   const dest=eCfg.email||''; const cc=eCfg.emailCC||''; const cc2=eCfg.emailCC2||'';
+  if(!dest){toast('⚠️ Configure o email de contabilidade nas Configurações');sp('settings');return;}
   const total=data.reduce((s,r)=>s+totalValor(r),0);
   const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
   const ml=mesLabel(mes);
@@ -1588,7 +1584,6 @@ function expPrint(data){
   },0);
   const ml=mesLabel(mes);
   const erros=data.filter(r=>calcEstado(r).s==='err').length;
-  const withPhotos=data.filter(r=>r.foto);
 
   const rows=[];
   data.forEach(r=>{
@@ -1603,7 +1598,8 @@ function expPrint(data){
     const fc=est.s==='ok'?'#166534':est.s==='warn'?'#854d0e':est.s==='err'?'#991b1b':'#64748b';
     const sessTalao=getSessTalao(r,s);
     const rowBg=n%2===0?'#f0f7ff':'#ffffff';
-    return`<tr style="background:${rowBg}${isFirst&&si>0?';border-top:1px dashed #e2e8f0':''}">
+    const photoCell=isFirst?(r.foto?`<td style="padding:2px;text-align:center"><img src="${r.foto}" style="height:34px;width:46px;object-fit:cover;border-radius:3px;display:block;margin:0 auto"></td>`:`<td style="text-align:center;color:#94a3b8;font-size:8px">—</td>`):`<td></td>`;
+    return`<tr style="background:${rowBg}${!isFirst?';border-top:1px dashed #e2e8f0':''}">
       <td style="text-align:center;color:#94a3b8;font-size:7px">${isFirst?n:''}</td>
       <td style="font-weight:700;color:#0f172a">${fd(s.dataVendas)}</td>
       <td style="text-align:center;color:#475569">${s.sessao||'—'}</td>
@@ -1614,7 +1610,7 @@ function expPrint(data){
       <td style="font-size:7.5px;color:#475569">${isFirst?r.responsavel:''}</td>
       <td style="text-align:center;font-weight:800;color:#16a34a">${isFirst&&sessTalao&&r.dataDeposito?'✓':''}</td>
       <td>${isFirst?`<span style="background:${bc};color:${fc};padding:1px 5px;border-radius:3px;font-size:7px;font-weight:800;white-space:nowrap">${est.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}</span>`:''}</td>
-      <td style="color:#64748b;font-size:7px">${isFirst?(r.obs||''):''}</td>
+      ${photoCell}
     </tr>`;
   }).join('');
 
@@ -1669,16 +1665,16 @@ ${erros>0?`<div class="err-bar">⚠️ ${erros} depósito(s) em atraso — verif
 <table>
   <thead><tr>
     <th style="width:18px">#</th>
-    <th style="width:60px">Data</th>
-    <th style="width:40px;text-align:center">Sess.</th>
-    <th style="width:64px">Depósito</th>
-    <th style="width:78px">Tipo</th>
-    <th class="r" style="width:70px">Valor</th>
-    <th style="width:90px">Talão/Ref.</th>
-    <th style="width:74px">Resp.</th>
-    <th style="width:26px;text-align:center">Env</th>
-    <th style="width:90px">Estado</th>
-    <th>Obs.</th>
+    <th style="width:58px">Data</th>
+    <th style="width:38px;text-align:center">Sess.</th>
+    <th style="width:60px">Depósito</th>
+    <th style="width:72px">Tipo</th>
+    <th class="r" style="width:68px">Valor</th>
+    <th style="width:88px">Talão/Ref.</th>
+    <th style="width:70px">Resp.</th>
+    <th style="width:24px;text-align:center">Env</th>
+    <th style="width:88px">Estado</th>
+    <th style="width:52px;text-align:center">📷</th>
   </tr></thead>
   <tbody>
     ${trows}
@@ -1689,12 +1685,6 @@ ${erros>0?`<div class="err-bar">⚠️ ${erros} depósito(s) em atraso — verif
     </tr>
   </tbody>
 </table>
-
-${withPhotos.length?`
-<div style="font-size:9px;font-weight:800;color:#1d4ed8;text-transform:uppercase;letter-spacing:.5px;border-left:3px solid #2563eb;padding-left:7px;margin:10px 0 6px">Comprovativos (${withPhotos.length})</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px">
-${(()=>{let ph='';let idx=0;data.forEach(r=>{if(!r.foto)return;idx++;const sessTalao=r.talao||r.sessoes.map(s=>s.talao).filter(Boolean)[0]||'';ph+=`<div style="border:1px solid #e2e8f0;border-radius:5px;overflow:hidden;background:#f8fafc"><img src="${r.foto}" style="width:100%;height:75px;object-fit:cover;display:block"><div style="padding:3px 5px;font-size:7px;color:#475569"><b style="color:#1d4ed8">#${idx}</b> ${fd(r.dataDeposito)} · ${sessTalao||r.loja}</div></div>`;});return ph;})()}
-</div>`:''}
 
 <div class="footer" style="margin-top:8px">${empresa}${nif?' · NIF '+nif:''} &nbsp;·&nbsp; ${loja} &nbsp;·&nbsp; ${ml} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleString('pt-PT')}</div>
 
@@ -1716,71 +1706,10 @@ function rSettings(){
   document.getElementById('c-emp').value=cfg.emp||'';document.getElementById('c-email').value=cfg.email||'';const ccEl=document.getElementById('c-emailcc');if(ccEl)ccEl.value=cfg.emailCC||'';const cc2El=document.getElementById('c-emailcc2');if(cc2El)cc2El.value=cfg.emailCC2||'';document.getElementById('c-nif').value=cfg.nif||'';const cdEl=document.getElementById('c-cambio-dia');if(cdEl)cdEl.value=cfg.cambioDia||'';const pdEl=document.getElementById('c-prosegur-dia');if(pdEl)pdEl.value=cfg.prosegurDay||'';const ldEl=document.getElementById('c-lomis-dia');if(ldEl)ldEl.value=cfg.lomisDay||'';
   document.getElementById('ltags').innerHTML=cfg.lojas.map(l=>`<span class="tag">${l}<button onclick="remL('${l.replace(/'/g,"\\'")}')">×</button></span>`).join('');
   document.getElementById('rtags').innerHTML=cfg.resps.map(r=>`<span class="tag" style="background:var(--gl);color:var(--green)">${r}<button onclick="remR('${r.replace(/'/g,"\\'")}')">×</button></span>`).join('');
-  sigInit();
 }
 async function scBtn(){sc();await sbSaveCfgSB();toast('✓ Configurações guardadas!');}
 function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';cfg.prosegurDay=document.getElementById('c-prosegur-dia')?.value||'';cfg.lomisDay=document.getElementById('c-lomis-dia')?.value||'';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
 
-// ─── SIGNATURE PAD ────────────────────────────────────
-let sigDrawing=false,sigCtx=null,sigCanvas=null,sigLastX=0,sigLastY=0;
-function sigInit(){
-  const stored=DB.get('assinatura',null);
-  const imgEl=document.getElementById('sig-img');
-  const storedDiv=document.getElementById('sig-stored');
-  const padArea=document.getElementById('sig-pad-area');
-  const changeBtn=document.getElementById('sig-change-btn');
-  if(stored&&imgEl){
-    imgEl.src=stored;storedDiv.style.display='block';padArea.style.display='none';changeBtn.style.display='block';
-  }else{
-    storedDiv.style.display='none';padArea.style.display='block';changeBtn.style.display='none';
-    sigSetup();
-  }
-}
-function sigSetup(){
-  sigCanvas=document.getElementById('sig-canvas');if(!sigCanvas)return;
-  const wrap=document.getElementById('sig-wrap');
-  const dpr=window.devicePixelRatio||1;
-  const w=wrap.clientWidth||320;
-  sigCanvas.width=w*dpr;sigCanvas.height=120*dpr;
-  sigCanvas.style.width=w+'px';sigCanvas.style.height='120px';
-  sigCtx=sigCanvas.getContext('2d');
-  sigCtx.scale(dpr,dpr);
-  sigCtx.strokeStyle='#1e293b';sigCtx.lineWidth=2.2;sigCtx.lineCap='round';sigCtx.lineJoin='round';
-  sigCtx.fillStyle='#fafbfc';sigCtx.fillRect(0,0,w,120);
-  sigCanvas.addEventListener('mousedown',sigStart);sigCanvas.addEventListener('mousemove',sigMove);sigCanvas.addEventListener('mouseup',sigEnd);sigCanvas.addEventListener('mouseleave',sigEnd);
-  sigCanvas.addEventListener('touchstart',sigTStart,{passive:false});
-  sigCanvas.addEventListener('touchmove',sigTMove,{passive:false});
-  sigCanvas.addEventListener('touchend',sigEnd);
-}
-function sigPt(e){const r=sigCanvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
-function sigStart(e){sigDrawing=true;const p=sigPt(e);sigLastX=p.x;sigLastY=p.y;sigCtx.beginPath();sigCtx.arc(p.x,p.y,1,0,Math.PI*2);sigCtx.fillStyle='#1e293b';sigCtx.fill();}
-function sigMove(e){if(!sigDrawing)return;const p=sigPt(e);sigCtx.beginPath();sigCtx.moveTo(sigLastX,sigLastY);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();sigLastX=p.x;sigLastY=p.y;}
-function sigEnd(){sigDrawing=false;}
-function sigTStart(e){e.preventDefault();const t=e.touches[0];const r=sigCanvas.getBoundingClientRect();sigDrawing=true;sigLastX=t.clientX-r.left;sigLastY=t.clientY-r.top;sigCtx.beginPath();sigCtx.arc(sigLastX,sigLastY,1,0,Math.PI*2);sigCtx.fillStyle='#1e293b';sigCtx.fill();}
-function sigTMove(e){e.preventDefault();if(!sigDrawing)return;const t=e.touches[0];const r=sigCanvas.getBoundingClientRect();const x=t.clientX-r.left,y=t.clientY-r.top;sigCtx.beginPath();sigCtx.moveTo(sigLastX,sigLastY);sigCtx.lineTo(x,y);sigCtx.stroke();sigLastX=x;sigLastY=y;}
-function sigClear(){if(sigCtx&&sigCanvas){sigCtx.fillStyle='#fafbfc';sigCtx.fillRect(0,0,sigCanvas.width,sigCanvas.height);document.getElementById('sig-wrap').classList.remove('has-sig');}}
-function sigSave(){
-  if(!sigCanvas)return;
-  // Check if anything was drawn (compare to blank)
-  const blank=document.createElement('canvas');blank.width=sigCanvas.width;blank.height=sigCanvas.height;const bCtx=blank.getContext('2d');bCtx.fillStyle='#fafbfc';bCtx.fillRect(0,0,blank.width,blank.height);
-  if(sigCanvas.toDataURL()===blank.toDataURL()){toast('⚠️ Assina primeiro antes de guardar');return;}
-  const dataUrl=sigCanvas.toDataURL('image/png');
-  DB.set('assinatura',dataUrl);
-  document.getElementById('sig-wrap').classList.add('has-sig');
-  toast('✓ Assinatura guardada!');
-  // Show preview
-  setTimeout(()=>{
-    const imgEl=document.getElementById('sig-img');const storedDiv=document.getElementById('sig-stored');const padArea=document.getElementById('sig-pad-area');const changeBtn=document.getElementById('sig-change-btn');
-    if(imgEl){imgEl.src=dataUrl;storedDiv.style.display='block';padArea.style.display='none';changeBtn.style.display='block';}
-  },400);
-}
-function sigChange(){
-  document.getElementById('sig-stored').style.display='none';
-  document.getElementById('sig-pad-area').style.display='block';
-  document.getElementById('sig-change-btn').style.display='none';
-  DB.set('assinatura',null);
-  requestAnimationFrame(sigSetup);
-}
 function expBackup(){const b={regs,cfg,v:3,at:new Date().toISOString()};const blob=new Blob([JSON.stringify(b,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`backup_depositos_${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(url);toast('✓ Backup exportado!')}
 function impBackup(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.regs){regs=d.regs;saveR()}if(d.cfg){cfg=d.cfg;saveCfg()}popSel();rSettings();rDash();toast('✓ Importado!')}catch{toast('⚠️ Ficheiro inválido')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Apagar TODOS os dados?'))return;regs=[];saveR();rDash();toast('Dados eliminados')}
