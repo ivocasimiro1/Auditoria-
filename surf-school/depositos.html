@@ -1322,6 +1322,22 @@ function rDashTable(data){
     </table>
   </div>`;
 }
+function filterLista(loja,st){
+  sp('lista');
+  const lojaSel=document.getElementById('fl-loj');
+  if(lojaSel)lojaSel.value=loja;
+  activeSt=st;
+  document.querySelectorAll('#fc .chip').forEach(c=>c.classList.toggle('active',c.dataset.s===st));
+  rLista();
+}
+function abrirNovoComDia(date){
+  sp('novo');
+  const sl=document.getElementById('ses-list');
+  if(sl){sl.innerHTML='';sesCount=0;}
+  addSes({dataVendas:date});
+  checkGuardarBtn();
+}
+
 function rStoresStatus(){
   const panel=document.getElementById('sa-stores-panel');
   if(!panel||!isSA){if(panel)panel.innerHTML='';return;}
@@ -1406,11 +1422,15 @@ function rDash(){
   document.getElementById('d-dep').textContent=fmt(depositado);
   document.getElementById('d-pend').textContent=fmt(porDep);
   const alertsCount=getOverdueAlerts(lojaFil).length;
-  document.getElementById('d-err').textContent=erros+(alertsCount>0?'+'+alertsCount:'');
+  const lojasList=lojaFil?[lojaFil]:cfg.lojas;
+  const missingTotal=lojasList.reduce((s,l)=>s+getMissingDays(mes,l).length,0);
+  const errTotal=erros+alertsCount+missingTotal;
+  document.getElementById('d-err').textContent=errTotal||'0';
   const es=document.getElementById('d-err-s');if(es){
     const parts=[];
     if(erros>0)parts.push(erros+' registo(s) em atraso');
-    if(alertsCount>0)parts.push(alertsCount+' loja(s) sem novo registo');
+    if(alertsCount>0)parts.push(alertsCount+' loja(s) sem registo');
+    if(missingTotal>0)parts.push(missingTotal+' dia(s) em falta');
     es.textContent=parts.join(' · ');
   }
   // Overdue alerts — lojas sem registo há mais dias que o prazo
@@ -1477,15 +1497,15 @@ function rDash(){
     const missing=getMissingDays(mes,loja);
     const missingHtml=missing.length?`<div style="padding:8px 12px;border-bottom:1px solid var(--g100);background:#fffbeb">
       <div style="font-size:10px;font-weight:800;color:var(--orange-dark);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">📅 ${missing.length} dia${missing.length!==1?'s':''} sem sessão registada${mes===curMesStr()?' (até hoje)':''}:</div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px">${missing.map(d=>`<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer" onclick="sp('novo')" title="Registar ${fd(d)}">${fd(d).split('/').slice(0,2).join('/')}</span>`).join('')}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${missing.map(d=>`<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer" onclick="abrirNovoComDia('${d}')" title="Registar ${fd(d)}">${fd(d).split('/').slice(0,2).join('/')}</span>`).join('')}</div>
     </div>`:'';
     return`<div class="loja-hdr"><span class="name">${loja}</span><span class="total">${fmt(lt)}</span></div>
     <div class="loja-body">
       <div class="loja-summary">
-        ${lok?`<span class="ls green">${lok} ✅ OK</span>`:''}
-        ${lwarn?`<span class="ls orange">${lwarn} ⚠️ Aviso</span>`:''}
-        ${lerr?`<span class="ls red">${lerr} 🔴 Erro</span>`:''}
-        ${lprog?`<span class="ls blue">${lprog} 📅 Prog.</span>`:''}
+        ${lok?`<span class="ls green" style="cursor:pointer" onclick="filterLista('${loja}','ok')" title="Ver registos OK">${lok} ✅ OK</span>`:''}
+        ${lwarn?`<span class="ls orange" style="cursor:pointer" onclick="filterLista('${loja}','warn')" title="Ver avisos">${lwarn} ⚠️ Aviso</span>`:''}
+        ${lerr?`<span class="ls red" style="cursor:pointer" onclick="filterLista('${loja}','err')" title="Ver erros">${lerr} 🔴 Erro</span>`:''}
+        ${lprog?`<span class="ls blue" style="cursor:pointer" onclick="filterLista('${loja}','prog')" title="Ver programados">${lprog} 📅 Prog.</span>`:''}
         <span class="ls gray">Dep: ${fmt(ldep)}</span>
       </div>
       ${missingHtml}
