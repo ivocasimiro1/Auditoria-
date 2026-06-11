@@ -1894,15 +1894,13 @@ function rSASupervision(){
       const ref=maisAntigaData(r);
       if(ref){const d=Math.floor((today-ref)/86400000);if(d>maxAge)maxAge=d;}
     });
-    // flag: any record with >3 sessions combined (possible cash accumulation)
-    const bulkFlag=storeRegs.some(r=>r.sessoes&&r.sessoes.length>5);
     // granular warn sub-categories
     const warnStoreRegs=storeRegs.filter(r=>calcEstado(r,normCfg).s==='warn');
     const wSemComp=warnStoreRegs.filter(r=>!r.foto&&(r.talao||r.dataDeposito)).length;
     const wPendentes=warnStoreRegs.filter(r=>!r.foto&&!r.talao&&!r.dataDeposito).length;
     const wACompl=warnStoreRegs.filter(r=>r.foto&&(!r.talao||!r.dataDeposito)).length;
     const displayName=(storeLojas2&&storeLojas2.length)?storeLojas2.join(' / '):empName;
-    storeList.push({sid,empName,displayName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,bulkFlag,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl});
+    storeList.push({sid,empName,displayName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl});
   });
   // Sort: stores with data first (worst-to-best), then no-data alphabetically
   const severity=s=>{
@@ -1985,7 +1983,7 @@ function rSASupervision(){
       const diff=s.compliant-s.lastCompliant;
       trendStr=diff>5?`<span style="color:#16a34a;font-size:10px;font-weight:700" title="Melhorou vs mês anterior">↑ +${diff}%</span>`:diff<-5?`<span style="color:#dc2626;font-size:10px;font-weight:700" title="Piorou vs mês anterior">↓ ${diff}%</span>`:`<span style="color:#94a3b8;font-size:10px">→</span>`;
     }
-    const bulkWarn=s.bulkFlag?`<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700;margin-left:4px">bulk</span>`:'';
+    const bulkWarn='';
     const pdfLoja=(s.storeLojas2||[s.displayName])[0];
     // Classify
     const isInactive=s.total===0;
