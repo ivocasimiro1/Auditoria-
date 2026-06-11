@@ -1317,12 +1317,20 @@ async function guardar(){
   }
   // Cross-check: same loja + same dataVendas + same sessao already exists in another record
   const existingLoja=regs.filter(r=>r.loja===loja&&r.id!==(editingId||''));
-  for(const s of sessoes){
-    for(const er of existingLoja){
-      const dup2=er.sessoes.find(es=>es.dataVendas===s.dataVendas&&es.sessao&&s.sessao&&es.sessao.trim()===s.sessao.trim());
-      if(dup2){toast('⚠️ Sessão '+s.sessao+' de '+fd(s.dataVendas)+' já está registada. Edita esse registo em vez de criar um novo.');return;}
+  if(!guardar._skipDupCheck){
+    for(const s of sessoes){
+      for(const er of existingLoja){
+        const dup2=er.sessoes.find(es=>es.dataVendas===s.dataVendas&&es.sessao&&s.sessao&&es.sessao.trim()===s.sessao.trim());
+        if(dup2){
+          const continuar=confirm('⚠️ Sessão '+s.sessao+' de '+fd(s.dataVendas)+' já está registada noutro depósito.\n\nContinuar e guardar mesmo assim?\n\n(Cancelar para ver o registo existente)');
+          if(continuar){guardar._skipDupCheck=true;guardar();return;}
+          else{openDetail(er.id);}
+          return;
+        }
+      }
     }
   }
+  guardar._skipDupCheck=false;
   // Data depósito não pode ser anterior à data de venda mais recente
   const dd=document.getElementById('f-dd').value;
   if(dd){
