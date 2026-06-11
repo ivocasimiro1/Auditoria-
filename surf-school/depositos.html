@@ -4,10 +4,70 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#1a56db">
-<title>Controlo de Depósitos</title>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Depósitos">
+<meta name="theme-color" content="#0f2460">
+<title>Controlo de Depósitos · Despomar</title>
+<script>
+(function(){
+  function genIcon(sz){
+    const c=document.createElement('canvas');
+    c.width=c.height=sz;
+    const ctx=c.getContext('2d');
+    const s=sz/192;
+    // Background rounded rect
+    const r=sz*0.197;
+    ctx.fillStyle='#0f2460';
+    ctx.beginPath();
+    ctx.moveTo(r,0);ctx.lineTo(sz-r,0);ctx.arcTo(sz,0,sz,r,r);
+    ctx.lineTo(sz,sz-r);ctx.arcTo(sz,sz,sz-r,sz,r);
+    ctx.lineTo(r,sz);ctx.arcTo(0,sz,0,sz-r,r);
+    ctx.lineTo(0,r);ctx.arcTo(0,0,r,0,r);
+    ctx.closePath();ctx.fill();
+    // Surfboard white body
+    ctx.fillStyle='white';
+    ctx.beginPath();ctx.ellipse(96*s,95*s,36*s,65*s,0,0,Math.PI*2);ctx.fill();
+    // Pointed nose
+    ctx.beginPath();ctx.moveTo(96*s,20*s);ctx.lineTo(62*s,52*s);ctx.lineTo(130*s,52*s);ctx.closePath();ctx.fill();
+    // Cyan rail
+    ctx.fillStyle='#4fc9e8';
+    ctx.beginPath();ctx.ellipse(96*s,95*s,20*s,51*s,0,0,Math.PI*2);ctx.fill();
+    // Tail fin
+    ctx.fillStyle='white';
+    ctx.beginPath();ctx.moveTo(80*s,150*s);ctx.lineTo(96*s,173*s);ctx.lineTo(112*s,150*s);ctx.closePath();ctx.fill();
+    // € arc (C shape, opening right)
+    ctx.strokeStyle='#0f2460';ctx.lineWidth=11*s;ctx.lineCap='round';
+    ctx.beginPath();ctx.arc(96*s,94*s,29*s,-Math.PI/4,Math.PI/4,true);ctx.stroke();
+    // € top bar
+    ctx.beginPath();ctx.moveTo(62*s,83*s);ctx.lineTo(113*s,83*s);ctx.stroke();
+    // € bottom bar
+    ctx.beginPath();ctx.moveTo(62*s,107*s);ctx.lineTo(113*s,107*s);ctx.stroke();
+    // Wave left
+    ctx.strokeStyle='#56cce8';ctx.lineWidth=5*s;
+    ctx.beginPath();ctx.moveTo(12*s,168*s);ctx.quadraticCurveTo(26*s,156*s,40*s,168*s);ctx.quadraticCurveTo(54*s,180*s,68*s,168*s);ctx.stroke();
+    // Wave right
+    ctx.beginPath();ctx.moveTo(124*s,168*s);ctx.quadraticCurveTo(138*s,156*s,152*s,168*s);ctx.quadraticCurveTo(166*s,180*s,180*s,168*s);ctx.stroke();
+    return c.toDataURL('image/png');
+  }
+  try{
+    const icon180=genIcon(180);
+    const al=document.createElement('link');al.rel='apple-touch-icon';al.href=icon180;document.head.appendChild(al);
+    const manifest={name:'Controlo de Depósitos · Despomar',short_name:'Depósitos',description:'Gestão de depósitos bancários Despomar',start_url:'/depositos',display:'standalone',background_color:'#0f2460',theme_color:'#0f2460',orientation:'portrait-primary',
+      icons:[{src:genIcon(192),sizes:'192x192',type:'image/png'},{src:genIcon(512),sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
+    const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+    const ml=document.createElement('link');ml.rel='manifest';ml.href=URL.createObjectURL(blob);document.head.appendChild(ml);
+    // favicon
+    const fl=document.createElement('link');fl.rel='icon';fl.type='image/png';fl.href=genIcon(64);document.head.appendChild(fl);
+  }catch(e){}
+})();
+</script>
 <!-- ExcelJS loaded dynamically on export -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" onerror="(function(){var s=document.createElement('script');s.src='https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';s.onerror=function(){document.getElementById('sb-err').style.display='block'};document.head.appendChild(s)})()"></script>
+<div id="sb-err" style="display:none;position:fixed;inset:0;background:#1e3a8a;color:#fff;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:9999;padding:24px;text-align:center">
+  <div style="font-size:48px">⚠️</div>
+  <div style="font-size:18px;font-weight:700">Rede da empresa bloqueia o serviço</div>
+  <div style="font-size:14px;opacity:.8;max-width:320px">O departamento de IT está a bloquear os recursos necessários. Por favor usa o <strong>telemóvel</strong> ou outra rede (Wi-Fi pessoal) para aceder.</div>
+</div>
 <style>
 :root{
   --blue:#2563eb;--bl:#eff6ff;--blue-dark:#1d4ed8;
@@ -128,7 +188,10 @@ select{
 .view-seg button{padding:0 13px;font-size:12px;font-weight:700;background:#fff;color:var(--g400);border:none;cursor:pointer;min-height:42px;touch-action:manipulation;transition:all .15s}
 .view-seg button.active{background:var(--blue);color:#fff}
 .kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.kpi{background:#fff;border-radius:14px;padding:15px;box-shadow:var(--sh);border-left:4px solid var(--g200);position:relative;overflow:hidden}
+.kpi{background:#fff;border-radius:14px;padding:15px;box-shadow:var(--sh);border-left:4px solid var(--g200);position:relative;overflow:hidden;cursor:pointer;transition:box-shadow .15s,transform .1s;-webkit-tap-highlight-color:transparent}
+.kpi:active{transform:scale(.97);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.nb.sa-tab{display:none}
+#back-btn{display:none}
 .kpi.blue{border-left-color:var(--blue)}.kpi.green{border-left-color:var(--green)}.kpi.orange{border-left-color:var(--orange)}.kpi.red{border-left-color:var(--red)}
 .kl{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
 .kv{font-size:22px;font-weight:800;margin-top:2px;line-height:1.1}
@@ -201,7 +264,7 @@ select{
 .ep-field:last-of-type{border-bottom:none}
 .ep-lbl{font-size:11px;font-weight:800;color:var(--g400);min-width:58px;padding-top:1px;text-transform:uppercase;letter-spacing:.3px}
 .ep-val{font-size:13px;color:var(--g700);font-weight:600;flex:1;word-break:break-all}
-.ep-body{background:var(--g50);border-radius:10px;padding:12px 13px;margin-top:10px;font-size:12px;color:var(--g600);line-height:1.7;white-space:pre-wrap;max-height:200px;overflow-y:auto;border:1.5px solid var(--g200)}
+.ep-body{background:var(--g50);border-radius:10px;padding:12px 13px;margin-top:10px;font-size:12px;color:var(--g600);line-height:1.7;max-height:360px;overflow-y:auto;border:1.5px solid var(--g200)}
 .ep-mobile-note{background:var(--gl);border:1.5px solid #6ee7b7;border-radius:10px;padding:11px 13px;margin-top:10px;font-size:12px;color:#065f46;font-weight:600;line-height:1.5}
 .ep-desktop-note{background:var(--ol);border:1.5px solid #fcd34d;border-radius:10px;padding:11px 13px;margin-top:10px;font-size:12px;color:var(--orange-dark);font-weight:600;line-height:1.5}
 .ep-copy-btn{background:var(--bl);color:var(--blue-dark);border:1.5px solid #bfdbfe;border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation;width:100%;margin-top:8px;min-height:44px}
@@ -240,16 +303,6 @@ select{
 .mtbl .tr-sub td{background:#f8fafc;font-size:10px;color:var(--g500)}.mtbl .tr-sub td:first-child{background:#f8fafc}
 .mtbl tr.ok-row td{border-left:3px solid var(--green)}.mtbl tr.warn-row td{border-left:3px solid var(--orange)}.mtbl tr.err-row td{border-left:3px solid var(--red)}.mtbl tr.prog-row td{border-left:3px solid var(--g300)}
 
-/* SIGNATURE PAD */
-.sig-pad-wrap{border:2px solid var(--g200);border-radius:12px;overflow:hidden;background:#fafbfc;position:relative;touch-action:none}
-.sig-pad-wrap canvas{display:block;width:100%;height:120px;cursor:crosshair;touch-action:none}
-.sig-pad-wrap.has-sig{border-color:var(--green)}
-.sig-actions{display:flex;gap:8px;margin-top:8px}
-.sig-clear{background:var(--rl);color:var(--red);border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation;min-height:40px}
-.sig-save{background:var(--gl);color:var(--green);border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation;flex:1;min-height:40px}
-.sig-preview{border-radius:8px;background:#fff;padding:6px;border:1.5px solid var(--g200);margin-top:8px;text-align:center}
-.sig-preview img{max-height:60px;max-width:100%}
-.sig-hint{font-size:11px;color:var(--g400);text-align:center;margin-top:6px}
 
 .empty{text-align:center;padding:40px 16px;color:var(--g400);background:#fff;border-radius:var(--r);box-shadow:var(--sh-sm)}
 .empty svg{width:44px;height:44px;margin-bottom:12px;opacity:.4}
@@ -315,9 +368,16 @@ select{
 <div id="auth-screen">
   <div class="auth-box">
     <div class="auth-header">
-      <div class="auth-icon">📊</div>
-      <h1>Controlo de Depósitos</h1>
-      <p>Despomar · Gestão Interna</p>
+      <div class="auth-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="56" height="56">
+          <circle cx="50" cy="50" r="46" fill="white" stroke="#1976d2" stroke-width="2.5"/>
+          <path d="M50,8 C65,8 78,17 82,30 C74,23 63,21 53,24 C43,28 36,37 36,48 C32,37 26,27 20,23 C28,13 38,8 50,8Z" fill="#56cce8"/>
+          <path d="M82,30 C92,42 90,58 80,68 C77,58 70,52 61,51 C52,50 44,53 39,60 C40,48 37,36 32,28 C40,21 51,18 60,22 C70,26 79,28 82,30Z" fill="#1aa8d8"/>
+          <path d="M80,68 C70,80 55,86 42,83 C52,77 58,67 56,56 C54,45 45,39 35,40 C40,30 46,22 53,20 C62,24 72,34 78,46 C82,54 82,62 80,68Z" fill="#1462a8"/>
+        </svg>
+      </div>
+      <h1>Despomar</h1>
+      <p>Controlo de Depósitos</p>
     </div>
     <div class="auth-body">
       <div id="auth-err"></div>
@@ -357,8 +417,24 @@ select{
 </div>
 
 <div class="topbar">
-  <div><h1 id="ttitle">📊 Dashboard</h1><div class="sub" id="tsub">Despomar</div></div>
-  <button class="cfg-btn" onclick="sp('settings')">⚙️</button>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button id="back-btn" class="cfg-btn" style="font-size:16px;padding:6px 10px" title="Voltar">←</button>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="32" height="32" style="flex-shrink:0">
+      <circle cx="50" cy="50" r="46" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.6)" stroke-width="3"/>
+      <path d="M50,8 C65,8 78,17 82,30 C74,23 63,21 53,24 C43,28 36,37 36,48 C32,37 26,27 20,23 C28,13 38,8 50,8Z" fill="#93d8f0"/>
+      <path d="M82,30 C92,42 90,58 80,68 C77,58 70,52 61,51 C52,50 44,53 39,60 C40,48 37,36 32,28 C40,21 51,18 60,22 C70,26 79,28 82,30Z" fill="rgba(255,255,255,.75)"/>
+      <path d="M80,68 C70,80 55,86 42,83 C52,77 58,67 56,56 C54,45 45,39 35,40 C40,30 46,22 53,20 C62,24 72,34 78,46 C82,54 82,62 80,68Z" fill="rgba(255,255,255,.5)"/>
+    </svg>
+    <div><h1 id="ttitle">Dashboard</h1><div class="sub" id="tsub">Despomar</div></div>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center">
+    <div id="user-chip" style="display:none;flex-direction:column;align-items:flex-end;line-height:1.2;margin-right:2px">
+      <span id="user-chip-name" style="font-size:12px;font-weight:700;color:#fff"></span>
+      <span id="user-chip-email" style="font-size:10px;color:rgba(255,255,255,.6)"></span>
+    </div>
+    <button id="logout-btn" class="cfg-btn" onclick="doLogout()" style="display:none;background:rgba(220,38,38,.3);border-color:rgba(255,100,100,.35)" title="Terminar Sessão">🚪</button>
+    <button class="cfg-btn" onclick="sp('settings')">⚙️</button>
+  </div>
 </div>
 <div id="toast"></div>
 
@@ -373,6 +449,8 @@ select{
     </div>
   </div>
   <div id="kpi-row" class="kpi-row"></div>
+  <div id="sa-stores-panel"></div>
+  <div id="dash-alerts"></div>
   <div id="dash-types"></div>
   <div id="dash-body"></div>
 </div>
@@ -382,14 +460,10 @@ select{
   <div class="card">
     <div class="ct">Loja &amp; Tipo de Serviço</div>
     <div class="grid2">
-      <div class="fg"><label>Loja *</label><select id="f-loja"></select></div>
+      <div class="fg"><label>Loja *</label><select id="f-loja" onchange="checkGuardarBtn();checkPendingSuggestion()"></select></div>
       <div class="fg"><label>Tipo de Serviço *</label>
-        <select id="f-tipo" onchange="onTipoChange()">
+        <select id="f-tipo" onchange="onTipoChange();checkGuardarBtn()">
           <option value="">Selecionar...</option>
-          <option>Depósito Direto</option>
-          <option>Prosegur</option>
-          <option>Lomis</option>
-          <option>Câmbio</option>
         </select>
       </div>
     </div>
@@ -419,20 +493,23 @@ select{
       <div class="fg"><label>Data do Depósito</label><input type="date" id="f-dd"></div>
       <div class="fg"><label>Nº Talão / Referência</label><input type="text" id="f-talao" placeholder="T2024001234" autocomplete="off"></div>
     </div>
-    <div class="fg"><label>Responsável *</label><select id="f-resp"></select></div>
+    <div class="fg"><label>Responsável *</label><select id="f-resp" onchange="checkGuardarBtn()"></select></div>
     <div class="fg"><label>Observações</label><textarea id="f-obs" placeholder="Notas opcionais..." rows="2"></textarea></div>
     <div class="fg">
-      <label>Foto do Talão <span style="color:#dc2626;font-weight:700">*</span></label>
+      <label>Foto do Talão</label>
       <div class="photo-area" id="pa">
         <input type="file" id="f-foto" accept="image/*" capture="environment" onchange="handlePhoto(this)">
         <p id="pl">📷 Tirar foto / Escolher imagem</p>
         <img id="pp" alt="">
       </div>
     </div>
-    <button class="btn bp" onclick="guardar()">
-      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-      Guardar Registo
-    </button>
+    <div style="display:flex;gap:8px">
+      <button class="btn bp" id="guardar-btn" onclick="guardar()" disabled style="opacity:.5;flex:1">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span id="guardar-lbl">Guardar Registo</span>
+      </button>
+      <button type="button" onclick="resetNovoForm()" title="Limpar formulário" style="background:#f1f5f9;color:#475569;border:none;border-radius:12px;padding:0 16px;font-size:18px;cursor:pointer;touch-action:manipulation;min-height:48px">🗑️</button>
+    </div>
   </div>
 </div>
 
@@ -457,67 +534,119 @@ select{
     <div class="chip" data-s="prog">📅 Prog.</div>
   </div>
   <div id="list"></div>
+  <div id="list-missing"></div>
 </div>
 
 <!-- ═══ EXPORTAR ═══ -->
 <div class="page" id="page-exp">
   <div class="card">
-    <div class="ct">Selecionar Período</div>
-    <div class="fg"><label>Loja</label><select id="e-loja"><option value="">Todas as lojas</option></select></div>
-    <div class="fg"><label>Mês</label><select id="e-mes" onchange="updPrev()"></select></div>
-  </div>
-  <div class="card">
-    <div class="ct">Formato</div>
-    <div class="eo sel" id="opt-print" onclick="seExp('print')">
+    <div class="ct">Exportar</div>
+    <div class="fg"><label>Loja</label><select id="e-loja" onchange="updPrev();if(expFmt==='email')updEmailPrev()"></select></div>
+    <div class="fg"><label>Mês</label><select id="e-mes" onchange="updPrev();if(expFmt==='email')updEmailPrev()"></select></div>
+    <div class="eo sel" id="opt-print" onclick="seExp('print')" style="margin-top:8px">
       <div class="ei" style="background:#dbeafe"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#1a56db" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg></div>
-      <div><strong style="display:block;font-size:14px;font-weight:700">📄 PDF / Imprimir</strong><span style="font-size:12px;color:var(--g500)">Funciona em todos os sistemas — enviar por email ou guardar</span></div>
+      <div><strong style="display:block;font-size:14px;font-weight:700">📄 PDF / Imprimir</strong><span style="font-size:12px;color:var(--g500)">Abre janela de impressão — guardar como PDF</span></div>
     </div>
     <div class="eo" id="opt-email" onclick="seExp('email')">
       <div class="ei" style="background:var(--bl)"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#1a56db" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
-      <div><strong style="display:block;font-size:14px;font-weight:700">📧 Email para Contabilidade</strong><span style="font-size:12px;color:var(--g500)">Texto e assunto preenchidos · PDF em anexo (mobile: partilha direta)</span></div>
+      <div><strong style="display:block;font-size:14px;font-weight:700">📧 Email para Contabilidade</strong><span style="font-size:12px;color:var(--g500)">Abre email pré-preenchido (Para/CC/Assunto/Corpo)</span></div>
     </div>
     <div class="eo" id="opt-xlsx" onclick="seExp('xlsx')">
       <div class="ei" style="background:#e8f5e9"><svg width="22" height="22" viewBox="0 0 24 24"><rect width="24" height="24" rx="3" fill="#217346"/><text x="2" y="17" font-family="Arial" font-size="11" font-weight="bold" fill="white">XLS</text></svg></div>
-      <div><strong style="display:block;font-size:14px;font-weight:700">Excel (.xlsx)</strong><span style="font-size:12px;color:var(--g500)">Requer Excel ou LibreOffice compatível</span></div>
+      <div><strong style="display:block;font-size:14px;font-weight:700">Excel (.xlsx)</strong><span style="font-size:12px;color:var(--g500)">Requer Excel ou LibreOffice</span></div>
     </div>
+    <button class="btn bs" id="exp-btn" onclick="doExp()" style="margin-top:12px">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      <span id="exp-btn-lbl">Exportar PDF</span>
+    </button>
   </div>
   <div id="email-prev-card" class="card" style="display:none">
     <div class="ct">📧 Email que será enviado</div>
+    <div id="ep-config-warn" style="display:none;background:#fef2f2;color:#991b1b;border:1.5px solid #fecaca;border-radius:10px;padding:11px 14px;margin-bottom:12px;font-size:13px;font-weight:600;line-height:1.5">
+      ⚠️ Email de destino não configurado nas Configurações.<br>
+      <button onclick="sp('settings')" style="background:none;border:none;color:#1d4ed8;font-weight:700;cursor:pointer;text-decoration:underline;font-size:13px;padding:0;margin-top:4px;touch-action:manipulation">Ir para Configurações →</button>
+    </div>
     <div class="ep-field"><span class="ep-lbl">Para</span><span class="ep-val" id="ep-to">—</span></div>
     <div class="ep-field"><span class="ep-lbl">CC</span><span class="ep-val" id="ep-cc">—</span></div>
     <div class="ep-field"><span class="ep-lbl">Assunto</span><span class="ep-val" id="ep-sub">—</span></div>
-    <div class="ep-field"><span class="ep-lbl">Texto</span><span class="ep-val" style="color:var(--g400);font-size:11px">ver abaixo ↓</span></div>
     <div class="ep-body" id="ep-body"></div>
-    <button class="ep-copy-btn" onclick="epCopy()">📋 Copiar texto do email</button>
-    <div id="ep-mobile-note" class="ep-mobile-note" style="display:none">
-      📱 <strong>No telemóvel:</strong> o PDF é partilhado diretamente — escolhe o teu email e fica logo em anexo.
-    </div>
-    <div id="ep-desktop-note" class="ep-desktop-note" style="display:none">
-      💻 <strong>No computador:</strong> o PDF descarrega automaticamente para a pasta Downloads — anexa-o manualmente ao email que abre.
+    <div id="ep-mobile-note" class="ep-mobile-note" style="display:none">📎 Ao clicar "Enviar Email": o relatório é <strong>guardado automaticamente</strong> em Downloads e o email abre pré-preenchido. Adiciona o ficheiro como anexo antes de enviar.</div>
+    <div id="ep-desktop-note" class="ep-desktop-note" style="display:none">📎 Ao clicar "Enviar Email": o relatório é <strong>guardado automaticamente</strong> na pasta de Downloads e o cliente de email abre pré-preenchido. Arrasta o ficheiro para o email como anexo antes de enviar.</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn bs" style="flex:1;min-height:44px" onclick="expEmail()">✉️ Enviar Email</button>
+      <button class="ep-copy-btn" style="flex:0 0 auto;width:auto;padding:10px 14px;margin-top:0" onclick="epCopy()">📋 Copiar</button>
     </div>
   </div>
-
   <div id="prev-wrap" style="display:none">
     <div class="card">
       <div class="ct">Pré-visualização</div>
       <div class="preview-scroll"><table class="ptbl" id="prev-tbl"></table></div>
     </div>
   </div>
-  <button class="btn bs" id="exp-btn" onclick="doExp()">
-    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-    <span id="exp-btn-lbl">Exportar</span>
-  </button>
 </div>
 
 <!-- ═══ SETTINGS ═══ -->
 <div class="page" id="page-settings">
   <div class="card">
     <div class="ct">Empresa</div>
+    <div id="cfg-sync-note" style="display:none;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:10px 13px;margin-bottom:14px;font-size:12px;color:#1e40af;font-weight:600;line-height:1.5"></div>
     <div class="fg"><label>Nome da Empresa</label><input type="text" id="c-emp" placeholder="Despomar" oninput="sc()"></div>
-    <div class="fg"><label>Email Contabilidade (Para:)</label><input type="email" id="c-email" placeholder="contab@empresa.pt" oninput="sc()"></div>
+    <div class="fg">
+      <label id="c-email-lbl">Email Contabilidade (Para:)</label>
+      <input type="email" id="c-email" placeholder="contab@empresa.pt" oninput="sc()">
+      <div id="c-email-hint" style="display:none;font-size:11px;color:var(--g400);margin-top:4px;line-height:1.4"></div>
+    </div>
     <div class="fg"><label>CC fixo (sempre incluído)</label><input type="email" id="c-emailcc" placeholder="ivo@despomar.com" oninput="sc()"></div>
     <div class="fg"><label>CC adicional da loja (opcional)</label><input type="email" id="c-emailcc2" placeholder="outro@empresa.pt" oninput="sc()"></div>
     <div class="fg"><label>NIF</label><input type="text" id="c-nif" placeholder="999999999" oninput="sc()"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--g500);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.4px">Serviços de depósito activos</div>
+    <div class="fg"><label>Depósito Direto</label>
+      <select id="c-direto-ativo" oninput="sc()">
+        <option value="1">✓ Esta loja faz Depósito Direto ao banco</option>
+        <option value="">— Esta loja não usa Depósito Direto —</option>
+      </select>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--g500);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.4px">Dia de levantamento semanal por serviço</div>
+    <div class="fg"><label>Prosegur</label>
+      <select id="c-prosegur-dia" oninput="sc()">
+        <option value="">— Esta loja não usa Prosegur —</option>
+        <option value="1">Segunda-feira</option>
+        <option value="2">Terça-feira</option>
+        <option value="3">Quarta-feira</option>
+        <option value="4">Quinta-feira</option>
+        <option value="5">Sexta-feira</option>
+        <option value="6">Sábado</option>
+        <option value="0">Domingo</option>
+      </select>
+    </div>
+    <div class="fg"><label>Lomis</label>
+      <select id="c-lomis-dia" oninput="sc()">
+        <option value="">— Esta loja não usa Lomis —</option>
+        <option value="1">Segunda-feira</option>
+        <option value="2">Terça-feira</option>
+        <option value="3">Quarta-feira</option>
+        <option value="4">Quinta-feira</option>
+        <option value="5">Sexta-feira</option>
+        <option value="6">Sábado</option>
+        <option value="0">Domingo</option>
+      </select>
+    </div>
+    <div class="fg"><label>Câmbio</label>
+      <select id="c-cambio-dia" oninput="sc()">
+        <option value="">— Esta loja não usa Câmbio —</option>
+        <option value="1">Segunda-feira</option>
+        <option value="2">Terça-feira</option>
+        <option value="3">Quarta-feira</option>
+        <option value="4">Quinta-feira</option>
+        <option value="5">Sexta-feira</option>
+        <option value="6">Sábado</option>
+        <option value="0">Domingo</option>
+      </select>
+    </div>
+    <div class="fg" style="margin-top:10px"><label>📅 Métricas desde</label>
+      <input type="month" id="c-mes-inicio" oninput="sc()">
+      <div style="font-size:11px;color:var(--g500);margin-top:4px">Meses anteriores a esta data não contam para conformidade nem mostram dias em falta.</div>
+    </div>
     <button class="btn bs" onclick="scBtn()">✓ Guardar Configurações</button>
   </div>
   <div class="card">
@@ -530,31 +659,10 @@ select{
     <div id="rtags"></div>
     <div class="ar"><input type="text" id="nr" placeholder="Nome do responsável"><button class="btn bp bsm" onclick="addR()">+ Adicionar</button></div>
   </div>
-  <div class="card">
-    <div class="ct">✍️ Assinatura Digital</div>
-    <p style="font-size:13px;color:var(--g500);margin-bottom:12px;line-height:1.5">Assina com o dedo — fica guardada e é incluída automaticamente no PDF enviado à contabilidade.</p>
-    <div id="sig-stored" style="display:none" class="sig-preview">
-      <img id="sig-img" alt="Assinatura guardada">
-      <div style="font-size:10px;color:var(--green);font-weight:700;margin-top:4px">✓ Assinatura guardada</div>
-    </div>
-    <div id="sig-pad-area">
-      <div class="sig-pad-wrap" id="sig-wrap">
-        <canvas id="sig-canvas"></canvas>
-      </div>
-      <p class="sig-hint">Assina com o dedo ou rato na área acima</p>
-      <div class="sig-actions">
-        <button class="sig-clear" onclick="sigClear()">🗑️ Limpar</button>
-        <button class="sig-save" onclick="sigSave()">✓ Guardar Assinatura</button>
-      </div>
-    </div>
-    <button id="sig-change-btn" style="display:none;margin-top:10px;width:100%" class="btn bo" onclick="sigChange()">✏️ Alterar Assinatura</button>
-  </div>
-
   <div class="card" style="background:#f0fdf4;border:1.5px solid #6ee7b7">
     <div class="ct" style="color:#065f46">📋 Regras de Negócio</div>
-    <p style="font-size:13px;color:var(--g600);line-height:1.6"><strong>Depósito Direto:</strong> deve ser feito a cada 2 dias. Mais de 3 sessões numa só entrega = tardio + justificação obrigatória.</p>
-    <p style="font-size:13px;color:var(--g600);line-height:1.6;margin-top:8px"><strong>Prosegur / Lomis:</strong> passam na loja a levantar a cada 7 dias. Não necessita de ir ao banco.</p>
-    <p style="font-size:13px;color:var(--g600);line-height:1.6;margin-top:8px"><strong>Câmbio:</strong> prazo 7 dias.</p>
+    <p style="font-size:13px;color:var(--g600);line-height:1.6"><strong>Depósito Direto:</strong> deve ser feito a cada 2 dias. O estado é calculado pelo prazo — não há limite no número de sessões por depósito.</p>
+    <p style="font-size:13px;color:var(--g600);line-height:1.6;margin-top:8px"><strong>Prosegur / Lomis / Câmbio:</strong> passam na loja semanalmente. Não necessita de ir ao banco. Configura o dia de levantamento de cada serviço acima para que o sistema calcule automaticamente os prazos.</p>
   </div>
   <div class="card" style="background:var(--bl)">
     <div class="ct" style="color:var(--blue)">ℹ️ Histórico &amp; Armazenamento</div>
@@ -567,20 +675,37 @@ select{
     <button class="btn bo" onclick="expBackup()">📥 Exportar Backup (.json)</button>
     <button class="btn" style="background:var(--g100);color:var(--g600)" onclick="document.getElementById('impf').click()">📤 Importar Backup</button>
     <input type="file" id="impf" accept=".json" style="display:none" onchange="impBackup(this)">
+    <button class="btn" style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe" onclick="reSync()">☁️ Re-sincronizar com Supabase</button>
     <button class="btn" style="background:#f3f4f6;color:#4b5563;border:2px dashed #d1d5db" onclick="loadDemo()">🧪 Carregar Dados Demo</button>
     <button class="btn bd" onclick="clearAll()">🗑️ Limpar Todos os Dados</button>
   </div>
-  <div class="card" id="logout-card" style="display:none">
-    <div class="ct">Sessão</div>
-    <div id="user-info" style="font-size:13px;color:var(--g600);margin-bottom:12px;padding:10px 12px;background:var(--bl);border-radius:8px"></div>
-    <button class="btn bd" onclick="doLogout()">🚪 Terminar Sessão</button>
+  <div class="card" id="change-pass-card" style="display:none">
+    <div class="ct">🔑 Alterar Password</div>
+    <div id="cp-msg" style="display:none;border-radius:8px;padding:10px 13px;margin-bottom:12px;font-size:13px;font-weight:600"></div>
+    <div class="fg"><label>Nova password</label><input type="password" id="cp-new" placeholder="mínimo 6 caracteres" autocomplete="new-password"></div>
+    <div class="fg"><label>Confirmar nova password</label><input type="password" id="cp-conf" placeholder="repetir nova password" autocomplete="new-password"></div>
+    <button class="btn bs" onclick="doChangePass()">🔑 Alterar Password</button>
+    <p style="font-size:11px;color:var(--g400);margin-top:8px;line-height:1.5">A alteração é imediata. O gestor de topo será notificado automaticamente.</p>
   </div>
+</div>
+
+<!-- ═══ SUPERVISÃO (SA only) ═══ -->
+<div class="page" id="page-supervisao">
+  <div class="mes-bar">
+    <select id="sup-mes" onchange="rSASupervision()" style="flex:1;font-size:14px;min-height:44px"></select>
+    <select id="sup-loja" onchange="rSASupervision()" style="flex:1;font-size:14px;min-height:44px"><option value="">Todas as Lojas</option></select>
+  </div>
+  <div id="sa-supervision"></div>
 </div>
 
 <nav class="bnav">
   <button class="nb active" id="nb-dash" onclick="sp('dash')">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
     Dashboard
+  </button>
+  <button class="nb sa-tab" id="nb-supervisao" onclick="sp('supervisao')">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+    Supervisão
   </button>
   <button class="nb" id="nb-novo" onclick="sp('novo')">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -608,23 +733,61 @@ select{
 
 <script>
 // ─── SUPABASE ─────────────────────────────────────────
+const _SBURL='https://ubeqidccuvsjhjphybxz.supabase.co';
+const _SBKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U';
+// sfetch: REST API direto — funciona sem a biblioteca SB (sem CDN)
+async function sfetch(method,table,qs,body){
+  const h={'apikey':_SBKEY,'Authorization':'Bearer '+_SBKEY,'Content-Type':'application/json','Accept':'application/json'};
+  let m=method.toUpperCase();
+  if(m==='UPSERT'){h['Prefer']='resolution=merge-duplicates';m='POST';}
+  const r=await fetch(`${_SBURL}/rest/v1/${table}${qs?'?'+qs:''}`,{method:m,headers:h,body:body!=null?JSON.stringify(body):undefined});
+  const txt=await r.text();const d=txt?JSON.parse(txt):null;
+  if(!r.ok)return{data:null,error:{message:(d?.message||d?.hint||r.statusText||'Erro '+r.status)}};
+  return{data:Array.isArray(d)?d:(d?[d]:[]),error:null};
+}
 const SB=supabase.createClient(
-  'https://ubeqidccuvsjhjphybxz.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U'
+  _SBURL,
+  _SBKEY
 );
-let sbUser=null,sbProfile=null,isSA=false;
+let sbUser=null,sbProfile=null,isSA=false,allStoreConfigs=[];
 const rowToReg=row=>({id:row.id,store_id:row.store_id,loja:row.loja,tipo:row.tipo,sessoes:row.sessoes||[],dataDeposito:row.data_deposito||'',talao:row.talao||'',responsavel:row.responsavel||'',obs:row.obs||'',foto:row.foto||null,criadoEm:row.criado_em||''});
-const regToRow=r=>({id:r.id,store_id:sbProfile?.store_id||r.store_id||'',loja:r.loja,tipo:r.tipo||'',sessoes:r.sessoes||[],data_deposito:r.dataDeposito||'',talao:r.talao||'',responsavel:r.responsavel||'',obs:r.obs||'',foto:r.foto||null,criado_em:r.criadoEm||new Date().toISOString()});
+function resolveStoreId(r){
+  if(!isSA)return sbProfile?.store_id||'';
+  // SA: keep existing valid store_id; otherwise derive from loja via allStoreConfigs
+  if(r.store_id&&r.store_id!=='super')return r.store_id;
+  const owner=allStoreConfigs.find(c=>(c.lojas||[]).includes(r.loja));
+  return owner?.store_id||sbProfile?.store_id||'';
+}
+const regToRow=r=>({id:r.id,store_id:resolveStoreId(r),loja:r.loja,tipo:r.tipo||'',sessoes:r.sessoes||[],data_deposito:r.dataDeposito||'',talao:r.talao||'',responsavel:r.responsavel||'',obs:r.obs||'',foto:r.foto||null,criado_em:r.criadoEm||new Date().toISOString()});
 function setLoad(on){document.getElementById('load-ov').style.display=on?'flex':'none'}
 async function sbLoad(){
   setLoad(true);
   try{
     if(!isSA){
       const{data:c}=await SB.from('dep_config').select('*').eq('store_id',sbProfile.store_id).maybeSingle();
-      if(c)cfg={emp:c.emp||'Despomar',email:c.email||'',emailCC:c.email_cc||'',emailCC2:c.email_cc2||'',nif:c.nif||'',lojas:c.lojas||[],resps:c.resps||[]};
+      if(c)cfg={emp:c.emp||'Despomar',email:c.email||'',emailCC:c.email_cc||'',emailCC2:c.email_cc2||'',nif:c.nif||'',cambioDia:c.cambio_dia||'',prosegurDay:c.prosegur_day||'',lomisDay:c.lomis_day||'',mesInicio:c.mes_inicio||'2026-06',lojas:c.lojas||[],resps:c.resps||[]};
     }else{
-      const{data:cs}=await SB.from('dep_config').select('lojas,resps');
+      // SA: load personal config from 'super' row + merge lojas/resps from all stores
+      const[{data:saRow},{data:cs}]=await Promise.all([
+        SB.from('dep_config').select('*').eq('store_id','super').maybeSingle(),
+        SB.from('dep_config').select('*')
+      ]);
+      if(saRow){
+        cfg={
+          emp:saRow.emp||cfg.emp||'Despomar',
+          email:saRow.email||cfg.email||'',
+          emailCC:saRow.email_cc||cfg.emailCC||'',
+          emailCC2:saRow.email_cc2||cfg.emailCC2||'',
+          nif:saRow.nif||cfg.nif||'',
+          cambioDia:saRow.cambio_dia||cfg.cambioDia||'',
+          prosegurDay:saRow.prosegur_day||cfg.prosegurDay||'',
+          lomisDay:saRow.lomis_day||cfg.lomisDay||'',
+          mesInicio:saRow.mes_inicio||cfg.mesInicio||'2026-06',
+          lojas:cfg.lojas,resps:cfg.resps
+        };
+      }
       if(cs?.length){
+        allStoreConfigs=cs.filter(c=>c.store_id&&c.store_id!=='super');
         const aL=[...new Set(cs.flatMap(c=>c.lojas||[]))];
         const aR=[...new Set(cs.flatMap(c=>c.resps||[]))];
         if(aL.length)cfg.lojas=aL;if(aR.length)cfg.resps=aR;
@@ -638,11 +801,35 @@ async function sbLoad(){
   }catch(e){toast('⚠️ Sem ligação — dados locais: '+e.message);}
   setLoad(false);
 }
-async function sbSave(r){const{error}=await SB.from('dep_registos').upsert(regToRow(r));if(error){toast('⚠️ Erro ao guardar: '+error.message);return false;}return true;}
-async function sbDel(id){const{error}=await SB.from('dep_registos').delete().eq('id',id);if(error){toast('⚠️ Erro: '+error.message);return false;}return true;}
+async function sbSave(r){
+  const row=regToRow(r);
+  if(sbUser){const{error}=await SB.from('dep_registos').upsert(row);if(error){toast('⚠️ Erro ao guardar: '+error.message);return false;}return true;}
+  const{error}=await sfetch('UPSERT','dep_registos','',row);if(error){toast('⚠️ Erro ao guardar: '+error.message);return false;}return true;
+}
+async function sbDel(id){
+  if(sbUser){const{error}=await SB.from('dep_registos').delete().eq('id',id);if(error){toast('⚠️ Erro: '+error.message);return false;}return true;}
+  const{error}=await sfetch('DELETE','dep_registos','id=eq.'+id);if(error){toast('⚠️ Erro: '+error.message);return false;}return true;
+}
 async function sbSaveCfgSB(){
-  if(!sbProfile||isSA)return;
-  await SB.from('dep_config').upsert({store_id:sbProfile.store_id,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',lojas:cfg.lojas||[],resps:cfg.resps||[]});
+  if(!sbProfile)return;
+  const sid=isSA?'super':sbProfile.store_id;
+  const body={store_id:sid,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',mes_inicio:cfg.mesInicio||'',lojas:cfg.lojas||[],resps:cfg.resps||[]};
+  if(sbUser){const{error}=await SB.from('dep_config').upsert(body);if(error)console.warn('sbSaveCfgSB:',error.message);return;}
+  const{error}=await sfetch('UPSERT','dep_config','',body);if(error)console.warn('sbSaveCfgSB:',error.message);
+}
+async function sbSyncLojasAll(){
+  if(!isSA)return;
+  try{
+    const{data:all}=await SB.from('dep_config').select('store_id,lojas,resps');
+    if(!all?.length)return;
+    for(const sc of all){
+      const mL=[...new Set([...(sc.lojas||[]),...cfg.lojas])].filter(Boolean);
+      const mR=[...new Set([...(sc.resps||[]),...cfg.resps])].filter(Boolean);
+      const same=JSON.stringify(mL)===JSON.stringify(sc.lojas||[])&&JSON.stringify(mR)===JSON.stringify(sc.resps||[]);
+      if(!same)await SB.from('dep_config').upsert({store_id:sc.store_id,lojas:mL,resps:mR});
+    }
+    toast('✓ Lojas/Responsáveis sincronizados em todas as lojas');
+  }catch(e){console.warn('syncAll:',e);}
 }
 async function doLogin(){
   const email=document.getElementById('auth-email').value.trim();
@@ -650,29 +837,94 @@ async function doLogin(){
   if(!email||!pass){showAE('Preencha email e password');return;}
   const btn=document.getElementById('auth-btn');
   btn.textContent='A entrar...';btn.disabled=true;hideAE();
-  const{data,error}=await SB.auth.signInWithPassword({email,password:pass});
-  if(error){showAE(error.message.includes('Invalid')?'Email ou password incorretos':error.message);btn.textContent='Entrar';btn.disabled=false;return;}
-  await afterLogin(data.user);
+  try{
+    const{data,error}=await SB.auth.signInWithPassword({email,password:pass});
+    if(error){
+      const msg=error.message.includes('Invalid')||error.message.includes('credentials')?'Email ou password incorretos':
+                error.message.includes('network')||error.message.includes('fetch')?'Sem ligação à internet. Verifique a rede e tente de novo.':
+                error.message;
+      showAE(msg);btn.textContent='Entrar';btn.disabled=false;return;
+    }
+    await afterLogin(data.user);
+  }catch(e){
+    showAE('Erro inesperado: '+(e.message||'verifique a ligação e tente de novo'));
+    btn.textContent='Entrar';btn.disabled=false;
+  }
 }
 async function afterLogin(user){
-  sbUser=user;
-  const{data:p,error}=await SB.from('dep_users').select('*').eq('id',user.id).single();
-  if(error||!p){showAE('Conta sem permissões. Contacte o administrador.');await SB.auth.signOut();document.getElementById('auth-btn').textContent='Entrar';document.getElementById('auth-btn').disabled=false;return;}
-  sbProfile=p;isSA=(p.role==='super_admin');
-  await sbLoad();
-  document.getElementById('auth-screen').style.display='none';
-  document.getElementById('tsub').textContent=isSA?('⭐ '+(p.nome||'Super Admin')):(p.nome||p.store_id||cfg.emp||'Depósitos');
-  const lc=document.getElementById('logout-card');if(lc)lc.style.display='block';
-  const ui=document.getElementById('user-info');
-  if(ui)ui.innerHTML=`<strong>${p.nome||p.store_id}</strong> · ${isSA?'Super Admin':'Staff'}<br><span style="font-size:11px;color:var(--g400)">${user.email}</span>`;
-  popSel();rDash();
+  const btn=document.getElementById('auth-btn');
+  try{
+    sbUser=user;
+    const{data:p,error}=await SB.from('dep_users').select('*').eq('id',user.id).single();
+    if(error||!p){showAE('Conta sem permissões. Contacte o administrador. ('+(error?.message||'sem dados')+')');await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;}
+    sbProfile=p;isSA=(p.role==='super_admin');
+    await sbLoad();
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('tsub').textContent=isSA?('⭐ '+(p.nome||'Super Admin')):(p.nome||p.store_id||cfg.emp||'Depósitos');
+    const lb=document.getElementById('logout-btn');if(lb)lb.style.display='flex';
+    const uc=document.getElementById('user-chip');if(uc)uc.style.display='flex';
+    const ucn=document.getElementById('user-chip-name');if(ucn)ucn.textContent=(p.nome||p.store_id||'')+(isSA?' ⭐':'');
+    const uce=document.getElementById('user-chip-email');if(uce)uce.textContent=user.email;
+    const cpc=document.getElementById('change-pass-card');if(cpc)cpc.style.display=isSA?'none':'block';
+    document.querySelectorAll('.sa-tab').forEach(el=>el.style.display=isSA?'flex':'none');
+    const nbNovo=document.getElementById('nb-novo');if(nbNovo)nbNovo.style.display=isSA?'none':'flex';
+    const nbDash=document.getElementById('nb-dash');if(nbDash)nbDash.style.display=isSA?'none':'flex';
+    popSel();
+    if(isSA){popSupSel();sp('supervisao');}else{rDash();}
+    sbSubscribeRT();
+  }catch(e){
+    console.error('afterLogin error:',e);
+    showAE('Erro ao carregar: '+(e.message||String(e))+'. Tente recarregar a página (F5).');
+    try{await SB.auth.signOut();}catch(e2){}
+    if(btn){btn.textContent='Entrar';btn.disabled=false;}
+  }
+}
+let _rtCh=null,_pollT=null;
+function sbSubscribeRT(){
+  if(_rtCh)try{SB.removeChannel(_rtCh);}catch(e){}
+  if(_pollT){clearInterval(_pollT);_pollT=null;}
+  const chName=isSA?'dep_rt_sa':'dep_rt_'+(sbProfile?.store_id||'x');
+  _rtCh=SB.channel(chName)
+    .on('postgres_changes',{event:'*',schema:'public',table:'dep_registos'},async()=>{
+      const prev=regs.length;
+      await sbLoad();
+      if(isSA){rSASupervision();}else{rDash();}
+      if(document.getElementById('page-lista').classList.contains('active'))rLista();
+      if(regs.length>prev)toast('🔔 Novo registo recebido');
+    })
+    .subscribe();
+  // Fallback: refresh a cada 30s mesmo que Realtime não funcione
+  _pollT=setInterval(async()=>{
+    if(!sbUser)return;
+    const prevLen=regs.length;
+    const prevHash=regs.map(r=>r.id+'|'+(r.foto?'1':'0')+'|'+(r.talao||'')).join(',');
+    await sbLoad();
+    const newHash=regs.map(r=>r.id+'|'+(r.foto?'1':'0')+'|'+(r.talao||'')).join(',');
+    if(newHash!==prevHash){
+      if(isSA){rSASupervision();}else{rDash();}
+      if(document.getElementById('page-lista').classList.contains('active'))rLista();
+      if(regs.length>prevLen)toast('🔔 Novo registo recebido');
+    }
+  },30000);
 }
 async function doLogout(){
   if(!confirm('Terminar sessão?'))return;
   await SB.auth.signOut();
   sbUser=null;sbProfile=null;isSA=false;regs=[];
   cfg={emp:'Despomar',email:'',nif:'',lojas:[],resps:[]};
-  const lc=document.getElementById('logout-card');if(lc)lc.style.display='none';
+  if(_rtCh)try{SB.removeChannel(_rtCh);}catch(e){}
+  _rtCh=null;
+  if(_pollT){clearInterval(_pollT);_pollT=null;}
+  const lb=document.getElementById('logout-btn');if(lb)lb.style.display='none';
+  const uc=document.getElementById('user-chip');if(uc)uc.style.display='none';
+  document.querySelectorAll('.sa-tab').forEach(el=>el.style.display='none');
+  const nbNovo=document.getElementById('nb-novo');if(nbNovo)nbNovo.style.display='flex';
+  const nbDash2=document.getElementById('nb-dash');if(nbDash2)nbDash2.style.display='flex';
+  const bb=document.getElementById('back-btn');if(bb)bb.style.display='none';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  const pgd=document.getElementById('page-dash');if(pgd)pgd.classList.add('active');
+  const nbd=document.getElementById('nb-dash');if(nbd)nbd.classList.add('active');
   const as=document.getElementById('auth-screen');as.style.display='flex';
   document.getElementById('auth-btn').textContent='Entrar';
   document.getElementById('auth-btn').disabled=false;
@@ -709,7 +961,7 @@ async function doReset(){
 // ─── STORAGE ─────────────────────────────────────────
 const DB={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
 let regs=DB.get('regs',[]);
-let cfg=DB.get('cfg',{emp:'Despomar',email:'contab@despomar.com',nif:'',lojas:['ESS FARO','BB Lagos','BB Portimão'],resps:['João Silva','Maria Santos','Pedro Costa','Ana Lopes']});
+let cfg=DB.get('cfg',{emp:'Despomar',email:'contab@despomar.com',nif:'',cambioDia:'',prosegurDay:'',lomisDay:'',mesInicio:'2026-06',lojas:['ESS FARO','BB Lagos','BB Portimão'],resps:['João Silva','Maria Santos','Pedro Costa','Ana Lopes']});
 const saveR=()=>DB.set('regs',regs);
 const saveCfg=()=>DB.set('cfg',cfg);
 
@@ -728,18 +980,21 @@ function maisAntigaData(r){const ds=(r.sessoes||[]).filter(x=>x.dataVendas).map(
 
 function calcEstado(r,storeCfg){
   const today=new Date();today.setHours(0,0,0,0);
-  const nsess=(r.sessoes||[]).length;
   const tv=totalValor(r);
   if(!r.sessoes||!r.sessoes.length)return{s:'prog',label:'📅 Sem sessões'};
   if(r.sessoes.some(s=>!s.sessao||(parseFloat(s.valor)||0)<=0))
     return{s:'err',label:'🔴 Dados incompletos'};
+  const mr=maisRecenteData(r);
   const ma=maisAntigaData(r);
-  if(!ma)return{s:'prog',label:'📅 Sem data de vendas'};
-  if(ma>=today)return{s:'prog',label:'📅 Programado'};
+  if(!mr)return{s:'prog',label:'📅 Sem data de vendas'};
+  // Registos anteriores ao mês de início não afectam as métricas
+  const mesIni=storeCfg?.mesInicio||cfg.mesInicio||'';
+  if(mesIni&&mr.toISOString().slice(0,7)<mesIni)return{s:'ok',label:'✅ Anterior ao início'};
+  if(mr>=today)return{s:'prog',label:'📅 Programado'};
   if(tv===0)return{s:'ok',label:'✅ Sem vendas'};
+  // diasDesde a partir da sessão mais antiga; span = amplitude do lote
   const diasDesde=Math.floor((today-ma)/86400000);
-  const muitasSessoes=(r.tipo==='Depósito Direto')&&nsess>3;
-  // Calcular prazo: Direto=2 dias; outros=dia de recolha configurado ou 7 dias
+  const span=Math.floor((mr-ma)/86400000);
   let prazo=r.tipo==='Depósito Direto'?2:7;
   let vencidoPorDiaRecolha=false;
   if(r.tipo!=='Depósito Direto'&&storeCfg){
@@ -748,16 +1003,17 @@ function calcEstado(r,storeCfg){
     if(dStr!==undefined&&dStr!==''&&dStr!==null){
       const dow=parseInt(dStr);
       if(!isNaN(dow)){
-        // próximo dia de recolha após a sessão mais antiga
-        const maDow=ma.getDay();
-        let dist=(dow-maDow+7)%7;if(dist===0)dist=7;
-        const dRecolha=new Date(ma);dRecolha.setDate(ma.getDate()+dist);dRecolha.setHours(0,0,0,0);
+        // Usar sessão mais recente para calcular o próximo dia de recolha
+        const mrDow=mr.getDay();
+        let dist=(dow-mrDow+7)%7;if(dist===0)dist=7;
+        const dRecolha=new Date(mr);dRecolha.setDate(mr.getDate()+dist);dRecolha.setHours(0,0,0,0);
         vencidoPorDiaRecolha=dRecolha<=today;
         prazo=dist;
       }
     }
   }
-  const vencido=diasDesde>prazo||muitasSessoes||vencidoPorDiaRecolha;
+  // Tardio se acumulou sessões além do prazo (span) ou passou demasiado tempo
+  const vencido=diasDesde>prazo||span>prazo||vencidoPorDiaRecolha;
   // Comprovativo (foto) é a validação principal — sem foto = não depositado
   if(!r.foto){
     if(r.talao||r.dataDeposito)
@@ -774,11 +1030,10 @@ function calcEstado(r,storeCfg){
   if(!r.talao&&r.dataDeposito){
     return vencido?{s:'err',label:'🔴 Falta nº talão'}:{s:'warn',label:'⚠️ Falta nº talão'};
   }
-  // Completo: foto + talão + data
+  // Completo: diasParaDep da última sessão + verificação de span
   const dd=new Date(r.dataDeposito);
-  const diasParaDep=Math.floor((dd-ma)/86400000);
-  if(muitasSessoes)return{s:'warn',label:`⚠️ Tardio (${nsess} sessões)`};
-  if(diasParaDep>prazo)return{s:'warn',label:'⚠️ OK, mas tardio'};
+  const diasParaDep=Math.floor((dd-mr)/86400000);
+  if(diasParaDep>prazo||span>prazo)return{s:'warn',label:'⚠️ OK, mas tardio'};
   return{s:'ok',label:'✅ OK'};
 }
 function estBadge(est){const cl=est.s==='ok'?'bok':est.s==='warn'?'bwarn':est.s==='err'?'berr':'bprog';return`<span class="badg ${cl}">${est.label}</span>`}
@@ -797,20 +1052,34 @@ function getMeses(){
   return[...m].sort().reverse();
 }
 function mesLabel(m){const[a,mo]=m.split('-');return new Date(a,mo-1).toLocaleDateString('pt-PT',{month:'long',year:'numeric'})}
-function getRefDate(r){const ma=maisAntigaData(r);return ma?ma.toISOString().split('T')[0]:(r.dataDeposito||r.criadoEm||'')}
+function maisRecenteData(r){const ds=(r.sessoes||[]).filter(x=>x.dataVendas).map(x=>new Date(x.dataVendas));return ds.length?new Date(Math.max(...ds)):null}
+function getRefDate(r){const mr=maisRecenteData(r);return mr?mr.toISOString().split('T')[0]:(r.dataDeposito||r.criadoEm||'')}
 
 // ─── NAV ─────────────────────────────────────────────
 function sp(name){
   try{
+    // Auto-save config when navigating away from Settings
+    if(document.getElementById('page-settings')?.classList.contains('active')&&name!=='settings'&&sbProfile){
+      sc();sbSaveCfgSB();
+    }
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
     const pg=document.getElementById('page-'+name);
     if(pg)pg.classList.add('active');
     const nb=document.getElementById('nb-'+name);if(nb)nb.classList.add('active');
-    const T={dash:'📊 Dashboard',novo:'➕ Novo Depósito',lista:'📋 Lista',exp:'📤 Exportar',settings:'⚙️ Configurações'};
+    const T={dash:'📊 Dashboard',supervisao:'🔍 Supervisão Global',novo:'➕ Novo Depósito',lista:'📋 Lista / Editar',exp:'📤 Exportar',settings:'⚙️ Configurações'};
     document.getElementById('ttitle').textContent=T[name]||'📦 Depósitos';
+    // Back button: páginas "home" não têm voltar; home do SA = supervisão
+    const bb=document.getElementById('back-btn');
+    if(bb){
+      const isHome=name==='dash'||(isSA&&name==='supervisao');
+      bb.style.display=isHome?'none':'flex';
+      bb.onclick=()=>sp(isSA?'supervisao':'dash');
+    }
     window.scrollTo(0,0);
     if(name==='dash')rDash();
+    if(name==='supervisao'){popSupSel();rSASupervision();}
+    if(name==='novo')popSel();
     if(name==='lista')rLista();
     if(name==='exp')rExpSel();
     if(name==='settings')rSettings();
@@ -818,13 +1087,37 @@ function sp(name){
 }
 
 // ─── SELECTS ─────────────────────────────────────────
+function popTipo(){
+  const el=document.getElementById('f-tipo');if(!el)return;
+  const cur=el.value;
+  // SA vê sempre todos; lojas só vêem os serviços que têm activos
+  let opts;
+  if(isSA){
+    opts=['Depósito Direto','Prosegur','Lomis','Câmbio'];
+  } else {
+    opts=[];
+    if(cfg.usaDireto!==''&&cfg.usaDireto!=='0')opts.push('Depósito Direto');
+    if(cfg.prosegurDay)opts.push('Prosegur');
+    if(cfg.lomisDay)opts.push('Lomis');
+    if(cfg.cambioDia)opts.push('Câmbio');
+    if(!opts.length)opts=['Depósito Direto','Prosegur','Lomis','Câmbio']; // fallback se nada configurado
+  }
+  el.innerHTML='<option value="">Selecionar...</option>'+opts.map(o=>`<option value="${o}">${o}</option>`).join('');
+  if(cur&&opts.includes(cur))el.value=cur;
+}
 function popSel(){
+  popTipo();
   ['f-loja','fl-loj','e-loja','dash-loja'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const v=el.value;
-    el.innerHTML=id==='f-loja'?'<option value="">Selecionar loja...</option>':'<option value="">Todas</option>';
+    if(id==='f-loja')el.innerHTML='<option value="">Selecionar loja...</option>';
+    else if(id==='e-loja')el.innerHTML='';
+    else el.innerHTML='<option value="">Todas</option>';
     cfg.lojas.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;el.appendChild(o)});
+    // SA: also show lojas from records that aren't in cfg.lojas
+    if(isSA){const extra=[...new Set(regs.map(r=>r.loja).filter(l=>l&&!cfg.lojas.includes(l)))];extra.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l+' ★';el.appendChild(o)});}
     if(v)el.value=v;
+    else if(cfg.lojas.length&&(id==='e-loja'||(id==='f-loja'&&!isSA)||(id==='dash-loja'&&!isSA)))el.value=cfg.lojas[0];
   });
   ['dash-mes','fl-mes','e-mes'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
@@ -836,6 +1129,25 @@ function popSel(){
   });
   const fr=document.getElementById('f-resp');
   if(fr){const v=fr.value;fr.innerHTML='<option value="">Selecionar responsável...</option>';cfg.resps.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;fr.appendChild(o)});if(v)fr.value=v;}
+}
+function popSupSel(){
+  const supMes=document.getElementById('sup-mes');
+  if(supMes){
+    const v=supMes.value;
+    supMes.innerHTML='';
+    getMeses().forEach(m=>{supMes.innerHTML+=`<option value="${m}">${mesLabel(m)}</option>`});
+    supMes.value=v||curMesStr();
+  }
+  const supLoja=document.getElementById('sup-loja');
+  if(supLoja){
+    const v=supLoja.value;
+    supLoja.innerHTML='<option value="">Todas as Lojas</option>';
+    const allLojas=new Set();
+    allStoreConfigs.forEach(c=>(c.lojas||[]).forEach(l=>allLojas.add(l)));
+    regs.forEach(r=>{if(r.loja)allLojas.add(r.loja);});
+    [...allLojas].sort().forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;supLoja.appendChild(o);});
+    if(v)supLoja.value=v;
+  }
 }
 
 // ─── FORM MULTI-SESSÃO ────────────────────────────────
@@ -850,6 +1162,7 @@ function onTipoChange(){
   if(existing.length>0){existing.forEach(s=>addSes(s));}
   else{addSes();}
   checkSesAlert();
+  checkPendingSuggestion();
 }
 
 function getSesSionsData(){
@@ -880,11 +1193,11 @@ function addSes(data){
     </div>
     <div class="grid2">
       <div class="fg"><label style="font-size:11px">Data de Vendas *</label><input type="date" id="sv-${idx}" value="${data?.dataVendas||new Date().toISOString().split('T')[0]}" oninput="updSesTotal()"></div>
-      <div class="fg"><label style="font-size:11px">Nº Sessão de Caixa</label><input type="number" id="ss-${idx}" value="${data?.sessao||''}" placeholder="6255" inputmode="numeric"></div>
+      <div class="fg"><label style="font-size:11px">Nº Sessão de Caixa *</label><input type="number" id="ss-${idx}" value="${data?.sessao||''}" placeholder="6255" inputmode="numeric"></div>
     </div>
-    <div class="grid2">
+    <div class="${showCB?'grid2':''}">
       <div class="fg"><label style="font-size:11px">Valor (€) *</label><div class="im"><input type="number" id="svl-${idx}" value="${data?.valor||''}" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="updSesTotal()"></div></div>
-      <div class="fg"><label style="font-size:11px">Nº Talão / Referência</label><input type="text" id="st-${idx}" value="${data?.talao||''}" placeholder="${showCB?'Cód. saco / ref.':'T240001234'}" autocomplete="off"></div>
+      ${showCB?`<div class="fg"><label style="font-size:11px">Nº Talão / Referência</label><input type="text" id="st-${idx}" value="${data?.talao||''}" placeholder="Cód. saco / ref." autocomplete="off"></div>`:''}
     </div>
     ${showCB?`<div class="fg"><label style="font-size:11px">📦 Cód. Barras / Nº Saco</label><input type="text" id="scb-${idx}" value="${data?.codBarras||''}" placeholder="Escanear ou digitar código" autocomplete="off"></div>`:''}
   `;
@@ -896,13 +1209,35 @@ function addSes(data){
 
 function removeSes(btn){
   const rows=document.querySelectorAll('.ses-row');
-  if(rows.length<=1){toast('⚠️ Mínimo 1 sessão');return}
+  if(rows.length<=1){
+    // Clear fields on the last session instead of blocking
+    const row=rows[0];
+    const dv=row.querySelector('[id^="sv-"]');const sv=row.querySelector('[id^="ss-"]');const vl=row.querySelector('[id^="svl-"]');
+    if(dv)dv.value=new Date().toISOString().split('T')[0];if(sv)sv.value='';if(vl)vl.value='';
+    updSesTotal();checkSesAlert();checkGuardarBtn();return;
+  }
   btn.closest('.ses-row').remove();
   renumSes();updSesTotal();checkSesAlert();
 }
 
 function renumSes(){
   document.querySelectorAll('.ses-row').forEach((r,i)=>{r.querySelector('.ses-num').textContent='Sessão '+(i+1);});
+}
+
+function resetNovoForm(){
+  editingId=null;
+  document.getElementById('ses-list').innerHTML='';sesCount=0;addSes();
+  const sa=document.getElementById('ses-alert');if(sa)sa.style.display='none';
+  const jg=document.getElementById('just-grp');if(jg)jg.style.display='none';
+  ['f-just','f-dd','f-talao','f-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  fotoB64=null;
+  const pp=document.getElementById('pp');if(pp){pp.style.display='none';pp.src='';}
+  const pa=document.getElementById('pa');if(pa)pa.classList.remove('has');
+  const pl=document.getElementById('pl');if(pl)pl.textContent='📷 Tirar foto / Escolher imagem';
+  const fi=document.getElementById('f-foto');if(fi)fi.value='';
+  const btn=document.getElementById('guardar-btn');if(btn){btn.disabled=true;btn.style.opacity='.5';}
+  const lbl=document.getElementById('guardar-lbl');if(lbl)lbl.textContent='Guardar Registo';
+  toast('✓ Formulário limpo');
 }
 
 function updSesTotal(){
@@ -916,24 +1251,14 @@ function updSesTotal(){
   ct.textContent=`${cnt} sessão${cnt>1?'ões':''}`;
   sm.textContent=fmt(total);
   checkSesAlert();
+  checkGuardarBtn();
 }
 
 function checkSesAlert(){
-  const tipo=document.getElementById('f-tipo').value;
-  const cnt=document.querySelectorAll('.ses-row').length;
   const al=document.getElementById('ses-alert');
   const jg=document.getElementById('just-grp');
-  if(tipo==='Depósito Direto'&&cnt>3){
-    al.style.display='block';
-    al.innerHTML=`<div class="alert-banner red">⚠️ <strong>${cnt} sessões</strong> num único depósito — excede o limite de 3. Este depósito será marcado como <strong>TARDIO</strong>. É obrigatório justificar em baixo.</div>`;
-    jg.style.display='block';
-  } else if(tipo==='Depósito Direto'&&cnt===3){
-    al.style.display='block';
-    al.innerHTML=`<div class="alert-banner">ℹ️ <strong>3 sessões</strong> no mesmo depósito. O ideal é depositar de 2 em 2 dias. Se exceder 3 sessões, será marcado como tardio.</div>`;
-    jg.style.display='none';
-  } else {
-    al.style.display='none';jg.style.display='none';
-  }
+  if(al)al.style.display='none';
+  if(jg)jg.style.display='none';
 }
 
 function checkGuardarBtn(){
@@ -947,11 +1272,6 @@ function checkGuardarBtn(){
   if(!sessoes.length){btn.disabled=true;btn.style.opacity='.5';return;}
   const allValid=sessoes.every(s=>s.dataVendas&&s.sessao&&s.valor>0);
   if(!allValid){btn.disabled=true;btn.style.opacity='.5';return;}
-  if(tipo==='Depósito Direto'&&sessoes.length>3){
-    const just=(document.getElementById('f-just')?.value||'').trim();
-    if(!just){btn.disabled=true;btn.style.opacity='.5';return;}
-  }
-  if(!fotoB64){btn.disabled=true;btn.style.opacity='.5';return;}
   btn.disabled=false;btn.style.opacity='1';
 }
 
@@ -987,7 +1307,7 @@ function importPendingSess(){
   document.getElementById('ses-alert').style.display='none';
 }
 
-function handlePhoto(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{fotoB64=e.target.result;document.getElementById('pp').src=fotoB64;document.getElementById('pp').style.display='block';document.getElementById('pa').classList.add('has');document.getElementById('pl').textContent='✓ '+f.name;checkGuardarBtn();};r.readAsDataURL(f)}
+function handlePhoto(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{fotoB64=e.target.result;document.getElementById('pp').src=fotoB64;document.getElementById('pp').style.display='block';document.getElementById('pa').classList.add('has');document.getElementById('pl').textContent='✓ '+f.name};r.readAsDataURL(f)}
 
 async function guardar(){
   const loja=document.getElementById('f-loja').value;
@@ -999,12 +1319,39 @@ async function guardar(){
   const sessoes=getSesSionsData();
   if(!sessoes.length||!sessoes.some(s=>s.dataVendas)){toast('⚠️ Indique a data em pelo menos 1 sessão');return}
   if(sessoes.some(s=>!s.dataVendas&&(s.valor>0||s.sessao))){toast('⚠️ Preencha a data de vendas em todas as sessões');return}
-  const cnt=sessoes.length;
-  const isTardio=tipo==='Depósito Direto'&&cnt>3;
-  const just=(document.getElementById('f-just')?.value||'').trim();
-  if(isTardio&&!just){toast('⚠️ Justificação obrigatória para mais de 3 sessões');return}
+  if(sessoes.some(s=>!s.valor||s.valor<=0)){toast('⚠️ Preencha o valor em todas as sessões');return}
+  if(sessoes.some(s=>!s.sessao)){toast('⚠️ Preencha o Nº Sessão de Caixa em todas as sessões');return}
+  // Datas de venda duplicadas na mesma entrega
+  const datas=sessoes.map(s=>s.dataVendas).filter(Boolean);
+  const datasUnicas=new Set(datas);
+  if(datasUnicas.size<datas.length){
+    const dup=[...datas].find((d,i)=>datas.indexOf(d)!==i);
+    toast('⚠️ Dia de venda duplicado: '+fd(dup)+' — cada dia só pode aparecer uma vez');return;
+  }
+  // Cross-check: same loja + same dataVendas + same sessao already exists in another record
+  const existingLoja=regs.filter(r=>r.loja===loja&&r.id!==(editingId||''));
+  if(!guardar._skipDupCheck){
+    for(const s of sessoes){
+      for(const er of existingLoja){
+        const dup2=er.sessoes.find(es=>es.dataVendas===s.dataVendas&&es.sessao&&s.sessao&&es.sessao.trim()===s.sessao.trim());
+        if(dup2){
+          const continuar=confirm('⚠️ Sessão '+s.sessao+' de '+fd(s.dataVendas)+' já está registada noutro depósito.\n\nContinuar e guardar mesmo assim?\n\n(Cancelar para ver o registo existente)');
+          if(continuar){guardar._skipDupCheck=true;guardar();return;}
+          else{openDetail(er.id);}
+          return;
+        }
+      }
+    }
+  }
+  guardar._skipDupCheck=false;
+  // Data depósito não pode ser anterior à data de venda mais recente
+  const dd=document.getElementById('f-dd').value;
+  if(dd){
+    const ultVenda=datas.sort().pop();
+    if(ultVenda&&dd<ultVenda){toast('⚠️ A data do depósito ('+fd(dd)+') não pode ser anterior ao último dia de venda ('+fd(ultVenda)+')');return;}
+  }
   const obsBase=(document.getElementById('f-obs')?.value||'').trim();
-  const obs=isTardio?('[Tardio] '+just+(obsBase?'\n'+obsBase:'')):obsBase;
+  const obs=obsBase;
   const reg={
     id:Date.now().toString(),loja,tipo,sessoes,
     dataDeposito:document.getElementById('f-dd').value||'',
@@ -1020,12 +1367,17 @@ async function guardar(){
   } else {
     regs.unshift(reg);
   }
-  const saved=await sbSave(reg);
-  if(!saved)return;
+  // Guardar localmente primeiro — nunca perde dados
   saveR();
+  // Sincronizar com Supabase (não bloqueia se falhar)
+  const saved=await sbSave(reg);
+  if(!saved){toast('⚠️ Guardado localmente. Vai a Configurações → Re-sincronizar quando tiveres ligação.');setTimeout(()=>sp('dash'),1200);return;}
   // Reset save button
-  const btn=document.querySelector('#page-novo .btn.bp');
-  if(btn)btn.innerHTML='<svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Guardar Registo';
+  const btn=document.getElementById('guardar-btn');
+  if(btn){btn.disabled=true;btn.style.opacity='.5';}
+  const lbl=document.getElementById('guardar-lbl');
+  if(lbl)lbl.textContent='Guardar Registo';
+  editingId=null;
   // Reset sessions
   document.getElementById('ses-list').innerHTML='';sesCount=0;addSes();
   document.getElementById('ses-alert').style.display='none';
@@ -1042,6 +1394,82 @@ async function guardar(){
 
 // ─── DASHBOARD ───────────────────────────────────────
 
+function getMissingDays(mes,lojaFil){
+  const mesIni=cfg.mesInicio||'';
+  if(mesIni&&mes<mesIni)return[];
+  const[year,month]=mes.split('-').map(Number);
+  const today=new Date();today.setHours(0,0,0,0);
+  const isCurrentMonth=mes===curMesStr();
+  // Only show missing days for current or past months up to today
+  const lastDay=isCurrentMonth?today.getDate():new Date(year,month,0).getDate();
+  // Gather all session dates for this loja in this month
+  const covered=new Set();
+  regs.forEach(r=>{
+    if(lojaFil&&r.loja!==lojaFil)return;
+    (r.sessoes||[]).forEach(s=>{
+      if(s.dataVendas&&s.dataVendas.startsWith(mes))covered.add(s.dataVendas);
+    });
+  });
+  const missing=[];
+  for(let d=1;d<=lastDay;d++){
+    const ds=`${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dt=new Date(ds);dt.setHours(0,0,0,0);
+    if(dt<=today&&!covered.has(ds))missing.push(ds);
+  }
+  return missing;
+}
+
+function getOverdueAlerts(lojaFil){
+  // Find the most recent session date per loja+tipo across ALL records
+  const latestSess={};
+  regs.forEach(r=>{
+    if(!r.loja||!r.tipo)return;
+    const key=r.loja+'|'+r.tipo;
+    (r.sessoes||[]).forEach(s=>{
+      if(s.dataVendas&&(!latestSess[key]||s.dataVendas>latestSess[key]))
+        latestSess[key]=s.dataVendas;
+    });
+  });
+  const today=new Date();today.setHours(0,0,0,0);
+  const alerts=[];
+  Object.entries(latestSess).forEach(([key,lastStr])=>{
+    const sep=key.indexOf('|');
+    const loja=key.substring(0,sep);
+    const tipo=key.substring(sep+1);
+    if(lojaFil&&loja!==lojaFil)return;
+    const prazo=tipo==='Depósito Direto'?2:7;
+    const last=new Date(lastStr);last.setHours(0,0,0,0);
+    const dias=Math.floor((today-last)/86400000);
+    if(dias>prazo)alerts.push({loja,tipo,lastStr,dias,prazo});
+  });
+  // Also check lojas in cfg that have NO records at all this month
+  const mes=curMesStr();
+  cfg.lojas.forEach(loja=>{
+    if(lojaFil&&loja!==lojaFil)return;
+    const hasAnyRec=regs.some(r=>r.loja===loja);
+    if(!hasAnyRec)return; // never used, skip
+    const hasThisMes=regs.some(r=>{
+      if(r.loja!==loja)return false;
+      const ref=getRefDate(r);return ref.startsWith(mes);
+    });
+    if(!hasThisMes){
+      // Check if there's a recent record (last 30 days) for this loja
+      const thirtyAgo=new Date(today);thirtyAgo.setDate(thirtyAgo.getDate()-30);
+      const latestRec=regs.filter(r=>r.loja===loja).sort((a,b)=>{
+        const da=getRefDate(a);const db=getRefDate(b);return da>db?-1:1;
+      })[0];
+      if(latestRec){
+        const ref=new Date(getRefDate(latestRec));ref.setHours(0,0,0,0);
+        const dias=Math.floor((today-ref)/86400000);
+        if(dias>2&&!alerts.some(a=>a.loja===loja)){
+          alerts.push({loja,tipo:latestRec.tipo||'—',lastStr:getRefDate(latestRec),dias,prazo:2,noMesData:true});
+        }
+      }
+    }
+  });
+  return alerts.sort((a,b)=>b.dias-a.dias);
+}
+
 let dashView='cards';
 function setDashView(v){
   dashView=v;
@@ -1049,19 +1477,17 @@ function setDashView(v){
   document.getElementById('tv-table').classList.toggle('active',v==='table');
   rDash();
 }
-function rTypeCards(data,getCfgFn){
+function rTypeCards(data){
   const el=document.getElementById('dash-types');if(!el)return;
-  const getCfg=getCfgFn||(r=>isSA?null:cfg);
   const tipos=['Depósito Direto','Prosegur','Lomis','Câmbio'];
   const cls={'Depósito Direto':'tc-dir','Prosegur':'tc-pro','Lomis':'tc-lom','Câmbio':'tc-cam'};
   const ico={'Depósito Direto':'🏦','Prosegur':'🔒','Lomis':'🚚','Câmbio':'💱'};
   const cards=tipos.map(tipo=>{
     const td=data.filter(r=>r.tipo===tipo);if(!td.length)return'';
     const total=td.reduce((s,r)=>s+totalValor(r),0);
-    const dep=td.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-    const errs=td.filter(r=>calcEstado(r,getCfg(r)).s==='err').length;
-    const warns=td.filter(r=>calcEstado(r,getCfg(r)).s==='warn').length;
-    const notYetDep=total-dep;
+    const dep=td.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+    const errs=td.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
+    const warns=td.filter(r=>calcEstado(r,getRecordCfg(r)).s==='warn').length;
     let st,scl;
     if(errs>0){st=`🔴 ${errs} em atraso`;scl='err';}
     else if(warns>0){st=`⚠️ ${warns} aviso${warns>1?'s':''}`;scl='warn';}
@@ -1069,7 +1495,7 @@ function rTypeCards(data,getCfgFn){
     return`<div class="tc ${cls[tipo]}">
       <div class="tc-name">${ico[tipo]} ${tipo}</div>
       <div class="tc-val">${fmt(total)}</div>
-      <div class="tc-meta">${td.length} dep.${notYetDep>0?' · '+fmt(notYetDep)+' por dep.':''}</div>
+      <div class="tc-meta">${td.length} dep. · ${fmt(total-dep)} por dep.</div>
       <div class="tc-st ${scl}">${st}</div>
     </div>`;
   }).join('');
@@ -1253,7 +1679,7 @@ function storeComplianceMes(sid,mes){
   return Math.round((ok+prog)*100/total);
 }
 function avgCycleDays(storeRegs){
-  const confirmed=storeRegs.filter(r=>r.foto&&r.talao&&r.dataDeposito);
+  const confirmed=storeRegs.filter(r=>r.talao&&r.dataDeposito);
   if(!confirmed.length)return null;
   const days=confirmed.map(r=>{
     const oldest=maisAntigaData(r);if(!oldest)return null;
@@ -1274,9 +1700,9 @@ function rptStorePdf(loja,mes){
   const empName=ownerCfg?.emp||loja;
   const storeEmail=ownerCfg?.email||'';
   const missingArr=(getMissingDays(mes,loja)||[]).sort();
+  const storeCfg2=ownerCfg?{prosegurDay:ownerCfg.prosegur_day||'',lomisDay:ownerCfg.lomis_day||'',cambioDia:ownerCfg.cambio_dia||''}:null;
   const totalVal=lojaRegs.reduce((s,r)=>s+totalValor(r),0);
   const depVal=lojaRegs.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-  const storeCfg2=ownerCfg?{prosegurDay:ownerCfg.prosegur_day||'',lomisDay:ownerCfg.lomis_day||'',cambioDia:ownerCfg.cambio_dia||''}:null;
   const ok=lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==='ok').length;
   const warn=lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==='warn').length;
   const err=lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==='err').length;
@@ -1294,7 +1720,7 @@ function rptStorePdf(loja,mes){
   const estadoGeral=compPct>=80?{icon:'✅',label:'CONFORME',col:'#166534',bg:'#f0fdf4',border:'#86efac'}
     :compPct>=50?{icon:'⚠️',label:'ATENÇÃO NECESSÁRIA',col:'#92400e',bg:'#fffbeb',border:'#fde68a'}
     :{icon:'🔴',label:'NÃO CONFORME — AÇÃO URGENTE',col:'#991b1b',bg:'#fef2f2',border:'#fca5a5'};
-  const statusBadge=r=>{const e=calcEstado(r,storeCfg2);return e.s==='ok'?'<span style="color:#166534;font-weight:700">✅ OK</span>':e.s==='warn'?'<span style="color:#92400e;font-weight:700">⚠️ Aviso</span>':e.s==='err'?'<span style="color:#991b1b;font-weight:700">🔴 Em Atraso</span>':'<span style="color:#1d4ed8;font-weight:700">◷ Em Curso</span>';};
+  const statusBadge=r=>{const e=calcEstado(r,getRecordCfg(r));const col=e.s==='ok'?'#166534':e.s==='warn'?'#92400e':e.s==='err'?'#991b1b':'#1d4ed8';return`<span style="color:${col};font-weight:700">${e.label}</span>`;};
   const regRows=lojaRegs.map(r=>{
     const sessMin=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort()[0]||'';
     const sessMax=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort().at(-1)||'';
@@ -1319,7 +1745,7 @@ function rptStorePdf(loja,mes){
       </div>
     </div>`:'';
   const recoms=[];
-  if(err>0)recoms.push(`<li>Regularizar <strong>${err} depósito(s) em atraso</strong> no valor total de <strong>${fmt(lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==='err').reduce((s,r)=>s+totalValor(r),0))}</strong> com a máxima urgência.</li>`);
+  if(err>0)recoms.push(`<li>Regularizar <strong>${err} depósito(s) em atraso</strong> no valor total de <strong>${fmt(lojaRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').reduce((s,r)=>s+totalValor(r),0))}</strong> com a máxima urgência.</li>`);
   if(warn>0)recoms.push(`<li>Verificar <strong>${warn} registo(s) com aviso</strong> e garantir que os depósitos são efetuados dentro do prazo.</li>`);
   if(missingArr.length>0)recoms.push(`<li>Registar ou justificar <strong>${missingArr.length} dia(s) sem sessão</strong>: ${missingArr.slice(0,5).map(d=>fd(d)).join(', ')}${missingArr.length>5?` e mais ${missingArr.length-5}...`:''}.</li>`);
   if(recoms.length===0)recoms.push('<li>Manter a regularidade e continuar a registar as sessões e depósitos dentro dos prazos definidos.</li>');
@@ -1388,7 +1814,7 @@ tr:last-child td{border-bottom:none}
   </div>
 
   ${storeEmail?`<div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap">
-    <a class="email-btn" href="mailto:${storeEmail}?cc=ivo@despomar.com&subject=${encodeURIComponent('Relatório Conformidade Depósitos — '+loja+' — '+mesNome)}&body=${encodeURIComponent('Exmo(a) Sr(a) Gerente,\n\nAdjunto/em anexo o relatório de conformidade de depósitos referente a '+mesNome+'.\n\nCompliance: '+compPct+'%\nTotal do mês: '+fmt(totalVal)+'\n'+(err>0?'⚠️ '+err+' depósito(s) em atraso — '+fmt(lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==="err").reduce((s,r)=>s+totalValor(r),0))+'\n':'')+(missingArr.length>0?'📅 '+missingArr.length+' dia(s) sem registo\n':'')+(err===0&&missingArr.length===0?'✅ Tudo conforme.\n':'\nPor favor regularize a situação com a máxima brevidade.\n')+'\nCumprimentos,\nIvo Casimiro\nDespomar — Gestão Interna\nauditoria-25b.pages.dev/depositos')}">📧 Enviar por Email ao Gerente</a>
+    <a class="email-btn" href="mailto:${storeEmail}?cc=ivo@despomar.com&subject=${encodeURIComponent('Relatório Conformidade Depósitos — '+loja+' — '+mesNome)}&body=${encodeURIComponent('Exmo(a) Sr(a) Gerente,\n\nAdjunto/em anexo o relatório de conformidade de depósitos referente a '+mesNome+'.\n\nCompliance: '+compPct+'%\nTotal do mês: '+fmt(totalVal)+'\n'+(err>0?'⚠️ '+err+' depósito(s) em atraso — '+fmt(lojaRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==="err").reduce((s,r)=>s+totalValor(r),0))+'\n':'')+(missingArr.length>0?'📅 '+missingArr.length+' dia(s) sem registo\n':'')+(err===0&&missingArr.length===0?'✅ Tudo conforme.\n':'\nPor favor regularize a situação com a máxima brevidade.\n')+'\nCumprimentos,\nIvo Casimiro\nDespomar — Gestão Interna\nauditoria-25b.pages.dev/depositos')}">📧 Enviar por Email ao Gerente</a>
     <button class="email-btn" style="background:#0f172a" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
   </div>`:''}
 
@@ -1455,14 +1881,14 @@ function rSASupervision(){
   knownSids.forEach(sid=>{
     if(filterSids&&!filterSids.has(sid))return;
     const cfg2=allStoreConfigs.find(c=>c.store_id===sid);
-    const normCfg=cfg2?{prosegurDay:cfg2.prosegur_day||'',lomisDay:cfg2.lomis_day||'',cambioDia:cfg2.cambio_dia||''}:null;
+    const normCfg=cfg2?{prosegurDay:cfg2.prosegur_day||'',lomisDay:cfg2.lomis_day||'',cambioDia:cfg2.cambio_dia||'',mesInicio:cfg2.mes_inicio||cfg.mesInicio||''}:null;
     const empName=cfg2?.emp||sid;
     const email=cfg2?.email||'';
     const storeRegs=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes.slice(0,7)));
-    const ok=storeRegs.filter(r=>calcEstado(r,normCfg).s==='ok').length;
-    const warn=storeRegs.filter(r=>calcEstado(r,normCfg).s==='warn').length;
-    const err=storeRegs.filter(r=>calcEstado(r,normCfg).s==='err').length;
-    const prog=storeRegs.filter(r=>calcEstado(r,normCfg).s==='prog').length;
+    const ok=storeRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='ok').length;
+    const warn=storeRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='warn').length;
+    const err=storeRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
+    const prog=storeRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='prog').length;
     const total=storeRegs.length;
     // Compliance must account for missing days (days with no records count against score)
     const storeLojas2=cfg2?.lojas||[...new Set(storeRegs.map(r=>r.loja).filter(Boolean))];
@@ -1473,12 +1899,12 @@ function rSASupervision(){
     const lastCompliant=storeComplianceMes(sid,lastMes);
     const today=new Date();
     let delaySum=0,delayCount=0;
-    storeRegs.filter(r=>calcEstado(r,normCfg).s==='err').forEach(r=>{
+    storeRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').forEach(r=>{
       const ref=maisAntigaData(r);
       if(ref){const d=Math.floor((today-ref)/86400000);if(d>=0){delaySum+=d;delayCount++;}}
     });
     const avgDelay=delayCount>0?Math.round(delaySum/delayCount):0;
-    const lateVal=storeRegs.filter(r=>calcEstado(r,normCfg).s==='err').reduce((s,r)=>s+totalValor(r),0);
+    const lateVal=storeRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').reduce((s,r)=>s+totalValor(r),0);
     const cycle=avgCycleDays(storeRegs);
     const exposure=storeExposureVal(storeRegs);
     // max age: how many days the oldest unconfirmed record has been open
@@ -1487,11 +1913,11 @@ function rSASupervision(){
       const ref=maisAntigaData(r);
       if(ref){const d=Math.floor((today-ref)/86400000);if(d>maxAge)maxAge=d;}
     });
-    // flag: any record with >3 sessions combined (possible cash accumulation)
-    const bulkFlag=storeRegs.some(r=>r.sessoes&&r.sessoes.length>3);
-    const wSemComp=storeRegs.filter(r=>calcEstado(r,normCfg).s==='warn'&&!r.foto&&(r.talao||r.dataDeposito)).length;
-    const wPendentes=storeRegs.filter(r=>calcEstado(r,normCfg).s==='warn'&&!r.foto&&!r.talao&&!r.dataDeposito).length;
-    const wACompl=storeRegs.filter(r=>calcEstado(r,normCfg).s==='warn'&&r.foto&&(!r.talao||!r.dataDeposito)).length;
+    // granular warn sub-categories
+    const warnStoreRegs=storeRegs.filter(r=>calcEstado(r,normCfg).s==='warn');
+    const wSemComp=warnStoreRegs.filter(r=>!r.foto&&(r.talao||r.dataDeposito)).length;
+    const wPendentes=warnStoreRegs.filter(r=>!r.foto&&!r.talao&&!r.dataDeposito).length;
+    const wACompl=warnStoreRegs.filter(r=>r.foto&&(!r.talao||!r.dataDeposito)).length;
     const displayName=(storeLojas2&&storeLojas2.length)?storeLojas2.join(' / '):empName;
     const dowNames=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const servicos=[];
@@ -1586,7 +2012,7 @@ function rSASupervision(){
       const diff=s.compliant-s.lastCompliant;
       trendStr=diff>5?`<span style="color:#16a34a;font-size:10px;font-weight:700" title="Melhorou vs mês anterior">↑ +${diff}%</span>`:diff<-5?`<span style="color:#dc2626;font-size:10px;font-weight:700" title="Piorou vs mês anterior">↓ ${diff}%</span>`:`<span style="color:#94a3b8;font-size:10px">→</span>`;
     }
-    const bulkWarn=s.bulkFlag?`<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700;margin-left:4px">bulk</span>`:'';
+    const bulkWarn='';
     const pdfLoja=(s.storeLojas2||[s.displayName])[0];
     // Classify
     const isInactive=s.total===0;
@@ -1792,102 +2218,157 @@ function rDash(){
     if(lojaFil&&r.loja!==lojaFil)return false;
     return true;
   });
+  const total=data.reduce((s,r)=>s+totalValor(r),0);
   const getCfg=r=>{
     if(!isSA)return cfg;
     const sc=allStoreConfigs.find(c=>c.store_id===r.store_id);
     return sc?{prosegurDay:sc.prosegur_day||'',lomisDay:sc.lomis_day||'',cambioDia:sc.cambio_dia||''}:null;
   };
-  const total=data.reduce((s,r)=>s+totalValor(r),0);
   const today=new Date();today.setHours(0,0,0,0);
   const errRegs=data.filter(r=>calcEstado(r,getCfg(r)).s==='err');
   const warnRegs=data.filter(r=>calcEstado(r,getCfg(r)).s==='warn');
   const okRegs=data.filter(r=>calcEstado(r,getCfg(r)).s==='ok');
   const progRegs=data.filter(r=>calcEstado(r,getCfg(r)).s==='prog');
   const erros=errRegs.length;
-  const warns=warnRegs.length;
   let maxDaysLate=0;
   errRegs.forEach(r=>{const ma=maisAntigaData(r);if(ma){const d=Math.floor((today-ma)/86400000);if(d>maxDaysLate)maxDaysLate=d;}});
   const errVal=errRegs.reduce((s,r)=>s+totalValor(r),0);
-  // Warn sub-categories
   const wSemComp=warnRegs.filter(r=>!r.foto&&(r.talao||r.dataDeposito));
   const wPendentes=warnRegs.filter(r=>!r.foto&&!r.talao&&!r.dataDeposito);
   const wACompletar=warnRegs.filter(r=>r.foto&&(!r.talao||!r.dataDeposito));
   const wTardios=warnRegs.filter(r=>r.foto&&r.talao&&r.dataDeposito);
   let maxDaysPend=0;
   wPendentes.forEach(r=>{const ma=maisAntigaData(r);if(ma){const d=Math.floor((today-ma)/86400000);if(d>maxDaysPend)maxDaysPend=d;}});
-  let missingArr=[];
-  if(!isSA){const ll=lojaFil?[lojaFil]:cfg.lojas;missingArr=[...new Set(ll.flatMap(l=>getMissingDays(mes,l)||[]))];}
-  else if(lojaFil){const sc=allStoreConfigs.find(c=>(c.lojas||[]).includes(lojaFil));missingArr=[...new Set((sc?.lojas||[lojaFil]).flatMap(l=>getMissingDays(mes,l)||[]))];}
+  const lojasList=lojaFil?[lojaFil]:(isSA?[...new Set(data.map(r=>r.loja).filter(Boolean))]:cfg.lojas);
+  const missingArr=[...new Set(lojasList.flatMap(l=>getMissingDays(mes,l)||[]))];
   const missingCount=missingArr.length;
   const totalAdj=data.length+missingCount;
   const complPct=totalAdj>0?Math.round((okRegs.length+progRegs.length)*100/totalAdj):null;
   const kpiCompCls=complPct===null?'blue':complPct>=80?'green':complPct>=50?'orange':'red';
+  const alertsCount=getOverdueAlerts(lojaFil).length;
+  const errTotal=erros+alertsCount+missingCount;
   const kpiRow=document.getElementById('kpi-row');
   if(kpiRow){
-    const sessTotal=data.reduce((s,r)=>s+r.sessoes.length,0);
+    const sessTotal=data.reduce((s,r)=>s+(r.sessoes||[]).length,0);
     const kpis=[];
-    // Fixo: Total Mês
     kpis.push({cls:'blue',lbl:'Total Mês',val:fmt(total),sub:`${data.length} dep. · ${sessTotal} sess.`,on:`filterListaByStatus('')`});
-    // Dinâmico: Em Atraso
-    if(erros>0)kpis.push({cls:'red',lbl:'🔴 Em Atraso',val:erros,sub:`mais antigo: ${maxDaysLate} dia${maxDaysLate!==1?'s':''} · ${fmt(errVal)}`,on:`filterListaByStatus('err')`});
-    // Dinâmico: Sem Comprovativo (tem talão/data mas falta foto)
+    if(erros>0)kpis.push({cls:'red',lbl:'🔴 Em Atraso',val:erros,sub:`mais antigo: ${maxDaysLate}d · ${fmt(errVal)}`,on:`filterListaByStatus('err')`});
     if(wSemComp.length)kpis.push({cls:'orange',lbl:'📷 Sem Comprovativo',val:wSemComp.length,sub:`${fmt(wSemComp.reduce((s,r)=>s+totalValor(r),0))} · juntar foto`,on:`filterListaByStatus('warn')`});
-    // Dinâmico: Por Depositar (nada feito, dentro do prazo)
-    if(wPendentes.length)kpis.push({cls:'orange',lbl:'⏳ Por Depositar',val:wPendentes.length,sub:`mais antigo há ${maxDaysPend} dia${maxDaysPend!==1?'s':''}`,on:`filterListaByStatus('warn')`});
-    // Dinâmico: A Completar (tem foto, falta talão ou data)
+    if(wPendentes.length)kpis.push({cls:'orange',lbl:'⏳ Por Depositar',val:wPendentes.length,sub:`mais antigo há ${maxDaysPend}d`,on:`filterListaByStatus('warn')`});
     if(wACompletar.length)kpis.push({cls:'orange',lbl:'⚠️ A Completar',val:wACompletar.length,sub:`${wACompletar.filter(r=>!r.talao).length} sem talão · ${wACompletar.filter(r=>!r.dataDeposito).length} sem data`,on:`filterListaByStatus('warn')`});
-    // Dinâmico: Tardios (completo mas fora do prazo)
     if(wTardios.length)kpis.push({cls:'orange',lbl:'⚠️ Tardios',val:wTardios.length,sub:`depositados fora do prazo`,on:`filterListaByStatus('warn')`});
-    // Dinâmico: Depositados OK
     if(okRegs.length)kpis.push({cls:'green',lbl:'✅ Depositados',val:okRegs.length,sub:`${fmt(okRegs.reduce((s,r)=>s+totalValor(r),0))} · com comprovativo`,on:`filterListaByStatus('ok')`});
-    // Dinâmico: Programados
-    if(progRegs.length)kpis.push({cls:'blue',lbl:'📅 Programados',val:progRegs.length,sub:`datas de venda futuras`,on:`filterListaByStatus('prog')`});
-    // Dinâmico: Dias sem registo
+    if(progRegs.length)kpis.push({cls:'blue',lbl:'📅 Programados',val:progRegs.length,sub:`datas futuras`,on:`filterListaByStatus('prog')`});
     if(missingCount)kpis.push({cls:'orange',lbl:'📋 Dias s/ Registo',val:missingCount,sub:missingArr.slice(0,3).map(d=>fd(d)).join(' · ')+(missingArr.length>3?` +${missingArr.length-3}`:''),on:null});
-    // Fixo: Conformidade
-    kpis.push({cls:kpiCompCls,lbl:'📊 Conformidade',val:complPct!==null?complPct+'%':'—',sub:`${okRegs.length} ok de ${data.length} dep.`+(missingCount>0?` · ${missingCount} s/ reg.`:''),on:`filterListaByStatus('ok')`});
+    kpis.push({cls:kpiCompCls,lbl:'📊 Conformidade',val:complPct!==null?complPct+'%':'—',sub:`${okRegs.length} ok · ${data.length} dep.`+(missingCount>0?` · ${missingCount} s/reg.`:''),on:`filterListaByStatus('ok')`});
     kpiRow.innerHTML=kpis.map(k=>`<div class="kpi ${k.cls}"${k.on?` onclick="${k.on}" style="cursor:pointer"`:''}>
       <div class="kl">${k.lbl}</div><div class="kv">${k.val}</div><div class="ks">${k.sub}</div></div>`).join('');
   }
-  rTypeCards(data,getCfg);
+  // Overdue alerts — lojas sem registo há mais dias que o prazo
+  const dab=document.getElementById('dash-alerts');
+  if(dab){
+    const alerts=getOverdueAlerts(lojaFil);
+    // SA email alert button when a loja is selected and has issues
+    let saEmailBtn='';
+    if(isSA&&lojaFil&&errTotal>0){
+      // Find store for this loja
+      const ownerCfg=allStoreConfigs.find(c=>(c.lojas||[]).includes(lojaFil));
+      const ownerSid=ownerCfg?.store_id||regs.find(r=>r.loja===lojaFil)?.store_id||'';
+      const destEmail=ownerCfg?.email||'';
+      const encSubj=encodeURIComponent(`⚠️ Depósitos ${mes} — Regularização necessária — ${lojaFil}`);
+      const missingForEmail=getMissingDays(mes,lojaFil)||[];
+      let emailBody=`Exmo(a) Sr(a),\n\nEsta mensagem refere-se ao controlo de depósitos do mês de ${mes} da vossa loja (${lojaFil}).\n\n`;
+      if(erros>0)emailBody+=`⚠️ DEPÓSITOS EM ATRASO: ${erros} registo(s) aguardam regularização urgente.\n\n`;
+      if(missingForEmail.length>0)emailBody+=`📅 DIAS SEM REGISTO: ${missingForEmail.length} dia(s):\n${missingForEmail.map(d=>fd(d)).join(', ')}\n\n`;
+      emailBody+=`Por favor aceda ao sistema para regularizar a situação.\n\nAcesso: https://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nGestão Despomar`;
+      saEmailBtn=`<div style="margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <a href="mailto:${destEmail}?subject=${encSubj}&body=${encodeURIComponent(emailBody)}" style="flex:1;min-width:160px;display:flex;align-items:center;justify-content:center;gap:6px;background:#1d4ed8;color:#fff;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;text-decoration:none;touch-action:manipulation">📧 Enviar Alerta <span style="font-size:11px;opacity:.8">(${errTotal} prob.)</span></a>
+        <button onclick="rptStorePdf('${lojaFil}','${mes}')" style="flex:1;min-width:160px;background:#0f172a;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">📄 Relatório PDF</button>
+      </div>`;
+    }
+    if(alerts.length){
+      dab.innerHTML=saEmailBtn+`<div style="margin-bottom:10px">`+alerts.map(a=>{
+        const grave=a.dias>a.prazo*2;
+        const prazoLabel=a.tipo==='Depósito Direto'?`prazo: ${a.prazo} dias`:`levantamento a cada ${a.prazo} dias`;
+        return`<div class="alert-banner${grave?' red':''}" style="margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+          <div>
+            <strong>${a.loja}</strong>${a.tipo&&a.tipo!=='—'?` · <span style="font-size:11px">${a.tipo}</span>`:''}
+            <div style="font-size:11px;margin-top:2px">Sem novo registo desde <b>${fd(a.lastStr)}</b> — há <b>${a.dias} dia${a.dias!==1?'s':''}</b> <span style="opacity:.75">(${prazoLabel})</span></div>
+          </div>
+          <button onclick="sp('novo')" style="background:${grave?'#991b1b':'#b45309'};color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;touch-action:manipulation">➕ Registar</button>
+        </div>`;
+      }).join('')+'</div>';
+    }else{
+      dab.innerHTML=saEmailBtn;
+    }
+  }
+  rTypeCards(data);
+  rStoresStatus();
+  rSASupervision();
   const el=document.getElementById('dash-body');
   if(dashView==='table'){el.innerHTML=rDashTable(data);return;}
   if(!data.length){el.innerHTML=`<div class="empty"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>Sem registos para este período</p><small>Adicione o primeiro depósito no separador ➕</small></div>`;return}
-  const lojas=lojaFil?[lojaFil]:cfg.lojas.filter(l=>data.some(r=>r.loja===l));
+  const lojasBase=cfg.lojas.filter(l=>data.some(r=>r.loja===l));
+  const lojasExtra=isSA?[...new Set(data.map(r=>r.loja).filter(l=>l&&!lojasBase.includes(l)))]:[];
+  const lojas=lojaFil?[lojaFil]:[...lojasBase,...lojasExtra];
   el.innerHTML=lojas.map(loja=>{
-    const ld=data.filter(r=>r.loja===loja).sort((a,b)=>{const da=getRefDate(a);const db=getRefDate(b);return db<da?-1:db>da?1:0});
+    const ld=data.filter(r=>r.loja===loja).sort((a,b)=>{const da=getRefDate(a);const db=getRefDate(b);return da<db?-1:da>db?1:0});
     if(!ld.length)return'';
     const lt=ld.reduce((s,r)=>s+totalValor(r),0);
     const ldep=ld.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-    const lok=ld.filter(r=>calcEstado(r,getCfg(r)).s==='ok').length;
-    const lwarn=ld.filter(r=>calcEstado(r,getCfg(r)).s==='warn').length;
-    const lerr=ld.filter(r=>calcEstado(r,getCfg(r)).s==='err').length;
-    const lprog=ld.filter(r=>calcEstado(r,getCfg(r)).s==='prog').length;
+    const lok=ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='ok').length;
+    const lwarn=ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='warn').length;
+    const lerr=ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
+    const lprog=ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='prog').length;
+    // Detect duplicate sessions — two passes so BOTH records are flagged
+    const _seen=new Set(),_dupKeys=new Set(),_dupRecs=new Set();
+    ld.forEach(r=>r.sessoes.forEach(s=>{
+      const k=`${s.dataVendas||''}|${(s.sessao||'').trim()}`;
+      if(s.sessao&&k.length>1){if(_seen.has(k))_dupKeys.add(k);else _seen.add(k);}
+    }));
+    ld.forEach(r=>{if(r.sessoes.some(s=>_dupKeys.has(`${s.dataVendas||''}|${(s.sessao||'').trim()}`)))_dupRecs.add(r.id);});
     const rows=ld.map(r=>{
-      const est=calcEstado(r,getCfg(r));
+      const est=calcEstado(r,getRecordCfg(r));
       const tv=totalValor(r);
       const ns=r.sessoes.length;
-      const ml=r.sessoes.length>1?r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort():[];
-      const dateRange=ml.length>1?`${fd(ml[0])} → ${fd(ml[ml.length-1])}`:fd(ml[0]||'');
-      return`<div class="dep-row" onclick="openDetail('${r.id}')">
+      const sortedSess=r.sessoes.map(s=>s).sort((a,b)=>(a.dataVendas||'')<(b.dataVendas||'')?-1:1);
+      const ml=sortedSess.map(s=>s.dataVendas).filter(Boolean);
+      const dateRange=ml.length>1?`${fd(ml[0])} → ${fd(ml[ml.length-1])}`:ml.length===1?fd(ml[0]):'—';
+      const isDup=_dupRecs.has(r.id);
+      const dupBadge=isDup?` <span style="font-size:10px;color:#fff;background:#dc2626;border-radius:4px;padding:1px 6px;font-weight:700">⚠️ DUPLICADO</span>`:'';
+      const rowStyle=isDup?'border-left:3px solid #dc2626;background:#fff5f5':'';
+      const sessDetail=sortedSess.map(s=>{
+        const sIsDup=s.sessao&&_dupKeys.has(`${s.dataVendas||''}|${(s.sessao||'').trim()}`);
+        const sc=sIsDup?'color:#dc2626;font-weight:800':'color:var(--g500)';
+        return`<span style="font-size:10px;${sc};white-space:nowrap">${fd(s.dataVendas)||'—'} <b>Sess.${s.sessao||'?'}</b></span>`;
+      }).join('<span style="color:var(--g300);margin:0 3px">·</span>');
+      return`<div class="dep-row" onclick="openDetail('${r.id}')" style="${rowStyle}">
         <div class="dep-dot ${est.s}"></div>
         <div class="dep-info">
-          <div class="dep-date">${dateRange||fd(r.criadoEm?.split('T')[0]||'')} <span style="font-size:10px;font-weight:600;color:var(--g400)">${r.tipo||''}</span></div>
-          <div class="dep-detail">${ns} sessão${ns>1?'ões':''} · Talão: ${r.talao||'—'} ${r.dataDeposito?'· Dep: '+fd(r.dataDeposito):''}</div>
-          <div style="margin-top:3px">${estBadge(est)}${ns>3&&r.tipo==='Depósito Direto'?` <span style="font-size:10px;color:var(--red);font-weight:700"> ⚠️ ${ns} sessões</span>`:''}</div>
+          <div class="dep-date">${dateRange} <span style="font-size:10px;font-weight:600;color:var(--g400)">${r.tipo||''}</span>${dupBadge}</div>
+          <div style="margin-top:3px;margin-bottom:3px;display:flex;flex-wrap:wrap;gap:3px;align-items:center">${sessDetail}</div>
+          <div class="dep-detail">Talão: ${r.talao||'—'} ${r.dataDeposito?'· Dep: '+fd(r.dataDeposito):''}</div>
+          <div style="margin-top:3px">${estBadge(est)}</div>
         </div>
         <div class="dep-val">${fmt(tv)}</div>
       </div>`;
     }).join('');
+    // Missing days for this loja in selected month
+    const missing=getMissingDays(mes,loja);
+    const missingHtml=missing.length?`<div style="padding:8px 12px;border-bottom:1px solid var(--g100);background:#fffbeb">
+      <div style="font-size:10px;font-weight:800;color:var(--orange-dark);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">📅 ${missing.length} dia${missing.length!==1?'s':''} sem sessão registada${mes===curMesStr()?' (até hoje)':''}:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${missing.map(d=>`<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer" onclick="abrirNovoComDia('${d}')" title="Registar ${fd(d)}">${fd(d).split('/').slice(0,2).join('/')}</span>`).join('')}</div>
+    </div>`:'';
     return`<div class="loja-hdr"><span class="name">${loja}</span><span class="total">${fmt(lt)}</span></div>
     <div class="loja-body">
       <div class="loja-summary">
-        ${lok?`<span class="ls green">${lok} ✅ OK</span>`:''}
-        ${lwarn?`<span class="ls orange">${lwarn} ⚠️ Aviso</span>`:''}
-        ${lerr?`<span class="ls red">${lerr} 🔴 Erro</span>`:''}
-        ${lprog?`<span class="ls blue">${lprog} 📅 Prog.</span>`:''}
+        ${lok?`<span class="ls green" style="cursor:pointer" onclick="filterLista('${loja}','ok')" title="Ver registos OK">${lok} ✅ OK</span>`:''}
+        ${lwarn?`<span class="ls orange" style="cursor:pointer" onclick="filterLista('${loja}','warn')" title="Ver avisos">${lwarn} ⚠️ Aviso</span>`:''}
+        ${lerr?`<span class="ls red" style="cursor:pointer" onclick="filterLista('${loja}','err')" title="Ver erros">${lerr} 🔴 Erro</span>`:''}
+        ${lprog?`<span class="ls blue" style="cursor:pointer" onclick="filterLista('${loja}','prog')" title="Ver programados">${lprog} 📅 Prog.</span>`:''}
         <span class="ls gray">Dep: ${fmt(ldep)}</span>
       </div>
+      ${missingHtml}
       ${rows}
     </div>`;
   }).join('');
@@ -1904,13 +2385,8 @@ function rLista(){
   const fm=document.getElementById('fl-mes').value;
   const fl=document.getElementById('fl-loj').value;
   const fSid=document.getElementById('fl-sid')?.value||'';
-  const getListCfg=r=>{
-    if(!isSA)return cfg;
-    const sc=allStoreConfigs.find(c=>c.store_id===r.store_id);
-    return sc?{prosegurDay:sc.prosegur_day||'',lomisDay:sc.lomis_day||'',cambioDia:sc.cambio_dia||''}:null;
-  };
   let filtered=regs.filter(r=>{
-    const s=calcEstado(r,getListCfg(r)).s;
+    const s=calcEstado(r,getRecordCfg(r)).s;
     if(activeSt&&s!==activeSt)return false;
     if(fm){const ref=getRefDate(r);if(!ref.startsWith(fm))return false}
     if(fl&&r.loja!==fl)return false;
@@ -1920,25 +2396,49 @@ function rLista(){
   const total=filtered.reduce((s,r)=>s+totalValor(r),0);
   document.getElementById('s-tot').textContent=fmt(total);
   document.getElementById('s-cnt').textContent=filtered.length;
-  document.getElementById('s-err').textContent=filtered.filter(r=>calcEstado(r,getListCfg(r)).s==='err').length;
-  document.getElementById('s-ok').textContent=filtered.filter(r=>calcEstado(r,getListCfg(r)).s==='ok').length;
+  document.getElementById('s-err').textContent=filtered.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
+  document.getElementById('s-ok').textContent=filtered.filter(r=>calcEstado(r,getRecordCfg(r)).s==='ok').length;
   const el=document.getElementById('list');
   if(!filtered.length){el.innerHTML=`<div class="empty"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>Sem registos</p></div>`;return}
   el.innerHTML=filtered.map(r=>{
-    const est=calcEstado(r,getListCfg(r));const bc=est.s==='ok'?'bok':est.s==='warn'?'bwarn':est.s==='err'?'berr':'bprog';
+    const est=calcEstado(r,getRecordCfg(r));const bc=est.s==='ok'?'bok':est.s==='warn'?'bwarn':est.s==='err'?'berr':'bprog';
     const tv=totalValor(r);const ns=r.sessoes.length;
     const ml=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
     const dateRange=ml.length>1?`${fd(ml[0])} → ${fd(ml[ml.length-1])}`:fd(ml[0]||'');
-    return`<div class="di ${est.s}" onclick="openDetail('${r.id}')"><div class="dh"><div class="dl">${r.loja}</div><div class="dv">${fmt(tv)}</div></div><div class="dm"><span>📅 ${dateRange}</span><span>${ns} sessão${ns>1?'ões':''}</span><span>👤 ${r.responsavel}</span>${r.talao?`<span>🧾 ${r.talao}</span>`:''} ${r.foto?'<span>📷</span>':''}</div><div style="margin-top:5px"><span class="badg ${bc}">${est.label}</span><span style="font-size:10px;color:var(--g500);margin-left:7px">${r.tipo||''}</span></div></div>`;
+    return`<div class="di ${est.s}" style="cursor:default">
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div style="flex:1;cursor:pointer;min-width:0" onclick="openDetail('${r.id}')">
+          <div class="dh"><div class="dl">${r.loja}</div><div class="dv">${fmt(tv)}</div></div>
+          <div class="dm"><span>📅 ${dateRange}</span><span>${ns} sessão${ns>1?'ões':''}</span><span>👤 ${r.responsavel}</span>${r.talao?`<span>🧾 ${r.talao}</span>`:''} ${r.foto?'<span>📷</span>':''}</div>
+          <div style="margin-top:5px"><span class="badg ${bc}">${est.label}</span><span style="font-size:10px;color:var(--g500);margin-left:7px">${r.tipo||''}</span>${isSA?`<span style="font-size:9px;color:var(--g400);margin-left:8px;background:var(--g100);padding:1px 6px;border-radius:4px">${r.store_id||'?'}</span>`:''}</div>
+        </div>
+        <button onclick="editFull('${r.id}')" style="background:var(--bl);color:var(--blue-dark);border:1.5px solid #bfdbfe;border-radius:9px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer;min-height:38px;flex-shrink:0;touch-action:manipulation;align-self:flex-start;margin-top:2px">✏️</button>
+      </div>
+    </div>`;
   }).join('');
+  // Mostrar dias em falta no fundo da lista (quando filtro de loja activo e mês escolhido)
+  const missingEl=document.getElementById('list-missing');
+  if(missingEl){
+    if(fl&&fm&&!activeSt){
+      const missing=getMissingDays(fm,fl)||[];
+      if(missing.length){
+        missingEl.innerHTML=`<div style="margin-top:12px;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:12px;padding:12px 14px">
+          <div style="font-size:12px;font-weight:800;color:#991b1b;margin-bottom:8px">📅 ${missing.length} dia${missing.length!==1?'s':''} sem registo em ${mesLabel(fm)}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${missing.map(d=>`<button onclick="abrirNovoComDia('${d}')" style="background:#fff;border:1.5px solid #fca5a5;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:#991b1b;cursor:pointer;touch-action:manipulation" title="Registar depósito para este dia">${fd(d)} ➕</button>`).join('')}
+          </div>
+        </div>`;
+      }else{missingEl.innerHTML='';}
+    }else{missingEl.innerHTML='';}
+  }
 }
 
-// ─── MODAL ───────────────────────────────────────────
 function getRecordCfg(r){
   if(!isSA)return cfg;
   const sc=allStoreConfigs.find(c=>c.store_id===r.store_id);
-  return sc?{prosegurDay:sc.prosegur_day||'',lomisDay:sc.lomis_day||'',cambioDia:sc.cambio_dia||''}:null;
+  return sc?{prosegurDay:sc.prosegur_day||'',lomisDay:sc.lomis_day||'',cambioDia:sc.cambio_dia||'',mesInicio:sc.mes_inicio||cfg.mesInicio||''}:null;
 }
+// ─── MODAL ───────────────────────────────────────────
 function openDetail(id){
   const r=regs.find(x=>x.id===id);if(!r)return;
   const est=calcEstado(r,getRecordCfg(r));const bc=est.s==='ok'?'bok':est.s==='warn'?'bwarn':est.s==='err'?'berr':'bprog';
@@ -1977,9 +2477,9 @@ function editFull(id){
   if(r.foto){fotoB64=r.foto;document.getElementById('pp').src=r.foto;document.getElementById('pp').style.display='block';document.getElementById('pa').classList.add('has');document.getElementById('pl').textContent='✓ Foto existente';}
   else{fotoB64=null;document.getElementById('pp').style.display='none';document.getElementById('pa').classList.remove('has');document.getElementById('pl').textContent='📷 Tirar foto / Escolher imagem';}
   checkSesAlert();
-  // Update save button
-  const btn=document.querySelector('#page-novo .btn.bp');
-  if(btn)btn.innerHTML='<svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Atualizar Registo';
+  const lbl=document.getElementById('guardar-lbl');
+  if(lbl)lbl.textContent='Atualizar Registo';
+  checkGuardarBtn();
   sp('novo');
   toast('A editar registo — altere e guarde');
 }
@@ -2007,7 +2507,11 @@ async function saveDD(id){
   const r=regs.find(x=>x.id===id);if(!r)return;
   const dd=document.getElementById('qdd')?.value||'';
   const tal=document.getElementById('qtal')?.value||'';
-  if(dd)r.dataDeposito=dd;
+  if(dd){
+    const ultVenda=(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort().pop();
+    if(ultVenda&&dd<ultVenda){toast('⚠️ Data do depósito ('+fd(dd)+') anterior ao último dia de venda ('+fd(ultVenda)+')');return;}
+    r.dataDeposito=dd;
+  }
   r.talao=tal;
   saveR();
   await sbSave(r);
@@ -2017,7 +2521,7 @@ function cm(){document.getElementById('mod').classList.remove('open')}
 async function delR(id){if(!confirm('Eliminar este depósito?'))return;const ok=await sbDel(id);if(!ok)return;regs=regs.filter(x=>x.id!==id);saveR();cm();rLista();rDash();toast('Eliminado')}
 
 // ─── EXPORT ──────────────────────────────────────────
-let expFmt='print';
+let expFmt='print',exportCfg=null;
 function seExp(f){
   expFmt=f;
   document.querySelectorAll('.eo').forEach(o=>o.classList.remove('sel'));
@@ -2029,60 +2533,170 @@ function seExp(f){
   updPrev();
 }
 function rExpSel(){popSel();document.getElementById('e-loja').addEventListener('change',()=>{updPrev();if(expFmt==='email')updEmailPrev();});document.getElementById('e-mes').addEventListener('change',()=>{updPrev();if(expFmt==='email')updEmailPrev();});seExp(expFmt);}
-function updEmailPrev(){
+async function updEmailPrev(){
   const data=getFiltExp();
   const epc=document.getElementById('email-prev-card');
   if(!data.length){epc.style.display='none';return;}
   epc.style.display='block';
   const mes=document.getElementById('e-mes').value||curMesStr();
   const loja=document.getElementById('e-loja').value||'Todas as Lojas';
-  const empresa=cfg.emp||'Empresa';
-  const nif=cfg.nif||'';
-  const dest=cfg.email||'(não configurado)';
-  const cc=[cfg.emailCC,cfg.emailCC2].filter(Boolean).join(', ')||'—';
+  // Super-admin: load config from the selected store, not from 'super'
+  if(isSA){
+    const storeIds=[...new Set(data.map(r=>r.store_id).filter(Boolean))];
+    if(storeIds.length===1){
+      const{data:sc}=await SB.from('dep_config').select('*').eq('store_id',storeIds[0]).maybeSingle();
+      exportCfg=sc?{emp:sc.emp||cfg.emp,email:sc.email||cfg.email||'',emailCC:sc.email_cc||cfg.emailCC||'',emailCC2:sc.email_cc2||cfg.emailCC2||'',nif:sc.nif||cfg.nif}:null;
+    }else{exportCfg=null;}
+  }else{exportCfg=null;}
+  const activeCfg=exportCfg||cfg;
+  const empresa=activeCfg.emp||'Empresa';
+  const nif=activeCfg.nif||'';
+  const dest=activeCfg.email||'';
+  const cc=[activeCfg.emailCC,activeCfg.emailCC2].filter(Boolean).join(', ')||'—';
+  const cw=document.getElementById('ep-config-warn');
+  if(cw)cw.style.display=dest?'none':'block';
   const ml=mesLabel(mes);
   const total=data.reduce((s,r)=>s+totalValor(r),0);
-  const totalDep=data.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+  const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
   const erros=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
   const avisos=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='warn').length;
   const subj=`Folha Depósitos – ${loja} – ${ml} – ${empresa}`;
-  const bodyLines=[
-    `Exmo(a). Departamento de Contabilidade,`,
-    ``,
-    `Envio em anexo a folha de controlo de depósitos de ${loja}, referente a ${ml}.`,
-    ``,
-    `RESUMO DO PERÍODO`,
-    `─────────────────`,
-    `Empresa: ${empresa}${nif?' · NIF '+nif:''}`,
-    `Loja: ${loja}`,
-    `Período: ${ml}`,
-    `Total Registado: ${fmt(total)}`,
-    `Total Depositado: ${fmt(totalDep)}`,
-    `Por Depositar: ${fmt(total-totalDep)}`,
-    `Nº Depósitos: ${data.length}`,
-    `Nº Sessões: ${data.reduce((s,r)=>s+r.sessoes.length,0)}`,
-    erros>0?`⚠️ Depósitos em atraso: ${erros} (ver folha em anexo)`:`✅ Sem problemas`,
-    avisos>0?`ℹ️ Avisos: ${avisos}`:'',
-    ``,
-    `📎 ANEXO`,
-    `  • FolhaDepositos_${loja.replace(/ /g,'_')}_${mes}.html — Folha completa com fotos dos talões`,
-    ``,
-    `Por favor confirmar receção e validação.`,
-    ``,
-    `Com os melhores cumprimentos,`,
-    `${sbProfile?.nome||loja} — ${empresa}`,
-  ].filter(l=>l!==null).join('\n');
-  document.getElementById('ep-to').textContent=dest;
+  // Per-session rows sorted by date (accountant needs to see each session)
+  const allSess=[];
+  data.forEach(r=>{r.sessoes.forEach((s,si)=>{allSess.push({r,s,si,isFirst:si===0,est:calcEstado(r,getRecordCfg(r))});});});
+  allSess.sort((a,b)=>(a.s.dataVendas||'')<(b.s.dataVendas||'')?-1:1);
+  // Detect duplicate sessions (same date+sessao) in the email data
+  const _eSeen=new Set(),_eDupKeys=new Set();
+  allSess.forEach(({s})=>{
+    const k=`${s.dataVendas||''}|${(s.sessao||'').trim()}`;
+    if(s.sessao&&k.length>1){if(_eSeen.has(k))_eDupKeys.add(k);else _eSeen.add(k);}
+  });
+  const isDupSess=s=>s.sessao&&_eDupKeys.has(`${s.dataVendas||''}|${(s.sessao||'').trim()}`);
+  const depRows=allSess.map(({r,s,si,isFirst,est})=>{
+    const dup=isDupSess(s);
+    const rowBg=dup?'background:#fff0f0':isFirst?'':'';
+    const stC=dup?'#991b1b;background:#fee2e2':est.s==='ok'?'#166534;background:#dcfce7':est.s==='warn'?'#854d0e;background:#fef9c3':est.s==='err'?'#991b1b;background:#fee2e2':'#475569;background:#f1f5f9';
+    const noTalao=isFirst&&!r.talao&&!s.talao;
+    const sessLabel=dup?`<span style="color:#dc2626;font-weight:800;border-left:3px solid #dc2626;padding-left:4px">${s.sessao||'—'}</span>`:`${s.sessao||'—'}`;
+    const statusCell=dup?`<td style="padding:4px 6px"><span style="font-size:10px;font-weight:800;padding:2px 6px;border-radius:8px;color:#991b1b;background:#fee2e2">⚠️ DUPLICADO</span></td>`
+      :isFirst?`<td style="padding:4px 6px"><span style="font-size:10px;font-weight:700;padding:2px 5px;border-radius:8px;color:${stC}">${est.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}</span></td>`:'<td></td>';
+    return`<tr style="border-bottom:1px solid #e5e7eb;${rowBg}">
+      <td style="padding:4px 6px;font-size:11px;font-weight:700;color:${dup?'#dc2626':'#0f172a'}">${fd(s.dataVendas)}</td>
+      <td style="padding:4px 6px;font-size:11px;text-align:center">${sessLabel}</td>
+      <td style="padding:4px 6px;font-size:10px;color:#475569">${r.tipo||'—'}</td>
+      <td style="padding:4px 6px;font-size:11px;text-align:right;font-weight:700;color:#1d4ed8">${fmt(s.valor||0)}</td>
+      <td style="padding:4px 6px;font-size:11px">${isFirst?(fd(r.dataDeposito)||'<span style="color:#ef4444;font-weight:700">Pendente</span>'):'<span style="color:#cbd5e1">↑</span>'}</td>
+      <td style="padding:4px 6px;font-size:10px;font-family:monospace">${isFirst?(noTalao?'<span style="color:#ef4444;font-weight:700">SEM</span>':(r.talao||'—')):''}</td>
+      ${statusCell}
+    </tr>`;
+  }).join('');
+  const missingInEmail=getMissingDays(mes,loja==='Todas as Lojas'?null:loja);
+  const missingEmailHtml=missingInEmail.length?`
+    <div style="margin-top:10px;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:8px;padding:8px 10px">
+      <div style="font-size:11px;font-weight:800;color:#b45309;margin-bottom:5px">📅 ${missingInEmail.length} dia${missingInEmail.length!==1?'s':''} sem sessão registada:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${missingInEmail.map(d=>`<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700">${fd(d).split('/').slice(0,2).join('/')}</span>`).join('')}</div>
+    </div>`:`<div style="margin-top:8px;font-size:11px;color:#166534;font-weight:700">✅ Todos os dias registados</div>`;
+  // Plain text body for mailto: — per-session table so accountant can verify each session
+  const sep='─'.repeat(52);
+  const sessLines=allSess.map(({r,s,isFirst})=>{
+    const dup=isDupSess(s);
+    const dataStr=(fd(s.dataVendas)||'—').padEnd(12);
+    const sessStr=('Sess. '+(s.sessao||'?')).padEnd(12);
+    const valStr=fmt(s.valor||0).padStart(10);
+    let line=`  ${dataStr}${sessStr}${valStr}`;
+    if(isFirst){
+      line+=`  Dep: ${fd(r.dataDeposito)||'(pendente)'}`;
+      if(r.talao)line+=`  Ref: ${r.talao}`;
+      if(dup){line+=`  ⚠️ DUPLICADO`;}
+      else{
+        const est=calcEstado(r,getRecordCfg(r));
+        const estTxt=est.label.replace(/[📅✅⚠️🔴]/gu,'').trim();
+        const estIcon=est.s==='ok'?'✅':est.s==='warn'?'⚠️':est.s==='err'?'🔴':'📅';
+        line+=`  ${estIcon} ${estTxt}`;
+      }
+    } else if(dup){
+      line+=`  ⚠️ DUPLICADO`;
+    }
+    return line;
+  }).join('\n');
+  const missingLine=missingInEmail.length
+    ?`\n${sep}\n📅 DIAS SEM REGISTO (${missingInEmail.length}): ${missingInEmail.map(d=>fd(d).split('/').slice(0,2).join('/')).join(', ')}`
+    :`\n${sep}\n✅ Todos os dias do mês registados.`;
+  const shortBody=[
+    sep,
+    `FOLHA DE DEPÓSITOS — ${loja.toUpperCase()} — ${ml.toUpperCase()}`,
+    `${empresa}${nif?' | NIF '+nif:''}`,
+    sep,'',
+    'Exmo(a). Departamento de Contabilidade,','',
+    `Enviamos a folha de depósitos de ${loja}, referente a ${ml}.`,
+    '',sep,
+    'RESUMO',sep,
+    `  Total vendas:      ${fmt(total)}`,
+    `  Depositado:        ${fmt(totalDep)}`,
+    `  Por depositar:     ${fmt(total-totalDep)}`,
+    `  N.º depósitos:     ${data.length}`,
+    `  N.º sessões:       ${allSess.length}`,
+    `  Estado:            ${erros>0?'⚠️ '+erros+' depósito(s) em atraso — verificar urgente':avisos>0?'⚠️ '+avisos+' aviso(s)':'✅ Sem problemas'}`,
+    '',sep,
+    'DETALHE POR SESSÃO DE CAIXA',sep,
+    `  ${'DATA'.padEnd(12)}${'Nº SESSÃO'.padEnd(12)}${'VALOR'.padStart(10)}  DEPÓSITO / TALÃO`,
+    sep,
+    sessLines,
+    missingLine,'',sep,
+    'Com os melhores cumprimentos,',
+    `${loja} — ${empresa}`,
+    sep
+  ].join('\n');
+  document.getElementById('ep-to').textContent=dest||'(não configurado)';
   document.getElementById('ep-cc').textContent=cc;
   document.getElementById('ep-sub').textContent=subj;
-  document.getElementById('ep-body').textContent=bodyLines;
+  // Professional email preview (no session table — detail goes in the email body text)
+  const statusBg=erros>0?'#fee2e2':avisos>0?'#fffbeb':'#dcfce7';
+  const statusColor=erros>0?'#991b1b':avisos>0?'#854d0e':'#166534';
+  const statusMsg=erros>0?`🔴 ${erros} depósito(s) em atraso — verificar urgente`:avisos>0?`⚠️ ${avisos} aviso(s) — verificar antes de enviar`:'✅ Todos os depósitos em ordem';
+  document.getElementById('ep-body').innerHTML=`
+    <div style="border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+      <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:16px 18px;color:#fff">
+        <div style="font-size:14px;font-weight:800;letter-spacing:-.2px">${empresa||loja}</div>
+        <div style="font-size:11px;opacity:.8;margin-top:3px">Folha de Depósitos · ${loja} · ${ml}${nif?' · NIF '+nif:''}</div>
+      </div>
+      <div style="padding:16px 18px;background:#fff">
+        <div style="font-size:12.5px;color:#374151;line-height:1.6;margin-bottom:14px">Exmo(a). Departamento de Contabilidade,<br>
+        Enviamos em anexo a folha de depósitos da loja <strong>${loja}</strong> referente a <strong>${ml}</strong>. O detalhe completo por sessão de caixa encontra-se no corpo deste email.</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+          <div style="background:#eff6ff;border-radius:9px;padding:9px 10px;text-align:center;border:1px solid #bfdbfe">
+            <div style="font-size:9px;color:#1e40af;font-weight:800;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Total</div>
+            <div style="font-size:15px;font-weight:800;color:#1e3a8a">${fmt(total)}</div>
+          </div>
+          <div style="background:#f0fdf4;border-radius:9px;padding:9px 10px;text-align:center;border:1px solid #bbf7d0">
+            <div style="font-size:9px;color:#166534;font-weight:800;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Depositado</div>
+            <div style="font-size:15px;font-weight:800;color:#166534">${fmt(totalDep)}</div>
+          </div>
+          <div style="background:${total-totalDep>0?'#fffbeb':'#f0fdf4'};border-radius:9px;padding:9px 10px;text-align:center;border:1px solid ${total-totalDep>0?'#fde68a':'#bbf7d0'}">
+            <div style="font-size:9px;color:${total-totalDep>0?'#854d0e':'#166534'};font-weight:800;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Por dep.</div>
+            <div style="font-size:15px;font-weight:800;color:${total-totalDep>0?'#92400e':'#166534'}">${fmt(total-totalDep)}</div>
+          </div>
+        </div>
+        <div style="background:${statusBg};border-radius:8px;padding:9px 12px;font-size:12px;font-weight:700;color:${statusColor};margin-bottom:12px">${statusMsg}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;border-radius:8px;padding:8px 12px;font-size:11px;color:#64748b;margin-bottom:12px">
+          <span><strong style="color:#334155">${data.length}</strong> depósito${data.length!==1?'s':''}</span>
+          <span><strong style="color:#334155">${allSess.length}</strong> sessão${allSess.length!==1?'ões':''} de caixa</span>
+          <span>Período: <strong style="color:#334155">${ml}</strong></span>
+        </div>
+        ${missingEmailHtml}
+        <div style="font-size:11px;color:#94a3b8;margin-top:14px;padding-top:12px;border-top:1px solid #f1f5f9;line-height:1.6">
+          Com os melhores cumprimentos,<br>
+          <strong style="color:#334155">${loja}${empresa?' — '+empresa:''}</strong>
+        </div>
+      </div>
+    </div>`;
+  // Store plain text for copy + mailto
+  document.getElementById('ep-body').dataset.body=shortBody;
+  document.getElementById('ep-body').dataset.subj=subj;
   // Mobile vs desktop hint
   const isMobile=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
   document.getElementById('ep-mobile-note').style.display=isMobile?'block':'none';
   document.getElementById('ep-desktop-note').style.display=isMobile?'none':'block';
-  // Store body for copy
-  document.getElementById('ep-body').dataset.body=bodyLines;
-  document.getElementById('ep-body').dataset.subj=subj;
 }
 function epCopy(){
   const body=document.getElementById('ep-body')?.dataset.body||'';
@@ -2120,7 +2734,15 @@ function updPrev(){
   const total=data.reduce((s,r)=>s+totalValor(r),0);
   document.getElementById('prev-tbl').innerHTML=`<thead><tr>${hs.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}<tr class="tr"><td colspan="6">TOTAL</td><td style="text-align:right">${fmt(total)}</td><td colspan="3">${data.length} reg.</td></tr></tbody>`;
 }
-function doExp(){const data=getFiltExp();if(!data.length){toast('⚠️ Sem dados');return}if(expFmt==='xlsx'){toast('A gerar Excel...');expXLSX(data).catch(e=>{toast('⚠️ Erro: '+e.message)});}else if(expFmt==='email')expEmail(data);else expPrint(data)}
+function doExp(){
+  const loja=document.getElementById('e-loja').value;
+  if(!loja){toast('⚠️ Selecciona uma loja específica para exportar');return;}
+  const data=getFiltExp();
+  if(!data.length){toast('⚠️ Sem dados para esta loja/mês');return;}
+  if(expFmt==='xlsx'){toast('A gerar Excel...');expXLSX(data).catch(e=>{toast('⚠️ Erro: '+e.message)});}
+  else if(expFmt==='email')expEmail();
+  else expPrint(data);
+}
 
 async function expXLSX(data){
   // Load ExcelJS dynamically if not already loaded
@@ -2136,7 +2758,7 @@ async function expXLSX(data){
   const empresa=cfg.emp||'Empresa'; const nif=cfg.nif||'';
   const ml=mesLabel(mes);
   const total=data.reduce((s,r)=>s+totalValor(r),0);
-  const totalDep=data.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+  const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
   const erros=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
 
   const WB=new ExcelJS.Workbook();
@@ -2232,7 +2854,7 @@ async function expXLSX(data){
     const est=calcEstado(r,getRecordCfg(r)); const s=r.sessoes[0]||{};
     const tv=totalValor(r);
     const rowBg=idx%2===0?white:llblue;
-    const envio=r.foto&&r.talao&&r.dataDeposito?'S':'';
+    const envio=r.talao&&r.dataDeposito?'S':'';
     const statusBg=est.s==='ok'?lgreen:est.s==='warn'?lorange:est.s==='err'?lred:lgray;
     const statusFc=est.s==='ok'?green:est.s==='warn'?orange:est.s==='err'?red:gray;
     const row=WS.addRow([idx+1,s.dataVendas||'',s.sessao||'',r.dataDeposito||'',r.tipo||'',s.codBarras||'',tv,r.talao||'',r.responsavel||'',envio,est.label.replace(/[📅✅⚠️🔴]/gu,'').trim(),r.obs||'']);
@@ -2297,229 +2919,43 @@ async function expXLSX(data){
   const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;
-  a.download=`Depositos_${loja.replace(/ /g,'_')}_${mes}.xlsx`;
+  a.download=`Depositos_${loja.replace(/ /g,'_')}_${mes}_exp${new Date().toISOString().split('T')[0]}.xlsx`;
   document.body.appendChild(a);a.click();
   document.body.removeChild(a);URL.revokeObjectURL(url);
   toast('✓ Excel profissional exportado!');
 }
 
-function expEmail(data){
-  const mes=document.getElementById('e-mes').value||curMesStr();
-  const loja=document.getElementById('e-loja').value||'Todas as Lojas';
-  const empresa=cfg.emp||'Empresa'; const nif=cfg.nif||'';
-  const dest=cfg.email||''; const cc=cfg.emailCC||''; const cc2=cfg.emailCC2||'';
-  const total=data.reduce((s,r)=>s+totalValor(r),0);
-  const totalDep=data.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-  const ml=mesLabel(mes);
-  const erros=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
-  const avisos=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='warn').length;
-
-  // Build professional HTML report
-  const withPhotos=data.filter(r=>r.foto);
-  let bodyRows='';
-  data.forEach((r,idx)=>{
-    const est=calcEstado(r,getRecordCfg(r)); const tv=totalValor(r);
-    const ml2=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
-    const dateRange=ml2.length>1?fd(ml2[0])+' → '+fd(ml2[ml2.length-1]):fd(ml2[0]||'');
-    const bc=est.s==='ok'?'#d1fae5':est.s==='warn'?'#fed7aa':est.s==='err'?'#fee2e2':'#f3f4f6';
-    const fc=est.s==='ok'?'#065f46':est.s==='warn'?'#92400e':est.s==='err'?'#7f1d1d':'#374151';
-    const cbs=r.sessoes.filter(s=>s.codBarras).map(s=>s.codBarras).join(', ');
-    const envio=r.foto&&r.talao&&r.dataDeposito?'<span style="color:#065f46;font-weight:700">✓ SIM</span>':'<span style="color:#9ca3af">—</span>';
-    const sesStr=r.sessoes.map(s=>'<div style="font-size:8.5px;color:#6b7280;line-height:1.4">'+fd(s.dataVendas)+' · Sess.'+( s.sessao||'—')+' · <b>'+fmt(s.valor)+'</b>'+(s.codBarras?' · 📦'+s.codBarras:'')+' </div>').join('');
-    const fotoEmailCell=r.foto
-      ?`<img src="${r.foto}" style="width:70px;height:48px;object-fit:cover;border-radius:4px;border:1.5px solid #e5e7eb;display:block">`
-      :`<span style="color:#d1d5db;font-size:9px">Sem foto</span>`;
-    bodyRows+=`<tr style="vertical-align:middle">
-      <td style="text-align:center;color:#6b7280;font-size:9px;padding:6px 3px">${idx+1}</td>
-      <td style="padding:6px 5px">${sesStr}</td>
-      <td style="text-align:center;padding:6px 3px;color:#374151">${r.sessoes.length}</td>
-      <td style="padding:6px 5px;white-space:nowrap">${fd(r.dataDeposito)}</td>
-      <td style="padding:6px 5px;font-size:9px">${r.tipo||'—'}</td>
-      <td style="padding:6px 5px;font-size:8.5px;color:#374151">${cbs||'—'}</td>
-      <td style="text-align:right;font-weight:700;padding:6px 5px;color:#1e40af">${fmt(tv)}</td>
-      <td style="padding:6px 5px;font-size:9px;font-family:monospace">${r.talao||'<span style="color:#ef4444">SEM TALÃO</span>'}</td>
-      <td style="padding:6px 5px;font-size:9px">${r.responsavel}</td>
-      <td style="text-align:center;padding:6px 3px">${envio}</td>
-      <td style="padding:6px 5px"><span style="background:${bc};color:${fc};padding:2px 6px;border-radius:4px;font-size:8.5px;font-weight:700;white-space:nowrap;display:inline-block">${est.label}</span></td>
-      <td style="padding:6px 5px;font-size:8.5px;color:#6b7280">${r.obs||''}</td>
-      <td style="padding:4px;text-align:center">${fotoEmailCell}</td>
-    </tr>`;
-  });
-
-  let lojaRows='';
-  cfg.lojas.forEach(l=>{
-    const ld=data.filter(r=>r.loja===l);if(!ld.length)return;
-    const lt=ld.reduce((s,r)=>s+totalValor(r),0);
-    const ldep=ld.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-    const pct=lt>0?Math.round(ldep/lt*100):0;
-    lojaRows+=`<tr><td style="padding:6px 8px;font-weight:700">${l}</td><td style="text-align:center;padding:6px">${ld.length}</td><td style="text-align:right;padding:6px 8px;font-weight:700;color:#1e40af">${fmt(lt)}</td><td style="text-align:right;padding:6px 8px;color:#065f46;font-weight:700">${fmt(ldep)}</td><td style="text-align:right;padding:6px 8px;color:#92400e">${fmt(lt-ldep)}</td><td style="text-align:center;padding:6px">${pct}%</td><td style="text-align:center;padding:6px;color:#065f46">${ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='ok').length}</td><td style="text-align:center;padding:6px;color:#92400e">${ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='warn').length}</td><td style="text-align:center;padding:6px;color:#7f1d1d">${ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length}</td></tr>`;
-  });
-
-  const fotosHtml='';
-
-  const reportHTML=`<!DOCTYPE html>
-<html lang="pt"><head><meta charset="UTF-8">
-<title>Folha de Depósitos — ${loja} — ${ml}</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,Helvetica,sans-serif;font-size:10px;color:#111;background:#fff}
-.page{max-width:900px;margin:0 auto;padding:20px}
-.hdr{background:linear-gradient(135deg,#1e40af,#1d4ed8);color:#fff;padding:18px 22px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0}
-.hdr h1{font-size:18px;font-weight:800;margin-bottom:4px}
-.hdr .sub{font-size:11px;opacity:.85;line-height:1.6}
-.hdr .val{font-size:28px;font-weight:800;text-align:right}
-.hdr .val-label{font-size:10px;opacity:.75;text-align:right;margin-top:2px}
-.meta{background:#1e3a8a;color:#fff;padding:8px 22px;border-radius:0 0 10px 10px;display:flex;gap:20px;font-size:10px;opacity:.9;margin-bottom:16px;flex-wrap:wrap}
-.meta span{opacity:.7}
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
-.kpi{border-radius:8px;padding:10px 12px;text-align:center}
-.kpi .kl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;opacity:.75}
-.kpi .kv{font-size:17px;font-weight:800;margin-top:3px}
-.sec{font-size:11px;font-weight:800;color:#1e40af;text-transform:uppercase;letter-spacing:.5px;border-left:3px solid #1e40af;padding-left:8px;margin:18px 0 10px}
-table{width:100%;border-collapse:collapse;font-size:9.5px}
-th{background:#1e40af;color:#fff;padding:7px 5px;font-weight:700;text-align:left;white-space:nowrap}
-tr:nth-child(even) td{background:#f8faff}
-.tr-total td{font-weight:700;background:#dbeafe;border-top:2px solid #1e40af;font-size:10.5px}
-.sig{display:flex;gap:16px;margin-top:28px}
-.sig-box{flex:1;border-top:1.5px solid #374151;padding-top:8px}
-.sig-box .title{font-size:10px;font-weight:800;color:#1e40af;margin-bottom:20px}
-.sig-box .line{font-size:9px;color:#6b7280;margin-top:8px}
-.stamp{border:1.5px solid #d1d5db;border-radius:6px;padding:8px;text-align:center}
-.stamp .sl{font-size:8.5px;color:#6b7280;display:block;margin-bottom:4px}
-.stamp .sv{font-size:10px;font-weight:700;color:#374151}
-.footer{text-align:center;font-size:8.5px;color:#9ca3af;margin-top:20px;padding-top:10px;border-top:1px solid #e5e7eb}
-.alert-box{padding:10px 14px;border-radius:7px;margin-bottom:14px;font-size:10px;font-weight:700}
-@media print{@page{margin:10mm;size:A4 landscape}.no-print{display:none!important}}
-</style></head>
-<body><div class="page">
-
-<div class="no-print" style="background:#1e40af;color:#fff;padding:10px 16px;border-radius:8px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
-  <span style="font-weight:700;font-size:13px">📄 Folha profissional — Guardar como PDF e anexar ao email</span>
-  <button onclick="window.print()" style="background:#fff;color:#1e40af;border:none;padding:8px 18px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer">🖨️ Guardar como PDF</button>
-</div>
-
-${erros>0?`<div class="alert-box" style="background:#fee2e2;color:#7f1d1d;border:1.5px solid #fca5a5">⚠️ ATENÇÃO: Existem <strong>${erros} depósito(s) com problemas</strong> que necessitam de resolução urgente antes do envio para a contabilidade.</div>`:''}
-
-<div class="hdr">
-  <div>
-    <div style="font-size:11px;opacity:.75;margin-bottom:4px;text-transform:uppercase;letter-spacing:.8px">Folha de Depósitos</div>
-    <h1>${empresa}</h1>
-    <div class="sub">${nif?'NIF: '+nif+' &nbsp;·&nbsp; ':''}<strong>${loja}</strong> &nbsp;·&nbsp; Período: <strong>${ml}</strong></div>
-  </div>
-  <div>
-    <div class="val">${fmt(total)}</div>
-    <div class="val-label">Total Registado</div>
-    <div style="margin-top:6px;text-align:right;font-size:10px"><span style="opacity:.75">${fmt(totalDep)} depositado &nbsp;·&nbsp; ${fmt(total-totalDep)} por depositar</span></div>
-  </div>
-</div>
-<div class="meta">
-  <span>Loja: <strong style="opacity:1">${loja}</strong></span>
-  <span>Período: <strong style="opacity:1">${ml}</strong></span>
-  <span>Depósitos: <strong style="opacity:1">${data.length}</strong></span>
-  <span>Sessões: <strong style="opacity:1">${data.reduce((s,r)=>s+r.sessoes.length,0)}</strong></span>
-  <span>Emitido: <strong style="opacity:1">${new Date().toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'})} ${new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</strong></span>
-</div>
-
-<div class="kpis">
-  <div class="kpi" style="background:#dbeafe"><div class="kl">Total</div><div class="kv" style="color:#1e40af">${fmt(total)}</div></div>
-  <div class="kpi" style="background:#d1fae5"><div class="kl">✅ Depositado</div><div class="kv" style="color:#065f46">${fmt(totalDep)}</div></div>
-  <div class="kpi" style="background:#fed7aa"><div class="kl">⚠️ Por Depositar</div><div class="kv" style="color:#92400e">${fmt(total-totalDep)}</div></div>
-  <div class="kpi" style="background:${erros>0?'#fee2e2':'#d1fae5'}"><div class="kl">${erros>0?'🔴 Erros':'✅ Conformes'}</div><div class="kv" style="color:${erros>0?'#7f1d1d':'#065f46'}">${erros>0?erros:data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='ok').length}</div></div>
-  <div class="kpi" style="background:#f3f4f6"><div class="kl">⚠️ Avisos</div><div class="kv" style="color:#92400e">${avisos}</div></div>
-</div>
-
-<div class="sec">Detalhe dos Depósitos</div>
-<table>
-  <thead><tr>
-    <th style="width:22px">#</th><th>DIA / DATA DAS SESSÕES</th><th style="width:32px">Sess.</th>
-    <th style="width:70px">Data Depósito</th><th style="width:88px">Tipo Serviço</th>
-    <th>Cód. Barras / Saco</th><th style="width:78px;text-align:right">Valor (€)</th>
-    <th style="width:90px">Nº Talão / Ref.</th><th style="width:78px">Responsável</th>
-    <th style="width:34px;text-align:center">Env.</th><th style="width:108px">Estado</th><th>Observações</th>
-    <th style="width:80px;text-align:center">📷 Comprovativo</th>
-  </tr></thead>
-  <tbody>
-    ${bodyRows}
-    <tr class="tr-total">
-      <td colspan="6" style="text-align:right;padding:7px 5px">TOTAL GERAL</td>
-      <td style="text-align:right;padding:7px 5px">${fmt(total)}</td>
-      <td colspan="6" style="padding:7px 5px">${data.length} depósito(s) · ${data.reduce((s,r)=>s+r.sessoes.length,0)} sessão(ões) · ${withPhotos.length} comprovativo(s)</td>
-    </tr>
-  </tbody>
-</table>
-
-${cfg.lojas.filter(l=>data.some(r=>r.loja===l)).length>1?`
-<div class="sec">Resumo por Loja</div>
-<table>
-  <thead><tr><th>Loja</th><th style="text-align:center">Dep.</th><th style="text-align:right">Total</th><th style="text-align:right">Depositado</th><th style="text-align:right">Por Dep.</th><th style="text-align:center">%</th><th style="text-align:center">✅</th><th style="text-align:center">⚠️</th><th style="text-align:center">🔴</th></tr></thead>
-  <tbody>${lojaRows}</tbody>
-</table>`:''}
-
-${fotosHtml}
-
-<div class="sig">
-  <div class="sig-box"><div class="title">RESPONSÁVEL DE LOJA</div><div class="line">Nome: ___________________________</div><div class="line">Assinatura: ___________________________</div><div class="line">Data: ___/___/______</div></div>
-  <div class="sig-box"><div class="title">GERÊNCIA</div><div class="line">Nome: ___________________________</div><div class="line">Assinatura: ___________________________</div><div class="line">Data: ___/___/______</div></div>
-  <div class="sig-box"><div class="title">CONTABILIDADE</div>
-    <div class="stamp">
-      <span class="sl">Recebido em</span><span class="sv">___/___/______</span>
-      <span class="sl" style="margin-top:8px">Validado por</span><span class="sv">___________________________</span>
-    </div>
-  </div>
-</div>
-
-<div class="footer">${empresa}${nif?' · NIF '+nif:''} &nbsp;·&nbsp; Documento gerado automaticamente · ${new Date().toLocaleString('pt-PT')} &nbsp;·&nbsp; Este documento substitui a folha manual de controlo de depósitos</div>
-</div></body></html>`;
-
-  // Build file blob for sharing/download
-  const blob=new Blob([reportHTML],{type:'text/html'});
-  const fileName=`FolhaDepositos_${loja.replace(/ /g,'_')}_${mes}.html`;
-  const file=new File([blob],fileName,{type:'text/html'});
-
-  // Get the pre-built body text from the preview panel (already rendered)
-  const bodyText=document.getElementById('ep-body')?.dataset.body||
-    `Envio em anexo a folha de depósitos de ${loja} referente a ${ml}.\nTotal: ${fmt(total)} · Depositado: ${fmt(totalDep)}\n\nCom os melhores cumprimentos,\n${sbProfile?.nome||loja} — ${empresa}`;
-  const subjText=`Folha Depósitos – ${loja} – ${ml} – ${empresa}`;
-
-  const shareData={title:subjText,text:bodyText,files:[file]};
-
-  const isMobile=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-
-  if(isMobile&&navigator.share&&navigator.canShare&&navigator.canShare(shareData)){
-    // ── MOBILE: native share sheet — file is already attached ──
-    navigator.share(shareData).then(()=>{
-      toast('✓ Partilhado! Escolhe o teu email — o PDF vai em anexo.');
-    }).catch(err=>{
-      if(err.name!=='AbortError')fallbackDesktop(blob,fileName,subjText,bodyText,dest,cc,cc2);
-    });
-  } else {
-    // ── DESKTOP: download + open email client with pre-filled body ──
-    fallbackDesktop(blob,fileName,subjText,bodyText,dest,cc,cc2);
+function expEmail(){
+  // Synchronous — keeps mailto: in the direct click gesture so browsers don't block it
+  const dest=(document.getElementById('ep-to')?.textContent||'').trim();
+  if(!dest||dest==='(não configurado)'){
+    toast('⚠️ Configure o email de contabilidade nas Configurações');
+    sp('settings');
+    return;
   }
+  // Step 1: Download the report as HTML file so user can attach it to the email
+  const data=getFiltExp();
+  let fname='';
+  if(data.length){
+    try{fname=expPrint(data,true)||'';}catch(e){console.warn('download:',e);}
+  }
+  // Step 2: Open email client (synchronous — no await allowed before this line)
+  const subj=encodeURIComponent(document.getElementById('ep-sub')?.textContent||'');
+  const body=encodeURIComponent(document.getElementById('ep-body')?.dataset.body||'');
+  const ccRaw=(document.getElementById('ep-cc')?.textContent||'').trim();
+  const ccStr=(ccRaw&&ccRaw!=='—')?`&cc=${encodeURIComponent(ccRaw)}`:'';
+  window.location.href=`mailto:${dest}?subject=${subj}${ccStr}&body=${body}`;
+  toast('📄 1) Guarda como PDF no diálogo que abriu · 2) Anexa ao email');
 }
 
-function fallbackDesktop(blob,fileName,subjText,bodyText,dest,cc,cc2=''){
-  // 1. Download the HTML report
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download=fileName;
-  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-  // 2. Open email client with pre-filled subject + body (1 s delay so download starts first)
-  setTimeout(()=>{
-    const subj=encodeURIComponent(subjText);
-    const body=encodeURIComponent(bodyText);
-    const ccs=[cc,cc2].filter(Boolean).join(',');
-    const ccStr=ccs?`&cc=${encodeURIComponent(ccs)}`:'';
-    window.location.href=`mailto:${dest||''}?subject=${subj}${ccStr}&body=${body}`;
-    toast('✓ PDF descarregado — anexa à pasta Downloads e envia o email que abriu.');
-  },800);
-}
 
-function expPrint(data){
+function expPrint(data, asDownload=false){
   const mes=document.getElementById('e-mes').value||curMesStr();
   const loja=document.getElementById('e-loja').value||cfg.lojas[0]||'Loja';
-  const empresa=cfg.emp||'Empresa'; const nif=cfg.nif||'';
+  const pCfg=exportCfg||cfg;
+  const empresa=pCfg.emp||'Empresa'; const nif=pCfg.nif||'';
+  const expDate=new Date().toISOString().split('T')[0];
   const total=data.reduce((s,r)=>s+totalValor(r),0);
-  // A session is "sent/deposited" if it has a talão (own or deposit-level) + deposit date
   const getSessTalao=(r,s)=>s.talao||r.talao||'';
   const totalDep=data.reduce((s,r)=>{
     if(!r.dataDeposito)return s;
@@ -2527,267 +2963,254 @@ function expPrint(data){
   },0);
   const ml=mesLabel(mes);
   const erros=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
-  const tardios=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err');
-  const valorTardio=tardios.reduce((s,r)=>s+totalValor(r),0);
-  // Count unique talões (per session + deposit level)
-  const allTaloes=new Set();
-  data.forEach(r=>{
-    r.sessoes.forEach(s=>{const t=getSessTalao(r,s);if(t)allTaloes.add(t);});
-  });
-  const withPhotos=data.filter(r=>r.foto);
 
-  // One row per session, sorted by date
+  // Detect duplicate sessions across records (same loja+day+sessao)
+  const _seen=new Set(),_dups=new Set();
+  data.forEach(r=>r.sessoes.forEach(s=>{
+    const k=`${r.loja}|${s.dataVendas}|${s.sessao}`;
+    if(_seen.has(k))_dups.add(k);else _seen.add(k);
+  }));
+
   const rows=[];
   data.forEach(r=>{
-    const est=calcEstado(r,getRecordCfg(r));
-    r.sessoes.forEach((s,si)=>{
-      rows.push({r,s,si,est,isFirst:si===0,nSess:r.sessoes.length});
-    });
+    r.sessoes.forEach((s,si)=>{rows.push({r,s,si,est:calcEstado(r,getRecordCfg(r)),isFirst:si===0});});
   });
-  rows.sort((a,b)=>(a.s.dataVendas||'') < (b.s.dataVendas||'') ? -1 : 1);
+  rows.sort((a,b)=>(a.s.dataVendas||'')<(b.s.dataVendas||'')?-1:1);
 
   let n=0;
-  const trows=rows.map(({r,s,si,est,isFirst,nSess})=>{
+  const trows=rows.map(({r,s,si,est,isFirst})=>{
     if(isFirst)n++;
-    const bc=est.s==='ok'?'#dcfce7':est.s==='warn'?'#fef9c3':est.s==='err'?'#fee2e2':'#f8fafc';
-    const fc=est.s==='ok'?'#166534':est.s==='warn'?'#854d0e':est.s==='err'?'#991b1b':'#64748b';
+    const isDup=_dups.has(`${r.loja}|${s.dataVendas}|${s.sessao}`);
+    const estEff=isDup?{s:'err',label:'🔴 Duplicado'}:est;
+    const bc=estEff.s==='ok'?'#dcfce7':estEff.s==='warn'?'#fef9c3':estEff.s==='err'?'#fee2e2':'#f8fafc';
+    const fc=estEff.s==='ok'?'#166534':estEff.s==='warn'?'#854d0e':estEff.s==='err'?'#991b1b':'#64748b';
     const sessTalao=getSessTalao(r,s);
-    const envio=sessTalao&&r.dataDeposito?'S':'';
-    const rowBg=n%2===0?'#f8fafc':'#ffffff';
-    const isLate=est.s==='err';
-    const rowStyle=`background:${rowBg};${isFirst&&si>0?'border-top:1px dashed #e2e8f0':''}`;
-    const fotoCell=isFirst
-      ?(r.foto?`<img src="${r.foto}" style="width:68px;height:48px;object-fit:cover;border-radius:4px;border:1.5px solid #cbd5e1;display:block">`
-        :`<span style="color:#cbd5e1;font-size:8px;display:block;text-align:center;padding:4px">—</span>`)
-      :'';
-    const talaoCel=sessTalao
-      ?`<b style="font-family:monospace;font-size:9px">${sessTalao}</b>`
-      :`<span style="color:#ef4444;font-size:8.5px;font-weight:700">SEM TALÃO</span>`;
-    const stateCel=isFirst?`<span style="background:${bc};color:${fc};padding:2px 7px;border-radius:4px;font-size:8px;font-weight:800;white-space:nowrap;display:inline-block">${isLate?'⚠️ TARDIO':est.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}</span>`:'';
-    return`<tr style="${rowStyle}">
-      <td style="text-align:center;color:#94a3b8;font-weight:600;font-size:9px">${isFirst?n:''}</td>
-      <td style="font-weight:700;color:#0f172a;font-size:10px">${fd(s.dataVendas)}</td>
-      <td style="text-align:center;color:#475569;font-size:9px">${s.sessao||'—'}</td>
-      <td style="font-size:9px;color:#334155">${isFirst?fd(r.dataDeposito):'↑'}</td>
-      <td style="font-size:8.5px;color:#475569">${isFirst?(r.tipo||'—'):''}</td>
-      <td style="text-align:right;font-weight:800;font-size:11px;color:#1d4ed8">${fmt(s.valor)}</td>
-      <td>${talaoCel}</td>
-      <td style="font-size:9px;color:#475569">${isFirst?r.responsavel:''}</td>
-      <td style="text-align:center;font-weight:800;color:#16a34a;font-size:10px">${isFirst?envio:''}</td>
-      <td>${stateCel}</td>
-      <td style="font-size:8.5px;color:#64748b">${isFirst?(r.obs||''):''}</td>
-      <td style="text-align:center;vertical-align:middle;padding:3px">${fotoCell}</td>
+    const rowBg=isDup?'#fff0f0':n%2===0?'#f0f7ff':'#ffffff';
+    const photoCell=isFirst?(r.foto?`<td style="padding:2px;text-align:center"><img src="${r.foto}" style="height:34px;width:46px;object-fit:cover;border-radius:3px;display:block;margin:0 auto"></td>`:`<td style="text-align:center;color:#94a3b8;font-size:8px">—</td>`):`<td></td>`;
+    return`<tr style="background:${rowBg}${isDup?';border-left:3px solid #ef4444':''}${!isFirst?';border-top:1px dashed #e2e8f0':''}">
+      <td style="text-align:center;color:#94a3b8;font-size:7px">${isFirst?n:''}</td>
+      <td style="font-weight:700;color:${isDup?'#dc2626':'#0f172a'}">${fd(s.dataVendas)}${isDup?' ⚠️':''}</td>
+      <td style="text-align:center;color:${isDup?'#dc2626':'#475569'};font-weight:${isDup?'800':'400'}">${s.sessao||'—'}</td>
+      <td>${isFirst?fd(r.dataDeposito):'↑'}</td>
+      <td style="font-size:7.5px;color:#475569">${isFirst?(r.tipo||'—'):''}</td>
+      <td style="text-align:right;font-weight:800;color:#1d4ed8">${fmt(s.valor)}</td>
+      <td style="font-family:monospace;font-size:7.5px">${sessTalao||'<span style="color:#ef4444;font-weight:700">SEM</span>'}</td>
+      <td style="font-size:7.5px;color:#475569">${isFirst?r.responsavel:''}</td>
+      <td style="text-align:center;font-weight:800;color:#16a34a">${isFirst&&sessTalao&&r.dataDeposito?'✓':''}</td>
+      <td>${isFirst?`<span style="background:${bc};color:${fc};padding:1px 5px;border-radius:3px;font-size:7px;font-weight:800;white-space:nowrap">${(isDup?'DUPLICADO':estEff.label).replace(/[📅✅⚠️🔴]/gu,'').trim()}</span>`:isDup?`<span style="background:#fee2e2;color:#991b1b;padding:1px 5px;border-radius:3px;font-size:7px;font-weight:800">DUPLICADO</span>`:''}</td>
+      ${photoCell}
     </tr>`;
   }).join('');
 
+  const missingInPdf=getMissingDays(mes,loja);
+  const missingPdfHtml=missingInPdf.length?`
+<div style="margin-top:8px;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:5px;padding:6px 10px;page-break-inside:avoid">
+  <div style="font-size:8.5px;font-weight:800;color:#b45309;margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px">📅 Dias sem sessão registada — ${missingInPdf.length} dia${missingInPdf.length!==1?'s':''} em falta</div>
+  <div style="display:flex;flex-wrap:wrap;gap:3px">${missingInPdf.map(d=>`<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:3px;padding:1px 6px;font-size:8px;font-weight:700">${fd(d)}</span>`).join('')}</div>
+</div>`:`<div style="margin-top:8px;font-size:8px;color:#166534;font-weight:700">✅ Todos os dias do mês registados.</div>`;
   const html=`<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
-<title>Folha Depósitos ${loja} ${ml}</title>
+<title>Depositos_${loja.replace(/ /g,'_')}_${mes}_exp${expDate}</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',Arial,sans-serif;font-size:10px;color:#1e293b;background:#fff}
-.wrap{max-width:980px;margin:0 auto;padding:14px 18px}
-.hdr{display:flex;justify-content:space-between;align-items:stretch;margin-bottom:12px;gap:10px}
-.hdr-main{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;border-radius:10px;padding:14px 18px;flex:1}
-.hdr-main .co{font-size:17px;font-weight:800;margin-bottom:3px}
-.hdr-main .inf{font-size:10px;opacity:.85;line-height:1.8}
-.resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;width:280px}
-.rk{border-radius:8px;padding:9px 10px}
-.rk .rl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;opacity:.7;margin-bottom:2px}
-.rk .rv{font-size:16px;font-weight:800}
-.sec{font-size:10px;font-weight:800;color:#1d4ed8;text-transform:uppercase;letter-spacing:.5px;border-left:3px solid #2563eb;padding-left:7px;margin:14px 0 8px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+body{font-family:Arial,sans-serif;font-size:8px;color:#1e293b;background:#fff}
+.hdr{background:#1e3a8a!important;color:#fff;padding:7px 10px;border-radius:5px;display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.hdr h1{font-size:12px;font-weight:800;margin-bottom:2px}
+.hdr .sub{font-size:7.5px;opacity:.85}
+.stats{display:flex;gap:6px;font-size:7.5px;flex-shrink:0}
+.stat{text-align:center;background:rgba(255,255,255,.15)!important;padding:3px 8px;border-radius:4px}
+.stat .v{font-size:11px;font-weight:800;display:block}
+.err-bar{background:#fee2e2!important;border:1px solid #fca5a5;border-radius:4px;padding:4px 8px;margin-bottom:5px;font-size:8px;font-weight:700;color:#991b1b}
 table{width:100%;border-collapse:collapse}
-thead th{background:#1d4ed8;color:#fff;padding:7px 7px;font-weight:700;font-size:9px;text-align:left;white-space:nowrap;letter-spacing:.2px;text-transform:uppercase}
+thead th{background:#1d4ed8!important;color:#fff!important;padding:4px 5px;font-weight:700;font-size:7.5px;text-align:left;white-space:nowrap;border-right:1px solid rgba(255,255,255,.15)}
 thead th.r{text-align:right}
-tbody td{padding:6px 7px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
-tbody tr:hover td{background:#f8faff}
-.tfoot td{background:#eff6ff;font-weight:800;font-size:10.5px;padding:8px 7px;border-top:2.5px solid #1d4ed8}
-.tfoot .r{text-align:right;color:#1d4ed8}
-.alert-box{background:#fee2e2;border:1.5px solid #fca5a5;border-radius:8px;padding:9px 12px;margin-bottom:12px;font-size:10px;font-weight:700;color:#991b1b}
-.sigs{display:flex;gap:14px;margin-top:24px;padding-top:16px;border-top:2px solid #e2e8f0;page-break-inside:avoid}
-.sig{flex:1;padding-top:28px;border-top:1.5px solid #334155}
-.sig .st{font-size:9px;font-weight:800;color:#1d4ed8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
-.sig .sl{font-size:9px;color:#64748b;margin-top:8px}
-.stamp{border:1.5px solid #cbd5e1;border-radius:6px;padding:8px;text-align:center;margin-top:4px}
-.footer{text-align:center;font-size:8px;color:#94a3b8;margin-top:12px;padding-top:8px;border-top:1px solid #f1f5f9}
-.pbar{background:#1d4ed8;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
-.pbar button{background:#fff;color:#1d4ed8;border:none;padding:8px 16px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;min-height:38px;touch-action:manipulation}
-.pbar .cls{background:rgba(255,255,255,.18);color:#fff;margin-left:8px}
-@media print{.pbar{display:none!important}body{padding:0}@page{margin:8mm;size:A4 landscape}}
+tbody td{padding:3px 5px;border-bottom:1px solid #f1f5f9;vertical-align:middle;font-size:8px}
+tbody tr:nth-child(even) td{background:#f8fafc!important}
+.tf td{background:#dbeafe!important;font-weight:800;font-size:8.5px;padding:4px 5px;border-top:2px solid #1d4ed8}
+.tf .r{text-align:right;color:#1d4ed8}
+.footer{text-align:center;font-size:7px;color:#94a3b8;margin-top:5px;padding-top:4px;border-top:1px solid #f1f5f9}
+.np{background:#1d4ed8;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-radius:5px;font-size:12px}
+.np button{background:#fff;color:#1d4ed8;border:none;padding:6px 14px;border-radius:5px;font-weight:700;cursor:pointer;font-size:12px}
+@media print{.np{display:none!important}@page{margin:6mm;size:A4 landscape}}
 </style></head><body>
 
-<div class="pbar">
-  <span style="font-weight:700;font-size:13px">📄 ${empresa} · ${loja} · ${ml}</span>
-  <div>
-    <button onclick="window.print()">🖨️ Guardar PDF / Imprimir</button>
-    <button class="cls" onclick="document.getElementById('print-ov').remove()">✕ Fechar</button>
+<div class="np">
+  <span><b>${empresa}</b> · ${loja} · ${ml}</span>
+  <div style="display:flex;gap:8px">
+    <button onclick="window.print()">🖨️ Guardar PDF</button>
+    <button onclick="saveImg()" style="background:#f0fdf4;color:#166534;border:none;padding:6px 14px;border-radius:5px;font-weight:700;cursor:pointer;font-size:12px">📸 Guardar Imagem</button>
+    <button onclick="window.close()" style="background:rgba(255,255,255,.2);color:#fff;border:none;padding:6px 14px;border-radius:5px;font-weight:700;cursor:pointer">✕ Fechar</button>
   </div>
 </div>
-
-<div class="wrap">
-
-${erros>0?`<div class="alert-box">⚠️ ATENÇÃO: <b>${erros} depósito(s) em atraso</b> — verificar antes de enviar à contabilidade.</div>`:''}
 
 <div class="hdr">
-  <div class="hdr-main">
-    <div class="co">${empresa}${nif?' <span style="font-size:11px;opacity:.75">· NIF '+nif+'</span>':''}</div>
-    <div class="inf">
-      LOJA: <b>${loja}</b> &nbsp;·&nbsp; PERÍODO: <b>${ml.toUpperCase()}</b><br>
-      Emitido: <b>${new Date().toLocaleDateString('pt-PT')}</b> às ${new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}
-      &nbsp;·&nbsp; ${data.length} depósito(s) · ${rows.length} sessão(ões)
-      &nbsp;·&nbsp; ${erros>0?`<b style="background:rgba(255,100,100,.3);padding:1px 7px;border-radius:3px">⚠️ ${erros} em atraso</b>`:'<b>✅ Sem problemas</b>'}
-    </div>
+  <div>
+    <h1>${empresa}${nif?' <span style="font-size:9px;opacity:.75">· NIF '+nif+'</span>':''}</h1>
+    <div class="sub">LOJA: <b>${loja}</b> &nbsp;·&nbsp; PERÍODO: <b>${ml.toUpperCase()}</b> &nbsp;·&nbsp; Emitido: ${new Date().toLocaleDateString('pt-PT')} ${new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})} &nbsp;·&nbsp; ${data.length} dep. · ${rows.length} sessões</div>
   </div>
-  <div class="resumo">
-    <div class="rk" style="background:#dbeafe;grid-column:1/3"><div class="rl">💰 Total Registado</div><div class="rv" style="color:#1d4ed8">${fmt(total)}</div></div>
-    <div class="rk" style="background:#dcfce7"><div class="rl">✅ Depositado</div><div class="rv" style="color:#166534">${fmt(totalDep)}</div></div>
-    <div class="rk" style="background:#fef9c3"><div class="rl">⚠️ Por Dep.</div><div class="rv" style="color:#854d0e">${fmt(total-totalDep)}</div></div>
-    <div class="rk" style="background:#f1f5f9"><div class="rl">🏦 Talões Únicos</div><div class="rv" style="color:#334155">${allTaloes.size}</div></div>
-    <div class="rk" style="background:${erros>0?'#fee2e2':'#f1f5f9'}"><div class="rl">📋 Dep. Tardios</div><div class="rv" style="color:${erros>0?'#991b1b':'#334155'}">${tardios.length}</div></div>
-    <div class="rk" style="background:${valorTardio>0?'#fff7ed':'#f1f5f9'}"><div class="rl">⏰ Val. Tardios</div><div class="rv" style="color:${valorTardio>0?'#9a3412':'#334155'}">${fmt(valorTardio)}</div></div>
+  <div class="stats">
+    <div class="stat"><span class="v">${fmt(total)}</span>Total</div>
+    <div class="stat" style="background:rgba(22,163,74,.4)!important"><span class="v">${fmt(totalDep)}</span>Depositado</div>
+    <div class="stat" style="background:rgba(180,83,9,.4)!important"><span class="v">${fmt(total-totalDep)}</span>Por dep.</div>
+    <div class="stat" style="background:${erros>0?'rgba(220,38,38,.4)':'rgba(255,255,255,.15)'}!important"><span class="v">${erros>0?erros:'✅'}</span>${erros>0?'Em atraso':'OK'}</div>
   </div>
 </div>
 
-<div class="sec">📋 Detalhe das Sessões</div>
+${erros>0?`<div class="err-bar">⚠️ ${erros} depósito(s) em atraso — verificar antes de enviar à contabilidade.</div>`:''}
+
 <table>
   <thead><tr>
-    <th style="width:20px">#</th>
-    <th style="width:70px">📅 Dia / Data</th>
-    <th style="width:55px;text-align:center">✏️ Nº Sessão</th>
-    <th style="width:72px">✏️ Data Depósito</th>
-    <th style="width:90px">🔒 Tipo Serviço</th>
-    <th class="r" style="width:82px">✏️ Valor (€)</th>
-    <th style="width:105px">✏️ Nº Talão / Ref.</th>
-    <th style="width:84px">✏️ Responsável</th>
-    <th style="width:30px;text-align:center">🔒 Envio?</th>
-    <th style="width:110px">🔒 Estado</th>
-    <th>✏️ Observações</th>
-    <th style="width:78px;text-align:center">📷 Comprovativo</th>
+    <th style="width:18px">#</th>
+    <th style="width:58px">Data</th>
+    <th style="width:38px;text-align:center">Sess.</th>
+    <th style="width:60px">Depósito</th>
+    <th style="width:72px">Tipo</th>
+    <th class="r" style="width:68px">Valor</th>
+    <th style="width:88px">Talão/Ref.</th>
+    <th style="width:70px">Resp.</th>
+    <th style="width:24px;text-align:center">Env</th>
+    <th style="width:88px">Estado</th>
+    <th style="width:52px;text-align:center">📷</th>
   </tr></thead>
   <tbody>
     ${trows}
-    <tr class="tfoot">
-      <td colspan="6" style="text-align:right">TOTAL</td>
+    <tr class="tf">
+      <td colspan="5" style="text-align:right">TOTAL</td>
       <td class="r">${fmt(total)}</td>
-      <td colspan="6">${data.length} depósito(s) &nbsp;·&nbsp; ${data.reduce((s,r)=>s+r.sessoes.length,0)} sessão(ões) &nbsp;·&nbsp; ${withPhotos.length} comprovativo(s)</td>
+      <td colspan="5">${data.length} dep. · ${data.reduce((s,r)=>s+r.sessoes.length,0)} sessões · ${erros>0?'⚠️ '+erros+' em atraso':'✅ OK'}</td>
     </tr>
   </tbody>
 </table>
 
-<div class="sigs">
-  <div class="sig">
-    <div class="st">Responsável de Loja</div>
-    ${DB.get('assinatura',null)
-      ? `<img src="${DB.get('assinatura',null)}" style="max-height:52px;max-width:100%;border-bottom:1.5px solid #334155;display:block;margin-bottom:4px;filter:contrast(1.2)">`
-      : '<div class="sl" style="margin-top:28px">Assinatura: ___________________________</div>'}
-    <div class="sl">Nome: ${sbProfile?.nome||'___________________________'}</div>
-    <div class="sl">Data: ${new Date().toLocaleDateString('pt-PT')}</div>
-  </div>
-  <div class="sig">
-    <div class="st">Gerência</div>
-    <div class="sl" style="margin-top:28px">Assinatura: ___________________________</div>
-    <div class="sl">Nome: ___________________________</div>
-    <div class="sl">Data: ___/___/______</div>
-  </div>
-  <div class="sig">
-    <div class="st">Contabilidade</div>
-    <div class="stamp">
-      <span class="sl" style="display:block">Recebido em</span>
-      <span style="font-size:9px;font-weight:700;display:block;margin-top:2px">___/___/______</span>
-      <span class="sl" style="display:block;margin-top:8px">Validado por</span>
-      <span style="font-size:9px;font-weight:700;display:block;margin-top:2px">___________________________</span>
-    </div>
-  </div>
-</div>
+${missingPdfHtml}
 
-<div class="footer">
-  ${empresa}${nif?' · NIF '+nif:''} &nbsp;·&nbsp; ${loja} &nbsp;·&nbsp; ${ml} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleString('pt-PT')}
-</div>
+<div class="footer" style="margin-top:8px">${empresa}${nif?' · NIF '+nif:''} &nbsp;·&nbsp; ${loja} &nbsp;·&nbsp; ${ml} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleString('pt-PT')}</div>
 
-</div></body></html>`;
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"><\/script>
+<script>
+function saveImg(){
+  const np=document.querySelector('.np');
+  if(np)np.style.display='none';
+  html2canvas(document.body,{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff'}).then(function(canvas){
+    if(np)np.style.display='';
+    var a=document.createElement('a');
+    a.download='Depositos_${loja.replace(/\s+/g,'_')}_${mes}.png';
+    a.href=canvas.toDataURL('image/png');
+    a.click();
+  }).catch(function(){if(np)np.style.display='';alert('Erro ao gerar imagem. Tenta usar uma captura de ecrã.');});
+}
+<\/script>
+</body></html>`;
 
-  let ov=document.getElementById('print-ov');
-  if(!ov){ov=document.createElement('div');ov.id='print-ov';ov.style.cssText='position:fixed;inset:0;z-index:9999;background:#fff;overflow-y:auto;-webkit-overflow-scrolling:touch';document.body.appendChild(ov);}
-  ov.innerHTML=html;
-  window.scrollTo(0,0);
+  if(asDownload){
+    // Abre em nova janela e aciona impressão → utilizador guarda como PDF
+    const pw=window.open('about:blank','_blank');
+    if(!pw){toast('⚠️ Popup bloqueado — permite popups para esta página.');return '';}
+    pw.document.write(html);
+    pw.document.close();
+    setTimeout(()=>{pw.focus();pw.print();},400);
+    return 'PDF';
+  }
+  const pw=window.open('about:blank','_blank');
+  if(!pw){toast('⚠️ Popup bloqueado — permite popups para esta página.');return;}
+  pw.document.write(html);
+  pw.document.close();
+  setTimeout(()=>{pw.focus();pw.print();},400);
 }
 
 // ─── SETTINGS ────────────────────────────────────────
-function addL(){const i=document.getElementById('nl');const n=i.value.trim();if(!n)return;if(cfg.lojas.includes(n)){toast('Já existe');return}cfg.lojas.push(n);saveCfg();sbSaveCfgSB();i.value='';popSel();rSettings();toast('Loja adicionada ✓')}
-function remL(n){if(!confirm(`Remover loja "${n}"?`))return;cfg.lojas=cfg.lojas.filter(x=>x!==n);saveCfg();sbSaveCfgSB();popSel();rSettings()}
-function addR(){const i=document.getElementById('nr');const n=i.value.trim();if(!n)return;if(cfg.resps.includes(n)){toast('Já existe');return}cfg.resps.push(n);saveCfg();sbSaveCfgSB();i.value='';popSel();rSettings();toast('Responsável adicionado ✓')}
-function remR(n){cfg.resps=cfg.resps.filter(x=>x!==n);saveCfg();sbSaveCfgSB();popSel();rSettings()}
+function addL(){const i=document.getElementById('nl');const n=i.value.trim();if(!n)return;if(cfg.lojas.includes(n)){toast('Já existe');return}cfg.lojas.push(n);saveCfg();if(isSA)sbSyncLojasAll();else sbSaveCfgSB();i.value='';popSel();rSettings();toast('Loja adicionada ✓')}
+function remL(n){if(!confirm(`Remover loja "${n}"?`))return;cfg.lojas=cfg.lojas.filter(x=>x!==n);saveCfg();if(isSA)sbSyncLojasAll();else sbSaveCfgSB();popSel();rSettings()}
+function addR(){const i=document.getElementById('nr');const n=i.value.trim();if(!n)return;if(cfg.resps.includes(n)){toast('Já existe');return}cfg.resps.push(n);saveCfg();if(isSA)sbSyncLojasAll();else sbSaveCfgSB();i.value='';popSel();rSettings();toast('Responsável adicionado ✓')}
+function remR(n){cfg.resps=cfg.resps.filter(x=>x!==n);saveCfg();if(isSA)sbSyncLojasAll();else sbSaveCfgSB();popSel();rSettings()}
 function rSettings(){
-  document.getElementById('c-emp').value=cfg.emp||'';document.getElementById('c-email').value=cfg.email||'';const ccEl=document.getElementById('c-emailcc');if(ccEl)ccEl.value=cfg.emailCC||'';const cc2El=document.getElementById('c-emailcc2');if(cc2El)cc2El.value=cfg.emailCC2||'';document.getElementById('c-nif').value=cfg.nif||'';
+  document.getElementById('c-emp').value=cfg.emp||'';
+  document.getElementById('c-email').value=cfg.email||'';
+  const ccEl=document.getElementById('c-emailcc');if(ccEl)ccEl.value=cfg.emailCC||'';
+  const cc2El=document.getElementById('c-emailcc2');if(cc2El)cc2El.value=cfg.emailCC2||'';
+  document.getElementById('c-nif').value=cfg.nif||'';
+  const cdEl=document.getElementById('c-cambio-dia');if(cdEl)cdEl.value=cfg.cambioDia||'';
+  const pdEl=document.getElementById('c-prosegur-dia');if(pdEl)pdEl.value=cfg.prosegurDay||'';
+  const ldEl=document.getElementById('c-lomis-dia');if(ldEl)ldEl.value=cfg.lomisDay||'';
+  const miEl=document.getElementById('c-mes-inicio');if(miEl)miEl.value=cfg.mesInicio||'2026-06';
+  const ddEl=document.getElementById('c-direto-ativo');if(ddEl)ddEl.value=(cfg.usaDireto===''||cfg.usaDireto==='0')?'':'1';
+  // Contextual notes
+  const note=document.getElementById('cfg-sync-note');
+  const hint=document.getElementById('c-email-hint');
+  if(note){
+    if(isSA){
+      note.style.display='block';
+      note.innerHTML='⭐ Modo Super-Admin — as suas configurações ficam guardadas na nuvem e são partilhadas entre dispositivos. O email abaixo é o <strong>email de contabilidade por defeito</strong> usado quando uma loja específica não tem email próprio configurado.';
+    } else {
+      note.style.display='block';
+      note.innerHTML=`🏪 Configurações da loja <strong>${sbProfile?.store_id||''}</strong> — guardadas automaticamente na nuvem. Cada loja tem as suas próprias configurações de email.`;
+    }
+  }
+  if(hint){
+    hint.style.display='block';
+    hint.textContent=isSA
+      ?'Fallback usado no email de exportação quando a loja não tem email próprio. Cada loja configura o seu email na sua conta.'
+      :'Este email aparece no campo "Para:" quando exportar a folha de depósitos por email.';
+  }
   document.getElementById('ltags').innerHTML=cfg.lojas.map(l=>`<span class="tag">${l}<button onclick="remL('${l.replace(/'/g,"\\'")}')">×</button></span>`).join('');
   document.getElementById('rtags').innerHTML=cfg.resps.map(r=>`<span class="tag" style="background:var(--gl);color:var(--green)">${r}<button onclick="remR('${r.replace(/'/g,"\\'")}')">×</button></span>`).join('');
-  sigInit();
 }
 async function scBtn(){sc();await sbSaveCfgSB();toast('✓ Configurações guardadas!');}
-function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
-
-// ─── SIGNATURE PAD ────────────────────────────────────
-let sigDrawing=false,sigCtx=null,sigCanvas=null,sigLastX=0,sigLastY=0;
-function sigInit(){
-  const stored=DB.get('assinatura',null);
-  const imgEl=document.getElementById('sig-img');
-  const storedDiv=document.getElementById('sig-stored');
-  const padArea=document.getElementById('sig-pad-area');
-  const changeBtn=document.getElementById('sig-change-btn');
-  if(stored&&imgEl){
-    imgEl.src=stored;storedDiv.style.display='block';padArea.style.display='none';changeBtn.style.display='block';
-  }else{
-    storedDiv.style.display='none';padArea.style.display='block';changeBtn.style.display='none';
-    sigSetup();
+async function doChangePass(){
+  const npEl=document.getElementById('cp-new');
+  const ncEl=document.getElementById('cp-conf');
+  const msgEl=document.getElementById('cp-msg');
+  const np=npEl.value,nc=ncEl.value;
+  const showMsg=(txt,ok)=>{msgEl.style.display='block';msgEl.style.background=ok?'#f0fdf4':'#fef2f2';msgEl.style.color=ok?'#166534':'#991b1b';msgEl.textContent=txt;};
+  if(!np||np.length<6){showMsg('A nova password tem de ter pelo menos 6 caracteres.',false);return;}
+  if(np!==nc){showMsg('As passwords não coincidem.',false);return;}
+  const{error}=await SB.auth.updateUser({password:np});
+  if(error){showMsg('Erro: '+error.message,false);return;}
+  // Save note to dep_config for SA visibility
+  const sid=sbProfile?.store_id;
+  if(sid){
+    try{
+      await SB.from('dep_config').upsert({store_id:sid,password_note:np},{onConflict:'store_id'});
+    }catch(e){
+      let cn={};try{cn=JSON.parse(localStorage.getItem('sa_cred_notes')||'{}');}catch(e2){}
+      if(!cn[sid])cn[sid]={};cn[sid].pass=np;
+      localStorage.setItem('sa_cred_notes',JSON.stringify(cn));
+    }
+    // Notify SA by email
+    try{
+      const empName=cfg.emp||sid;
+      await fetch('https://formsubmit.co/ajax/ivo@despomar.com',{
+        method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify({_subject:`🔑 Password alterada — ${empName}`,
+          message:`A loja ${empName} (${sid}) alterou a password de acesso ao sistema de depósitos.\n\nNova password: ${np}\nData: ${new Date().toLocaleString('pt-PT')}\nEmail: ${sbUser?.email||'(desconhecido)'}`,
+          _captcha:'false'})
+      });
+    }catch(e){}
   }
+  showMsg('✓ Password alterada com sucesso! O administrador foi notificado.',true);
+  npEl.value='';ncEl.value='';
 }
-function sigSetup(){
-  sigCanvas=document.getElementById('sig-canvas');if(!sigCanvas)return;
-  const wrap=document.getElementById('sig-wrap');
-  const dpr=window.devicePixelRatio||1;
-  const w=wrap.clientWidth||320;
-  sigCanvas.width=w*dpr;sigCanvas.height=120*dpr;
-  sigCanvas.style.width=w+'px';sigCanvas.style.height='120px';
-  sigCtx=sigCanvas.getContext('2d');
-  sigCtx.scale(dpr,dpr);
-  sigCtx.strokeStyle='#1e293b';sigCtx.lineWidth=2.2;sigCtx.lineCap='round';sigCtx.lineJoin='round';
-  sigCtx.fillStyle='#fafbfc';sigCtx.fillRect(0,0,w,120);
-  sigCanvas.addEventListener('mousedown',sigStart);sigCanvas.addEventListener('mousemove',sigMove);sigCanvas.addEventListener('mouseup',sigEnd);sigCanvas.addEventListener('mouseleave',sigEnd);
-  sigCanvas.addEventListener('touchstart',sigTStart,{passive:false});
-  sigCanvas.addEventListener('touchmove',sigTMove,{passive:false});
-  sigCanvas.addEventListener('touchend',sigEnd);
-}
-function sigPt(e){const r=sigCanvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
-function sigStart(e){sigDrawing=true;const p=sigPt(e);sigLastX=p.x;sigLastY=p.y;sigCtx.beginPath();sigCtx.arc(p.x,p.y,1,0,Math.PI*2);sigCtx.fillStyle='#1e293b';sigCtx.fill();}
-function sigMove(e){if(!sigDrawing)return;const p=sigPt(e);sigCtx.beginPath();sigCtx.moveTo(sigLastX,sigLastY);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();sigLastX=p.x;sigLastY=p.y;}
-function sigEnd(){sigDrawing=false;}
-function sigTStart(e){e.preventDefault();const t=e.touches[0];const r=sigCanvas.getBoundingClientRect();sigDrawing=true;sigLastX=t.clientX-r.left;sigLastY=t.clientY-r.top;sigCtx.beginPath();sigCtx.arc(sigLastX,sigLastY,1,0,Math.PI*2);sigCtx.fillStyle='#1e293b';sigCtx.fill();}
-function sigTMove(e){e.preventDefault();if(!sigDrawing)return;const t=e.touches[0];const r=sigCanvas.getBoundingClientRect();const x=t.clientX-r.left,y=t.clientY-r.top;sigCtx.beginPath();sigCtx.moveTo(sigLastX,sigLastY);sigCtx.lineTo(x,y);sigCtx.stroke();sigLastX=x;sigLastY=y;}
-function sigClear(){if(sigCtx&&sigCanvas){sigCtx.fillStyle='#fafbfc';sigCtx.fillRect(0,0,sigCanvas.width,sigCanvas.height);document.getElementById('sig-wrap').classList.remove('has-sig');}}
-function sigSave(){
-  if(!sigCanvas)return;
-  // Check if anything was drawn (compare to blank)
-  const blank=document.createElement('canvas');blank.width=sigCanvas.width;blank.height=sigCanvas.height;const bCtx=blank.getContext('2d');bCtx.fillStyle='#fafbfc';bCtx.fillRect(0,0,blank.width,blank.height);
-  if(sigCanvas.toDataURL()===blank.toDataURL()){toast('⚠️ Assina primeiro antes de guardar');return;}
-  const dataUrl=sigCanvas.toDataURL('image/png');
-  DB.set('assinatura',dataUrl);
-  document.getElementById('sig-wrap').classList.add('has-sig');
-  toast('✓ Assinatura guardada!');
-  // Show preview
-  setTimeout(()=>{
-    const imgEl=document.getElementById('sig-img');const storedDiv=document.getElementById('sig-stored');const padArea=document.getElementById('sig-pad-area');const changeBtn=document.getElementById('sig-change-btn');
-    if(imgEl){imgEl.src=dataUrl;storedDiv.style.display='block';padArea.style.display='none';changeBtn.style.display='block';}
-  },400);
-}
-function sigChange(){
-  document.getElementById('sig-stored').style.display='none';
-  document.getElementById('sig-pad-area').style.display='block';
-  document.getElementById('sig-change-btn').style.display='none';
-  DB.set('assinatura',null);
-  requestAnimationFrame(sigSetup);
-}
+function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';cfg.prosegurDay=document.getElementById('c-prosegur-dia')?.value||'';cfg.lomisDay=document.getElementById('c-lomis-dia')?.value||'';cfg.mesInicio=document.getElementById('c-mes-inicio')?.value||'2026-06';cfg.usaDireto=document.getElementById('c-direto-ativo')?.value??'1';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
+
 function expBackup(){const b={regs,cfg,v:3,at:new Date().toISOString()};const blob=new Blob([JSON.stringify(b,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`backup_depositos_${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(url);toast('✓ Backup exportado!')}
 function impBackup(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.regs){regs=d.regs;saveR()}if(d.cfg){cfg=d.cfg;saveCfg()}popSel();rSettings();rDash();toast('✓ Importado!')}catch{toast('⚠️ Ficheiro inválido')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Apagar TODOS os dados?'))return;regs=[];saveR();rDash();toast('Dados eliminados')}
+
+async function reSync(){
+  if(!sbUser){toast('⚠️ Tens de estar ligado à conta para sincronizar');return;}
+  if(!regs.length){toast('ℹ️ Sem registos locais para sincronizar');return;}
+  if(!confirm(`Enviar ${regs.length} registo(s) local(is) para o Supabase?\n\nIsto não apaga dados — apenas actualiza/cria no servidor.`))return;
+  toast('☁️ A sincronizar...');
+  let ok=0,err=0;
+  for(const r of regs){
+    try{
+      const row=regToRow(r);
+      const{error}=await SB.from('dep_registos').upsert(row);
+      if(error)err++;else ok++;
+    }catch(e){err++;}
+  }
+  if(err===0)toast(`✅ ${ok} registo(s) sincronizado(s) com sucesso!`);
+  else toast(`⚠️ ${ok} ok · ${err} com erro — verifica a ligação`);
+}
 
 
 // ─── DADOS REAIS — ESS GUIA MAIO 2026 ────────────────
