@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Diagnóstico Login · Despomar</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+body{font-family:-apple-system,system-ui,sans-serif;background:#0f172a;color:#e2e8f0;padding:20px;max-width:520px;margin:0 auto}
+h1{font-size:18px}
+input{width:100%;box-sizing:border-box;padding:12px;margin-bottom:10px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#fff;font-size:15px}
+button{width:100%;padding:14px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+button:disabled{opacity:.5}
+#log{margin-top:18px;font-family:Menlo,monospace;font-size:12px;line-height:1.7;white-space:pre-wrap;word-break:break-all;background:#1e293b;border-radius:8px;padding:14px;min-height:100px}
+.ok{color:#4ade80}.err{color:#f87171}.info{color:#93c5fd}
+</style>
+</head>
+<body>
+<h1>🔧 Diagnóstico de Login</h1>
+<input type="email" id="em" placeholder="email" value="">
+<input type="password" id="pw" placeholder="password">
+<button id="btn" onclick="run()">Testar Login</button>
+<div id="log">A iniciar…</div>
+<script>
+const logEl=document.getElementById('log');
+let t0=Date.now();
+function log(msg,cls){const s=((Date.now()-t0)/1000).toFixed(1);logEl.innerHTML+=`<span class="${cls||'info'}">[${s}s] ${msg}</span>\n`;}
+function clearLog(){logEl.innerHTML='';t0=Date.now();}
+
+window.onerror=(m,src,l,c)=>{log('ERRO JS: '+m+' (linha '+l+')','err');};
+window.onunhandledrejection=e=>{log('PROMISE REJEITADA: '+(e.reason?.message||e.reason),'err');};
+
+let SB=null;
+try{
+  if(typeof supabase==='undefined'){log('❌ Biblioteca Supabase NÃO carregou (CDN bloqueado?)','err');}
+  else{
+    SB=supabase.createClient(
+      'https://ubeqidccuvsjhjphybxz.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U'
+    );
+    log('✓ Biblioteca carregada e cliente criado','ok');
+  }
+}catch(e){log('❌ Erro a criar cliente: '+e.message,'err');}
+
+async function step(name,fn,ms){
+  log('… '+name);
+  const tout=new Promise((_,r)=>setTimeout(()=>r(new Error('TIMEOUT após '+(ms/1000)+'s')),ms));
+  try{
+    const r=await Promise.race([fn(),tout]);
+    return r;
+  }catch(e){log('❌ '+name+': '+e.message,'err');throw e;}
+}
+
+async function run(){
+  clearLog();
+  const btn=document.getElementById('btn');btn.disabled=true;
+  const em=document.getElementById('em').value.trim();
+  const pw=document.getElementById('pw').value;
+  if(!SB){log('Sem cliente Supabase — não dá para testar','err');btn.disabled=false;return;}
+  if(!em||!pw){log('Preenche email e password','err');btn.disabled=false;return;}
+  try{
+    // 1. Ligação ao servidor (REST)
+    const ping=await step('1. Ligação ao servidor Supabase',()=>fetch('https://ubeqidccuvsjhjphybxz.supabase.co/rest/v1/',{headers:{apikey:SB.supabaseKey||'x'}}),10000);
+    log('✓ Servidor respondeu: HTTP '+ping.status,'ok');
+
+    // 2. Sessão existente
+    const sess=await step('2. Verificar sessão existente (getSession)',()=>SB.auth.getSession(),10000);
+    log('✓ getSession OK — sessão '+(sess.data?.session?'ATIVA: '+sess.data.session.user.email:'inexistente'),'ok');
+
+    // 3. Login
+    const auth=await step('3. Login (signInWithPassword)',()=>SB.auth.signInWithPassword({email:em,password:pw}),15000);
+    if(auth.error){log('❌ Login recusado: '+auth.error.message,'err');btn.disabled=false;return;}
+    log('✓ LOGIN OK — user id: '+auth.data.user.id,'ok');
+
+    // 4. Perfil
+    const prof=await step('4. Ler perfil (dep_users)',()=>SB.from('dep_users').select('*').eq('id',auth.data.user.id).single(),10000);
+    if(prof.error){log('❌ dep_users: '+prof.error.message,'err');}
+    else log('✓ Perfil: '+JSON.stringify({nome:prof.data.nome,role:prof.data.role,store_id:prof.data.store_id}),'ok');
+
+    // 5. Config
+    const cfgr=await step('5. Ler configuração (dep_config)',()=>SB.from('dep_config').select('store_id').limit(3),10000);
+    if(cfgr.error)log('❌ dep_config: '+cfgr.error.message,'err');
+    else log('✓ dep_config OK — '+(cfgr.data?.length||0)+' linha(s) lidas','ok');
+
+    // 6. Registos
+    const regsr=await step('6. Ler registos (dep_registos)',()=>SB.from('dep_registos').select('id').limit(3),10000);
+    if(regsr.error)log('❌ dep_registos: '+regsr.error.message,'err');
+    else log('✓ dep_registos OK','ok');
+
+    log('');
+    log('🎉 TUDO FUNCIONOU — o problema está na página principal, não no Supabase.','ok');
+    await SB.auth.signOut();
+    log('(sessão de teste terminada)','info');
+  }catch(e){
+    log('');
+    log('⛔ O teste parou no passo acima — envia uma captura deste ecrã.','err');
+  }
+  btn.disabled=false;
+}
+log('Pronto. Preenche as credenciais e toca em "Testar Login".');
+</script>
+</body>
+</html>
