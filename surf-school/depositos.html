@@ -2098,12 +2098,11 @@ function rSASupervision(){
   const activeStores=storeList.filter(s=>s.total>0).length;
   const complianceScores=storeList.filter(s=>s.compliant!==null).map(s=>s.compliant);
   const avgCompliance=complianceScores.length?Math.round(complianceScores.reduce((a,b)=>a+b,0)/complianceScores.length):0;
-  const totalLate=storeList.reduce((s,x)=>s+x.lateVal,0);
-  const delayScores=storeList.filter(s=>s.avgDelay>0).map(s=>s.avgDelay);
-  const avgDelayGlobal=delayScores.length?Math.round(delayScores.reduce((a,b)=>a+b,0)/delayScores.length):0;
-  // New KPIs
-  const totalExposure=storeList.reduce((s,x)=>s+x.exposure,0);
   const cycleScores=storeList.filter(s=>s.cycle!==null).map(s=>s.cycle);
+  const totalOk=storeList.reduce((s,x)=>s+x.ok,0);
+  const totalTardios=storeList.reduce((s,x)=>s+x.tardios,0);
+  const totalGaps=storeList.reduce((s,x)=>s+x.gaps,0);
+  const totalSemComp=storeList.reduce((s,x)=>s+x.semFoto,0);
   const avgCycleGlobal=cycleScores.length?Math.round(cycleScores.reduce((a,b)=>a+b,0)/cycleScores.length):null;
   // Build 6-month history for each store
   const histMonths=[];
@@ -2433,7 +2432,7 @@ function rSASupervision(){
           <div style="font-size:9px;color:#bfdbfe">Lojas ativas</div>
         </div>
         <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
-          <div style="font-size:20px;font-weight:800;color:${compColor==='#16a34a'?'#86efac':compColor==='#dc2626'?'#fca5a5':'#fde68a'}">${avgCompliance}%</div>
+          <div style="font-size:20px;font-weight:800;color:${avgCompliance>=80?'#86efac':avgCompliance>=50?'#fde68a':'#fca5a5'}">${avgCompliance}%</div>
           <div style="font-size:9px;color:#bfdbfe">Compliance</div>
         </div>
         <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
@@ -2441,16 +2440,16 @@ function rSASupervision(){
           <div style="font-size:9px;color:#bfdbfe">Ciclo médio</div>
         </div>
         <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
-          <div style="font-size:20px;font-weight:800;color:${totalExposure>0?'#fca5a5':'#86efac'}">${fmt(totalExposure)}</div>
-          <div style="font-size:9px;color:#bfdbfe">Exposição total</div>
+          <div style="font-size:20px;font-weight:800;color:${totalOk>0?'#86efac':'#94a3b8'}">${totalOk}</div>
+          <div style="font-size:9px;color:#bfdbfe">✓ OK</div>
         </div>
         <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
-          <div style="font-size:20px;font-weight:800;color:${totalLate>0?'#fca5a5':'#86efac'}">${fmt(totalLate)}</div>
-          <div style="font-size:9px;color:#bfdbfe">Valor em atraso</div>
+          <div style="font-size:20px;font-weight:800;color:${totalTardios>0?'#fde68a':'#86efac'}">${totalTardios}</div>
+          <div style="font-size:9px;color:#bfdbfe">⏱ Tardios</div>
         </div>
-        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
-          <div style="font-size:20px;font-weight:800;color:${avgDelayGlobal>3?'#fca5a5':avgDelayGlobal>0?'#fde68a':'#86efac'}">${avgDelayGlobal>0?avgDelayGlobal+'d':'—'}</div>
-          <div style="font-size:9px;color:#bfdbfe">Atraso médio</div>
+        <div style="background:${totalGaps>0?'rgba(244,63,94,.25)':'rgba(255,255,255,.12)'};border-radius:8px;padding:7px 10px;text-align:center${totalGaps>0?';border:1px solid rgba(244,63,94,.5)':''}">
+          <div style="font-size:20px;font-weight:800;color:${totalGaps>0?'#fda4af':'#86efac'}">${totalGaps}</div>
+          <div style="font-size:9px;color:#bfdbfe">⛔ Saltos</div>
         </div>
       </div>
     </div>
