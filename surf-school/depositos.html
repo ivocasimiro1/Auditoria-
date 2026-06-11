@@ -1437,6 +1437,32 @@ function rStoresStatus(){
   </div>`;
 }
 
+function prevMonthStr(mes){
+  const[y,m]=mes.split('-').map(Number);
+  return m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`;
+}
+function storeComplianceMes(sid,mes){
+  const mr=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes));
+  if(!mr.length)return null;
+  const ok=mr.filter(r=>calcEstado(r).s==='ok').length;
+  const prog=mr.filter(r=>calcEstado(r).s==='prog').length;
+  return Math.round((ok+prog)*100/mr.length);
+}
+function avgCycleDays(storeRegs){
+  const confirmed=storeRegs.filter(r=>r.talao&&r.dataDeposito);
+  if(!confirmed.length)return null;
+  const days=confirmed.map(r=>{
+    const oldest=maisAntigaData(r);if(!oldest)return null;
+    const dep=new Date(r.dataDeposito);
+    return Math.max(0,Math.floor((dep-oldest)/86400000));
+  }).filter(d=>d!==null);
+  if(!days.length)return null;
+  return Math.round(days.reduce((a,b)=>a+b,0)/days.length);
+}
+function storeExposureVal(storeRegs){
+  return storeRegs.filter(r=>!r.talao||!r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+}
+
 function rSASupervision(){
   const panel=document.getElementById('sa-supervision');
   if(!panel||!isSA)return;
@@ -1446,6 +1472,7 @@ function rSASupervision(){
   const knownSids=new Set(allStoreConfigs.map(c=>c.store_id));
   regs.forEach(r=>{if(r.store_id&&r.store_id!=='super')knownSids.add(r.store_id);});
   const storeList=[];
+  const lastMes=prevMonthStr(mes);
   knownSids.forEach(sid=>{
     const cfg2=allStoreConfigs.find(c=>c.store_id===sid);
     const empName=cfg2?.emp||sid;
@@ -1457,7 +1484,7 @@ function rSASupervision(){
     const prog=storeRegs.filter(r=>calcEstado(r).s==='prog').length;
     const total=storeRegs.length;
     const compliant=total>0?Math.round((ok+prog)*100/total):null;
-    // avg delay days for err records
+    const lastCompliant=storeComplianceMes(sid,lastMes);
     const today=new Date();
     let delaySum=0,delayCount=0;
     storeRegs.filter(r=>calcEstado(r).s==='err').forEach(r=>{
@@ -1466,7 +1493,17 @@ function rSASupervision(){
     });
     const avgDelay=delayCount>0?Math.round(delaySum/delayCount):0;
     const lateVal=storeRegs.filter(r=>calcEstado(r).s==='err').reduce((s,r)=>s+totalValor(r),0);
-    storeList.push({sid,empName,email,total,ok,warn,err,prog,compliant,avgDelay,lateVal});
+    const cycle=avgCycleDays(storeRegs);
+    const exposure=storeExposureVal(storeRegs);
+    // max age: how many days the oldest unconfirmed record has been open
+    let maxAge=0;
+    storeRegs.filter(r=>!r.talao||!r.dataDeposito).forEach(r=>{
+      const ref=maisAntigaData(r);
+      if(ref){const d=Math.floor((today-ref)/86400000);if(d>maxAge)maxAge=d;}
+    });
+    // flag: any record with >3 sessions combined (possible cash accumulation)
+    const bulkFlag=storeRegs.some(r=>r.sessoes&&r.sessoes.length>3);
+    storeList.push({sid,empName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,bulkFlag});
   });
   // Sort: worst first (err desc, then warn desc, then compliant asc)
   storeList.sort((a,b)=>{
@@ -1482,6 +1519,16 @@ function rSASupervision(){
   const totalLate=storeList.reduce((s,x)=>s+x.lateVal,0);
   const delayScores=storeList.filter(s=>s.avgDelay>0).map(s=>s.avgDelay);
   const avgDelayGlobal=delayScores.length?Math.round(delayScores.reduce((a,b)=>a+b,0)/delayScores.length):0;
+  // New KPIs
+  const totalExposure=storeList.reduce((s,x)=>s+x.exposure,0);
+  const cycleScores=storeList.filter(s=>s.cycle!==null).map(s=>s.cycle);
+  const avgCycleGlobal=cycleScores.length?Math.round(cycleScores.reduce((a,b)=>a+b,0)/cycleScores.length):null;
+  // Build 6-month history for each store
+  const histMonths=[];
+  let hm=mes;
+  for(let i=0;i<6;i++){histMonths.unshift(hm);hm=prevMonthStr(hm);}
+  // Priority alerts: stores with critical situations (err>0 and maxAge > 4 days)
+  const criticalStores=storeList.filter(s=>s.err>0&&s.maxAge>4).sort((a,b)=>b.maxAge-a.maxAge);
   // Credentials: dep_config.password_note (if column exists) merged with localStorage fallback
   let credNotes={};try{credNotes=JSON.parse(localStorage.getItem('sa_cred_notes')||'{}');}catch(e){}
   window._saCredSave=async(sid,field,val)=>{
@@ -1512,50 +1559,56 @@ function rSASupervision(){
     const subject=encodeURIComponent(`⚠️ Depósitos ${mesLabel2} — Regularização necessária — ${s.empName}`);
     window.open(`mailto:${destEmail}?subject=${subject}&body=${encodeURIComponent(body)}`,'_blank');
   };
-  const kpiColor=(v,good,bad)=>{
-    if(v>=good)return'#16a34a';
-    if(v<=bad)return'#dc2626';
-    return'#d97706';
-  };
+  const kpiColor=(v,good,bad)=>{if(v>=good)return'#16a34a';if(v<=bad)return'#dc2626';return'#d97706';};
   const compColor=kpiColor(avgCompliance,80,50);
-  const tableRows=storeList.map(s=>{
+  // Month abbreviations for history table
+  const monthAbbr=m=>{const[y,mo]=m.split('-');const names=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];return names[parseInt(mo)-1]+(m!==mes?'':' ◀');};
+  const tableRows=storeList.map((s,idx)=>{
     const rowColor=s.err>0?'#fef2f2':s.warn>0?'#fffbeb':s.total===0?'#f8fafc':'#f0fdf4';
     const borderColor=s.err>0?'#fca5a5':s.warn>0?'#fcd34d':s.total===0?'#e2e8f0':'#86efac';
+    const rankBg=idx===0&&s.err>0?'#dc2626':idx<=1&&s.err>0?'#ef4444':'#94a3b8';
     const badge=s.total===0
-      ?`<span style="background:#e2e8f0;color:#64748b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600">Sem dados</span>`
-      :s.compliant>=80?`<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600">✓ ${s.compliant}%</span>`
-      :s.compliant>=50?`<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600">⚠ ${s.compliant}%</span>`
-      :`<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600">✗ ${s.compliant}%</span>`;
-    const statsCells=`<span style="color:#16a34a;font-size:11px" title="OK">✓${s.ok}</span>`
-      +(s.warn?` <span style="color:#d97706;font-size:11px" title="Aviso">⚠${s.warn}</span>`:'')
-      +(s.err?` <span style="color:#dc2626;font-size:11px" title="Erro">✗${s.err}</span>`:'')
-      +(s.prog?` <span style="color:#2563eb;font-size:11px" title="Em progresso">◷${s.prog}</span>`:'');
-    const delayStr=s.avgDelay>0?`<span style="color:#dc2626;font-size:11px">${s.avgDelay}d atraso</span>`:'<span style="color:#94a3b8;font-size:11px">—</span>';
-    const lateStr=s.lateVal>0?`<span style="color:#dc2626;font-size:11px">${fmt(s.lateVal)}</span>`:'<span style="color:#94a3b8;font-size:11px">—</span>';
+      ?`<span style="background:#e2e8f0;color:#64748b;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600">—</span>`
+      :s.compliant>=80?`<span style="background:#dcfce7;color:#166534;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600">✓ ${s.compliant}%</span>`
+      :s.compliant>=50?`<span style="background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600">⚠ ${s.compliant}%</span>`
+      :`<span style="background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600">✗ ${s.compliant}%</span>`;
+    // Trend vs last month
+    let trendStr='';
+    if(s.compliant!==null&&s.lastCompliant!==null){
+      const diff=s.compliant-s.lastCompliant;
+      trendStr=diff>5?`<span style="color:#16a34a;font-size:10px;font-weight:700" title="Melhorou vs mês anterior">↑ +${diff}%</span>`:diff<-5?`<span style="color:#dc2626;font-size:10px;font-weight:700" title="Piorou vs mês anterior">↓ ${diff}%</span>`:`<span style="color:#94a3b8;font-size:10px">→</span>`;
+    }
+    const statsCells=`<span style="color:#16a34a;font-size:11px">✓${s.ok}</span>`
+      +(s.warn?` <span style="color:#d97706;font-size:11px">⚠${s.warn}</span>`:'')
+      +(s.err?` <span style="color:#dc2626;font-size:11px">✗${s.err}</span>`:'')
+      +(s.prog?` <span style="color:#2563eb;font-size:11px">◷${s.prog}</span>`:'');
+    const cycleStr=s.cycle!==null?`<span style="color:${s.cycle<=2?'#16a34a':s.cycle<=4?'#d97706':'#dc2626'};font-size:11px;font-weight:600">${s.cycle}d</span>`:'<span style="color:#94a3b8;font-size:11px">—</span>';
+    const exposureStr=s.exposure>0?`<span style="color:#dc2626;font-size:11px;font-weight:600">${fmt(s.exposure)}</span><span style="color:#94a3b8;font-size:9px;display:block">${s.maxAge>0?s.maxAge+'d abertura':''}</span>`:'<span style="color:#16a34a;font-size:11px">✓ 0</span>';
+    const bulkWarn=s.bulkFlag?`<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700;margin-left:4px" title="Depósito com >3 sessões combinadas">bulk</span>`:'';
     const hasIssues=s.err>0||s.warn>0;
-    const alertBtn=hasIssues?`<button onclick="window._saAlertEmail('${s.sid}')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">📧 Alertar</button>`:'';
-    return`<div style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:${rowColor};border-left:3px solid ${borderColor};border-bottom:1px solid #f1f5f9;flex-wrap:wrap">
-      <div style="flex:1;min-width:110px">
-        <div style="font-size:12px;font-weight:700;color:#1e293b">${s.empName}</div>
-        <div style="font-size:10px;color:#94a3b8">${s.sid}</div>
+    const alertBtn=hasIssues?`<button onclick="window._saAlertEmail('${s.sid}')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">📧</button>`:'';
+    return`<div style="display:flex;align-items:center;gap:5px;padding:7px 10px;background:${rowColor};border-left:3px solid ${borderColor};border-bottom:1px solid #f1f5f9;flex-wrap:wrap">
+      <div style="background:${rankBg};color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">${idx+1}</div>
+      <div style="flex:1;min-width:100px">
+        <div style="font-size:12px;font-weight:700;color:#1e293b">${s.empName}${bulkWarn}</div>
+        <div style="display:flex;gap:4px;align-items:center;margin-top:1px">${badge}${trendStr?`<span style="margin-left:3px">${trendStr}</span>`:''}</div>
       </div>
-      <div style="min-width:72px">${badge}</div>
-      <div style="min-width:80px;display:flex;gap:4px;flex-wrap:wrap">${statsCells}</div>
-      <div style="min-width:60px">${delayStr}</div>
-      <div style="min-width:60px">${lateStr}</div>
-      <div style="display:flex;gap:4px;flex-wrap:wrap">
-        <button onclick="filterLista('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">Ver lista</button>
+      <div style="min-width:60px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">REGISTOS</div>${statsCells}</div>
+      <div style="min-width:50px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">CICLO</div>${cycleStr}</div>
+      <div style="min-width:65px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">EXPOSIÇÃO</div>${exposureStr}</div>
+      <div style="display:flex;gap:3px;flex-wrap:wrap">
+        <button onclick="filterLista('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">Lista</button>
         ${alertBtn}
       </div>
     </div>`;
   }).join('');
   const credRows=storeList.map(s=>{
     const cn=credNotes[s.sid]||{};
-    // password_note from DB takes priority; fall back to localStorage; default hint 12345688
+    // password_note from DB takes priority; fall back to localStorage; default hint 12345678
     const cfg2=allStoreConfigs.find(c=>c.store_id===s.sid);
     const dbPass=cfg2?.password_note||'';
     const knownPass=dbPass||cn.pass||'';
-    const passDisplay=knownPass||'12345688';
+    const passDisplay=knownPass||'12345678';
     const passIsDefault=!knownPass;
     const emailVal=(cn.email||s.email||'').replace(/"/g,'&quot;');
     return`<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;margin-bottom:8px">
@@ -1591,42 +1644,75 @@ function rSASupervision(){
       </div>
     </div>`;
   }).join('');
+  // 6-month history table
+  const histRows=storeList.filter(s=>s.total>0||histMonths.some(m=>storeComplianceMes(s.sid,m)!==null)).map(s=>{
+    const cells=histMonths.map(m=>{
+      const c=storeComplianceMes(s.sid,m);
+      if(c===null)return`<td style="padding:4px 6px;text-align:center;font-size:10px;color:#d1d5db;background:#f8fafc">—</td>`;
+      const bg=c>=80?'#dcfce7':c>=50?'#fef3c7':'#fee2e2';
+      const col=c>=80?'#166534':c>=50?'#92400e':'#991b1b';
+      const isCurr=m===mes;
+      return`<td style="padding:4px 6px;text-align:center;font-size:10px;font-weight:700;background:${bg};color:${col};${isCurr?'border:1.5px solid #3b82f6;':''}">${c}%</td>`;
+    }).join('');
+    return`<tr><td style="padding:4px 8px;font-size:11px;font-weight:600;color:#1e293b;white-space:nowrap;border-right:1px solid #e2e8f0">${s.empName}</td>${cells}</tr>`;
+  }).join('');
+  // Critical alerts panel
+  const critHtml=criticalStores.length?`<div style="background:#fef2f2;border-bottom:1px solid #fecaca;padding:10px 14px">
+    <div style="font-size:11px;font-weight:700;color:#991b1b;margin-bottom:6px">🚨 Situações Críticas — Ação Imediata</div>
+    ${criticalStores.map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+      <div><span style="font-size:12px;font-weight:700;color:#7f1d1d">${s.empName}</span><span style="font-size:11px;color:#991b1b;margin-left:6px">${fmt(s.lateVal)} · ${s.maxAge} dias em aberto</span></div>
+      <button onclick="window._saAlertEmail('${s.sid}')" style="background:#991b1b;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">📧 Alertar agora</button>
+    </div>`).join('')}
+  </div>`:'';
   panel.innerHTML=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
-    <div style="padding:12px 14px 10px;background:linear-gradient(135deg,#1e3a5f,#1e40af);border-bottom:1px solid #1d4ed8">
-      <div class="ct" style="margin-bottom:4px;color:#fff">Supervisão Global — ${mesLabel}</div>
-      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
-        <div style="text-align:center;background:rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;min-width:80px">
-          <div style="font-size:22px;font-weight:800;color:#fff">${activeStores}</div>
-          <div style="font-size:10px;color:#bfdbfe">Lojas ativas</div>
+    <div style="padding:12px 14px 12px;background:linear-gradient(135deg,#1e3a5f,#1e40af);border-bottom:1px solid #1d4ed8">
+      <div class="ct" style="margin-bottom:8px;color:#fff;font-size:13px">📊 Supervisão Global — ${mesLabel}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:#fff">${activeStores}<span style="font-size:12px;font-weight:400;opacity:.7">/${storeList.length}</span></div>
+          <div style="font-size:9px;color:#bfdbfe">Lojas ativas</div>
         </div>
-        <div style="text-align:center;background:rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;min-width:80px">
-          <div style="font-size:22px;font-weight:800;color:${compColor==='#16a34a'?'#86efac':compColor==='#dc2626'?'#fca5a5':'#fde68a'}">${avgCompliance}%</div>
-          <div style="font-size:10px;color:#bfdbfe">Compliance médio</div>
+        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:${compColor==='#16a34a'?'#86efac':compColor==='#dc2626'?'#fca5a5':'#fde68a'}">${avgCompliance}%</div>
+          <div style="font-size:9px;color:#bfdbfe">Compliance</div>
         </div>
-        <div style="text-align:center;background:rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;min-width:80px">
-          <div style="font-size:22px;font-weight:800;color:${totalLate>0?'#fca5a5':'#86efac'}">${fmt(totalLate)}</div>
-          <div style="font-size:10px;color:#bfdbfe">Valor em atraso</div>
+        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:${avgCycleGlobal!==null&&avgCycleGlobal<=2?'#86efac':avgCycleGlobal!==null&&avgCycleGlobal<=4?'#fde68a':'#fca5a5'}">${avgCycleGlobal!==null?avgCycleGlobal+'d':'—'}</div>
+          <div style="font-size:9px;color:#bfdbfe">Ciclo médio</div>
         </div>
-        <div style="text-align:center;background:rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;min-width:80px">
-          <div style="font-size:22px;font-weight:800;color:${avgDelayGlobal>3?'#fca5a5':avgDelayGlobal>0?'#fde68a':'#86efac'}">${avgDelayGlobal>0?avgDelayGlobal+'d':'—'}</div>
-          <div style="font-size:10px;color:#bfdbfe">Atraso médio</div>
+        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:${totalExposure>0?'#fca5a5':'#86efac'}">${fmt(totalExposure)}</div>
+          <div style="font-size:9px;color:#bfdbfe">Exposição total</div>
+        </div>
+        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:${totalLate>0?'#fca5a5':'#86efac'}">${fmt(totalLate)}</div>
+          <div style="font-size:9px;color:#bfdbfe">Valor em atraso</div>
+        </div>
+        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:${avgDelayGlobal>3?'#fca5a5':avgDelayGlobal>0?'#fde68a':'#86efac'}">${avgDelayGlobal>0?avgDelayGlobal+'d':'—'}</div>
+          <div style="font-size:9px;color:#bfdbfe">Atraso médio</div>
         </div>
       </div>
     </div>
+    ${critHtml}
     <div style="padding:0">
-      <div style="display:flex;gap:6px;padding:6px 12px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;font-size:10px;color:#64748b;font-weight:600">
-        <div style="flex:1;min-width:120px">LOJA</div>
-        <div style="min-width:80px">COMPLIANCE</div>
-        <div style="min-width:90px">REGISTOS</div>
-        <div style="min-width:70px">ATRASO MÉD.</div>
-        <div style="min-width:70px">VALOR ATRASO</div>
-        <div style="min-width:60px"></div>
-      </div>
       ${tableRows||'<div style="padding:16px;text-align:center;color:#94a3b8;font-size:12px">Nenhuma loja registada</div>'}
     </div>
     <details style="border-top:1px solid #e2e8f0">
       <summary style="padding:10px 14px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
-        <span style="font-size:14px">🔑</span> Credenciais e passwords das lojas
+        <span>📅</span> Histórico 6 meses (compliance %)
+        <span style="margin-left:auto;font-size:10px;color:#94a3b8">Verde ≥80% · Amarelo ≥50% · Vermelho &lt;50%</span>
+      </summary>
+      <div style="overflow-x:auto;padding:8px 14px 14px">
+        ${histRows?`<table style="border-collapse:collapse;width:100%;font-size:11px">
+          <thead><tr><th style="padding:4px 8px;text-align:left;font-size:9px;color:#64748b;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">LOJA</th>${histMonths.map(m=>`<th style="padding:4px 6px;text-align:center;font-size:9px;color:#64748b;border-bottom:1px solid #e2e8f0">${monthAbbr(m)}</th>`).join('')}</tr></thead>
+          <tbody>${histRows}</tbody>
+        </table>`:'<div style="color:#94a3b8;font-size:12px">Sem dados suficientes</div>'}
+      </div>
+    </details>
+    <details style="border-top:1px solid #e2e8f0">
+      <summary style="padding:10px 14px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+        <span>🔑</span> Credenciais e passwords das lojas
         <span style="margin-left:auto;font-size:10px;color:#94a3b8">Password ✓ sincroniza quando a loja altera</span>
       </summary>
       <div style="padding:10px 14px 14px">
@@ -2526,7 +2612,7 @@ async function doChangePass(){
     // Notify SA by email
     try{
       const empName=cfg.emp||sid;
-      await fetch('https://formsubmit.co/ajax/ivocasimiro@gmail.com',{
+      await fetch('https://formsubmit.co/ajax/ivo@despomar.com',{
         method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
         body:JSON.stringify({_subject:`🔑 Password alterada — ${empName}`,
           message:`A loja ${empName} (${sid}) alterou a password de acesso ao sistema de depósitos.\n\nNova password: ${np}\nData: ${new Date().toLocaleString('pt-PT')}\nEmail: ${sbUser?.email||'(desconhecido)'}`,
