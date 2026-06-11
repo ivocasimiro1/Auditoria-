@@ -697,6 +697,7 @@ const regToRow=r=>({id:r.id,store_id:resolveStoreId(r),loja:r.loja,tipo:r.tipo||
 function setLoad(on){document.getElementById('load-ov').style.display=on?'flex':'none'}
 async function sbLoad(){
   setLoad(true);
+  const _tout=ms=>new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout ao carregar dados')),ms));
   try{
     if(!isSA){
       const{data:c}=await SB.from('dep_config').select('*').eq('store_id',sbProfile.store_id).maybeSingle();
@@ -729,7 +730,7 @@ async function sbLoad(){
     }
     let q=SB.from('dep_registos').select('*').order('criado_em',{ascending:false});
     if(!isSA)q=q.eq('store_id',sbProfile.store_id);
-    const{data:rows,error}=await q;if(error)throw error;
+    const{data:rows,error}=await Promise.race([q,_tout(20000)]);if(error)throw error;
     regs=(rows||[]).map(rowToReg);
     DB.set('regs',regs);DB.set('cfg',cfg);
   }catch(e){toast('⚠️ Sem ligação — dados locais: '+e.message);}
@@ -763,9 +764,13 @@ async function doLogin(){
   if(!email||!pass){showAE('Preencha email e password');return;}
   const btn=document.getElementById('auth-btn');
   btn.textContent='A entrar...';btn.disabled=true;hideAE();
-  const{data,error}=await SB.auth.signInWithPassword({email,password:pass});
+  const tout=ms=>new Promise((_,r)=>setTimeout(()=>r(new Error('TIMEOUT')),ms));
+  let res;
+  try{res=await Promise.race([SB.auth.signInWithPassword({email,password:pass}),tout(15000)]);}
+  catch(e){showAE(e.message==='TIMEOUT'?'Sem resposta do servidor — verifica a ligação e tenta de novo.':e.message);btn.textContent='Entrar';btn.disabled=false;return;}
+  const{data,error}=res;
   if(error){showAE(error.message.includes('Invalid')?'Email ou password incorretos':error.message);btn.textContent='Entrar';btn.disabled=false;return;}
-  try{await afterLogin(data.user);}catch(e){console.error('afterLogin error:',e);showAE('Erro ao iniciar sessão. Tenta de novo.');btn.textContent='Entrar';btn.disabled=false;}
+  try{await afterLogin(data.user);}catch(e){console.error('afterLogin error:',e);showAE('Erro ao iniciar sessão: '+e.message);btn.textContent='Entrar';btn.disabled=false;}
 }
 async function afterLogin(user){
   sbUser=user;
