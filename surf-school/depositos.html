@@ -643,6 +643,10 @@ select{
         <option value="0">Domingo</option>
       </select>
     </div>
+    <div class="fg" style="margin-top:10px"><label>📅 Métricas desde</label>
+      <input type="month" id="c-mes-inicio" oninput="sc()">
+      <div style="font-size:11px;color:var(--g500);margin-top:4px">Meses anteriores a esta data não contam para conformidade nem mostram dias em falta.</div>
+    </div>
     <button class="btn bs" onclick="scBtn()">✓ Guardar Configurações</button>
   </div>
   <div class="card">
@@ -760,7 +764,7 @@ async function sbLoad(){
   try{
     if(!isSA){
       const{data:c}=await SB.from('dep_config').select('*').eq('store_id',sbProfile.store_id).maybeSingle();
-      if(c)cfg={emp:c.emp||'Despomar',email:c.email||'',emailCC:c.email_cc||'',emailCC2:c.email_cc2||'',nif:c.nif||'',cambioDia:c.cambio_dia||'',prosegurDay:c.prosegur_day||'',lomisDay:c.lomis_day||'',lojas:c.lojas||[],resps:c.resps||[]};
+      if(c)cfg={emp:c.emp||'Despomar',email:c.email||'',emailCC:c.email_cc||'',emailCC2:c.email_cc2||'',nif:c.nif||'',cambioDia:c.cambio_dia||'',prosegurDay:c.prosegur_day||'',lomisDay:c.lomis_day||'',mesInicio:c.mes_inicio||'2026-06',lojas:c.lojas||[],resps:c.resps||[]};
     }else{
       // SA: load personal config from 'super' row + merge lojas/resps from all stores
       const[{data:saRow},{data:cs}]=await Promise.all([
@@ -777,6 +781,7 @@ async function sbLoad(){
           cambioDia:saRow.cambio_dia||cfg.cambioDia||'',
           prosegurDay:saRow.prosegur_day||cfg.prosegurDay||'',
           lomisDay:saRow.lomis_day||cfg.lomisDay||'',
+          mesInicio:saRow.mes_inicio||cfg.mesInicio||'2026-06',
           lojas:cfg.lojas,resps:cfg.resps
         };
       }
@@ -807,7 +812,7 @@ async function sbDel(id){
 async function sbSaveCfgSB(){
   if(!sbProfile)return;
   const sid=isSA?'super':sbProfile.store_id;
-  const body={store_id:sid,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',lojas:cfg.lojas||[],resps:cfg.resps||[]};
+  const body={store_id:sid,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',mes_inicio:cfg.mesInicio||'',lojas:cfg.lojas||[],resps:cfg.resps||[]};
   if(sbUser){const{error}=await SB.from('dep_config').upsert(body);if(error)console.warn('sbSaveCfgSB:',error.message);return;}
   const{error}=await sfetch('UPSERT','dep_config','',body);if(error)console.warn('sbSaveCfgSB:',error.message);
 }
@@ -939,7 +944,7 @@ async function doReset(){
 // ─── STORAGE ─────────────────────────────────────────
 const DB={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
 let regs=DB.get('regs',[]);
-let cfg=DB.get('cfg',{emp:'Despomar',email:'contab@despomar.com',nif:'',cambioDia:'',prosegurDay:'',lomisDay:'',lojas:['ESS FARO','BB Lagos','BB Portimão'],resps:['João Silva','Maria Santos','Pedro Costa','Ana Lopes']});
+let cfg=DB.get('cfg',{emp:'Despomar',email:'contab@despomar.com',nif:'',cambioDia:'',prosegurDay:'',lomisDay:'',mesInicio:'2026-06',lojas:['ESS FARO','BB Lagos','BB Portimão'],resps:['João Silva','Maria Santos','Pedro Costa','Ana Lopes']});
 const saveR=()=>DB.set('regs',regs);
 const saveCfg=()=>DB.set('cfg',cfg);
 
@@ -958,16 +963,19 @@ function maisAntigaData(r){const ds=(r.sessoes||[]).filter(x=>x.dataVendas).map(
 
 function calcEstado(r,storeCfg){
   const today=new Date();today.setHours(0,0,0,0);
-  const nsess=(r.sessoes||[]).length;
   const tv=totalValor(r);
   if(!r.sessoes||!r.sessoes.length)return{s:'prog',label:'📅 Sem sessões'};
   if(r.sessoes.some(s=>!s.sessao||(parseFloat(s.valor)||0)<=0))
     return{s:'err',label:'🔴 Dados incompletos'};
-  const ma=maisAntigaData(r);
-  if(!ma)return{s:'prog',label:'📅 Sem data de vendas'};
-  if(ma>=today)return{s:'prog',label:'📅 Programado'};
+  // Usar data mais recente como base — depósitos cross-month avaliam a partir da última sessão
+  const mr=maisRecenteData(r);
+  if(!mr)return{s:'prog',label:'📅 Sem data de vendas'};
+  // Registos anteriores ao mês de início não afectam as métricas
+  const mesIni=storeCfg?.mesInicio||cfg.mesInicio||'';
+  if(mesIni&&mr.toISOString().slice(0,7)<mesIni)return{s:'ok',label:'✅ Anterior ao início'};
+  if(mr>=today)return{s:'prog',label:'📅 Programado'};
   if(tv===0)return{s:'ok',label:'✅ Sem vendas'};
-  const diasDesde=Math.floor((today-ma)/86400000);
+  const diasDesde=Math.floor((today-mr)/86400000);
   let prazo=r.tipo==='Depósito Direto'?2:7;
   let vencidoPorDiaRecolha=false;
   if(r.tipo!=='Depósito Direto'&&storeCfg){
@@ -976,9 +984,9 @@ function calcEstado(r,storeCfg){
     if(dStr!==undefined&&dStr!==''&&dStr!==null){
       const dow=parseInt(dStr);
       if(!isNaN(dow)){
-        const maDow=ma.getDay();
-        let dist=(dow-maDow+7)%7;if(dist===0)dist=7;
-        const dRecolha=new Date(ma);dRecolha.setDate(ma.getDate()+dist);dRecolha.setHours(0,0,0,0);
+        const mrDow=mr.getDay();
+        let dist=(dow-mrDow+7)%7;if(dist===0)dist=7;
+        const dRecolha=new Date(mr);dRecolha.setDate(mr.getDate()+dist);dRecolha.setHours(0,0,0,0);
         vencidoPorDiaRecolha=dRecolha<=today;
         prazo=dist;
       }
@@ -1001,9 +1009,9 @@ function calcEstado(r,storeCfg){
   if(!r.talao&&r.dataDeposito){
     return vencido?{s:'err',label:'🔴 Falta nº talão'}:{s:'warn',label:'⚠️ Falta nº talão'};
   }
-  // Completo: foto + talão + data — estado baseado no prazo
+  // Completo: foto + talão + data — prazo medido da última sessão
   const dd=new Date(r.dataDeposito);
-  const diasParaDep=Math.floor((dd-ma)/86400000);
+  const diasParaDep=Math.floor((dd-mr)/86400000);
   if(diasParaDep>prazo)return{s:'warn',label:'⚠️ OK, mas tardio'};
   return{s:'ok',label:'✅ OK'};
 }
@@ -1364,6 +1372,8 @@ async function guardar(){
 // ─── DASHBOARD ───────────────────────────────────────
 
 function getMissingDays(mes,lojaFil){
+  const mesIni=cfg.mesInicio||'';
+  if(mesIni&&mes<mesIni)return[];
   const[year,month]=mes.split('-').map(Number);
   const today=new Date();today.setHours(0,0,0,0);
   const isCurrentMonth=mes===curMesStr();
@@ -2391,7 +2401,7 @@ function rLista(){
 function getRecordCfg(r){
   if(!isSA)return cfg;
   const sc=allStoreConfigs.find(c=>c.store_id===r.store_id);
-  return sc?{prosegurDay:sc.prosegur_day||'',lomisDay:sc.lomis_day||'',cambioDia:sc.cambio_dia||''}:null;
+  return sc?{prosegurDay:sc.prosegur_day||'',lomisDay:sc.lomis_day||'',cambioDia:sc.cambio_dia||'',mesInicio:sc.mes_inicio||cfg.mesInicio||''}:null;
 }
 // ─── MODAL ───────────────────────────────────────────
 function openDetail(id){
@@ -3073,6 +3083,7 @@ function rSettings(){
   const cdEl=document.getElementById('c-cambio-dia');if(cdEl)cdEl.value=cfg.cambioDia||'';
   const pdEl=document.getElementById('c-prosegur-dia');if(pdEl)pdEl.value=cfg.prosegurDay||'';
   const ldEl=document.getElementById('c-lomis-dia');if(ldEl)ldEl.value=cfg.lomisDay||'';
+  const miEl=document.getElementById('c-mes-inicio');if(miEl)miEl.value=cfg.mesInicio||'2026-06';
   const ddEl=document.getElementById('c-direto-ativo');if(ddEl)ddEl.value=(cfg.usaDireto===''||cfg.usaDireto==='0')?'':'1';
   // Contextual notes
   const note=document.getElementById('cfg-sync-note');
@@ -3130,7 +3141,7 @@ async function doChangePass(){
   showMsg('✓ Password alterada com sucesso! O administrador foi notificado.',true);
   npEl.value='';ncEl.value='';
 }
-function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';cfg.prosegurDay=document.getElementById('c-prosegur-dia')?.value||'';cfg.lomisDay=document.getElementById('c-lomis-dia')?.value||'';cfg.usaDireto=document.getElementById('c-direto-ativo')?.value??'1';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
+function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';cfg.prosegurDay=document.getElementById('c-prosegur-dia')?.value||'';cfg.lomisDay=document.getElementById('c-lomis-dia')?.value||'';cfg.mesInicio=document.getElementById('c-mes-inicio')?.value||'2026-06';cfg.usaDireto=document.getElementById('c-direto-ativo')?.value??'1';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
 
 function expBackup(){const b={regs,cfg,v:3,at:new Date().toISOString()};const blob=new Blob([JSON.stringify(b,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`backup_depositos_${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(url);toast('✓ Backup exportado!')}
 function impBackup(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.regs){regs=d.regs;saveR()}if(d.cfg){cfg=d.cfg;saveCfg()}popSel();rSettings();rDash();toast('✓ Importado!')}catch{toast('⚠️ Ficheiro inválido')}};r.readAsText(f)}
