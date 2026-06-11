@@ -503,10 +503,13 @@ select{
         <img id="pp" alt="">
       </div>
     </div>
-    <button class="btn bp" id="guardar-btn" onclick="guardar()" disabled style="opacity:.5">
-      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-      <span id="guardar-lbl">Guardar Registo</span>
-    </button>
+    <div style="display:flex;gap:8px">
+      <button class="btn bp" id="guardar-btn" onclick="guardar()" disabled style="opacity:.5;flex:1">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span id="guardar-lbl">Guardar Registo</span>
+      </button>
+      <button type="button" onclick="resetNovoForm()" title="Limpar formulário" style="background:#f1f5f9;color:#475569;border:none;border-radius:12px;padding:0 16px;font-size:18px;cursor:pointer;touch-action:manipulation;min-height:48px">🗑️</button>
+    </div>
   </div>
 </div>
 
@@ -1178,13 +1181,35 @@ function addSes(data){
 
 function removeSes(btn){
   const rows=document.querySelectorAll('.ses-row');
-  if(rows.length<=1){toast('⚠️ Mínimo 1 sessão');return}
+  if(rows.length<=1){
+    // Clear fields on the last session instead of blocking
+    const row=rows[0];
+    const dv=row.querySelector('[id^="sv-"]');const sv=row.querySelector('[id^="ss-"]');const vl=row.querySelector('[id^="svl-"]');
+    if(dv)dv.value=new Date().toISOString().split('T')[0];if(sv)sv.value='';if(vl)vl.value='';
+    updSesTotal();checkSesAlert();checkGuardarBtn();return;
+  }
   btn.closest('.ses-row').remove();
   renumSes();updSesTotal();checkSesAlert();
 }
 
 function renumSes(){
   document.querySelectorAll('.ses-row').forEach((r,i)=>{r.querySelector('.ses-num').textContent='Sessão '+(i+1);});
+}
+
+function resetNovoForm(){
+  editingId=null;
+  document.getElementById('ses-list').innerHTML='';sesCount=0;addSes();
+  const sa=document.getElementById('ses-alert');if(sa)sa.style.display='none';
+  const jg=document.getElementById('just-grp');if(jg)jg.style.display='none';
+  ['f-just','f-dd','f-talao','f-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  fotoB64=null;
+  const pp=document.getElementById('pp');if(pp){pp.style.display='none';pp.src='';}
+  const pa=document.getElementById('pa');if(pa)pa.classList.remove('has');
+  const pl=document.getElementById('pl');if(pl)pl.textContent='📷 Tirar foto / Escolher imagem';
+  const fi=document.getElementById('f-foto');if(fi)fi.value='';
+  const btn=document.getElementById('guardar-btn');if(btn){btn.disabled=true;btn.style.opacity='.5';}
+  const lbl=document.getElementById('guardar-lbl');if(lbl)lbl.textContent='Guardar Registo';
+  toast('✓ Formulário limpo');
 }
 
 function updSesTotal(){
