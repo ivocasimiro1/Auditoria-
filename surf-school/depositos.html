@@ -1862,6 +1862,7 @@ function rSASupervision(){
   knownSids.forEach(sid=>{
     if(filterSids&&!filterSids.has(sid))return;
     const cfg2=allStoreConfigs.find(c=>c.store_id===sid);
+    const normCfg=cfg2?{prosegurDay:cfg2.prosegur_day||'',lomisDay:cfg2.lomis_day||'',cambioDia:cfg2.cambio_dia||'',mesInicio:cfg2.mes_inicio||cfg.mesInicio||''}:null;
     const empName=cfg2?.emp||sid;
     const email=cfg2?.email||'';
     const storeRegs=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes.slice(0,7)));
