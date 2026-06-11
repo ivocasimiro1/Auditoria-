@@ -285,7 +285,13 @@ select{
 .dr{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--g100)}
 .dr:last-child{border-bottom:none}
 .dr .k{font-size:12px;color:var(--g400);font-weight:600}.dr .v{font-size:13px;font-weight:700;text-align:right;max-width:62%}
-.dphoto{width:100%;border-radius:10px;margin-bottom:12px;max-height:180px;object-fit:cover}
+.dphoto{width:100%;border-radius:10px;margin-bottom:12px;max-height:180px;object-fit:cover;cursor:pointer}
+.foto-thumb{width:48px;height:48px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid var(--g200);flex-shrink:0;transition:transform .15s,border-color .15s;display:block}
+.foto-thumb:hover{transform:scale(1.1);border-color:var(--blue)}
+#foto-lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:500;align-items:center;justify-content:center;cursor:zoom-out;flex-direction:column;gap:12px}
+#foto-lb.open{display:flex}
+#foto-lb img{max-width:96vw;max-height:85vh;border-radius:10px;object-fit:contain;box-shadow:0 4px 40px rgba(0,0,0,.6);cursor:default}
+#foto-lb-close{color:#fff;font-size:13px;font-weight:600;opacity:.75;cursor:pointer;background:rgba(255,255,255,.15);border:none;border-radius:8px;padding:7px 18px}
 .ses-detail-row{background:var(--g50);border-radius:10px;padding:10px 12px;margin-bottom:6px;font-size:12px;border-left:3px solid var(--blue)}
 .ses-detail-row strong{display:block;font-size:13px;font-weight:800;margin-bottom:4px}
 
@@ -730,6 +736,10 @@ select{
     <div class="ma" id="mod-a"></div>
   </div>
 </div>
+<div id="foto-lb" onclick="closeFotoLb()">
+  <img id="foto-lb-img" src="" alt="" onclick="event.stopPropagation()">
+  <button id="foto-lb-close" onclick="closeFotoLb()">✕ Fechar</button>
+</div>
 
 <script>
 // ─── SUPABASE ─────────────────────────────────────────
@@ -1038,6 +1048,9 @@ function calcEstado(r,storeCfg){
   return{s:'ok',label:'✅ OK'};
 }
 function estBadge(est){const cl=est.s==='ok'?'bok':est.s==='warn'?'bwarn':est.s==='err'?'berr':'bprog';return`<span class="badg ${cl}">${est.label}</span>`}
+function openFoto(id){const r=regs.find(x=>x.id===id);if(!r||!r.foto)return;document.getElementById('foto-lb-img').src=r.foto;document.getElementById('foto-lb').classList.add('open');}
+function closeFotoLb(){document.getElementById('foto-lb').classList.remove('open');document.getElementById('foto-lb-img').src='';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeFotoLb();});
 
 // ─── UTILS ───────────────────────────────────────────
 const fmt=v=>new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(v||0);
@@ -2407,11 +2420,15 @@ function rLista(){
     const tv=totalValor(r);const ns=r.sessoes.length;
     const ml=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
     const dateRange=ml.length>1?`${fd(ml[0])} → ${fd(ml[ml.length-1])}`:fd(ml[0]||'');
+    const thumbHtml=r.foto
+      ?`<img class="foto-thumb" src="${r.foto}" onclick="event.stopPropagation();openFoto('${r.id}')" title="Ver comprovativo" alt="📷">`
+      :`<div style="width:48px;height:48px;border-radius:8px;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:2px dashed var(--g200)">📷</div>`;
     return`<div class="di ${est.s}" style="cursor:default">
       <div style="display:flex;align-items:flex-start;gap:8px">
+        ${thumbHtml}
         <div style="flex:1;cursor:pointer;min-width:0" onclick="openDetail('${r.id}')">
           <div class="dh"><div class="dl">${r.loja}</div><div class="dv">${fmt(tv)}</div></div>
-          <div class="dm"><span>📅 ${dateRange}</span><span>${ns} sessão${ns>1?'ões':''}</span><span>👤 ${r.responsavel}</span>${r.talao?`<span>🧾 ${r.talao}</span>`:''} ${r.foto?'<span>📷</span>':''}</div>
+          <div class="dm"><span>📅 ${dateRange}</span><span>${ns} sessão${ns>1?'ões':''}</span><span>👤 ${r.responsavel}</span>${r.talao?`<span>🧾 ${r.talao}</span>`:''}</div>
           <div style="margin-top:5px"><span class="badg ${bc}">${est.label}</span><span style="font-size:10px;color:var(--g500);margin-left:7px">${r.tipo||''}</span>${isSA?`<span style="font-size:9px;color:var(--g400);margin-left:8px;background:var(--g100);padding:1px 6px;border-radius:4px">${r.store_id||'?'}</span>`:''}</div>
         </div>
         <button onclick="editFull('${r.id}')" style="background:var(--bl);color:var(--blue-dark);border:1.5px solid #bfdbfe;border-radius:9px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer;min-height:38px;flex-shrink:0;touch-action:manipulation;align-self:flex-start;margin-top:2px">✏️</button>
@@ -2449,7 +2466,7 @@ function openDetail(id){
   const dateRange=ml.length>1?`${fd(ml[0])} → ${fd(ml[ml.length-1])}`:fd(ml[0]||'');
   document.getElementById('mod-t').textContent=`${r.loja} — ${dateRange}`;
   let html='';
-  if(r.foto)html+=`<img class="dphoto" src="${r.foto}" alt="">`;
+  if(r.foto)html+=`<img class="dphoto" src="${r.foto}" alt="" onclick="openFoto('${r.id}')" title="Clique para ampliar">`;
   [['Total',`<strong style="color:var(--blue);font-size:16px">${fmt(tv)}</strong>`],['Estado',`<span class="badg ${bc}">${est.label}</span>`],['Tipo',r.tipo||'—'],['Data Depósito',fd(r.dataDeposito)],['Nº Talão',r.talao||'—'],['Responsável',r.responsavel],['Obs',r.obs||'—']].forEach(([k,v])=>html+=`<div class="dr"><span class="k">${k}</span><span class="v">${v}</span></div>`);
   html+=`<div class="hr"></div><div style="font-size:11px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Sessões (${r.sessoes.length})</div>`;
   r.sessoes.forEach((s,i)=>{
