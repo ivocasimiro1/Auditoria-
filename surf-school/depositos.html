@@ -1804,22 +1804,49 @@ async function _buildPdfAsync(pw,loja,mes){
   if(missingArr.length>0)recoms.push(`<li>Registar ou justificar <strong>${missingArr.length} dia(s) sem sessão</strong>: ${missingArr.slice(0,5).map(d=>fd(d)).join(', ')}${missingArr.length>5?` e mais ${missingArr.length-5}...`:''}.</li>`);
   if(recoms.length===0)recoms.push('<li>Manter a regularidade e continuar a registar as sessões e depósitos dentro dos prazos definidos.</li>');
   // Build plain-text email body — ASCII apenas para URL curto em iOS/Android
-  const pdfSep='-'.repeat(50);
-  let pdfEmailBody=`Relatorio de Conformidade de Depositos\n${loja} - ${mesNome}\n\n${pdfSep}\n\n`;
-  pdfEmailBody+=`${estadoGeral.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}\nLoja ${loja} - Compliance de ${compPct}% em ${mesNome}${missingArr.length>0?` - ${missingArr.length} dia(s) sem registo`:''}\n\n`;
-  pdfEmailBody+=`RESUMO:\n  Compliance: ${compPct}%\n  Total do mes: ${fmt(totalVal).replace('€','EUR')}\n  Depositado: ${fmt(depVal).replace('€','EUR')}\n  Dias sem registo: ${missingArr.length}\n\n`;
-  if(lojaRegs.length>0){
-    pdfEmailBody+=`${pdfSep}\nREGISTOS DO MES - ${lojaRegs.length} DEPOSITO(S)\n${pdfSep}\n\n`;
-    lojaRegs.forEach((r,i)=>{
-      const estR=calcEstado(r,getRecordCfg(r));
-      const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
-      const dr=sm.length?(sm[0]===sm[sm.length-1]?fd(sm[0]):fd(sm[0])+' a '+fd(sm[sm.length-1])):'--';
-      const estTxt=estR.label.replace(/[📅✅⚠️🔴]/gu,'').trim();
-      pdfEmailBody+=`[${i+1}] ${dr}\n  Tipo: ${r.tipo||'--'}\n  Valor: ${fmt(totalValor(r)).replace('€','EUR')}\n  Deposito: ${r.dataDeposito?fd(r.dataDeposito):'--'} | Talao: ${r.talao||'--'} | Sessoes: ${(r.sessoes||[]).length}\n  Estado: ${estTxt}\n\n`;
-    });
-  }
-  if(missingArr.length>0)pdfEmailBody+=`${pdfSep}\nDIAS SEM REGISTO (${missingArr.length}):\n  ${missingArr.map(d=>fd(d)).join(', ')}\n\n`;
-  pdfEmailBody+=`${pdfSep}\n\nPor favor aceda ao sistema:\nhttps://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nDespomar - Gestao Interna`;
+  const pdfEur=v=>fmt(v).replace('€','EUR');
+  const estadoTxtPdf=estadoGeral.s==='ok'?'Tudo em ordem':estadoGeral.s==='warn'?'Atencao: verificar depositos pendentes':'*** DEPOSITOS EM ATRASO - ACAO URGENTE ***';
+  const pdfRecBlocks=[];
+  lojaRegs.forEach((r,i)=>{
+    const estR=calcEstado(r,getRecordCfg(r));
+    const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
+    const period=sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
+    const estTxt=estR.s==='ok'?'OK deposito':estR.s==='warn'?'Aviso: '+estR.label.replace(/[📅✅⚠️🔴]/gu,'').trim():estR.s==='err'?'ERRO: '+estR.label.replace(/[📅✅⚠️🔴]/gu,'').trim():'Pendente';
+    pdfRecBlocks.push(`[${i+1}] ${period} | ${r.tipo||'--'}`);
+    r.sessoes.forEach(s=>{pdfRecBlocks.push(`  ${fd(s.dataVendas||'').slice(0,5)} Sess.${s.sessao||'?'}  ${pdfEur(s.valor||0)}`);});
+    pdfRecBlocks.push(`  Deposito: ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'}`);
+    if(r.talao)pdfRecBlocks.push(`  Talao: ${r.talao}`);
+    pdfRecBlocks.push(`  Estado: ${estTxt}`);
+    pdfRecBlocks.push('');
+  });
+  const pdfMissingTxt=missingArr.length?`DIAS SEM REGISTO (${missingArr.length}):\n${missingArr.map(d=>fd(d).slice(0,5)).join(', ')}`:'Todos os dias registados.';
+  const pdfEmailBody=[
+    '===================================',
+    'CONFORMIDADE DE DEPOSITOS',
+    `${loja} | ${mesNome}`,
+    '===================================',
+    '',
+    estadoTxtPdf,
+    `Compliance: ${compPct}%`,
+    '',
+    '--- RESUMO ---',
+    `Total do mes:   ${pdfEur(totalVal)}`,
+    `Depositado:     ${pdfEur(depVal)}`,
+    `Por depositar:  ${pdfEur(totalVal-depVal)}`,
+    `Dias s/ registo: ${missingArr.length}`,
+    '',
+    ...(lojaRegs.length>0?['===================================','DEPOSITOS DO MES','===================================',...pdfRecBlocks]:[]),
+    '- - - - - - - - - - - - - - - - - -',
+    pdfMissingTxt,
+    '- - - - - - - - - - - - - - - - - -',
+    '',
+    'Aceda ao sistema:',
+    'auditoria-25b.pages.dev/depositos',
+    '',
+    'Cumprimentos,',
+    'Ivo Casimiro | Despomar',
+    '==================================='
+  ].join('\n');
   // SVG inline do logo Despomar
   const LOGO_SVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 110" width="224" height="44">
     <circle cx="55" cy="55" r="50" fill="white" stroke="#1976d2" stroke-width="2.5"/>
@@ -2092,23 +2119,48 @@ function rSASupervision(){
     const storeRecs=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes.slice(0,7))).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
     const totalVal2=storeRecs.reduce((sum,r)=>sum+totalValor(r),0);
     const depVal2=storeRecs.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((sum,r)=>sum+totalValor(r),0);
-    const estadoLabel2=s.err>0||(s.compliant!==null&&s.compliant<50)?'[NAO CONFORME] ACAO URGENTE':s.warn>0||(s.compliant!==null&&s.compliant<80)?'[ATENCAO] Verificar depositos':'[CONFORME]';
-    const sep2='-'.repeat(50);
-    let body=`Relatorio de Conformidade de Depositos\n${s.empName} - ${mesNomeEmail}\n\n${sep2}\n\n`;
-    body+=`${estadoLabel2}\nLoja ${s.empName} - Compliance de ${s.compliant??0}% em ${mesNomeEmail}${allMissing.length>0?` - ${allMissing.length} dia(s) sem registo`:''}\n\n`;
-    body+=`RESUMO:\n  Compliance: ${s.compliant??0}%\n  Total do mes: ${fmt(totalVal2).replace('€','EUR')}\n  Depositado: ${fmt(depVal2).replace('€','EUR')}\n  Dias sem registo: ${allMissing.length}\n\n`;
-    if(storeRecs.length>0){
-      body+=`${sep2}\nREGISTOS DO MES - ${storeRecs.length} DEPOSITO(S)\n${sep2}\n\n`;
-      storeRecs.forEach((r,i)=>{
-        const estR=calcEstado(r,getRecordCfg(r));
-        const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
-        const dr=sm.length?(sm[0]===sm[sm.length-1]?fd(sm[0]):fd(sm[0])+' a '+fd(sm[sm.length-1])):'--';
-        const estTxt=estR.label.replace(/[📅✅⚠️🔴]/gu,'').trim();
-        body+=`[${i+1}] ${dr}\n  Tipo: ${r.tipo||'--'}\n  Valor: ${fmt(totalValor(r)).replace('€','EUR')}\n  Deposito: ${r.dataDeposito?fd(r.dataDeposito):'--'} | Talao: ${r.talao||'--'} | Sessoes: ${(r.sessoes||[]).length}\n  Estado: ${estTxt}\n\n`;
-      });
-    }
-    if(allMissing.length>0)body+=`${sep2}\nDIAS SEM REGISTO (${allMissing.length}):\n  ${allMissing.map(d=>fd(d)).join(', ')}\n\n`;
-    body+=`${sep2}\n\nPor favor aceda ao sistema:\nhttps://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nGestao Despomar`;
+    const estadoLabel2=s.err>0||(s.compliant!==null&&s.compliant<50)?'*** DEPOSITOS EM ATRASO - ACAO URGENTE ***':s.warn>0||(s.compliant!==null&&s.compliant<80)?'Atencao: verificar depositos pendentes':'Tudo em ordem';
+    const saEur=v=>fmt(v).replace('€','EUR');
+    const recBlocks=[];
+    storeRecs.forEach((r,i)=>{
+      const estR=calcEstado(r,getRecordCfg(r));
+      const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
+      const period=sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
+      const estTxt=estR.s==='ok'?'OK deposito':estR.s==='warn'?'Aviso: '+estR.label.replace(/[📅✅⚠️🔴]/gu,'').trim():estR.s==='err'?'ERRO: '+estR.label.replace(/[📅✅⚠️🔴]/gu,'').trim():'Pendente';
+      recBlocks.push(`[${i+1}] ${period} | ${r.tipo||'--'}`);
+      recBlocks.push(`  Valor: ${saEur(totalValor(r))}`);
+      recBlocks.push(`  Deposito: ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'}`);
+      if(r.talao)recBlocks.push(`  Talao: ${r.talao}`);
+      recBlocks.push(`  Estado: ${estTxt}`);
+      recBlocks.push('');
+    });
+    const saMissing=allMissing.length?`DIAS SEM REGISTO (${allMissing.length}):\n${allMissing.map(d=>fd(d).slice(0,5)).join(', ')}`:'Todos os dias registados.';
+    const body=[
+      '===================================',
+      'CONFORMIDADE DE DEPOSITOS',
+      `${s.empName} | ${mesNomeEmail}`,
+      '===================================',
+      '',
+      estadoLabel2,
+      `Compliance: ${s.compliant??0}%`,
+      '',
+      '--- RESUMO ---',
+      `Total do mes:   ${saEur(totalVal2)}`,
+      `Depositado:     ${saEur(depVal2)}`,
+      `Dias s/ registo: ${allMissing.length}`,
+      '',
+      ...(storeRecs.length>0?['===================================','DEPOSITOS DO MES','===================================',...recBlocks]:[]),
+      '- - - - - - - - - - - - - - - - - -',
+      saMissing,
+      '- - - - - - - - - - - - - - - - - -',
+      '',
+      'Aceda ao sistema para regularizar:',
+      'auditoria-25b.pages.dev/depositos',
+      '',
+      'Cumprimentos,',
+      'Ivo Casimiro | Gestao Despomar',
+      '==================================='
+    ].join('\n');
     // Colocar body no URL — ASCII apenas, URL curto, funciona em iOS/Android
     const subject=encodeURIComponent('Depositos '+mesNomeEmail+' - '+s.empName);
     const mailtoSA=`mailto:${destEmail}?subject=${subject}&body=${encodeURIComponent(body)}`;
@@ -2756,57 +2808,67 @@ async function updEmailPrev(){
       <div style="font-size:11px;font-weight:800;color:#b45309;margin-bottom:5px">📅 ${missingInEmail.length} dia${missingInEmail.length!==1?'s':''} sem sessão registada:</div>
       <div style="display:flex;flex-wrap:wrap;gap:4px">${missingInEmail.map(d=>`<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700">${fd(d).split('/').slice(0,2).join('/')}</span>`).join('')}</div>
     </div>`:`<div style="margin-top:8px;font-size:11px;color:#166534;font-weight:700">✅ Todos os dias registados</div>`;
-  // Plain text body para mailto: — separadores ASCII para nao inflar o URL em iOS/Android
-  const sep='-'.repeat(52);
-  const sessLines=allSess.map(({r,s,isFirst})=>{
-    const dup=isDupSess(s);
-    const dataStr=(fd(s.dataVendas)||'--').padEnd(12);
-    const sessStr=('Sess. '+(s.sessao||'?')).padEnd(12);
-    const valStr=fmt(s.valor||0).replace('€','EUR').padStart(12);
-    let line=`  ${dataStr}${sessStr}${valStr}`;
-    if(isFirst){
-      line+=`  Dep: ${fd(r.dataDeposito)||'(pendente)'}`;
-      if(r.talao)line+=`  Ref: ${r.talao}`;
-      if(dup){line+=`  [DUPLICADO]`;}
-      else{
-        const est=calcEstado(r,getRecordCfg(r));
-        const estTxt=est.label.replace(/[📅✅⚠️🔴]/gu,'').trim();
-        const estIcon=est.s==='ok'?'[OK]':est.s==='warn'?'[AVISO]':est.s==='err'?'[ERRO]':'[--]';
-        line+=`  ${estIcon} ${estTxt}`;
-      }
-    } else if(dup){
-      line+=`  [DUPLICADO]`;
-    }
-    return line;
-  }).join('\n');
-  const missingLine=missingInEmail.length
-    ?`\n${sep}\nDIAS SEM REGISTO (${missingInEmail.length}): ${missingInEmail.map(d=>fd(d).split('/').slice(0,2).join('/')).join(', ')}`
-    :`\n${sep}\n[OK] Todos os dias do mes registados.`;
+  // Plain text body — formato mobile-first, linhas curtas, sem tabelas de texto
+  const D='\r\n'; // line break
+  const dv=s=>fd(s).slice(0,5); // DD/MM apenas
+  const eur=v=>fmt(v).replace('€','EUR');
+  const estadoTxt=erros>0?'*** DEPOSITOS EM ATRASO - VERIFICAR ***':avisos>0?'Atencao: '+avisos+' deposito(s) a verificar':'Tudo em ordem';
+  // Blocos por sessao — max ~38 chars por linha
+  const sessBlocks=[];
+  let depIdx=0;
+  data.forEach(r=>{
+    depIdx++;
+    const est=calcEstado(r,getRecordCfg(r));
+    const estTxt=est.s==='ok'?'OK deposito':est.s==='warn'?'Aviso: '+est.label.replace(/[📅✅⚠️🔴]/gu,'').trim():est.s==='err'?'ERRO: '+est.label.replace(/[📅✅⚠️🔴]/gu,'').trim():'Pendente';
+    const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
+    const period=sm.length>1?dv(sm[0])+' a '+dv(sm[sm.length-1]):sm.length?dv(sm[0]):'--';
+    sessBlocks.push(`[${depIdx}] ${period} | ${r.tipo||'--'}`);
+    r.sessoes.forEach(s=>{
+      const dup=isDupSess(s);
+      sessBlocks.push(`  ${dv(s.dataVendas||'')} Sess.${s.sessao||'?'}  ${eur(s.valor||0)}${dup?' *** DUPLIC.':''}`);
+    });
+    sessBlocks.push(`  Deposito: ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'}`);
+    if(r.talao)sessBlocks.push(`  Talao/Ref: ${r.talao}`);
+    sessBlocks.push(`  Estado: ${estTxt}`);
+    sessBlocks.push('');
+  });
+  const missingTxt=missingInEmail.length
+    ?`DIAS SEM REGISTO (${missingInEmail.length}):\n${missingInEmail.map(d=>dv(d)).join(', ')}`
+    :'Todos os dias do mes registados.';
+  const sep36='- - - - - - - - - - - - - - - - - -';
   const shortBody=[
-    sep,
-    `FOLHA DE DEPOSITOS - ${loja.toUpperCase()} - ${ml.toUpperCase()}`,
-    `${empresa}${nif?' | NIF '+nif:''}`,
-    sep,'',
-    'Exmo(a). Departamento de Contabilidade,','',
-    `Enviamos a folha de depositos de ${loja}, referente a ${ml}.`,
-    '',sep,
-    'RESUMO',sep,
-    `  Total vendas:      ${fmt(total).replace('€','EUR')}`,
-    `  Depositado:        ${fmt(totalDep).replace('€','EUR')}`,
-    `  Por depositar:     ${fmt(total-totalDep).replace('€','EUR')}`,
-    `  N. depositos:      ${data.length}`,
-    `  N. sessoes:        ${allSess.length}`,
-    `  Estado:            ${erros>0?'[URGENTE] '+erros+' deposito(s) em atraso':avisos>0?'[AVISO] '+avisos+' aviso(s)':'[OK] Sem problemas'}`,
-    '',sep,
-    'DETALHE POR SESSAO DE CAIXA',sep,
-    `  ${'DATA'.padEnd(12)}${'N SESSAO'.padEnd(12)}${'VALOR'.padStart(12)}  DEPOSITO / TALAO`,
-    sep,
-    sessLines,
-    missingLine,'',sep,
+    '===================================',
+    'FOLHA DE DEPOSITOS',
+    `${loja} | ${ml}`,
+    empresa,
+    '===================================',
+    '',
+    'Exmo(a). Departamento de Contabilidade,',
+    '',
+    `Segue a folha de depositos de ${ml}.`,
+    '',
+    '--- RESUMO ---',
+    `Total vendas:   ${eur(total)}`,
+    `Depositado:     ${eur(totalDep)}`,
+    `Por depositar:  ${eur(total-totalDep)}`,
+    `Depositos:      ${data.length}`,
+    `Sessoes caixa:  ${allSess.length}`,
+    `Estado:         ${estadoTxt}`,
+    '',
+    '===================================',
+    'SESSOES DE CAIXA',
+    '===================================',
+    '',
+    ...sessBlocks,
+    sep36,
+    missingTxt,
+    sep36,
+    '',
     'Com os melhores cumprimentos,',
-    `${loja} - ${empresa}`,
-    sep
-  ].join('\n');
+    `${loja}${empresa?' - '+empresa:''}`,
+    nif?`NIF ${nif}`:'',
+    '==================================='
+  ].filter(l=>l!==null).join('\n');
   document.getElementById('ep-to').textContent=dest||'(não configurado)';
   document.getElementById('ep-cc').textContent=cc;
   document.getElementById('ep-sub').textContent=subj;
