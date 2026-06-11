@@ -639,8 +639,7 @@ select{
 <!-- ═══ SUPERVISÃO (SA only) ═══ -->
 <div class="page" id="page-supervisao">
   <div class="mes-bar">
-    <select id="sup-mes" onchange="rSASupervision()" style="flex:1;font-size:14px;min-height:44px"></select>
-    <select id="sup-loja" onchange="rSASupervision()" style="flex:1;font-size:14px;min-height:44px"><option value="">Todas as Lojas</option></select>
+    <select id="sup-mes" onchange="rSASupervision()" style="width:100%;font-size:14px;min-height:44px"></select>
   </div>
   <div id="sa-supervision"></div>
 </div>
@@ -1693,15 +1692,9 @@ function rSASupervision(){
   if(!panel||!isSA)return;
   const mes=(document.getElementById('sup-mes')?.value||document.getElementById('dash-mes')?.value)||curMesStr();
   const mesLabelStr=mesLabel(mes);
-  const lojaFil=(document.getElementById('sup-loja')?.value||document.getElementById('dash-loja')?.value)||'';
-  // If a specific loja is selected, only show the store that owns it
+  // Supervisão sempre mostra TODAS as lojas — sem filtro por loja
+  const lojaFil='';
   let filterSids=null;
-  if(lojaFil){
-    const matchingSids=new Set();
-    allStoreConfigs.forEach(c=>{if((c.lojas||[]).includes(lojaFil))matchingSids.add(c.store_id);});
-    regs.filter(r=>r.loja===lojaFil&&r.store_id&&r.store_id!=='super').forEach(r=>matchingSids.add(r.store_id));
-    if(matchingSids.size)filterSids=matchingSids;
-  }
   // Build per-store stats from allStoreConfigs + any stores with records
   const knownSids=new Set(allStoreConfigs.map(c=>c.store_id));
   regs.forEach(r=>{if(r.store_id&&r.store_id!=='super')knownSids.add(r.store_id);});
@@ -1768,9 +1761,10 @@ function rSASupervision(){
   const histMonths=[];
   let hm=mes;
   for(let i=0;i<6;i++){histMonths.unshift(hm);hm=prevMonthStr(hm);}
-  // Priority alerts: all stores with err OR warn
+  // Priority alerts: 3 tiers
   const criticalStores=storeList.filter(s=>s.err>0).sort((a,b)=>b.maxAge-a.maxAge);
   const warnStores=storeList.filter(s=>s.err===0&&s.warn>0);
+  const complianceStores=storeList.filter(s=>s.err===0&&s.warn===0&&s.compliant!==null&&s.compliant<80);
   // Credentials: dep_config.password_note (if column exists) merged with localStorage fallback
   let credNotes={};try{credNotes=JSON.parse(localStorage.getItem('sa_cred_notes')||'{}');}catch(e){}
   window._saCredSave=async(sid,field,val)=>{
@@ -1827,8 +1821,9 @@ function rSASupervision(){
     const cycleStr=s.cycle!==null?`<span style="color:${s.cycle<=2?'#16a34a':s.cycle<=4?'#d97706':'#dc2626'};font-size:11px;font-weight:600">${s.cycle}d</span>`:'<span style="color:#94a3b8;font-size:11px">—</span>';
     const exposureStr=s.exposure>0?`<span style="color:#dc2626;font-size:11px;font-weight:600">${fmt(s.exposure)}</span><span style="color:#94a3b8;font-size:9px;display:block">${s.maxAge>0?s.maxAge+'d abertura':''}</span>`:'<span style="color:#16a34a;font-size:11px">✓ 0</span>';
     const bulkWarn=s.bulkFlag?`<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700;margin-left:4px" title="Depósito com >3 sessões combinadas">bulk</span>`:'';
-    const hasIssues=s.err>0||s.warn>0;
-    const alertBtn=hasIssues?`<button onclick="window._saAlertEmail('${s.sid}')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">📧</button>`:'';
+    const hasIssues=s.err>0||s.warn>0||(s.compliant!==null&&s.compliant<80);
+    const alertBtnBg=s.err>0?'#dc2626':s.warn>0?'#d97706':'#1d4ed8';
+    const alertBtn=hasIssues?`<button onclick="window._saAlertEmail('${s.sid}')" style="background:${alertBtnBg};color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">📧</button>`:'';
     return`<div style="display:flex;align-items:center;gap:5px;padding:7px 10px;background:${rowColor};border-left:3px solid ${borderColor};border-bottom:1px solid #f1f5f9;flex-wrap:wrap">
       <div style="background:${rankBg};color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">${idx+1}</div>
       <div style="flex:1;min-width:100px">
@@ -1920,9 +1915,19 @@ function rSASupervision(){
       <button onclick="window._saAlertEmail('${s.sid}')" style="background:${btnBg};color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation;white-space:nowrap">📧 Enviar Email</button>
     </div>`;
   };
-  const critHtml=(criticalStores.length||warnStores.length)?`<div style="padding:12px 14px;border-bottom:1px solid #e2e8f0;display:flex;flex-direction:column;gap:8px">
+  const mkCompCard=(s)=>`<div style="background:#eff6ff;border:2px solid #93c5fd;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="flex:1;min-width:120px">
+      <div style="font-size:14px;font-weight:800;color:#1e3a8a">🔵 ${s.displayName}</div>
+      ${s.displayName!==s.empName?`<div style="font-size:10px;color:#3b82f6;margin-top:1px">${s.empName}</div>`:''}
+      <div style="font-size:11px;color:#1d4ed8;margin-top:3px">Compliance ${s.compliant}%${s.storeMissingCount>0?' · '+s.storeMissingCount+' dia(s) sem registo':''}</div>
+    </div>
+    <button onclick="window._saAlertEmail('${s.sid}')" style="background:#1d4ed8;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation;white-space:nowrap">📧 Enviar Email</button>
+  </div>`;
+  const hasAnyAlerts=criticalStores.length||warnStores.length||complianceStores.length;
+  const critHtml=hasAnyAlerts?`<div style="padding:12px 14px;border-bottom:1px solid #e2e8f0;display:flex;flex-direction:column;gap:8px">
     ${criticalStores.length?`<div style="font-size:11px;font-weight:700;color:#991b1b;margin-bottom:2px">🚨 Ação imediata — ${criticalStores.length} loja(s) em atraso</div>${criticalStores.map(s=>mkAlertCard(s,true)).join('')}`:''}
     ${warnStores.length?`<div style="font-size:11px;font-weight:700;color:#92400e;margin-top:${criticalStores.length?8:0}px;margin-bottom:2px">⚠️ Verificar — ${warnStores.length} loja(s) com aviso</div>${warnStores.map(s=>mkAlertCard(s,false)).join('')}`:''}
+    ${complianceStores.length?`<div style="font-size:11px;font-weight:700;color:#1e40af;margin-top:${criticalStores.length||warnStores.length?8:0}px;margin-bottom:2px">📉 Compliance baixo — ${complianceStores.length} loja(s) abaixo de 80%</div>${complianceStores.map(s=>mkCompCard(s)).join('')}`:''}
   </div>`:`<div style="padding:10px 14px;background:#f0fdf4;border-bottom:1px solid #bbf7d0"><div style="font-size:12px;font-weight:700;color:#166534">✅ Todas as lojas em ordem em ${mesLabelStr}</div></div>`;
   panel.innerHTML=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
     <div style="padding:12px 14px 12px;background:linear-gradient(135deg,#1e3a5f,#1e40af);border-bottom:1px solid #1d4ed8">
