@@ -1730,8 +1730,19 @@ function rSASupervision(){
     const displayName=(storeLojas2&&storeLojas2.length)?storeLojas2.join(' / '):empName;
     storeList.push({sid,empName,displayName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,bulkFlag,storeMissingCount,storeLojas2});
   });
-  // Sort: worst first (err desc, then warn desc, then compliant asc)
-  storeList.sort((a,b)=>a.displayName.localeCompare(b.displayName,'pt'));
+  // Sort: stores with data first (worst-to-best), then no-data alphabetically
+  const severity=s=>{
+    if(s.total===0)return 99; // no data → bottom
+    if(s.err>0||(s.compliant!==null&&s.compliant<50))return 0; // critical
+    if(s.warn>0||(s.compliant!==null&&s.compliant<80))return 1; // warning
+    return 2; // ok
+  };
+  storeList.sort((a,b)=>{
+    const sa=severity(a),sb=severity(b);
+    if(sa!==sb)return sa-sb;
+    // same tier: alphabetical
+    return a.displayName.localeCompare(b.displayName,'pt');
+  });
   // Global KPIs
   const activeStores=storeList.filter(s=>s.total>0).length;
   const complianceScores=storeList.filter(s=>s.compliant!==null).map(s=>s.compliant);
@@ -1747,10 +1758,10 @@ function rSASupervision(){
   const histMonths=[];
   let hm=mes;
   for(let i=0;i<6;i++){histMonths.unshift(hm);hm=prevMonthStr(hm);}
-  // Priority alerts: 3 tiers
-  const criticalStores=storeList.filter(s=>s.err>0).sort((a,b)=>b.maxAge-a.maxAge);
-  const warnStores=storeList.filter(s=>s.err===0&&s.warn>0);
-  const complianceStores=storeList.filter(s=>s.err===0&&s.warn===0&&s.compliant!==null&&s.compliant<80);
+  // Alert tiers (only stores with data — inactive excluded)
+  const criticalStores=storeList.filter(s=>s.total>0&&(s.err>0||(s.compliant!==null&&s.compliant<50)));
+  const warnStores=storeList.filter(s=>s.total>0&&!criticalStores.includes(s)&&(s.warn>0||(s.compliant!==null&&s.compliant<80)));
+  const inactiveStores=storeList.filter(s=>s.total===0);
   // Credentials: dep_config.password_note (if column exists) merged with localStorage fallback
   let credNotes={};try{credNotes=JSON.parse(localStorage.getItem('sa_cred_notes')||'{}');}catch(e){}
   window._saCredSave=async(sid,field,val)=>{
@@ -1802,18 +1813,35 @@ function rSASupervision(){
     }
     const bulkWarn=s.bulkFlag?`<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700;margin-left:4px">bulk</span>`:'';
     const pdfLoja=(s.storeLojas2||[s.displayName])[0];
-    const hasErr=s.err>0, hasWarn=!s.err&&s.warn>0, hasComp=!s.err&&!s.warn&&s.compliant!==null&&s.compliant<80;
-    const hasProblem=hasErr||hasWarn||hasComp;
+    // Classify
+    const isInactive=s.total===0;
+    const isCritical=!isInactive&&(s.err>0||(s.compliant!==null&&s.compliant<50));
+    const isWarning=!isInactive&&!isCritical&&(s.warn>0||(s.compliant!==null&&s.compliant<80));
+    const hasProblem=isCritical||isWarning;
+    // INACTIVE: grey compact row
+    if(isInactive){
+      return`<div style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:#f8fafc;border-left:3px solid #cbd5e1;border-bottom:1px solid #f1f5f9;flex-wrap:wrap;opacity:.75">
+        <div style="background:#94a3b8;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">${idx+1}</div>
+        <div style="flex:1;min-width:100px">
+          <div style="font-size:12px;font-weight:700;color:#475569">${s.displayName}</div>
+          ${s.displayName!==s.empName?`<div style="font-size:10px;color:#94a3b8">${s.empName}</div>`:''}
+          <div style="font-size:10px;color:#94a3b8;margin-top:1px">⚫ Sem registos em ${mesLabelStr}</div>
+        </div>
+        <button onclick="filterLista('${s.sid}','')" style="background:#e2e8f0;color:#475569;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;touch-action:manipulation">Lista</button>
+      </div>`;
+    }
+    // PROBLEM: colored card with email button
     if(hasProblem){
-      const bg=hasErr?'#fef2f2':hasWarn?'#fffbeb':'#eff6ff';
-      const border=hasErr?'#fca5a5':hasWarn?'#fcd34d':'#93c5fd';
-      const titleCol=hasErr?'#7f1d1d':hasWarn?'#78350f':'#1e3a8a';
-      const subCol=hasErr?'#991b1b':hasWarn?'#92400e':'#1d4ed8';
-      const btnBg=hasErr?'#dc2626':hasWarn?'#d97706':'#1d4ed8';
-      const icon=hasErr?'🔴':hasWarn?'🟡':'🔵';
-      let detail=hasErr?`${s.err} em atraso${s.lateVal>0?' · '+fmt(s.lateVal):''}${s.maxAge>0?' · '+s.maxAge+'d em aberto':''}`
-        :hasWarn?`${s.warn} com aviso · ${s.total} registo(s)`
-        :`Compliance ${s.compliant}%${s.storeMissingCount>0?' · '+s.storeMissingCount+' dia(s) sem registo':''}`;
+      const bg=isCritical?'#fef2f2':'#fffbeb';
+      const border=isCritical?'#fca5a5':'#fcd34d';
+      const titleCol=isCritical?'#7f1d1d':'#78350f';
+      const subCol=isCritical?'#991b1b':'#92400e';
+      const btnBg=isCritical?'#dc2626':'#d97706';
+      const icon=isCritical?'🔴':'🟡';
+      let detail=s.err>0?`${s.err} em atraso${s.lateVal>0?' · '+fmt(s.lateVal):''}${s.maxAge>0?' · '+s.maxAge+'d em aberto':''}`
+        :s.warn>0?`${s.warn} com aviso · ${s.total} registo(s)`
+        :isCritical?`Compliance ${s.compliant}% — crítico · ${s.storeMissingCount} dia(s) sem registo`
+        :`Compliance ${s.compliant}% · ${s.storeMissingCount} dia(s) sem registo`;
       return`<div style="background:${bg};border-left:4px solid ${border};border-bottom:1px solid #e2e8f0;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <div style="flex:1;min-width:120px">
           <div style="font-size:13px;font-weight:800;color:${titleCol}">${icon} ${s.displayName}${bulkWarn}</div>
@@ -1828,6 +1856,7 @@ function rSASupervision(){
         </div>
       </div>`;
     }
+    // OK active store: green compact row
     const statsCells=`<span style="color:#16a34a;font-size:11px">✓${s.ok}</span>`
       +(s.warn?` <span style="color:#d97706;font-size:11px">⚠${s.warn}</span>`:'')
       +(s.err?` <span style="color:#dc2626;font-size:11px">✗${s.err}</span>`:'')
@@ -1904,13 +1933,14 @@ function rSASupervision(){
     }).join('');
     return`<tr><td style="padding:4px 8px;font-size:11px;font-weight:600;color:#1e293b;white-space:nowrap;border-right:1px solid #e2e8f0">${s.displayName}</td>${cells}</tr>`;
   }).join('');
-  const totalAlerts=criticalStores.length+warnStores.length+complianceStores.length;
-  const critHtml=totalAlerts===0?`<div style="padding:10px 14px;background:#f0fdf4;border-bottom:1px solid #bbf7d0"><div style="font-size:12px;font-weight:700;color:#166534">✅ Todas as lojas em ordem em ${mesLabelStr}</div></div>`
+  const totalAlerts=criticalStores.length+warnStores.length;
+  const critHtml=totalAlerts===0
+    ?`<div style="padding:10px 14px;background:#f0fdf4;border-bottom:1px solid #bbf7d0"><div style="font-size:12px;font-weight:700;color:#166534">✅ Todas as lojas com dados em ordem em ${mesLabelStr}${inactiveStores.length?` · ${inactiveStores.length} ainda sem dados`:''}</div></div>`
     :`<div style="padding:8px 14px;background:#fef9ec;border-bottom:1px solid #fde68a;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      ${criticalStores.length?`<span style="font-size:11px;font-weight:700;color:#991b1b">🔴 ${criticalStores.length} em atraso</span>`:''}
+      ${criticalStores.length?`<span style="font-size:11px;font-weight:700;color:#991b1b">🔴 ${criticalStores.length} crítico(s)</span>`:''}
       ${warnStores.length?`<span style="font-size:11px;font-weight:700;color:#92400e">🟡 ${warnStores.length} com aviso</span>`:''}
-      ${complianceStores.length?`<span style="font-size:11px;font-weight:700;color:#1d4ed8">🔵 ${complianceStores.length} compliance baixo</span>`:''}
-      <span style="font-size:10px;color:#92400e;margin-left:auto">Role para ver detalhes e enviar email ↓</span>
+      ${inactiveStores.length?`<span style="font-size:11px;color:#64748b">⚫ ${inactiveStores.length} sem dados</span>`:''}
+      <span style="font-size:10px;color:#92400e;margin-left:auto">Role para ver detalhes ↓</span>
     </div>`;
   panel.innerHTML=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
     <div style="padding:12px 14px 12px;background:linear-gradient(135deg,#1e3a5f,#1e40af);border-bottom:1px solid #1d4ed8">
