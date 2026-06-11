@@ -1,7 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="40" fill="#1e3a8a"/>
-  <circle cx="96" cy="96" r="78" fill="white" stroke="#1976d2" stroke-width="4"/>
-  <path d="M96,18 C120,18 140,32 148,52 C136,42 120,38 104,43 C88,48 78,63 78,80 C72,63 62,48 50,42 C62,27 78,18 96,18Z" fill="#56cce8"/>
-  <path d="M148,52 C162,68 160,90 146,104 C142,90 132,82 118,81 C104,80 92,85 85,95 C87,78 82,60 72,50 C84,38 100,32 114,38 C128,44 143,48 148,52Z" fill="#1aa8d8"/>
-  <path d="M146,104 C132,120 112,128 92,124 C106,116 114,102 111,87 C108,72 95,63 80,65 C88,50 97,38 107,36 C120,42 134,56 142,73 C148,84 148,95 146,104Z" fill="#1462a8"/>
+  <!-- Background -->
+  <rect width="192" height="192" rx="38" fill="#0f2460"/>
+
+  <!-- Surfboard shape (tall oval, slight tilt) -->
+  <ellipse cx="96" cy="90" rx="34" ry="76" fill="white" transform="rotate(8 96 90)"/>
+
+  <!-- Board center rail stripe -->
+  <ellipse cx="96" cy="90" rx="18" ry="62" fill="#4fc9e8" transform="rotate(8 96 90)"/>
+
+  <!-- Board fin at tail -->
+  <path d="M 80,148 Q 90,165 100,148" fill="#1e3a8a" transform="rotate(8 96 90)"/>
+
+  <!-- € symbol on board -->
+  <text x="70" y="108" font-family="'Arial Black',Arial,sans-serif" font-size="58" font-weight="900" fill="#0f2460">€</text>
+
+  <!-- Wave left -->
+  <path d="M 14,162 Q 30,150 46,162 Q 62,174 78,162" stroke="#56cce8" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <!-- Wave right -->
+  <path d="M 114,162 Q 130,150 146,162 Q 162,174 178,162" stroke="#56cce8" stroke-width="4.5" fill="none" stroke-linecap="round"/>
 </svg>
