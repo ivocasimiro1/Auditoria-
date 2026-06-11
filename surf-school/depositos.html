@@ -967,15 +967,17 @@ function calcEstado(r,storeCfg){
   if(!r.sessoes||!r.sessoes.length)return{s:'prog',label:'📅 Sem sessões'};
   if(r.sessoes.some(s=>!s.sessao||(parseFloat(s.valor)||0)<=0))
     return{s:'err',label:'🔴 Dados incompletos'};
-  // Usar data mais recente como base — depósitos cross-month avaliam a partir da última sessão
   const mr=maisRecenteData(r);
+  const ma=maisAntigaData(r);
   if(!mr)return{s:'prog',label:'📅 Sem data de vendas'};
   // Registos anteriores ao mês de início não afectam as métricas
   const mesIni=storeCfg?.mesInicio||cfg.mesInicio||'';
   if(mesIni&&mr.toISOString().slice(0,7)<mesIni)return{s:'ok',label:'✅ Anterior ao início'};
   if(mr>=today)return{s:'prog',label:'📅 Programado'};
   if(tv===0)return{s:'ok',label:'✅ Sem vendas'};
-  const diasDesde=Math.floor((today-mr)/86400000);
+  // diasDesde a partir da sessão mais antiga; span = amplitude do lote
+  const diasDesde=Math.floor((today-ma)/86400000);
+  const span=Math.floor((mr-ma)/86400000);
   let prazo=r.tipo==='Depósito Direto'?2:7;
   let vencidoPorDiaRecolha=false;
   if(r.tipo!=='Depósito Direto'&&storeCfg){
@@ -984,6 +986,7 @@ function calcEstado(r,storeCfg){
     if(dStr!==undefined&&dStr!==''&&dStr!==null){
       const dow=parseInt(dStr);
       if(!isNaN(dow)){
+        // Usar sessão mais recente para calcular o próximo dia de recolha
         const mrDow=mr.getDay();
         let dist=(dow-mrDow+7)%7;if(dist===0)dist=7;
         const dRecolha=new Date(mr);dRecolha.setDate(mr.getDate()+dist);dRecolha.setHours(0,0,0,0);
@@ -992,7 +995,8 @@ function calcEstado(r,storeCfg){
       }
     }
   }
-  const vencido=diasDesde>prazo||vencidoPorDiaRecolha;
+  // Tardio se acumulou sessões além do prazo (span) ou passou demasiado tempo
+  const vencido=diasDesde>prazo||span>prazo||vencidoPorDiaRecolha;
   // Comprovativo (foto) é a validação principal — sem foto = não depositado
   if(!r.foto){
     if(r.talao||r.dataDeposito)
@@ -1009,10 +1013,10 @@ function calcEstado(r,storeCfg){
   if(!r.talao&&r.dataDeposito){
     return vencido?{s:'err',label:'🔴 Falta nº talão'}:{s:'warn',label:'⚠️ Falta nº talão'};
   }
-  // Completo: foto + talão + data — prazo medido da última sessão
+  // Completo: diasParaDep da última sessão + verificação de span
   const dd=new Date(r.dataDeposito);
   const diasParaDep=Math.floor((dd-mr)/86400000);
-  if(diasParaDep>prazo)return{s:'warn',label:'⚠️ OK, mas tardio'};
+  if(diasParaDep>prazo||span>prazo)return{s:'warn',label:'⚠️ OK, mas tardio'};
   return{s:'ok',label:'✅ OK'};
 }
 function estBadge(est){const cl=est.s==='ok'?'bok':est.s==='warn'?'bwarn':est.s==='err'?'berr':'bprog';return`<span class="badg ${cl}">${est.label}</span>`}
@@ -2951,7 +2955,12 @@ function expPrint(data, asDownload=false){
     const fc=estEff.s==='ok'?'#166534':estEff.s==='warn'?'#854d0e':estEff.s==='err'?'#991b1b':'#64748b';
     const sessTalao=getSessTalao(r,s);
     const rowBg=isDup?'#fff0f0':n%2===0?'#f0f7ff':'#ffffff';
-    const photoCell=isFirst?(r.foto?`<td style="padding:2px;text-align:center"><img src="${r.foto}" style="height:34px;width:46px;object-fit:cover;border-radius:3px;display:block;margin:0 auto"></td>`:`<td style="text-align:center;color:#94a3b8;font-size:8px">—</td>`):`<td></td>`;
+    const ns=r.sessoes.length;
+    const photoImgH=Math.max(34,ns*18);
+    const photoCell=isFirst
+      ?(r.foto?`<td rowspan="${ns}" style="padding:2px;text-align:center;vertical-align:middle"><img src="${r.foto}" style="width:46px;height:${photoImgH}px;object-fit:cover;border-radius:3px;display:block;margin:0 auto"></td>`
+              :`<td rowspan="${ns}" style="text-align:center;color:#94a3b8;font-size:8px;vertical-align:middle">—</td>`)
+      :'';
     return`<tr style="background:${rowBg}${isDup?';border-left:3px solid #ef4444':''}${!isFirst?';border-top:1px dashed #e2e8f0':''}">
       <td style="text-align:center;color:#94a3b8;font-size:7px">${isFirst?n:''}</td>
       <td style="font-weight:700;color:${isDup?'#dc2626':'#0f172a'}">${fd(s.dataVendas)}${isDup?' ⚠️':''}</td>
