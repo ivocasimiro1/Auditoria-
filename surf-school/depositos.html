@@ -1776,15 +1776,13 @@ function rDash(){
   let maxDaysLate=0;
   errRegs.forEach(r=>{const ma=maisAntigaData(r);if(ma){const d=Math.floor((today-ma)/86400000);if(d>maxDaysLate)maxDaysLate=d;}});
   const errVal=errRegs.reduce((s,r)=>s+totalValor(r),0);
-  const wNoFoto=warnRegs.filter(r=>!r.foto).length;
-  const wNoTalao=warnRegs.filter(r=>!r.talao).length;
-  const wNoDate=warnRegs.filter(r=>!r.dataDeposito).length;
-  const wTardio=warnRegs.filter(r=>r.foto&&r.talao&&r.dataDeposito).length;
-  const wParts=[];
-  if(wNoFoto)wParts.push(`sem foto: ${wNoFoto}`);
-  if(wNoTalao)wParts.push(`sem talão: ${wNoTalao}`);
-  if(wNoDate)wParts.push(`sem data: ${wNoDate}`);
-  if(wTardio)wParts.push(`tardios: ${wTardio}`);
+  // Warn sub-categories
+  const wSemComp=warnRegs.filter(r=>!r.foto&&(r.talao||r.dataDeposito));
+  const wPendentes=warnRegs.filter(r=>!r.foto&&!r.talao&&!r.dataDeposito);
+  const wACompletar=warnRegs.filter(r=>r.foto&&(!r.talao||!r.dataDeposito));
+  const wTardios=warnRegs.filter(r=>r.foto&&r.talao&&r.dataDeposito);
+  let maxDaysPend=0;
+  wPendentes.forEach(r=>{const ma=maisAntigaData(r);if(ma){const d=Math.floor((today-ma)/86400000);if(d>maxDaysPend)maxDaysPend=d;}});
   let missingArr=[];
   if(!isSA){const ll=lojaFil?[lojaFil]:cfg.lojas;missingArr=[...new Set(ll.flatMap(l=>getMissingDays(mes,l)||[]))];}
   else if(lojaFil){const sc=allStoreConfigs.find(c=>(c.lojas||[]).includes(lojaFil));missingArr=[...new Set((sc?.lojas||[lojaFil]).flatMap(l=>getMissingDays(mes,l)||[]))];}
@@ -1795,30 +1793,29 @@ function rDash(){
   const kpiRow=document.getElementById('kpi-row');
   if(kpiRow){
     const sessTotal=data.reduce((s,r)=>s+r.sessoes.length,0);
-    const errSub=erros>0?`dep. mais antigo: ${maxDaysLate} dia${maxDaysLate!==1?'s':''} · ${fmt(errVal)}`:'✓ Nenhum em atraso';
-    const warnSub=warns>0?(wParts.join(' · ')||'ver detalhes'):'✓ Sem avisos';
-    const compSub=`${okRegs.length} ok de ${data.length} dep.`+(missingCount>0?` · ${missingCount} dias s/ reg.`:'');
-    kpiRow.innerHTML=`
-      <div class="kpi blue" onclick="filterListaByStatus('')" style="cursor:pointer">
-        <div class="kl">Total Mês</div>
-        <div class="kv">${fmt(total)}</div>
-        <div class="ks">${data.length} dep. · ${sessTotal} sess.</div>
-      </div>
-      <div class="kpi ${erros>0?'red':'green'}" onclick="filterListaByStatus('err')" style="cursor:pointer">
-        <div class="kl">🔴 Em Atraso</div>
-        <div class="kv">${erros}</div>
-        <div class="ks">${errSub}</div>
-      </div>
-      <div class="kpi ${warns>0?'orange':'green'}" onclick="filterListaByStatus('warn')" style="cursor:pointer">
-        <div class="kl">⚠️ A Resolver</div>
-        <div class="kv">${warns}</div>
-        <div class="ks">${warnSub}</div>
-      </div>
-      <div class="kpi ${kpiCompCls}" onclick="filterListaByStatus('ok')" style="cursor:pointer">
-        <div class="kl">📊 Conformidade</div>
-        <div class="kv">${complPct!==null?complPct+'%':'—'}</div>
-        <div class="ks">${compSub}</div>
-      </div>`;
+    const kpis=[];
+    // Fixo: Total Mês
+    kpis.push({cls:'blue',lbl:'Total Mês',val:fmt(total),sub:`${data.length} dep. · ${sessTotal} sess.`,on:`filterListaByStatus('')`});
+    // Dinâmico: Em Atraso
+    if(erros>0)kpis.push({cls:'red',lbl:'🔴 Em Atraso',val:erros,sub:`mais antigo: ${maxDaysLate} dia${maxDaysLate!==1?'s':''} · ${fmt(errVal)}`,on:`filterListaByStatus('err')`});
+    // Dinâmico: Sem Comprovativo (tem talão/data mas falta foto)
+    if(wSemComp.length)kpis.push({cls:'orange',lbl:'📷 Sem Comprovativo',val:wSemComp.length,sub:`${fmt(wSemComp.reduce((s,r)=>s+totalValor(r),0))} · juntar foto`,on:`filterListaByStatus('warn')`});
+    // Dinâmico: Por Depositar (nada feito, dentro do prazo)
+    if(wPendentes.length)kpis.push({cls:'orange',lbl:'⏳ Por Depositar',val:wPendentes.length,sub:`mais antigo há ${maxDaysPend} dia${maxDaysPend!==1?'s':''}`,on:`filterListaByStatus('warn')`});
+    // Dinâmico: A Completar (tem foto, falta talão ou data)
+    if(wACompletar.length)kpis.push({cls:'orange',lbl:'⚠️ A Completar',val:wACompletar.length,sub:`${wACompletar.filter(r=>!r.talao).length} sem talão · ${wACompletar.filter(r=>!r.dataDeposito).length} sem data`,on:`filterListaByStatus('warn')`});
+    // Dinâmico: Tardios (completo mas fora do prazo)
+    if(wTardios.length)kpis.push({cls:'orange',lbl:'⚠️ Tardios',val:wTardios.length,sub:`depositados fora do prazo`,on:`filterListaByStatus('warn')`});
+    // Dinâmico: Depositados OK
+    if(okRegs.length)kpis.push({cls:'green',lbl:'✅ Depositados',val:okRegs.length,sub:`${fmt(okRegs.reduce((s,r)=>s+totalValor(r),0))} · com comprovativo`,on:`filterListaByStatus('ok')`});
+    // Dinâmico: Programados
+    if(progRegs.length)kpis.push({cls:'blue',lbl:'📅 Programados',val:progRegs.length,sub:`datas de venda futuras`,on:`filterListaByStatus('prog')`});
+    // Dinâmico: Dias sem registo
+    if(missingCount)kpis.push({cls:'orange',lbl:'📋 Dias s/ Registo',val:missingCount,sub:missingArr.slice(0,3).map(d=>fd(d)).join(' · ')+(missingArr.length>3?` +${missingArr.length-3}`:''),on:null});
+    // Fixo: Conformidade
+    kpis.push({cls:kpiCompCls,lbl:'📊 Conformidade',val:complPct!==null?complPct+'%':'—',sub:`${okRegs.length} ok de ${data.length} dep.`+(missingCount>0?` · ${missingCount} s/ reg.`:''),on:`filterListaByStatus('ok')`});
+    kpiRow.innerHTML=kpis.map(k=>`<div class="kpi ${k.cls}"${k.on?` onclick="${k.on}" style="cursor:pointer"`:''}>
+      <div class="kl">${k.lbl}</div><div class="kv">${k.val}</div><div class="ks">${k.sub}</div></div>`).join('');
   }
   rTypeCards(data,getCfg);
   const el=document.getElementById('dash-body');
