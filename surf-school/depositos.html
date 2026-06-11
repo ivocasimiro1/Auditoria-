@@ -372,12 +372,7 @@ select{
       <button id="tv-table" onclick="setDashView('table')" title="Tabela">☰</button>
     </div>
   </div>
-  <div class="kpi-row">
-    <div class="kpi blue"><div class="kl">Total Mês</div><div class="kv" id="d-total">€0</div><div class="ks" id="d-total-s"></div></div>
-    <div class="kpi green"><div class="kl">✅ Depositado</div><div class="kv" id="d-dep">€0</div></div>
-    <div class="kpi orange"><div class="kl">⏳ Por Depositar</div><div class="kv" id="d-pend">€0</div></div>
-    <div class="kpi red"><div class="kl">🔴 Em Atraso</div><div class="kv" id="d-err">0</div><div class="ks" id="d-err-s"></div></div>
-  </div>
+  <div id="kpi-row" class="kpi-row"></div>
   <div id="dash-types"></div>
   <div id="dash-body"></div>
 </div>
@@ -1045,8 +1040,9 @@ function setDashView(v){
   document.getElementById('tv-table').classList.toggle('active',v==='table');
   rDash();
 }
-function rTypeCards(data){
+function rTypeCards(data,getCfgFn){
   const el=document.getElementById('dash-types');if(!el)return;
+  const getCfg=getCfgFn||(r=>isSA?null:cfg);
   const tipos=['Depósito Direto','Prosegur','Lomis','Câmbio'];
   const cls={'Depósito Direto':'tc-dir','Prosegur':'tc-pro','Lomis':'tc-lom','Câmbio':'tc-cam'};
   const ico={'Depósito Direto':'🏦','Prosegur':'🔒','Lomis':'🚚','Câmbio':'💱'};
@@ -1054,8 +1050,9 @@ function rTypeCards(data){
     const td=data.filter(r=>r.tipo===tipo);if(!td.length)return'';
     const total=td.reduce((s,r)=>s+totalValor(r),0);
     const dep=td.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-    const errs=td.filter(r=>calcEstado(r).s==='err').length;
-    const warns=td.filter(r=>calcEstado(r).s==='warn').length;
+    const errs=td.filter(r=>calcEstado(r,getCfg(r)).s==='err').length;
+    const warns=td.filter(r=>calcEstado(r,getCfg(r)).s==='warn').length;
+    const notYetDep=total-dep;
     let st,scl;
     if(errs>0){st=`🔴 ${errs} em atraso`;scl='err';}
     else if(warns>0){st=`⚠️ ${warns} aviso${warns>1?'s':''}`;scl='warn';}
@@ -1063,7 +1060,7 @@ function rTypeCards(data){
     return`<div class="tc ${cls[tipo]}">
       <div class="tc-name">${ico[tipo]} ${tipo}</div>
       <div class="tc-val">${fmt(total)}</div>
-      <div class="tc-meta">${td.length} dep. · ${fmt(total-dep)} por dep.</div>
+      <div class="tc-meta">${td.length} dep.${notYetDep>0?' · '+fmt(notYetDep)+' por dep.':''}</div>
       <div class="tc-st ${scl}">${st}</div>
     </div>`;
   }).join('');
@@ -1753,17 +1750,67 @@ function rDash(){
     if(lojaFil&&r.loja!==lojaFil)return false;
     return true;
   });
+  const getCfg=r=>{
+    if(!isSA)return cfg;
+    const sc=allStoreConfigs.find(c=>c.store_id===r.store_id);
+    return sc?{prosegurDay:sc.prosegur_day||'',lomisDay:sc.lomis_day||'',cambioDia:sc.cambio_dia||''}:null;
+  };
   const total=data.reduce((s,r)=>s+totalValor(r),0);
-  const depositado=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-  const erros=data.filter(r=>calcEstado(r).s==='err').length;
-  const porDep=data.filter(r=>{const e=calcEstado(r);return(e.s==='err'||e.s==='warn')}).reduce((s,r)=>s+totalValor(r),0);
-  document.getElementById('d-total').textContent=fmt(total);
-  const ts=document.getElementById('d-total-s');if(ts)ts.textContent=data.length+' dep. · '+data.reduce((s,r)=>s+r.sessoes.length,0)+' sessões';
-  document.getElementById('d-dep').textContent=fmt(depositado);
-  document.getElementById('d-pend').textContent=fmt(porDep);
-  document.getElementById('d-err').textContent=erros;
-  const es=document.getElementById('d-err-s');if(es)es.textContent=erros>0?data.filter(r=>calcEstado(r).s==='warn').length+' avisos':'';
-  rTypeCards(data);
+  const today=new Date();today.setHours(0,0,0,0);
+  const errRegs=data.filter(r=>calcEstado(r,getCfg(r)).s==='err');
+  const warnRegs=data.filter(r=>calcEstado(r,getCfg(r)).s==='warn');
+  const okRegs=data.filter(r=>calcEstado(r,getCfg(r)).s==='ok');
+  const progRegs=data.filter(r=>calcEstado(r,getCfg(r)).s==='prog');
+  const erros=errRegs.length;
+  const warns=warnRegs.length;
+  let maxDaysLate=0;
+  errRegs.forEach(r=>{const ma=maisAntigaData(r);if(ma){const d=Math.floor((today-ma)/86400000);if(d>maxDaysLate)maxDaysLate=d;}});
+  const errVal=errRegs.reduce((s,r)=>s+totalValor(r),0);
+  const wNoFoto=warnRegs.filter(r=>!r.foto).length;
+  const wNoTalao=warnRegs.filter(r=>!r.talao).length;
+  const wNoDate=warnRegs.filter(r=>!r.dataDeposito).length;
+  const wTardio=warnRegs.filter(r=>r.talao&&r.dataDeposito&&r.foto).length;
+  const wParts=[];
+  if(wNoFoto)wParts.push(`sem foto: ${wNoFoto}`);
+  if(wNoTalao)wParts.push(`sem talão: ${wNoTalao}`);
+  if(wNoDate)wParts.push(`sem data: ${wNoDate}`);
+  if(wTardio)wParts.push(`tardios: ${wTardio}`);
+  let missingArr=[];
+  if(!isSA){const ll=lojaFil?[lojaFil]:cfg.lojas;missingArr=[...new Set(ll.flatMap(l=>getMissingDays(mes,l)||[]))];}
+  else if(lojaFil){const sc=allStoreConfigs.find(c=>(c.lojas||[]).includes(lojaFil));missingArr=[...new Set((sc?.lojas||[lojaFil]).flatMap(l=>getMissingDays(mes,l)||[]))];}
+  const missingCount=missingArr.length;
+  const totalAdj=data.length+missingCount;
+  const complPct=totalAdj>0?Math.round((okRegs.length+progRegs.length)*100/totalAdj):null;
+  const kpiCompCls=complPct===null?'blue':complPct>=80?'green':complPct>=50?'orange':'red';
+  const kpiRow=document.getElementById('kpi-row');
+  if(kpiRow){
+    const sessTotal=data.reduce((s,r)=>s+r.sessoes.length,0);
+    const errSub=erros>0?`dep. mais antigo: ${maxDaysLate} dia${maxDaysLate!==1?'s':''} · ${fmt(errVal)}`:'✓ Nenhum em atraso';
+    const warnSub=warns>0?(wParts.join(' · ')||'ver detalhes'):'✓ Sem avisos';
+    const compSub=`${okRegs.length} ok de ${data.length} dep.`+(missingCount>0?` · ${missingCount} dias s/ reg.`:'');
+    kpiRow.innerHTML=`
+      <div class="kpi blue" onclick="filterListaByStatus('')" style="cursor:pointer">
+        <div class="kl">Total Mês</div>
+        <div class="kv">${fmt(total)}</div>
+        <div class="ks">${data.length} dep. · ${sessTotal} sess.</div>
+      </div>
+      <div class="kpi ${erros>0?'red':'green'}" onclick="filterListaByStatus('err')" style="cursor:pointer">
+        <div class="kl">🔴 Em Atraso</div>
+        <div class="kv">${erros}</div>
+        <div class="ks">${errSub}</div>
+      </div>
+      <div class="kpi ${warns>0?'orange':'green'}" onclick="filterListaByStatus('warn')" style="cursor:pointer">
+        <div class="kl">⚠️ A Resolver</div>
+        <div class="kv">${warns}</div>
+        <div class="ks">${warnSub}</div>
+      </div>
+      <div class="kpi ${kpiCompCls}" onclick="filterListaByStatus('ok')" style="cursor:pointer">
+        <div class="kl">📊 Conformidade</div>
+        <div class="kv">${complPct!==null?complPct+'%':'—'}</div>
+        <div class="ks">${compSub}</div>
+      </div>`;
+  }
+  rTypeCards(data,getCfg);
   const el=document.getElementById('dash-body');
   if(dashView==='table'){el.innerHTML=rDashTable(data);return;}
   if(!data.length){el.innerHTML=`<div class="empty"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>Sem registos para este período</p><small>Adicione o primeiro depósito no separador ➕</small></div>`;return}
@@ -1773,15 +1820,15 @@ function rDash(){
     if(!ld.length)return'';
     const lt=ld.reduce((s,r)=>s+totalValor(r),0);
     const ldep=ld.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-    const lok=ld.filter(r=>calcEstado(r).s==='ok').length;
-    const lwarn=ld.filter(r=>calcEstado(r).s==='warn').length;
-    const lerr=ld.filter(r=>calcEstado(r).s==='err').length;
-    const lprog=ld.filter(r=>calcEstado(r).s==='prog').length;
+    const lok=ld.filter(r=>calcEstado(r,getCfg(r)).s==='ok').length;
+    const lwarn=ld.filter(r=>calcEstado(r,getCfg(r)).s==='warn').length;
+    const lerr=ld.filter(r=>calcEstado(r,getCfg(r)).s==='err').length;
+    const lprog=ld.filter(r=>calcEstado(r,getCfg(r)).s==='prog').length;
     const rows=ld.map(r=>{
-      const est=calcEstado(r);
+      const est=calcEstado(r,getCfg(r));
       const tv=totalValor(r);
       const ns=r.sessoes.length;
-      const ma=maisAntigaData(r);const ml=r.sessoes.length>1?r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort():[];
+      const ml=r.sessoes.length>1?r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort():[];
       const dateRange=ml.length>1?`${fd(ml[0])} → ${fd(ml[ml.length-1])}`:fd(ml[0]||'');
       return`<div class="dep-row" onclick="openDetail('${r.id}')">
         <div class="dep-dot ${est.s}"></div>
