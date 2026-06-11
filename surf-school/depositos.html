@@ -730,7 +730,10 @@ select{
 <!-- MODAL -->
 <div class="mo" id="mod" onclick="cm()">
   <div class="modal" onclick="event.stopPropagation()">
-    <div class="mh"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="mh" style="margin:0"></div>
+      <button onclick="cm()" style="background:var(--g100);border:none;border-radius:50%;width:34px;height:34px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--g500);touch-action:manipulation;flex-shrink:0">✕</button>
+    </div>
     <div class="mt" id="mod-t"></div>
     <div id="mod-c"></div>
     <div class="ma" id="mod-a"></div>
@@ -2895,13 +2898,7 @@ function expEmail(){
     sp('settings');
     return;
   }
-  // Step 1: Download the report as HTML file so user can attach it to the email
-  const data=getFiltExp();
-  let fname='';
-  if(data.length){
-    try{fname=expPrint(data,true)||'';}catch(e){console.warn('download:',e);}
-  }
-  // Step 2: Copiar corpo para clipboard + abrir mailto: curto (funciona em iOS/Android)
+  // Copiar corpo para clipboard + abrir mailto: curto (funciona em iOS/Android)
   const subjRaw=document.getElementById('ep-sub')?.textContent||'';
   const bodyRaw=document.getElementById('ep-body')?.dataset.body||'';
   const ccRaw=(document.getElementById('ep-cc')?.textContent||'').trim();
