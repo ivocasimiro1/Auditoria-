@@ -1436,10 +1436,14 @@ function prevMonthStr(mes){
 }
 function storeComplianceMes(sid,mes){
   const mr=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes));
-  if(!mr.length)return null;
+  const cfg2=allStoreConfigs.find(c=>c.store_id===sid);
+  const lojas=cfg2?.lojas||[...new Set(mr.map(r=>r.loja).filter(Boolean))];
+  const missing=[...new Set(lojas.flatMap(l=>getMissingDays(mes,l)||[]))].length;
+  const total=mr.length+missing;
+  if(!total)return null;
   const ok=mr.filter(r=>calcEstado(r).s==='ok').length;
   const prog=mr.filter(r=>calcEstado(r).s==='prog').length;
-  return Math.round((ok+prog)*100/mr.length);
+  return Math.round((ok+prog)*100/total);
 }
 function avgCycleDays(storeRegs){
   const confirmed=storeRegs.filter(r=>r.talao&&r.dataDeposito);
@@ -1454,6 +1458,155 @@ function avgCycleDays(storeRegs){
 }
 function storeExposureVal(storeRegs){
   return storeRegs.filter(r=>!r.talao||!r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+}
+
+function rptStorePdf(loja,mes){
+  const lojaRegs=regs.filter(r=>r.loja===loja&&getRefDate(r).startsWith(mes.slice(0,7)))
+    .sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
+  const ownerCfg=allStoreConfigs.find(c=>(c.lojas||[]).includes(loja));
+  const empName=ownerCfg?.emp||loja;
+  const storeEmail=ownerCfg?.email||'';
+  const missingArr=(getMissingDays(mes,loja)||[]).sort();
+  const totalVal=lojaRegs.reduce((s,r)=>s+totalValor(r),0);
+  const depVal=lojaRegs.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+  const ok=lojaRegs.filter(r=>calcEstado(r).s==='ok').length;
+  const warn=lojaRegs.filter(r=>calcEstado(r).s==='warn').length;
+  const err=lojaRegs.filter(r=>calcEstado(r).s==='err').length;
+  const prog=lojaRegs.filter(r=>calcEstado(r).s==='prog').length;
+  const totalAdj=lojaRegs.length+missingArr.length;
+  const compPct=totalAdj>0?Math.round((ok+prog)*100/totalAdj):0;
+  const compColor=compPct>=80?'#166534':compPct>=50?'#92400e':'#991b1b';
+  const compBg=compPct>=80?'#dcfce7':compPct>=50?'#fef3c7':'#fee2e2';
+  const hoje=new Date();
+  const dataRel=hoje.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const horaRel=hoje.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
+  const [yy,mm]=mes.split('-');
+  const mnames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const mesNome=mnames[parseInt(mm)-1]+' '+yy;
+  const estadoGeral=compPct>=80?{icon:'✅',label:'CONFORME',col:'#166534',bg:'#f0fdf4',border:'#86efac'}
+    :compPct>=50?{icon:'⚠️',label:'ATENÇÃO NECESSÁRIA',col:'#92400e',bg:'#fffbeb',border:'#fde68a'}
+    :{icon:'🔴',label:'NÃO CONFORME — AÇÃO URGENTE',col:'#991b1b',bg:'#fef2f2',border:'#fca5a5'};
+  const statusBadge=r=>{const e=calcEstado(r);return e.s==='ok'?'<span style="color:#166534;font-weight:700">✅ OK</span>':e.s==='warn'?'<span style="color:#92400e;font-weight:700">⚠️ Aviso</span>':e.s==='err'?'<span style="color:#991b1b;font-weight:700">🔴 Em Atraso</span>':'<span style="color:#1d4ed8;font-weight:700">◷ Em Curso</span>';};
+  const regRows=lojaRegs.map(r=>{
+    const sessMin=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort()[0]||'';
+    const sessMax=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort().at(-1)||'';
+    const dateRange=sessMin===sessMax?fd(sessMin):(sessMin&&sessMax?fd(sessMin)+' a '+fd(sessMax):'—');
+    const nsess=r.sessoes.length;
+    return`<tr>
+      <td>${dateRange}</td>
+      <td>${r.tipo||'—'}</td>
+      <td style="text-align:right;font-weight:600">${fmt(totalValor(r))}</td>
+      <td>${r.dataDeposito?fd(r.dataDeposito):'—'}</td>
+      <td>${r.talao||'—'}</td>
+      <td style="text-align:center">${nsess}</td>
+      <td>${statusBadge(r)}</td>
+    </tr>`;
+  }).join('');
+  const missingHtml=missingArr.length?`
+    <div class="section">
+      <h3>Dias Sem Registo de Sessão (${missingArr.length} dia${missingArr.length!==1?'s':''})</h3>
+      <p style="color:#64748b;font-size:12px;margin-bottom:10px">Os seguintes dias do mês de ${mesNome} não têm qualquer sessão registada no sistema. Deverá confirmar se houve atividade comercial nesses dias e, caso sim, proceder ao registo e respetivo depósito.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${missingArr.map(d=>`<span style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600">${fd(d)}</span>`).join('')}
+      </div>
+    </div>`:'';
+  const recoms=[];
+  if(err>0)recoms.push(`<li>Regularizar <strong>${err} depósito(s) em atraso</strong> no valor total de <strong>${fmt(lojaRegs.filter(r=>calcEstado(r).s==='err').reduce((s,r)=>s+totalValor(r),0))}</strong> com a máxima urgência.</li>`);
+  if(warn>0)recoms.push(`<li>Verificar <strong>${warn} registo(s) com aviso</strong> e garantir que os depósitos são efetuados dentro do prazo.</li>`);
+  if(missingArr.length>0)recoms.push(`<li>Registar ou justificar <strong>${missingArr.length} dia(s) sem sessão</strong>: ${missingArr.slice(0,5).map(d=>fd(d)).join(', ')}${missingArr.length>5?` e mais ${missingArr.length-5}...`:''}.</li>`);
+  if(recoms.length===0)recoms.push('<li>Manter a regularidade e continuar a registar as sessões e depósitos dentro dos prazos definidos.</li>');
+  const html=`<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
+<title>Relatório Compliance — ${loja} — ${mesNome}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;color:#1e293b;background:#fff;padding:0}
+.page{max-width:800px;margin:0 auto;padding:32px 40px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1e3a5f;padding-bottom:16px;margin-bottom:24px}
+.brand{font-size:22px;font-weight:900;color:#1e3a5f;letter-spacing:-0.5px}
+.brand span{color:#3b82f6}
+.doc-info{text-align:right;font-size:11px;color:#64748b;line-height:1.6}
+.doc-title{font-size:16px;font-weight:800;color:#1e3a5f;margin-bottom:2px}
+.estado-box{border:2px solid ${estadoGeral.border};background:${estadoGeral.bg};border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+.estado-icon{font-size:28px}
+.estado-text .label{font-size:15px;font-weight:800;color:${estadoGeral.col}}
+.estado-text .desc{font-size:12px;color:#64748b;margin-top:2px;line-height:1.4}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center}
+.kpi .val{font-size:20px;font-weight:800;color:#1e293b}
+.kpi .lbl{font-size:10px;color:#64748b;margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+.kpi.comp .val{color:${compColor};background:${compBg};border-radius:6px;padding:2px 8px;display:inline-block}
+.section{margin-bottom:20px}
+.section h3{font-size:13px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid #e2e8f0}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f1f5f9;color:#475569;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:7px 10px;text-align:left;border-bottom:2px solid #e2e8f0}
+td{padding:7px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.no-records{text-align:center;color:#94a3b8;padding:20px;font-size:12px;font-style:italic}
+.recoms li{margin-bottom:6px;color:#374151;line-height:1.5;padding-left:4px}
+.footer{margin-top:32px;padding-top:12px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:10px;color:#94a3b8}
+@media print{
+  body{padding:0}
+  .page{padding:20px 28px;max-width:100%}
+  @page{margin:1.5cm;size:A4}
+}
+</style></head><body>
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="brand">DESPO<span>MAR</span></div>
+      <div style="font-size:11px;color:#64748b;margin-top:3px">Sistema de Controlo de Depósitos</div>
+      <div style="margin-top:8px">
+        <div class="doc-title">Relatório de Conformidade de Depósitos</div>
+        <div style="font-size:12px;color:#475569;margin-top:2px"><strong>${loja}</strong> · ${mesNome}</div>
+      </div>
+    </div>
+    <div class="doc-info">
+      <div>Gerado em ${dataRel} às ${horaRel}</div>
+      <div>Confidencial — uso interno</div>
+      ${storeEmail?`<div style="margin-top:4px">📧 ${storeEmail}</div>`:''}
+    </div>
+  </div>
+
+  <div class="estado-box">
+    <div class="estado-icon">${estadoGeral.icon}</div>
+    <div class="estado-text">
+      <div class="label">${estadoGeral.label}</div>
+      <div class="desc">Loja ${loja} · Compliance de ${compPct}% em ${mesNome}${missingArr.length>0?` · ${missingArr.length} dia(s) sem registo`:''}</div>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi comp"><div class="val">${compPct}%</div><div class="lbl">Compliance</div></div>
+    <div class="kpi"><div class="val">${fmt(totalVal)}</div><div class="lbl">Total Mês</div></div>
+    <div class="kpi"><div class="val">${fmt(depVal)}</div><div class="lbl">Depositado</div></div>
+    <div class="kpi"><div class="val" style="color:${missingArr.length>0?'#991b1b':'#16a34a'}">${missingArr.length}</div><div class="lbl">Dias s/ Registo</div></div>
+  </div>
+
+  <div class="section">
+    <h3>Registos do Mês — ${lojaRegs.length} depósito(s)</h3>
+    ${lojaRegs.length?`<table>
+      <thead><tr><th>Data(s) Sessão</th><th>Tipo</th><th style="text-align:right">Valor</th><th>Data Depósito</th><th>Talão</th><th style="text-align:center">Sessões</th><th>Estado</th></tr></thead>
+      <tbody>${regRows}</tbody>
+    </table>`:`<div class="no-records">Nenhum depósito registado para ${mesNome}.</div>`}
+  </div>
+
+  ${missingHtml}
+
+  <div class="section">
+    <h3>Recomendações</h3>
+    <ul class="recoms" style="padding-left:16px">${recoms.join('')}</ul>
+  </div>
+
+  <div class="footer">
+    <div>Despomar · Sistema de Controlo de Depósitos · auditoria-25b.pages.dev</div>
+    <div>${dataRel}</div>
+  </div>
+</div>
+<script>window.onload=()=>{window.print();}</script>
+</body></html>`;
+  const pw=window.open('about:blank','_blank');
+  if(!pw){toast('⚠️ Popup bloqueado — permite popups para esta página.');return;}
+  pw.document.write(html);pw.document.close();
 }
 
 function rSASupervision(){
@@ -1486,7 +1639,12 @@ function rSASupervision(){
     const err=storeRegs.filter(r=>calcEstado(r).s==='err').length;
     const prog=storeRegs.filter(r=>calcEstado(r).s==='prog').length;
     const total=storeRegs.length;
-    const compliant=total>0?Math.round((ok+prog)*100/total):null;
+    // Compliance must account for missing days (days with no records count against score)
+    const storeLojas2=cfg2?.lojas||[...new Set(storeRegs.map(r=>r.loja).filter(Boolean))];
+    const storeMissingArr=[...new Set(storeLojas2.flatMap(l=>getMissingDays(mes,l)||[]))];
+    const storeMissingCount=storeMissingArr.length;
+    const totalAdj=total+storeMissingCount;
+    const compliant=totalAdj>0?Math.round((ok+prog)*100/totalAdj):null;
     const lastCompliant=storeComplianceMes(sid,lastMes);
     const today=new Date();
     let delaySum=0,delayCount=0;
@@ -1506,7 +1664,7 @@ function rSASupervision(){
     });
     // flag: any record with >3 sessions combined (possible cash accumulation)
     const bulkFlag=storeRegs.some(r=>r.sessoes&&r.sessoes.length>3);
-    storeList.push({sid,empName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,bulkFlag});
+    storeList.push({sid,empName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,bulkFlag,storeMissingCount,storeLojas2});
   });
   // Sort: worst first (err desc, then warn desc, then compliant asc)
   storeList.sort((a,b)=>{
@@ -1601,6 +1759,7 @@ function rSASupervision(){
       <div style="min-width:65px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">EXPOSIÇÃO</div>${exposureStr}</div>
       <div style="display:flex;gap:3px;flex-wrap:wrap">
         <button onclick="filterLista('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">Lista</button>
+        <button onclick="rptStorePdf('${(s.storeLojas2||[s.empName])[0]}','${mes}')" style="background:#0f172a;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">📄 PDF</button>
         ${alertBtn}
       </div>
     </div>`;
@@ -1779,7 +1938,10 @@ function rDash(){
       if(erros>0)emailBody+=`⚠️ DEPÓSITOS EM ATRASO: ${erros} registo(s) aguardam regularização urgente.\n\n`;
       if(missingForEmail.length>0)emailBody+=`📅 DIAS SEM REGISTO: ${missingForEmail.length} dia(s):\n${missingForEmail.map(d=>fd(d)).join(', ')}\n\n`;
       emailBody+=`Por favor aceda ao sistema para regularizar a situação.\n\nAcesso: https://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nGestão Despomar`;
-      saEmailBtn=`<div style="margin-bottom:8px"><a href="mailto:${destEmail}?subject=${encSubj}&body=${encodeURIComponent(emailBody)}" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#1d4ed8;color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;text-decoration:none;touch-action:manipulation">📧 Enviar Alerta a ${lojaFil} <span style="font-size:11px;opacity:.8">(${errTotal} problema${errTotal>1?'s':''})</span></a></div>`;
+      saEmailBtn=`<div style="margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <a href="mailto:${destEmail}?subject=${encSubj}&body=${encodeURIComponent(emailBody)}" style="flex:1;min-width:160px;display:flex;align-items:center;justify-content:center;gap:6px;background:#1d4ed8;color:#fff;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;text-decoration:none;touch-action:manipulation">📧 Enviar Alerta <span style="font-size:11px;opacity:.8">(${errTotal} prob.)</span></a>
+        <button onclick="rptStorePdf('${lojaFil}','${mes}')" style="flex:1;min-width:160px;background:#0f172a;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">📄 Relatório PDF</button>
+      </div>`;
     }
     if(alerts.length){
       dab.innerHTML=saEmailBtn+`<div style="margin-bottom:10px">`+alerts.map(a=>{
