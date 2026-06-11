@@ -808,14 +808,26 @@ async function doLogin(){
   if(!email||!pass){showAE('Preencha email e password');return;}
   const btn=document.getElementById('auth-btn');
   btn.textContent='A entrar...';btn.disabled=true;hideAE();
-  const{data,error}=await SB.auth.signInWithPassword({email,password:pass});
-  if(error){showAE(error.message.includes('Invalid')?'Email ou password incorretos':error.message);btn.textContent='Entrar';btn.disabled=false;return;}
-  await afterLogin(data.user);
+  try{
+    const{data,error}=await SB.auth.signInWithPassword({email,password:pass});
+    if(error){
+      const msg=error.message.includes('Invalid')||error.message.includes('credentials')?'Email ou password incorretos':
+                error.message.includes('network')||error.message.includes('fetch')?'Sem ligação à internet. Verifique a rede e tente de novo.':
+                error.message;
+      showAE(msg);btn.textContent='Entrar';btn.disabled=false;return;
+    }
+    await afterLogin(data.user);
+  }catch(e){
+    showAE('Erro inesperado: '+(e.message||'verifique a ligação e tente de novo'));
+    btn.textContent='Entrar';btn.disabled=false;
+  }
 }
 async function afterLogin(user){
+  const btn=document.getElementById('auth-btn');
+  try{
   sbUser=user;
   const{data:p,error}=await SB.from('dep_users').select('*').eq('id',user.id).single();
-  if(error||!p){showAE('Conta sem permissões. Contacte o administrador.');await SB.auth.signOut();document.getElementById('auth-btn').textContent='Entrar';document.getElementById('auth-btn').disabled=false;return;}
+  if(error||!p){showAE('Conta sem permissões. Contacte o administrador. ('+(error?.message||'sem dados')+')');await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;}
   sbProfile=p;isSA=(p.role==='super_admin');
   await sbLoad();
   document.getElementById('auth-screen').style.display='none';
@@ -831,6 +843,12 @@ async function afterLogin(user){
   popSel();
   if(isSA){popSupSel();sp('supervisao');}else{rDash();}
   sbSubscribeRT();
+  }catch(e){
+    console.error('afterLogin error:',e);
+    showAE('Erro ao carregar: '+(e.message||String(e))+'. Tente recarregar a página (F5).');
+    try{await SB.auth.signOut();}catch(e2){}
+    if(btn){btn.textContent='Entrar';btn.disabled=false;}
+  }
 }
 let _rtCh=null;
 function sbSubscribeRT(){
