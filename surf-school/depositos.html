@@ -679,6 +679,17 @@ select{
 </div>
 
 <script>
+// ─── ERROS VISÍVEIS (diagnóstico) ────────────────────
+function _showErr(msg){
+  try{
+    let b=document.getElementById('js-err-banner');
+    if(!b){b=document.createElement('div');b.id='js-err-banner';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#dc2626;color:#fff;padding:10px 14px;font-size:12px;font-family:monospace;word-break:break-all;box-shadow:0 2px 8px rgba(0,0,0,.4)';b.onclick=()=>b.remove();document.body.appendChild(b);}
+    b.textContent='⚠️ '+msg+' (toca para fechar)';
+  }catch(e){}
+}
+window.onerror=(m,src,l)=>{_showErr('Erro JS: '+m+' @linha '+l);};
+window.onunhandledrejection=e=>{_showErr('Erro: '+(e.reason?.message||e.reason));};
+
 // ─── SUPABASE ─────────────────────────────────────────
 const SB=supabase.createClient(
   'https://ubeqidccuvsjhjphybxz.supabase.co',
@@ -765,7 +776,8 @@ async function doLogin(){
   btn.textContent='A entrar...';btn.disabled=true;hideAE();
   const{data,error}=await SB.auth.signInWithPassword({email,password:pass});
   if(error){showAE(error.message.includes('Invalid')?'Email ou password incorretos':error.message);btn.textContent='Entrar';btn.disabled=false;return;}
-  await afterLogin(data.user);
+  try{await afterLogin(data.user);}
+  catch(e){showAE('Erro ao iniciar: '+e.message);_showErr('afterLogin: '+e.message);btn.textContent='Entrar';btn.disabled=false;}
 }
 async function afterLogin(user){
   sbUser=user;
