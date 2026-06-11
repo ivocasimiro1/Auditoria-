@@ -1741,7 +1741,8 @@ function rSASupervision(){
     });
     // flag: any record with >3 sessions combined (possible cash accumulation)
     const bulkFlag=storeRegs.some(r=>r.sessoes&&r.sessoes.length>3);
-    storeList.push({sid,empName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,bulkFlag,storeMissingCount,storeLojas2});
+    const displayName=(storeLojas2&&storeLojas2.length)?storeLojas2.join(' / '):empName;
+    storeList.push({sid,empName,displayName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,bulkFlag,storeMissingCount,storeLojas2});
   });
   // Sort: worst first (err desc, then warn desc, then compliant asc)
   storeList.sort((a,b)=>{
@@ -1828,7 +1829,8 @@ function rSASupervision(){
     return`<div style="display:flex;align-items:center;gap:5px;padding:7px 10px;background:${rowColor};border-left:3px solid ${borderColor};border-bottom:1px solid #f1f5f9;flex-wrap:wrap">
       <div style="background:${rankBg};color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">${idx+1}</div>
       <div style="flex:1;min-width:100px">
-        <div style="font-size:12px;font-weight:700;color:#1e293b">${s.empName}${bulkWarn}</div>
+        <div style="font-size:12px;font-weight:700;color:#1e293b">${s.displayName}${bulkWarn}</div>
+        ${s.displayName!==s.empName?`<div style="font-size:10px;color:#94a3b8;margin-bottom:1px">${s.empName}</div>`:''}
         <div style="display:flex;gap:4px;align-items:center;margin-top:1px">${badge}${trendStr?`<span style="margin-left:3px">${trendStr}</span>`:''}</div>
       </div>
       <div style="min-width:60px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">REGISTOS</div>${statsCells}</div>
@@ -1851,7 +1853,7 @@ function rSASupervision(){
     const passIsDefault=!knownPass;
     const emailVal=(cn.email||s.email||'').replace(/"/g,'&quot;');
     return`<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;margin-bottom:8px">
-      <div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:8px">${s.empName} <span style="font-size:10px;color:#94a3b8;font-weight:400">${s.sid}</span></div>
+      <div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:8px">${s.displayName} <span style="font-size:10px;color:#94a3b8;font-weight:400">${s.displayName!==s.empName?s.empName+' · ':''}</span><span style="font-size:10px;color:#94a3b8;font-weight:400">${s.sid}</span></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
         <div>
           <label style="font-size:10px;color:#64748b;display:block;margin-bottom:2px">Email de acesso</label>
