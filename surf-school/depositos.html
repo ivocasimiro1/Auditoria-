@@ -4,12 +4,63 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Depósitos">
-<meta name="theme-color" content="#1a56db">
+<meta name="theme-color" content="#0f2460">
 <title>Controlo de Depósitos · Despomar</title>
-<link rel="icon" type="image/png" href="/surf-school/depositos-icon.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/surf-school/depositos-apple-icon.png">
-<link rel="manifest" href="/surf-school/depositos-manifest.json">
+<script>
+(function(){
+  function genIcon(sz){
+    const c=document.createElement('canvas');
+    c.width=c.height=sz;
+    const ctx=c.getContext('2d');
+    const s=sz/192;
+    // Background rounded rect
+    const r=sz*0.197;
+    ctx.fillStyle='#0f2460';
+    ctx.beginPath();
+    ctx.moveTo(r,0);ctx.lineTo(sz-r,0);ctx.arcTo(sz,0,sz,r,r);
+    ctx.lineTo(sz,sz-r);ctx.arcTo(sz,sz,sz-r,sz,r);
+    ctx.lineTo(r,sz);ctx.arcTo(0,sz,0,sz-r,r);
+    ctx.lineTo(0,r);ctx.arcTo(0,0,r,0,r);
+    ctx.closePath();ctx.fill();
+    // Surfboard white body
+    ctx.fillStyle='white';
+    ctx.beginPath();ctx.ellipse(96*s,95*s,36*s,65*s,0,0,Math.PI*2);ctx.fill();
+    // Pointed nose
+    ctx.beginPath();ctx.moveTo(96*s,20*s);ctx.lineTo(62*s,52*s);ctx.lineTo(130*s,52*s);ctx.closePath();ctx.fill();
+    // Cyan rail
+    ctx.fillStyle='#4fc9e8';
+    ctx.beginPath();ctx.ellipse(96*s,95*s,20*s,51*s,0,0,Math.PI*2);ctx.fill();
+    // Tail fin
+    ctx.fillStyle='white';
+    ctx.beginPath();ctx.moveTo(80*s,150*s);ctx.lineTo(96*s,173*s);ctx.lineTo(112*s,150*s);ctx.closePath();ctx.fill();
+    // € arc (C shape, opening right)
+    ctx.strokeStyle='#0f2460';ctx.lineWidth=11*s;ctx.lineCap='round';
+    ctx.beginPath();ctx.arc(96*s,94*s,29*s,-Math.PI/4,Math.PI/4,true);ctx.stroke();
+    // € top bar
+    ctx.beginPath();ctx.moveTo(62*s,83*s);ctx.lineTo(113*s,83*s);ctx.stroke();
+    // € bottom bar
+    ctx.beginPath();ctx.moveTo(62*s,107*s);ctx.lineTo(113*s,107*s);ctx.stroke();
+    // Wave left
+    ctx.strokeStyle='#56cce8';ctx.lineWidth=5*s;
+    ctx.beginPath();ctx.moveTo(12*s,168*s);ctx.quadraticCurveTo(26*s,156*s,40*s,168*s);ctx.quadraticCurveTo(54*s,180*s,68*s,168*s);ctx.stroke();
+    // Wave right
+    ctx.beginPath();ctx.moveTo(124*s,168*s);ctx.quadraticCurveTo(138*s,156*s,152*s,168*s);ctx.quadraticCurveTo(166*s,180*s,180*s,168*s);ctx.stroke();
+    return c.toDataURL('image/png');
+  }
+  try{
+    const icon180=genIcon(180);
+    const al=document.createElement('link');al.rel='apple-touch-icon';al.href=icon180;document.head.appendChild(al);
+    const manifest={name:'Controlo de Depósitos · Despomar',short_name:'Depósitos',description:'Gestão de depósitos bancários Despomar',start_url:'/depositos',display:'standalone',background_color:'#0f2460',theme_color:'#0f2460',orientation:'portrait-primary',
+      icons:[{src:genIcon(192),sizes:'192x192',type:'image/png'},{src:genIcon(512),sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
+    const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+    const ml=document.createElement('link');ml.rel='manifest';ml.href=URL.createObjectURL(blob);document.head.appendChild(ml);
+    // favicon
+    const fl=document.createElement('link');fl.rel='icon';fl.type='image/png';fl.href=genIcon(64);document.head.appendChild(fl);
+  }catch(e){}
+})();
+</script>
 <!-- ExcelJS loaded dynamically on export -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
