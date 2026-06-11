@@ -401,14 +401,7 @@ select{
     <div class="kpi blue"><div class="kl">Total Mês</div><div class="kv" id="d-total">€0</div><div class="ks" id="d-total-s"></div></div>
     <div class="kpi green"><div class="kl">✅ Depositado</div><div class="kv" id="d-dep">€0</div></div>
     <div class="kpi orange"><div class="kl">⏳ Por Depositar</div><div class="kv" id="d-pend">€0</div><div class="ks" id="d-pend-s"></div></div>
-    <div class="kpi red">
-      <div class="kl">🔴 Em Atraso / Falta</div>
-      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:2px">
-        <div style="min-width:40px"><div class="kv" id="d-err-reg">0</div><div class="ks">atrasados</div></div>
-        <div style="color:#fca5a5;font-size:18px;padding-bottom:4px;line-height:1">+</div>
-        <div style="min-width:40px"><div class="kv" id="d-err-dias">0</div><div class="ks">dias s/ registo</div></div>
-      </div>
-    </div>
+    <div class="kpi red"><div class="kl">🔴 Em Atraso / Falta</div><div class="kv" id="d-err-total">0</div><div class="ks" id="d-err-detail"></div></div>
   </div>
   <div id="sa-supervision"></div>
   <div id="sa-stores-panel"></div>
@@ -1468,12 +1461,22 @@ function rSASupervision(){
   if(!panel||!isSA)return;
   const mes=document.getElementById('dash-mes')?.value||curMesStr();
   const mesLabel=mes.slice(0,7);
+  const lojaFil=document.getElementById('dash-loja')?.value||'';
+  // If a specific loja is selected, only show the store that owns it
+  let filterSids=null;
+  if(lojaFil){
+    const matchingSids=new Set();
+    allStoreConfigs.forEach(c=>{if((c.lojas||[]).includes(lojaFil))matchingSids.add(c.store_id);});
+    regs.filter(r=>r.loja===lojaFil&&r.store_id&&r.store_id!=='super').forEach(r=>matchingSids.add(r.store_id));
+    if(matchingSids.size)filterSids=matchingSids;
+  }
   // Build per-store stats from allStoreConfigs + any stores with records
   const knownSids=new Set(allStoreConfigs.map(c=>c.store_id));
   regs.forEach(r=>{if(r.store_id&&r.store_id!=='super')knownSids.add(r.store_id);});
   const storeList=[];
   const lastMes=prevMonthStr(mes);
   knownSids.forEach(sid=>{
+    if(filterSids&&!filterSids.has(sid))return;
     const cfg2=allStoreConfigs.find(c=>c.store_id===sid);
     const empName=cfg2?.emp||sid;
     const email=cfg2?.email||'';
@@ -1750,15 +1753,36 @@ function rDash(){
   const alertsCount=getOverdueAlerts(lojaFil).length;
   const lojasList=lojaFil?[lojaFil]:cfg.lojas;
   const missingTotal=lojasList.reduce((s,l)=>s+getMissingDays(mes,l).length,0);
-  const lateCount=erros+alertsCount;
-  const errReg=document.getElementById('d-err-reg');if(errReg)errReg.textContent=lateCount||'0';
-  const errDias=document.getElementById('d-err-dias');if(errDias)errDias.textContent=missingTotal||'0';
+  const errTotal=erros+alertsCount+missingTotal;
+  const etEl=document.getElementById('d-err-total');if(etEl)etEl.textContent=errTotal||'0';
+  const edEl=document.getElementById('d-err-detail');if(edEl){
+    const pp=[];
+    if(erros>0)pp.push(erros+' reg. em atraso');
+    if(alertsCount>0)pp.push(alertsCount+' loja'+(alertsCount>1?'s':'')+' sem registo');
+    if(missingTotal>0)pp.push(missingTotal+' dia'+(missingTotal>1?'s':'')+' sem sessão');
+    edEl.textContent=pp.join(' · ')||'Tudo em dia ✓';
+  }
   // Overdue alerts — lojas sem registo há mais dias que o prazo
   const dab=document.getElementById('dash-alerts');
   if(dab){
     const alerts=getOverdueAlerts(lojaFil);
+    // SA email alert button when a loja is selected and has issues
+    let saEmailBtn='';
+    if(isSA&&lojaFil&&errTotal>0){
+      // Find store for this loja
+      const ownerCfg=allStoreConfigs.find(c=>(c.lojas||[]).includes(lojaFil));
+      const ownerSid=ownerCfg?.store_id||regs.find(r=>r.loja===lojaFil)?.store_id||'';
+      const destEmail=ownerCfg?.email||'';
+      const encSubj=encodeURIComponent(`⚠️ Depósitos ${mes} — Regularização necessária — ${lojaFil}`);
+      const missingForEmail=getMissingDays(mes,lojaFil)||[];
+      let emailBody=`Exmo(a) Sr(a),\n\nEsta mensagem refere-se ao controlo de depósitos do mês de ${mes} da vossa loja (${lojaFil}).\n\n`;
+      if(erros>0)emailBody+=`⚠️ DEPÓSITOS EM ATRASO: ${erros} registo(s) aguardam regularização urgente.\n\n`;
+      if(missingForEmail.length>0)emailBody+=`📅 DIAS SEM REGISTO: ${missingForEmail.length} dia(s):\n${missingForEmail.map(d=>fd(d)).join(', ')}\n\n`;
+      emailBody+=`Por favor aceda ao sistema para regularizar a situação.\n\nAcesso: https://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nGestão Despomar`;
+      saEmailBtn=`<div style="margin-bottom:8px"><a href="mailto:${destEmail}?subject=${encSubj}&body=${encodeURIComponent(emailBody)}" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#1d4ed8;color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;text-decoration:none;touch-action:manipulation">📧 Enviar Alerta a ${lojaFil} <span style="font-size:11px;opacity:.8">(${errTotal} problema${errTotal>1?'s':''})</span></a></div>`;
+    }
     if(alerts.length){
-      dab.innerHTML=`<div style="margin-bottom:10px">`+alerts.map(a=>{
+      dab.innerHTML=saEmailBtn+`<div style="margin-bottom:10px">`+alerts.map(a=>{
         const grave=a.dias>a.prazo*2;
         const prazoLabel=a.tipo==='Depósito Direto'?`prazo: ${a.prazo} dias`:`levantamento a cada ${a.prazo} dias`;
         return`<div class="alert-banner${grave?' red':''}" style="margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
@@ -1770,7 +1794,7 @@ function rDash(){
         </div>`;
       }).join('')+'</div>';
     }else{
-      dab.innerHTML='';
+      dab.innerHTML=saEmailBtn;
     }
   }
   rTypeCards(data);
