@@ -2955,12 +2955,7 @@ function expPrint(data, asDownload=false){
     const fc=estEff.s==='ok'?'#166534':estEff.s==='warn'?'#854d0e':estEff.s==='err'?'#991b1b':'#64748b';
     const sessTalao=getSessTalao(r,s);
     const rowBg=isDup?'#fff0f0':n%2===0?'#f0f7ff':'#ffffff';
-    const ns=r.sessoes.length;
-    const photoImgH=Math.max(34,ns*18);
-    const photoCell=isFirst
-      ?(r.foto?`<td rowspan="${ns}" style="padding:2px;text-align:center;vertical-align:middle"><img src="${r.foto}" style="width:46px;height:${photoImgH}px;object-fit:cover;border-radius:3px;display:block;margin:0 auto"></td>`
-              :`<td rowspan="${ns}" style="text-align:center;color:#94a3b8;font-size:8px;vertical-align:middle">—</td>`)
-      :'';
+    const photoCell=isFirst?(r.foto?`<td style="padding:2px;text-align:center"><img src="${r.foto}" style="height:34px;width:46px;object-fit:cover;border-radius:3px;display:block;margin:0 auto"></td>`:`<td style="text-align:center;color:#94a3b8;font-size:8px">—</td>`):`<td></td>`;
     return`<tr style="background:${rowBg}${isDup?';border-left:3px solid #ef4444':''}${!isFirst?';border-top:1px dashed #e2e8f0':''}">
       <td style="text-align:center;color:#94a3b8;font-size:7px">${isFirst?n:''}</td>
       <td style="font-weight:700;color:${isDup?'#dc2626':'#0f172a'}">${fd(s.dataVendas)}${isDup?' ⚠️':''}</td>
