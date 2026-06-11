@@ -2332,7 +2332,6 @@ function rSASupervision(){
             ${s.displayName!==s.empName?`<div style="font-size:10px;color:${subCol};margin-top:1px">${s.empName}</div>`:''}
             ${s.servicoStr?`<div style="font-size:10px;color:${subCol};opacity:.8;margin-top:1px">🚚 ${s.servicoStr}</div>`:''}
             <div style="display:flex;gap:4px;align-items:center;margin-top:4px">${badge}${trendStr?`<span style="margin-left:3px">${trendStr}</span>`:''}</div>
-            ${indicBar}
           </div>
           <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;flex-shrink:0">
             <button onclick="filterListaBySid('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:7px;padding:6px 11px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation">Lista</button>
