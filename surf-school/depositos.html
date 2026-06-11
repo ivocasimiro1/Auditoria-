@@ -446,7 +446,8 @@ select{
   </div>
   <div class="msr">
     <select id="fl-mes" onchange="rLista()"><option value="">Todos os meses</option></select>
-    <select id="fl-loj" onchange="rLista()"><option value="">Todas</option></select>
+    <select id="fl-loj" onchange="const s=document.getElementById('fl-sid');if(s)s.value='';rLista()"><option value="">Todas</option></select>
+    <input type="hidden" id="fl-sid" value="">
   </div>
   <div class="fc" id="fc">
     <div class="chip active" data-s="">Todos</div>
@@ -1081,7 +1082,7 @@ function rDashTable(data){
   // Expand: one row per session
   const rows=[];
   data.forEach(r=>{
-    const est=calcEstado(r);
+    const est=calcEstado(r,getRecordCfg(r));
     const tv=totalValor(r);
     r.sessoes.forEach((s,si)=>{
       rows.push({r,s,si,est,tv,isFirst:si===0,totalSess:r.sessoes.length});
@@ -1140,8 +1141,19 @@ function filterLista(loja,st){
   rLista();
 }
 function filterListaByStatus(st){
+  const sidEl=document.getElementById('fl-sid');if(sidEl)sidEl.value='';
   const loja=document.getElementById('dash-loja')?.value||'';
   filterLista(loja,st);
+}
+function filterListaBySid(sid,status){
+  sp('lista');
+  const supMes=document.getElementById('sup-mes')?.value||'';
+  const flMes=document.getElementById('fl-mes');if(flMes&&supMes)flMes.value=supMes;
+  const lojaSel=document.getElementById('fl-loj');if(lojaSel)lojaSel.value='';
+  const sidEl=document.getElementById('fl-sid');if(sidEl)sidEl.value=sid;
+  activeSt=status;
+  document.querySelectorAll('#fc .chip').forEach(c=>c.classList.toggle('active',c.dataset.s===status));
+  rLista();
 }
 function abrirNovoComDia(date){
   sp('novo');
@@ -1307,7 +1319,7 @@ function rptStorePdf(loja,mes){
       </div>
     </div>`:'';
   const recoms=[];
-  if(err>0)recoms.push(`<li>Regularizar <strong>${err} depósito(s) em atraso</strong> no valor total de <strong>${fmt(lojaRegs.filter(r=>calcEstado(r).s==='err').reduce((s,r)=>s+totalValor(r),0))}</strong> com a máxima urgência.</li>`);
+  if(err>0)recoms.push(`<li>Regularizar <strong>${err} depósito(s) em atraso</strong> no valor total de <strong>${fmt(lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==='err').reduce((s,r)=>s+totalValor(r),0))}</strong> com a máxima urgência.</li>`);
   if(warn>0)recoms.push(`<li>Verificar <strong>${warn} registo(s) com aviso</strong> e garantir que os depósitos são efetuados dentro do prazo.</li>`);
   if(missingArr.length>0)recoms.push(`<li>Registar ou justificar <strong>${missingArr.length} dia(s) sem sessão</strong>: ${missingArr.slice(0,5).map(d=>fd(d)).join(', ')}${missingArr.length>5?` e mais ${missingArr.length-5}...`:''}.</li>`);
   if(recoms.length===0)recoms.push('<li>Manter a regularidade e continuar a registar as sessões e depósitos dentro dos prazos definidos.</li>');
@@ -1376,7 +1388,7 @@ tr:last-child td{border-bottom:none}
   </div>
 
   ${storeEmail?`<div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap">
-    <a class="email-btn" href="mailto:${storeEmail}?cc=ivo@despomar.com&subject=${encodeURIComponent('Relatório Conformidade Depósitos — '+loja+' — '+mesNome)}&body=${encodeURIComponent('Exmo(a) Sr(a) Gerente,\n\nAdjunto/em anexo o relatório de conformidade de depósitos referente a '+mesNome+'.\n\nCompliance: '+compPct+'%\nTotal do mês: '+fmt(totalVal)+'\n'+(err>0?'⚠️ '+err+' depósito(s) em atraso — '+fmt(lojaRegs.filter(r=>calcEstado(r).s==="err").reduce((s,r)=>s+totalValor(r),0))+'\n':'')+(missingArr.length>0?'📅 '+missingArr.length+' dia(s) sem registo\n':'')+(err===0&&missingArr.length===0?'✅ Tudo conforme.\n':'\nPor favor regularize a situação com a máxima brevidade.\n')+'\nCumprimentos,\nIvo Casimiro\nDespomar — Gestão Interna\nauditoria-25b.pages.dev/depositos')}">📧 Enviar por Email ao Gerente</a>
+    <a class="email-btn" href="mailto:${storeEmail}?cc=ivo@despomar.com&subject=${encodeURIComponent('Relatório Conformidade Depósitos — '+loja+' — '+mesNome)}&body=${encodeURIComponent('Exmo(a) Sr(a) Gerente,\n\nAdjunto/em anexo o relatório de conformidade de depósitos referente a '+mesNome+'.\n\nCompliance: '+compPct+'%\nTotal do mês: '+fmt(totalVal)+'\n'+(err>0?'⚠️ '+err+' depósito(s) em atraso — '+fmt(lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==="err").reduce((s,r)=>s+totalValor(r),0))+'\n':'')+(missingArr.length>0?'📅 '+missingArr.length+' dia(s) sem registo\n':'')+(err===0&&missingArr.length===0?'✅ Tudo conforme.\n':'\nPor favor regularize a situação com a máxima brevidade.\n')+'\nCumprimentos,\nIvo Casimiro\nDespomar — Gestão Interna\nauditoria-25b.pages.dev/depositos')}">📧 Enviar por Email ao Gerente</a>
     <button class="email-btn" style="background:#0f172a" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
   </div>`:''}
 
@@ -1471,14 +1483,17 @@ function rSASupervision(){
     const exposure=storeExposureVal(storeRegs);
     // max age: how many days the oldest unconfirmed record has been open
     let maxAge=0;
-    storeRegs.filter(r=>!r.talao||!r.dataDeposito).forEach(r=>{
+    storeRegs.filter(r=>!r.foto||!r.talao||!r.dataDeposito).forEach(r=>{
       const ref=maisAntigaData(r);
       if(ref){const d=Math.floor((today-ref)/86400000);if(d>maxAge)maxAge=d;}
     });
     // flag: any record with >3 sessions combined (possible cash accumulation)
     const bulkFlag=storeRegs.some(r=>r.sessoes&&r.sessoes.length>3);
+    const wSemComp=storeRegs.filter(r=>calcEstado(r,normCfg).s==='warn'&&!r.foto&&(r.talao||r.dataDeposito)).length;
+    const wPendentes=storeRegs.filter(r=>calcEstado(r,normCfg).s==='warn'&&!r.foto&&!r.talao&&!r.dataDeposito).length;
+    const wACompl=storeRegs.filter(r=>calcEstado(r,normCfg).s==='warn'&&r.foto&&(!r.talao||!r.dataDeposito)).length;
     const displayName=(storeLojas2&&storeLojas2.length)?storeLojas2.join(' / '):empName;
-    storeList.push({sid,empName,displayName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,bulkFlag,storeMissingCount,storeLojas2});
+    storeList.push({sid,empName,displayName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,bulkFlag,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl});
   });
   // Sort: stores with data first (worst-to-best), then no-data alphabetically
   const severity=s=>{
@@ -1577,7 +1592,7 @@ function rSASupervision(){
           ${s.displayName!==s.empName?`<div style="font-size:10px;color:#94a3b8">${s.empName}</div>`:''}
           <div style="font-size:10px;color:#94a3b8;margin-top:1px">⚫ Sem registos em ${mesLabelStr}</div>
         </div>
-        <button onclick="filterLista('${s.sid}','')" style="background:#e2e8f0;color:#475569;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;touch-action:manipulation">Lista</button>
+        <button onclick="filterListaBySid('${s.sid}','')" style="background:#e2e8f0;color:#475569;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;touch-action:manipulation">Lista</button>
       </div>`;
     }
     // PROBLEM: colored card with email button
@@ -1588,29 +1603,33 @@ function rSASupervision(){
       const subCol=isCritical?'#991b1b':'#92400e';
       const btnBg=isCritical?'#dc2626':'#d97706';
       const icon=isCritical?'🔴':'🟡';
-      let detail=s.err>0?`${s.err} em atraso${s.lateVal>0?' · '+fmt(s.lateVal):''}${s.maxAge>0?' · '+s.maxAge+'d em aberto':''}`
-        :s.warn>0?`${s.warn} com aviso · ${s.total} registo(s)`
-        :isCritical?`Compliance ${s.compliant}% — crítico · ${s.storeMissingCount} dia(s) sem registo`
-        :`Compliance ${s.compliant}% · ${s.storeMissingCount} dia(s) sem registo`;
-      return`<div style="background:${bg};border-left:4px solid ${border};border-bottom:1px solid #e2e8f0;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <div style="flex:1;min-width:120px">
-          <div style="font-size:13px;font-weight:800;color:${titleCol}">${icon} ${s.displayName}${bulkWarn}</div>
-          ${s.displayName!==s.empName?`<div style="font-size:10px;color:${subCol};margin-top:1px">${s.empName}</div>`:''}
-          <div style="font-size:11px;color:${subCol};margin-top:3px">${detail}</div>
-          <div style="display:flex;gap:4px;align-items:center;margin-top:4px">${badge}${trendStr?`<span style="margin-left:3px">${trendStr}</span>`:''}</div>
+      const subBadges=[];
+      if(s.err>0)subBadges.push(`<button onclick="filterListaBySid('${s.sid}','err')" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">🔴 ${s.err} em atraso</button>`);
+      if(s.wSemComp>0)subBadges.push(`<button onclick="filterListaBySid('${s.sid}','warn')" style="background:#fff7ed;color:#92400e;border:1px solid #fed7aa;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">📷 ${s.wSemComp} sem comprovativo</button>`);
+      if(s.wPendentes>0)subBadges.push(`<button onclick="filterListaBySid('${s.sid}','warn')" style="background:#fff7ed;color:#92400e;border:1px solid #fed7aa;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">⏳ ${s.wPendentes} pendente${s.wPendentes!==1?'s':''}</button>`);
+      if(s.wACompl>0)subBadges.push(`<button onclick="filterListaBySid('${s.sid}','warn')" style="background:#fff7ed;color:#92400e;border:1px solid #fed7aa;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">⚠️ ${s.wACompl} a completar</button>`);
+      if(s.storeMissingCount>0)subBadges.push(`<span style="background:#f3f4f6;color:#6b7280;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600">📋 ${s.storeMissingCount} dias s/ reg.</span>`);
+      return`<div style="background:${bg};border-left:4px solid ${border};border-bottom:1px solid #e2e8f0;padding:12px 14px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div style="flex:1;min-width:120px">
+            <div style="font-size:13px;font-weight:800;color:${titleCol}">${icon} ${s.displayName}${bulkWarn}</div>
+            ${s.displayName!==s.empName?`<div style="font-size:10px;color:${subCol};margin-top:1px">${s.empName}</div>`:''}
+            <div style="display:flex;gap:4px;align-items:center;margin-top:4px">${badge}${trendStr?`<span style="margin-left:3px">${trendStr}</span>`:''}</div>
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;flex-shrink:0">
+            <button onclick="filterListaBySid('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:7px;padding:6px 11px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation">Lista</button>
+            <button onclick="rptStorePdf('${pdfLoja}','${mes}')" style="background:#0f172a;color:#fff;border:none;border-radius:7px;padding:6px 11px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation">📄 PDF</button>
+            <button onclick="window._saAlertEmail('${s.sid}')" style="background:${btnBg};color:#fff;border:none;border-radius:9px;padding:9px 15px;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation;white-space:nowrap">📧 Email</button>
+          </div>
         </div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-          <button onclick="filterLista('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:7px;padding:6px 11px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation">Lista</button>
-          <button onclick="rptStorePdf('${pdfLoja}','${mes}')" style="background:#0f172a;color:#fff;border:none;border-radius:7px;padding:6px 11px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation">📄 PDF</button>
-          <button onclick="window._saAlertEmail('${s.sid}')" style="background:${btnBg};color:#fff;border:none;border-radius:9px;padding:9px 15px;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation;white-space:nowrap">📧 Enviar Email</button>
-        </div>
+        ${subBadges.length?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">${subBadges.join('')}</div>`:''}
       </div>`;
     }
     // OK active store: green compact row
-    const statsCells=`<span style="color:#16a34a;font-size:11px">✓${s.ok}</span>`
-      +(s.warn?` <span style="color:#d97706;font-size:11px">⚠${s.warn}</span>`:'')
-      +(s.err?` <span style="color:#dc2626;font-size:11px">✗${s.err}</span>`:'')
-      +(s.prog?` <span style="color:#2563eb;font-size:11px">◷${s.prog}</span>`:'');
+    const statsCells=`<span onclick="filterListaBySid('${s.sid}','ok')" style="color:#16a34a;font-size:11px;cursor:pointer" title="Ver OK">✓${s.ok}</span>`
+      +(s.warn?` <span onclick="filterListaBySid('${s.sid}','warn')" style="color:#d97706;font-size:11px;cursor:pointer" title="Ver avisos">⚠${s.warn}</span>`:'')
+      +(s.err?` <span onclick="filterListaBySid('${s.sid}','err')" style="color:#dc2626;font-size:11px;cursor:pointer" title="Ver em atraso">✗${s.err}</span>`:'')
+      +(s.prog?` <span onclick="filterListaBySid('${s.sid}','prog')" style="color:#2563eb;font-size:11px;cursor:pointer" title="Ver programados">◷${s.prog}</span>`:'');
     const cycleStr=s.cycle!==null?`<span style="color:${s.cycle<=2?'#16a34a':s.cycle<=4?'#d97706':'#dc2626'};font-size:11px;font-weight:600">${s.cycle}d</span>`:'<span style="color:#94a3b8;font-size:11px">—</span>';
     const exposureStr=s.exposure>0?`<span style="color:#dc2626;font-size:11px;font-weight:600">${fmt(s.exposure)}</span>`:'<span style="color:#16a34a;font-size:11px">✓ 0</span>';
     return`<div style="display:flex;align-items:center;gap:5px;padding:7px 10px;background:${rowColor};border-left:3px solid ${borderColor};border-bottom:1px solid #f1f5f9;flex-wrap:wrap">
@@ -1624,7 +1643,7 @@ function rSASupervision(){
       <div style="min-width:50px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">CICLO</div>${cycleStr}</div>
       <div style="min-width:65px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">EXPOSIÇÃO</div>${exposureStr}</div>
       <div style="display:flex;gap:3px;flex-wrap:wrap">
-        <button onclick="filterLista('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">Lista</button>
+        <button onclick="filterListaBySid('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">Lista</button>
         <button onclick="rptStorePdf('${pdfLoja}','${mes}')" style="background:#0f172a;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">📄 PDF</button>
       </div>
     </div>`;
@@ -1871,22 +1890,29 @@ function rLista(){
   popSel();
   const fm=document.getElementById('fl-mes').value;
   const fl=document.getElementById('fl-loj').value;
+  const fSid=document.getElementById('fl-sid')?.value||'';
+  const getListCfg=r=>{
+    if(!isSA)return cfg;
+    const sc=allStoreConfigs.find(c=>c.store_id===r.store_id);
+    return sc?{prosegurDay:sc.prosegur_day||'',lomisDay:sc.lomis_day||'',cambioDia:sc.cambio_dia||''}:null;
+  };
   let filtered=regs.filter(r=>{
-    const s=calcEstado(r).s;
+    const s=calcEstado(r,getListCfg(r)).s;
     if(activeSt&&s!==activeSt)return false;
     if(fm){const ref=getRefDate(r);if(!ref.startsWith(fm))return false}
     if(fl&&r.loja!==fl)return false;
+    if(fSid&&r.store_id!==fSid)return false;
     return true;
   });
   const total=filtered.reduce((s,r)=>s+totalValor(r),0);
   document.getElementById('s-tot').textContent=fmt(total);
   document.getElementById('s-cnt').textContent=filtered.length;
-  document.getElementById('s-err').textContent=filtered.filter(r=>calcEstado(r).s==='err').length;
-  document.getElementById('s-ok').textContent=filtered.filter(r=>calcEstado(r).s==='ok').length;
+  document.getElementById('s-err').textContent=filtered.filter(r=>calcEstado(r,getListCfg(r)).s==='err').length;
+  document.getElementById('s-ok').textContent=filtered.filter(r=>calcEstado(r,getListCfg(r)).s==='ok').length;
   const el=document.getElementById('list');
   if(!filtered.length){el.innerHTML=`<div class="empty"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>Sem registos</p></div>`;return}
   el.innerHTML=filtered.map(r=>{
-    const est=calcEstado(r);const bc=est.s==='ok'?'bok':est.s==='warn'?'bwarn':est.s==='err'?'berr':'bprog';
+    const est=calcEstado(r,getListCfg(r));const bc=est.s==='ok'?'bok':est.s==='warn'?'bwarn':est.s==='err'?'berr':'bprog';
     const tv=totalValor(r);const ns=r.sessoes.length;
     const ml=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
     const dateRange=ml.length>1?`${fd(ml[0])} → ${fd(ml[ml.length-1])}`:fd(ml[0]||'');
@@ -1895,9 +1921,14 @@ function rLista(){
 }
 
 // ─── MODAL ───────────────────────────────────────────
+function getRecordCfg(r){
+  if(!isSA)return cfg;
+  const sc=allStoreConfigs.find(c=>c.store_id===r.store_id);
+  return sc?{prosegurDay:sc.prosegur_day||'',lomisDay:sc.lomis_day||'',cambioDia:sc.cambio_dia||''}:null;
+}
 function openDetail(id){
   const r=regs.find(x=>x.id===id);if(!r)return;
-  const est=calcEstado(r);const bc=est.s==='ok'?'bok':est.s==='warn'?'bwarn':est.s==='err'?'berr':'bprog';
+  const est=calcEstado(r,getRecordCfg(r));const bc=est.s==='ok'?'bok':est.s==='warn'?'bwarn':est.s==='err'?'berr':'bprog';
   const tv=totalValor(r);
   const ml=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
   const dateRange=ml.length>1?`${fd(ml[0])} → ${fd(ml[ml.length-1])}`:fd(ml[0]||'');
@@ -1999,8 +2030,8 @@ function updEmailPrev(){
   const ml=mesLabel(mes);
   const total=data.reduce((s,r)=>s+totalValor(r),0);
   const totalDep=data.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-  const erros=data.filter(r=>calcEstado(r).s==='err').length;
-  const avisos=data.filter(r=>calcEstado(r).s==='warn').length;
+  const erros=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
+  const avisos=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='warn').length;
   const subj=`Folha Depósitos – ${loja} – ${ml} – ${empresa}`;
   const bodyLines=[
     `Exmo(a). Departamento de Contabilidade,`,
@@ -2067,7 +2098,7 @@ function updPrev(){
   wrap.style.display='block';
   const hs=['#','Loja','Sessões','Data Vendas','Data Dep.','Tipo','Valor','Nº Talão','Responsável','Estado'];
   const rows=data.map((r,i)=>{
-    const est=calcEstado(r);const tv=totalValor(r);
+    const est=calcEstado(r,getRecordCfg(r));const tv=totalValor(r);
     const ml=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
     const dr=ml.length>1?`${fd(ml[0])}→${fd(ml[ml.length-1])}`:fd(ml[0]||'');
     const cl=est.s==='ok'?'color:#0e9f6e':est.s==='warn'?'color:#ff5a1f':est.s==='err'?'color:#e02424':'color:#6b7280';
@@ -2093,7 +2124,7 @@ async function expXLSX(data){
   const ml=mesLabel(mes);
   const total=data.reduce((s,r)=>s+totalValor(r),0);
   const totalDep=data.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-  const erros=data.filter(r=>calcEstado(r).s==='err').length;
+  const erros=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
 
   const WB=new ExcelJS.Workbook();
   WB.creator=empresa; WB.created=new Date();
@@ -2185,7 +2216,7 @@ async function expXLSX(data){
 
   // DATA ROWS
   data.forEach((r,idx)=>{
-    const est=calcEstado(r); const s=r.sessoes[0]||{};
+    const est=calcEstado(r,getRecordCfg(r)); const s=r.sessoes[0]||{};
     const tv=totalValor(r);
     const rowBg=idx%2===0?white:llblue;
     const envio=r.foto&&r.talao&&r.dataDeposito?'S':'';
@@ -2240,7 +2271,7 @@ async function expXLSX(data){
     const ld=data.filter(r=>r.loja===l);if(!ld.length)return;
     const lt=ld.reduce((s,r)=>s+totalValor(r),0);
     const ldep=ld.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-    const row=WS2.addRow([l,ld.length,lt,ldep,lt-ldep,ld.filter(r=>calcEstado(r).s==='ok').length,ld.filter(r=>calcEstado(r).s==='warn').length,ld.filter(r=>calcEstado(r).s==='err').length]);
+    const row=WS2.addRow([l,ld.length,lt,ldep,lt-ldep,ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='ok').length,ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='warn').length,ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length]);
     row.height=18; const bg=i%2===0?white:llblue;
     row.eachCell((c,col)=>{c.fill=fill(bg);c.font=font({size:10,color:{argb:gray}});c.border=bdr();c.alignment={vertical:'middle'};if(col>=3&&col<=5){c.numFmt='#,##0.00 "€"';c.alignment={horizontal:'right',vertical:'middle'};}if(col>=6){c.alignment={horizontal:'center',vertical:'middle'};}});
     row.getCell(1).font=font({size:10,bold:true,color:{argb:blue}});
@@ -2267,14 +2298,14 @@ function expEmail(data){
   const total=data.reduce((s,r)=>s+totalValor(r),0);
   const totalDep=data.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
   const ml=mesLabel(mes);
-  const erros=data.filter(r=>calcEstado(r).s==='err').length;
-  const avisos=data.filter(r=>calcEstado(r).s==='warn').length;
+  const erros=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
+  const avisos=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='warn').length;
 
   // Build professional HTML report
   const withPhotos=data.filter(r=>r.foto);
   let bodyRows='';
   data.forEach((r,idx)=>{
-    const est=calcEstado(r); const tv=totalValor(r);
+    const est=calcEstado(r,getRecordCfg(r)); const tv=totalValor(r);
     const ml2=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
     const dateRange=ml2.length>1?fd(ml2[0])+' → '+fd(ml2[ml2.length-1]):fd(ml2[0]||'');
     const bc=est.s==='ok'?'#d1fae5':est.s==='warn'?'#fed7aa':est.s==='err'?'#fee2e2':'#f3f4f6';
@@ -2308,7 +2339,7 @@ function expEmail(data){
     const lt=ld.reduce((s,r)=>s+totalValor(r),0);
     const ldep=ld.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
     const pct=lt>0?Math.round(ldep/lt*100):0;
-    lojaRows+=`<tr><td style="padding:6px 8px;font-weight:700">${l}</td><td style="text-align:center;padding:6px">${ld.length}</td><td style="text-align:right;padding:6px 8px;font-weight:700;color:#1e40af">${fmt(lt)}</td><td style="text-align:right;padding:6px 8px;color:#065f46;font-weight:700">${fmt(ldep)}</td><td style="text-align:right;padding:6px 8px;color:#92400e">${fmt(lt-ldep)}</td><td style="text-align:center;padding:6px">${pct}%</td><td style="text-align:center;padding:6px;color:#065f46">${ld.filter(r=>calcEstado(r).s==='ok').length}</td><td style="text-align:center;padding:6px;color:#92400e">${ld.filter(r=>calcEstado(r).s==='warn').length}</td><td style="text-align:center;padding:6px;color:#7f1d1d">${ld.filter(r=>calcEstado(r).s==='err').length}</td></tr>`;
+    lojaRows+=`<tr><td style="padding:6px 8px;font-weight:700">${l}</td><td style="text-align:center;padding:6px">${ld.length}</td><td style="text-align:right;padding:6px 8px;font-weight:700;color:#1e40af">${fmt(lt)}</td><td style="text-align:right;padding:6px 8px;color:#065f46;font-weight:700">${fmt(ldep)}</td><td style="text-align:right;padding:6px 8px;color:#92400e">${fmt(lt-ldep)}</td><td style="text-align:center;padding:6px">${pct}%</td><td style="text-align:center;padding:6px;color:#065f46">${ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='ok').length}</td><td style="text-align:center;padding:6px;color:#92400e">${ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='warn').length}</td><td style="text-align:center;padding:6px;color:#7f1d1d">${ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length}</td></tr>`;
   });
 
   const fotosHtml='';
@@ -2380,7 +2411,7 @@ ${erros>0?`<div class="alert-box" style="background:#fee2e2;color:#7f1d1d;border
   <div class="kpi" style="background:#dbeafe"><div class="kl">Total</div><div class="kv" style="color:#1e40af">${fmt(total)}</div></div>
   <div class="kpi" style="background:#d1fae5"><div class="kl">✅ Depositado</div><div class="kv" style="color:#065f46">${fmt(totalDep)}</div></div>
   <div class="kpi" style="background:#fed7aa"><div class="kl">⚠️ Por Depositar</div><div class="kv" style="color:#92400e">${fmt(total-totalDep)}</div></div>
-  <div class="kpi" style="background:${erros>0?'#fee2e2':'#d1fae5'}"><div class="kl">${erros>0?'🔴 Erros':'✅ Conformes'}</div><div class="kv" style="color:${erros>0?'#7f1d1d':'#065f46'}">${erros>0?erros:data.filter(r=>calcEstado(r).s==='ok').length}</div></div>
+  <div class="kpi" style="background:${erros>0?'#fee2e2':'#d1fae5'}"><div class="kl">${erros>0?'🔴 Erros':'✅ Conformes'}</div><div class="kv" style="color:${erros>0?'#7f1d1d':'#065f46'}">${erros>0?erros:data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='ok').length}</div></div>
   <div class="kpi" style="background:#f3f4f6"><div class="kl">⚠️ Avisos</div><div class="kv" style="color:#92400e">${avisos}</div></div>
 </div>
 
@@ -2482,8 +2513,8 @@ function expPrint(data){
     return s+r.sessoes.reduce((sv,se)=>getSessTalao(r,se)?sv+(parseFloat(se.valor)||0):sv,0);
   },0);
   const ml=mesLabel(mes);
-  const erros=data.filter(r=>calcEstado(r).s==='err').length;
-  const tardios=data.filter(r=>calcEstado(r).s==='err');
+  const erros=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
+  const tardios=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err');
   const valorTardio=tardios.reduce((s,r)=>s+totalValor(r),0);
   // Count unique talões (per session + deposit level)
   const allTaloes=new Set();
@@ -2495,7 +2526,7 @@ function expPrint(data){
   // One row per session, sorted by date
   const rows=[];
   data.forEach(r=>{
-    const est=calcEstado(r);
+    const est=calcEstado(r,getRecordCfg(r));
     r.sessoes.forEach((s,si)=>{
       rows.push({r,s,si,est,isFirst:si===0,nSess:r.sessoes.length});
     });
