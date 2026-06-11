@@ -2914,7 +2914,7 @@ function expEmail(){
   const ccRaw=(document.getElementById('ep-cc')?.textContent||'').trim();
   const ccStr=(ccRaw&&ccRaw!=='—')?`&cc=${encodeURIComponent(ccRaw)}`:'';
   window.location.href=`mailto:${dest}?subject=${subj}${ccStr}&body=${body}`;
-  toast(fname?`📎 "${fname}" guardado em Downloads — adiciona como anexo!`:'✓ A abrir email…');
+  toast('📄 1) Guarda como PDF no diálogo que abriu · 2) Anexa ao email');
 }
 
 
@@ -3056,15 +3056,13 @@ ${missingPdfHtml}
 </body></html>`;
 
   if(asDownload){
-    // Download as HTML file (to attach to email)
-    const fname=`Depositos_${loja.replace(/\s+/g,'_')}_${mes}.html`;
-    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;a.download=fname;
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    return fname;
+    // Abre em nova janela e aciona impressão → utilizador guarda como PDF
+    const pw=window.open('about:blank','_blank');
+    if(!pw){toast('⚠️ Popup bloqueado — permite popups para esta página.');return '';}
+    pw.document.write(html);
+    pw.document.close();
+    setTimeout(()=>{pw.focus();pw.print();},400);
+    return 'PDF';
   }
   const pw=window.open('about:blank','_blank');
   if(!pw){toast('⚠️ Popup bloqueado — permite popups para esta página.');return;}
