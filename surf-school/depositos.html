@@ -423,7 +423,11 @@ select{
     <div><h1 id="ttitle">Dashboard</h1><div class="sub" id="tsub">Despomar</div></div>
   </div>
   <div style="display:flex;gap:6px;align-items:center">
-    <button id="logout-btn" class="cfg-btn" onclick="doLogout()" style="display:none;background:rgba(220,38,38,.25);border-color:rgba(255,100,100,.3)" title="Terminar Sessão">🚪</button>
+    <div id="user-chip" style="display:none;flex-direction:column;align-items:flex-end;line-height:1.2;margin-right:2px">
+      <span id="user-chip-name" style="font-size:12px;font-weight:700;color:#fff"></span>
+      <span id="user-chip-email" style="font-size:10px;color:rgba(255,255,255,.6)"></span>
+    </div>
+    <button id="logout-btn" class="cfg-btn" onclick="doLogout()" style="display:none;background:rgba(220,38,38,.3);border-color:rgba(255,100,100,.35)" title="Terminar Sessão">🚪</button>
     <button class="cfg-btn" onclick="sp('settings')">⚙️</button>
   </div>
 </div>
@@ -674,11 +678,6 @@ select{
     <button class="btn bs" onclick="doChangePass()">🔑 Alterar Password</button>
     <p style="font-size:11px;color:var(--g400);margin-top:8px;line-height:1.5">A alteração é imediata. O gestor de topo será notificado automaticamente.</p>
   </div>
-  <div class="card" id="logout-card" style="display:none">
-    <div class="ct">Sessão</div>
-    <div id="user-info" style="font-size:13px;color:var(--g600);margin-bottom:12px;padding:10px 12px;background:var(--bl);border-radius:8px"></div>
-    <button class="btn bd" onclick="doLogout()">🚪 Terminar Sessão</button>
-  </div>
 </div>
 
 <!-- ═══ SUPERVISÃO (SA only) ═══ -->
@@ -832,11 +831,11 @@ async function afterLogin(user){
   await sbLoad();
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('tsub').textContent=isSA?('⭐ '+(p.nome||'Super Admin')):(p.nome||p.store_id||cfg.emp||'Depósitos');
-  const lc=document.getElementById('logout-card');if(lc)lc.style.display='block';
   const lb=document.getElementById('logout-btn');if(lb)lb.style.display='flex';
+  const uc=document.getElementById('user-chip');if(uc)uc.style.display='flex';
+  const ucn=document.getElementById('user-chip-name');if(ucn)ucn.textContent=(p.nome||p.store_id||'')+(isSA?' ⭐':'');
+  const uce=document.getElementById('user-chip-email');if(uce)uce.textContent=user.email;
   const cpc=document.getElementById('change-pass-card');if(cpc)cpc.style.display=isSA?'none':'block';
-  const ui=document.getElementById('user-info');
-  if(ui)ui.innerHTML=`<strong>${p.nome||p.store_id}</strong> · ${isSA?'Super Admin':'Staff'}<br><span style="font-size:11px;color:var(--g400)">${user.email}</span>`;
   document.querySelectorAll('.sa-tab').forEach(el=>el.style.display=isSA?'flex':'none');
   const nbNovo=document.getElementById('nb-novo');if(nbNovo)nbNovo.style.display=isSA?'none':'flex';
   const nbDash=document.getElementById('nb-dash');if(nbDash)nbDash.style.display=isSA?'none':'flex';
@@ -870,8 +869,8 @@ async function doLogout(){
   cfg={emp:'Despomar',email:'',nif:'',lojas:[],resps:[]};
   if(_rtCh)try{SB.removeChannel(_rtCh);}catch(e){}
   _rtCh=null;
-  const lc=document.getElementById('logout-card');if(lc)lc.style.display='none';
   const lb=document.getElementById('logout-btn');if(lb)lb.style.display='none';
+  const uc=document.getElementById('user-chip');if(uc)uc.style.display='none';
   document.querySelectorAll('.sa-tab').forEach(el=>el.style.display='none');
   const nbNovo=document.getElementById('nb-novo');if(nbNovo)nbNovo.style.display='flex';
   const nbDash2=document.getElementById('nb-dash');if(nbDash2)nbDash2.style.display='flex';
