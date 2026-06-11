@@ -657,7 +657,7 @@ select{
   </div>
   <div class="card" style="background:#f0fdf4;border:1.5px solid #6ee7b7">
     <div class="ct" style="color:#065f46">📋 Regras de Negócio</div>
-    <p style="font-size:13px;color:var(--g600);line-height:1.6"><strong>Depósito Direto:</strong> deve ser feito a cada 2 dias. Mais de 3 sessões numa só entrega = tardio + justificação obrigatória.</p>
+    <p style="font-size:13px;color:var(--g600);line-height:1.6"><strong>Depósito Direto:</strong> deve ser feito a cada 2 dias. O estado é calculado pelo prazo — não há limite no número de sessões por depósito.</p>
     <p style="font-size:13px;color:var(--g600);line-height:1.6;margin-top:8px"><strong>Prosegur / Lomis / Câmbio:</strong> passam na loja semanalmente. Não necessita de ir ao banco. Configura o dia de levantamento de cada serviço acima para que o sistema calcule automaticamente os prazos.</p>
   </div>
   <div class="card" style="background:var(--bl)">
@@ -968,7 +968,6 @@ function calcEstado(r,storeCfg){
   if(ma>=today)return{s:'prog',label:'📅 Programado'};
   if(tv===0)return{s:'ok',label:'✅ Sem vendas'};
   const diasDesde=Math.floor((today-ma)/86400000);
-  const muitasSessoes=(r.tipo==='Depósito Direto')&&nsess>3;
   let prazo=r.tipo==='Depósito Direto'?2:7;
   let vencidoPorDiaRecolha=false;
   if(r.tipo!=='Depósito Direto'&&storeCfg){
@@ -985,7 +984,7 @@ function calcEstado(r,storeCfg){
       }
     }
   }
-  const vencido=diasDesde>prazo||muitasSessoes||vencidoPorDiaRecolha;
+  const vencido=diasDesde>prazo||vencidoPorDiaRecolha;
   // Comprovativo (foto) é a validação principal — sem foto = não depositado
   if(!r.foto){
     if(r.talao||r.dataDeposito)
@@ -1002,10 +1001,10 @@ function calcEstado(r,storeCfg){
   if(!r.talao&&r.dataDeposito){
     return vencido?{s:'err',label:'🔴 Falta nº talão'}:{s:'warn',label:'⚠️ Falta nº talão'};
   }
-  // Completo: foto + talão + data — estado baseado no prazo, não no nº de sessões
+  // Completo: foto + talão + data — estado baseado no prazo
   const dd=new Date(r.dataDeposito);
   const diasParaDep=Math.floor((dd-ma)/86400000);
-  if(diasParaDep>prazo||muitasSessoes)return{s:'warn',label:'⚠️ OK, mas tardio'};
+  if(diasParaDep>prazo)return{s:'warn',label:'⚠️ OK, mas tardio'};
   return{s:'ok',label:'✅ OK'};
 }
 function estBadge(est){const cl=est.s==='ok'?'bok':est.s==='warn'?'bwarn':est.s==='err'?'berr':'bprog';return`<span class="badg ${cl}">${est.label}</span>`}
@@ -1227,21 +1226,10 @@ function updSesTotal(){
 }
 
 function checkSesAlert(){
-  const tipo=document.getElementById('f-tipo').value;
-  const cnt=document.querySelectorAll('.ses-row').length;
   const al=document.getElementById('ses-alert');
   const jg=document.getElementById('just-grp');
-  if(tipo==='Depósito Direto'&&cnt>3){
-    al.style.display='block';
-    al.innerHTML=`<div class="alert-banner red">⚠️ <strong>${cnt} sessões</strong> num único depósito — excede o limite de 3. Este depósito será marcado como <strong>TARDIO</strong>. É obrigatório justificar em baixo.</div>`;
-    jg.style.display='block';
-  } else if(tipo==='Depósito Direto'&&cnt===3){
-    al.style.display='block';
-    al.innerHTML=`<div class="alert-banner">ℹ️ <strong>3 sessões</strong> no mesmo depósito. O ideal é depositar de 2 em 2 dias. Se exceder 3 sessões, será marcado como tardio.</div>`;
-    jg.style.display='none';
-  } else {
-    al.style.display='none';jg.style.display='none';
-  }
+  if(al)al.style.display='none';
+  if(jg)jg.style.display='none';
 }
 
 function checkGuardarBtn(){
@@ -1255,10 +1243,6 @@ function checkGuardarBtn(){
   if(!sessoes.length){btn.disabled=true;btn.style.opacity='.5';return;}
   const allValid=sessoes.every(s=>s.dataVendas&&s.sessao&&s.valor>0);
   if(!allValid){btn.disabled=true;btn.style.opacity='.5';return;}
-  if(tipo==='Depósito Direto'&&sessoes.length>3){
-    const just=(document.getElementById('f-just')?.value||'').trim();
-    if(!just){btn.disabled=true;btn.style.opacity='.5';return;}
-  }
   btn.disabled=false;btn.style.opacity='1';
 }
 
@@ -1337,12 +1321,8 @@ async function guardar(){
     const ultVenda=datas.sort().pop();
     if(ultVenda&&dd<ultVenda){toast('⚠️ A data do depósito ('+fd(dd)+') não pode ser anterior ao último dia de venda ('+fd(ultVenda)+')');return;}
   }
-  const cnt=sessoes.length;
-  const isTardio=tipo==='Depósito Direto'&&cnt>3;
-  const just=(document.getElementById('f-just')?.value||'').trim();
-  if(isTardio&&!just){toast('⚠️ Justificação obrigatória para mais de 3 sessões');return}
   const obsBase=(document.getElementById('f-obs')?.value||'').trim();
-  const obs=isTardio?('[Tardio] '+just+(obsBase?'\n'+obsBase:'')):obsBase;
+  const obs=obsBase;
   const reg={
     id:Date.now().toString(),loja,tipo,sessoes,
     dataDeposito:document.getElementById('f-dd').value||'',
@@ -2323,7 +2303,7 @@ function rDash(){
           <div class="dep-date">${dateRange} <span style="font-size:10px;font-weight:600;color:var(--g400)">${r.tipo||''}</span>${dupBadge}</div>
           <div style="margin-top:3px;margin-bottom:3px;display:flex;flex-wrap:wrap;gap:3px;align-items:center">${sessDetail}</div>
           <div class="dep-detail">Talão: ${r.talao||'—'} ${r.dataDeposito?'· Dep: '+fd(r.dataDeposito):''}</div>
-          <div style="margin-top:3px">${estBadge(est)}${ns>3&&r.tipo==='Depósito Direto'?` <span style="font-size:10px;color:var(--red);font-weight:700"> ⚠️ ${ns} sessões</span>`:''}</div>
+          <div style="margin-top:3px">${estBadge(est)}</div>
         </div>
         <div class="dep-val">${fmt(tv)}</div>
       </div>`;
