@@ -2148,6 +2148,8 @@ function rSASupervision(){
     });
     const saGapMissingDays=allMissing.filter(d=>d<saNewestDepDate&&d<saTodayStr);
     const saHasGap=saGapRecs.length>0||saGapMissingDays.length>0;
+    const saEarliestGap=[...saGapMissingDays,...saGapRecs.map(r=>getRefDate(r))].sort()[0]||'';
+    const saDepAhead=saEarliestGap?storeRecs.filter(r=>r.dataDeposito&&getRefDate(r)>=saEarliestGap).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1):[];
     const estadoLabel2=saHasGap?'!!! SALTO DE DEPOSITO DETECTADO !!!':s.err>0||(s.compliant!==null&&s.compliant<50)?'*** DEPOSITOS EM ATRASO - ACAO URGENTE ***':s.warn>0||(s.compliant!==null&&s.compliant<80)?'Atencao: verificar depositos pendentes':'Tudo em ordem';
     const saEur=v=>fmt(v).replace('€','EUR');
     const recBlocks=[];
@@ -2174,17 +2176,21 @@ function rSASupervision(){
       `Compliance: ${s.compliant??0}%`,
       '',
       ...(saHasGap?[
-        '!!! ATENCAO CRITICA !!!',
-        '===================================',
-        'SALTO DE DEPOSITO DETECTADO',
-        '===================================',
-        'Foram registados depositos de datas',
-        'mais recentes enquanto os seguintes',
-        'periodos mais antigos ainda nao foram',
-        'depositados. Isto nao e aceitavel.',
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
+        '!!! ALERTA CRITICO: SALTO DE     !!!',
+        '!!!         DEPOSITO             !!!',
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
+        'Depositos processados enquanto dias',
+        'mais antigos ficaram sem registo.',
+        'Situacao INACEITAVEL.',
         '',
+        ...(saGapMissingDays.length>0?[
+          `DIAS SEM REGISTO (${saGapMissingDays.length}):`,
+          ...saGapMissingDays.map(d=>`  ${fd(d).slice(0,5)} | SEM REGISTO`),
+          ''
+        ]:[]),
         ...(saGapRecs.length>0?[
-          'Registos pendentes (mais antigos):',
+          `REGISTOS POR DEPOSITAR (${saGapRecs.length}):`,
           ...saGapRecs.map(r=>{
             const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
             const period=sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
@@ -2192,13 +2198,21 @@ function rSASupervision(){
           }),
           ''
         ]:[]),
-        ...(saGapMissingDays.length>0?[
-          'Dias sem qualquer registo:',
-          ...saGapMissingDays.map(d=>`  ${fd(d).slice(0,5)} | SEM REGISTO DE CAIXA`),
+        ...(saDepAhead.length>0?[
+          `DEPOSITOS PASSADOS A FRENTE (${saDepAhead.length}):`,
+          ...saDepAhead.map((r,i)=>{
+            const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
+            const period=sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
+            return[`  [${i+1}] ${period} | ${r.tipo||'--'}`,`      ${saEur(totalValor(r))} | Dep: ${fd(r.dataDeposito)}`].join('\n');
+          }),
           ''
         ]:[]),
-        'Regularizar IMEDIATAMENTE.',
-        '===================================',
+        'VERIFICACAO OBRIGATORIA:',
+        'O dinheiro dos dias sem registo',
+        'foi realmente entregue?',
+        'Regularizar ANTES de qualquer',
+        'novo deposito.',
+        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
         ''
       ]:[]),
       '--- RESUMO ---',
@@ -2901,6 +2915,9 @@ async function updEmailPrev(){
   });
   const emailGapMissingDays=missingInEmail.filter(d=>d<_epNewestDep&&d<_epTodayStr);
   const emailHasGap=emailGapRecs.length>0||emailGapMissingDays.length>0;
+  // Registos depositados "à frente" — depositados enquanto havia dias mais antigos em falta
+  const _epEarliestGap=[...emailGapMissingDays,...emailGapRecs.map(r=>getRefDate(r))].sort()[0]||'';
+  const epDepAhead=_epEarliestGap?[...data].sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1).filter(r=>r.dataDeposito&&getRefDate(r)>=_epEarliestGap):[];
   // Blocos por sessao — max ~38 chars por linha
   const sessBlocks=[];
   let depIdx=0;
@@ -2936,15 +2953,21 @@ async function updEmailPrev(){
     `Segue a folha de depositos de ${ml}.`,
     '',
     ...(emailHasGap?[
-      '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
-      'ALERTA: SALTO DE DEPOSITO',
-      '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
-      'Existem depositos de datas mais',
-      'recentes enquanto os periodos abaixo',
-      'ainda nao foram depositados.',
+      '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
+      '!!! ALERTA CRITICO: SALTO DE     !!!',
+      '!!!         DEPOSITO             !!!',
+      '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
+      'Depositos foram processados enquanto',
+      'dias mais antigos ficaram sem registo',
+      'de caixa. Situacao INACEITAVEL.',
       '',
+      ...(emailGapMissingDays.length>0?[
+        `DIAS SEM REGISTO (${emailGapMissingDays.length}):`,
+        ...emailGapMissingDays.map(d=>`  ${dv(d)} | SEM REGISTO`),
+        ''
+      ]:[]),
       ...(emailGapRecs.length>0?[
-        'Registos pendentes (mais antigos):',
+        `REGISTOS POR DEPOSITAR (${emailGapRecs.length}):`,
         ...emailGapRecs.map(r=>{
           const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
           const period=sm.length>1?dv(sm[0])+' a '+dv(sm[sm.length-1]):sm.length?dv(sm[0]):'--';
@@ -2952,13 +2975,21 @@ async function updEmailPrev(){
         }),
         ''
       ]:[]),
-      ...(emailGapMissingDays.length>0?[
-        'Dias sem qualquer registo:',
-        ...emailGapMissingDays.map(d=>`  ${dv(d)} | SEM REGISTO DE CAIXA`),
+      ...(epDepAhead.length>0?[
+        `DEPOSITOS PASSADOS A FRENTE (${epDepAhead.length}):`,
+        ...epDepAhead.map((r,i)=>{
+          const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
+          const period=sm.length>1?dv(sm[0])+' a '+dv(sm[sm.length-1]):sm.length?dv(sm[0]):'--';
+          return[`  [${i+1}] ${period} | ${r.tipo||'--'}`,`      ${eur(totalValor(r))} | Dep: ${fd(r.dataDeposito)}`].join('\n');
+        }),
         ''
       ]:[]),
-      'Solicita-se esclarecimento urgente.',
-      '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
+      'VERIFICACAO OBRIGATORIA:',
+      'O dinheiro dos dias sem registo',
+      'foi realmente entregue?',
+      'Regularizar ANTES de qualquer',
+      'novo deposito.',
+      '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
       ''
     ]:[]),
     '--- RESUMO ---',
