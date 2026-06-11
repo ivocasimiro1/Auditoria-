@@ -882,15 +882,20 @@ async function afterLogin(user){
 let _rtCh=null;
 function sbSubscribeRT(){
   if(_rtCh)try{SB.removeChannel(_rtCh);}catch(e){}
-  _rtCh=SB.channel('dep_rt')
-    .on('postgres_changes',{event:'*',schema:'public',table:'dep_registos'},async()=>{
+  // SA subscreve canal único sem filtro de store_id para receber de todas as lojas
+  const chName=isSA?'dep_rt_sa':'dep_rt_'+sbProfile?.store_id;
+  _rtCh=SB.channel(chName)
+    .on('postgres_changes',{event:'*',schema:'public',table:'dep_registos'},async(payload)=>{
       const prev=regs.length;
       await sbLoad();
-      rDash();
+      if(isSA){rSASupervision();}else{rDash();}
       if(document.getElementById('page-lista').classList.contains('active'))rLista();
-      if(regs.length>prev)toast('🔄 Novo registo recebido');
+      if(regs.length>prev)toast('🔔 Novo registo recebido');
+      else toast('🔄 Dados atualizados');
     })
-    .subscribe();
+    .subscribe((status)=>{
+      if(status==='SUBSCRIBED'&&isSA)console.log('SA Realtime: subscribed to all stores');
+    });
 }
 async function doLogout(){
   if(!confirm('Terminar sessão?'))return;
@@ -1351,9 +1356,11 @@ async function guardar(){
   } else {
     regs.unshift(reg);
   }
-  const saved=await sbSave(reg);
-  if(!saved)return;
+  // Guardar localmente primeiro — nunca perde dados
   saveR();
+  // Sincronizar com Supabase (não bloqueia se falhar)
+  const saved=await sbSave(reg);
+  if(!saved){toast('⚠️ Guardado localmente. Vai a Configurações → Re-sincronizar quando tiveres ligação.');setTimeout(()=>sp('dash'),1200);return;}
   // Reset save button
   const btn=document.getElementById('guardar-btn');
   if(btn){btn.disabled=true;btn.style.opacity='.5';}
