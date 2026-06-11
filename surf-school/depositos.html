@@ -1720,7 +1720,7 @@ function rptStorePdf(loja,mes){
   const estadoGeral=compPct>=80?{icon:'✅',label:'CONFORME',col:'#166534',bg:'#f0fdf4',border:'#86efac'}
     :compPct>=50?{icon:'⚠️',label:'ATENÇÃO NECESSÁRIA',col:'#92400e',bg:'#fffbeb',border:'#fde68a'}
     :{icon:'🔴',label:'NÃO CONFORME — AÇÃO URGENTE',col:'#991b1b',bg:'#fef2f2',border:'#fca5a5'};
-  const statusBadge=r=>{const e=calcEstado(r,getRecordCfg(r));return e.s==='ok'?'<span style="color:#166534;font-weight:700">✅ OK</span>':e.s==='warn'?'<span style="color:#92400e;font-weight:700">⚠️ Aviso</span>':e.s==='err'?'<span style="color:#991b1b;font-weight:700">🔴 Em Atraso</span>':'<span style="color:#1d4ed8;font-weight:700">◷ Em Curso</span>';};
+  const statusBadge=r=>{const e=calcEstado(r,getRecordCfg(r));const col=e.s==='ok'?'#166534':e.s==='warn'?'#92400e':e.s==='err'?'#991b1b':'#1d4ed8';return`<span style="color:${col};font-weight:700">${e.label}</span>`;};
   const regRows=lojaRegs.map(r=>{
     const sessMin=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort()[0]||'';
     const sessMax=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort().at(-1)||'';
@@ -1919,7 +1919,17 @@ function rSASupervision(){
     const wPendentes=warnStoreRegs.filter(r=>!r.foto&&!r.talao&&!r.dataDeposito).length;
     const wACompl=warnStoreRegs.filter(r=>r.foto&&(!r.talao||!r.dataDeposito)).length;
     const displayName=(storeLojas2&&storeLojas2.length)?storeLojas2.join(' / '):empName;
-    storeList.push({sid,empName,displayName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl});
+    const dowNames=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const servicos=[];
+    if(normCfg?.prosegurDay!==''&&normCfg?.prosegurDay!==null&&normCfg?.prosegurDay!==undefined)
+      servicos.push('Prosegur: '+dowNames[parseInt(normCfg.prosegurDay)]);
+    if(normCfg?.lomisDay!==''&&normCfg?.lomisDay!==null&&normCfg?.lomisDay!==undefined)
+      servicos.push('Lomis: '+dowNames[parseInt(normCfg.lomisDay)]);
+    if(normCfg?.cambioDia!==''&&normCfg?.cambioDia!==null&&normCfg?.cambioDia!==undefined)
+      servicos.push('Câmbio: '+dowNames[parseInt(normCfg.cambioDia)]);
+    if(storeRegs.some(r=>r.tipo==='Depósito Direto'))servicos.push('Dep. Direto');
+    const servicoStr=servicos.join(' · ')||'';
+    storeList.push({sid,empName,displayName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl,servicoStr});
   });
   // Sort: stores with data first (worst-to-best), then no-data alphabetically
   const severity=s=>{
@@ -2016,6 +2026,7 @@ function rSASupervision(){
         <div style="flex:1;min-width:100px">
           <div style="font-size:12px;font-weight:700;color:#475569">${s.displayName}</div>
           ${s.displayName!==s.empName?`<div style="font-size:10px;color:#94a3b8">${s.empName}</div>`:''}
+          ${s.servicoStr?`<div style="font-size:10px;color:#94a3b8;margin-top:1px">🚚 ${s.servicoStr}</div>`:''}
           <div style="font-size:10px;color:#94a3b8;margin-top:1px">⚫ Sem registos em ${mesLabelStr}</div>
         </div>
         <button onclick="filterListaBySid('${s.sid}','')" style="background:#e2e8f0;color:#475569;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;touch-action:manipulation">Lista</button>
@@ -2040,6 +2051,7 @@ function rSASupervision(){
           <div style="flex:1;min-width:120px">
             <div style="font-size:13px;font-weight:800;color:${titleCol}">${icon} ${s.displayName}${bulkWarn}</div>
             ${s.displayName!==s.empName?`<div style="font-size:10px;color:${subCol};margin-top:1px">${s.empName}</div>`:''}
+            ${s.servicoStr?`<div style="font-size:10px;color:${subCol};opacity:.8;margin-top:1px">🚚 ${s.servicoStr}</div>`:''}
             <div style="display:flex;gap:4px;align-items:center;margin-top:4px">${badge}${trendStr?`<span style="margin-left:3px">${trendStr}</span>`:''}</div>
           </div>
           <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;flex-shrink:0">
@@ -2063,6 +2075,7 @@ function rSASupervision(){
       <div style="flex:1;min-width:100px">
         <div style="font-size:12px;font-weight:700;color:#1e293b">${s.displayName}${bulkWarn}</div>
         ${s.displayName!==s.empName?`<div style="font-size:10px;color:#94a3b8;margin-bottom:1px">${s.empName}</div>`:''}
+        ${s.servicoStr?`<div style="font-size:10px;color:#64748b;margin-bottom:1px">🚚 ${s.servicoStr}</div>`:''}
         <div style="display:flex;gap:4px;align-items:center;margin-top:1px">${badge}${trendStr?`<span style="margin-left:3px">${trendStr}</span>`:''}</div>
       </div>
       <div style="min-width:60px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">REGISTOS</div>${statsCells}</div>
