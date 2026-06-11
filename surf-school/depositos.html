@@ -591,6 +591,13 @@ select{
     <div class="fg"><label>CC fixo (sempre incluído)</label><input type="email" id="c-emailcc" placeholder="ivo@despomar.com" oninput="sc()"></div>
     <div class="fg"><label>CC adicional da loja (opcional)</label><input type="email" id="c-emailcc2" placeholder="outro@empresa.pt" oninput="sc()"></div>
     <div class="fg"><label>NIF</label><input type="text" id="c-nif" placeholder="999999999" oninput="sc()"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--g500);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.4px">Serviços de depósito activos</div>
+    <div class="fg"><label>Depósito Direto</label>
+      <select id="c-direto-ativo" oninput="sc()">
+        <option value="1">✓ Esta loja faz Depósito Direto ao banco</option>
+        <option value="">— Esta loja não usa Depósito Direto —</option>
+      </select>
+    </div>
     <div style="font-size:11px;font-weight:700;color:var(--g500);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.4px">Dia de levantamento semanal por serviço</div>
     <div class="fg"><label>Prosegur</label>
       <select id="c-prosegur-dia" oninput="sc()">
@@ -994,7 +1001,18 @@ function sp(name){
 function popTipo(){
   const el=document.getElementById('f-tipo');if(!el)return;
   const cur=el.value;
-  const opts=['Depósito Direto','Prosegur','Lomis','Câmbio'];
+  // SA vê sempre todos; lojas só vêem os serviços que têm activos
+  let opts;
+  if(isSA){
+    opts=['Depósito Direto','Prosegur','Lomis','Câmbio'];
+  } else {
+    opts=[];
+    if(cfg.usaDireto!==''&&cfg.usaDireto!=='0')opts.push('Depósito Direto');
+    if(cfg.prosegurDay)opts.push('Prosegur');
+    if(cfg.lomisDay)opts.push('Lomis');
+    if(cfg.cambioDia)opts.push('Câmbio');
+    if(!opts.length)opts=['Depósito Direto','Prosegur','Lomis','Câmbio']; // fallback se nada configurado
+  }
   el.innerHTML='<option value="">Selecionar...</option>'+opts.map(o=>`<option value="${o}">${o}</option>`).join('');
   if(cur&&opts.includes(cur))el.value=cur;
 }
@@ -2936,6 +2954,7 @@ function rSettings(){
   const cdEl=document.getElementById('c-cambio-dia');if(cdEl)cdEl.value=cfg.cambioDia||'';
   const pdEl=document.getElementById('c-prosegur-dia');if(pdEl)pdEl.value=cfg.prosegurDay||'';
   const ldEl=document.getElementById('c-lomis-dia');if(ldEl)ldEl.value=cfg.lomisDay||'';
+  const ddEl=document.getElementById('c-direto-ativo');if(ddEl)ddEl.value=(cfg.usaDireto===''||cfg.usaDireto==='0')?'':'1';
   // Contextual notes
   const note=document.getElementById('cfg-sync-note');
   const hint=document.getElementById('c-email-hint');
@@ -2992,7 +3011,7 @@ async function doChangePass(){
   showMsg('✓ Password alterada com sucesso! O administrador foi notificado.',true);
   npEl.value='';ncEl.value='';
 }
-function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';cfg.prosegurDay=document.getElementById('c-prosegur-dia')?.value||'';cfg.lomisDay=document.getElementById('c-lomis-dia')?.value||'';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
+function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';cfg.prosegurDay=document.getElementById('c-prosegur-dia')?.value||'';cfg.lomisDay=document.getElementById('c-lomis-dia')?.value||'';cfg.usaDireto=document.getElementById('c-direto-ativo')?.value??'1';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
 
 function expBackup(){const b={regs,cfg,v:3,at:new Date().toISOString()};const blob=new Blob([JSON.stringify(b,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`backup_depositos_${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(url);toast('✓ Backup exportado!')}
 function impBackup(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.regs){regs=d.regs;saveR()}if(d.cfg){cfg=d.cfg;saveCfg()}popSel();rSettings();rDash();toast('✓ Importado!')}catch{toast('⚠️ Ficheiro inválido')}};r.readAsText(f)}
