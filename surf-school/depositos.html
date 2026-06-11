@@ -1816,7 +1816,7 @@ async function _buildPdfAsync(pw,loja,mes){
   }
   if(missingArr.length>0)pdfEmailBody+=`${pdfSep}\nDIAS SEM REGISTO (${missingArr.length} dia${missingArr.length!==1?'s':''}):\n  ${missingArr.map(d=>fd(d)).join(', ')}\n\n`;
   pdfEmailBody+=`${pdfSep}\n\nPor favor aceda ao sistema para regularizar a situação:\nhttps://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nDespomar — Gestão Interna`;
-  const pdfEmailHref=`mailto:${storeEmail}?cc=ivo@despomar.com&subject=${encodeURIComponent('Relatório Conformidade Depósitos — '+loja+' — '+mesNome)}&body=${encodeURIComponent(pdfEmailBody)}`;
+  // Sem body no URL (URL longo falha em iOS/Android) — corpo vai para clipboard via onclick
   // SVG inline do logo Despomar
   const LOGO_SVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 110" width="224" height="44">
     <circle cx="55" cy="55" r="50" fill="white" stroke="#1976d2" stroke-width="2.5"/>
@@ -1882,7 +1882,7 @@ tr:last-child td{border-bottom:none}
   </div>
 
   ${storeEmail?`<div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap">
-    <a class="email-btn" href="${pdfEmailHref}">📧 Email (texto)</a>
+    <button class="email-btn" onclick="sendEmailReport()">📧 Email (texto)</button>
     <button class="email-btn" style="background:#0f172a" onclick="window.print()">🖨️ Imprimir / PDF</button>
     <button class="email-btn" style="background:#059669" id="share-btn" onclick="shareRpt()" style="display:none">📤 Partilhar com Foto</button>
   </div>`:'<div style="margin-bottom:16px"><button class="email-btn" style="background:#0f172a" onclick="window.print()">🖨️ Imprimir / PDF</button></div>'}
@@ -1923,6 +1923,15 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 <script>
+var _eTo=${JSON.stringify(storeEmail||'')};
+var _eSubj=${JSON.stringify('Relatorio Conformidade Depositos - '+loja+' - '+mesNome)};
+var _eBody=${JSON.stringify(pdfEmailBody)};
+function sendEmailReport(){
+  var ta=document.createElement('textarea');ta.value=_eBody;ta.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';document.body.appendChild(ta);ta.focus();ta.select();var ok=false;try{ok=document.execCommand('copy');}catch(e){}document.body.removeChild(ta);
+  navigator.clipboard&&navigator.clipboard.writeText(_eBody).catch(function(){});
+  window.location.href='mailto:'+_eTo+'?cc=ivo@despomar.com&subject='+encodeURIComponent(_eSubj);
+  if(ok){var t=document.createElement('div');t.textContent='📋 Corpo do email copiado — cole no email (pressão longa → Colar)';t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 22px;border-radius:8px;z-index:9999;font-size:14px;white-space:nowrap';document.body.appendChild(t);setTimeout(function(){t.remove();},5000);}
+}
 if(navigator.share){document.getElementById('share-btn').style.display='inline-flex';}
 async function shareRpt(){
   try{
@@ -2089,8 +2098,13 @@ function rSASupervision(){
     }
     if(allMissing.length>0)body+=`${sep2}\nDIAS SEM REGISTO (${allMissing.length} dia${allMissing.length!==1?'s':''}):\n  ${allMissing.map(d=>fd(d)).join(', ')}\n\n`;
     body+=`${sep2}\n\nPor favor aceda ao sistema para regularizar a situação:\nhttps://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nGestão Despomar`;
-    const subject=encodeURIComponent(`⚠️ Depósitos ${mesNomeEmail} — Regularização necessária — ${s.empName}`);
-    window.location.href=`mailto:${destEmail}?subject=${subject}&body=${encodeURIComponent(body)}`;
+    // Copiar corpo para clipboard (síncrono — funciona em iOS/Android dentro do click gesture)
+    const _ta2=document.createElement('textarea');_ta2.value=body;_ta2.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';document.body.appendChild(_ta2);_ta2.focus();_ta2.select();let _cp2=false;try{_cp2=document.execCommand('copy');}catch(e){}document.body.removeChild(_ta2);
+    navigator.clipboard?.writeText(body).catch(()=>{});
+    // Abrir mailto: curto sem body (URL curto = funciona em iOS/Android)
+    const subject=encodeURIComponent('Depositos '+mesNomeEmail+' - '+s.empName);
+    window.location.href=`mailto:${destEmail}?subject=${subject}`;
+    toast(_cp2?'📋 Corpo do email copiado — cole no email (pressão longa → Colar)':'✉️ Email aberto — cole o corpo manualmente');
   };
   const kpiColor=(v,good,bad)=>{if(v>=good)return'#16a34a';if(v<=bad)return'#dc2626';return'#d97706';};
   const compColor=kpiColor(avgCompliance,80,50);
@@ -2887,13 +2901,15 @@ function expEmail(){
   if(data.length){
     try{fname=expPrint(data,true)||'';}catch(e){console.warn('download:',e);}
   }
-  // Step 2: Open email client (synchronous — no await allowed before this line)
-  const subj=encodeURIComponent(document.getElementById('ep-sub')?.textContent||'');
-  const body=encodeURIComponent(document.getElementById('ep-body')?.dataset.body||'');
+  // Step 2: Copiar corpo para clipboard + abrir mailto: curto (funciona em iOS/Android)
+  const subjRaw=document.getElementById('ep-sub')?.textContent||'';
+  const bodyRaw=document.getElementById('ep-body')?.dataset.body||'';
   const ccRaw=(document.getElementById('ep-cc')?.textContent||'').trim();
   const ccStr=(ccRaw&&ccRaw!=='—')?`&cc=${encodeURIComponent(ccRaw)}`:'';
-  window.location.href=`mailto:${dest}?subject=${subj}${ccStr}&body=${body}`;
-  toast('📄 1) Guarda como PDF no diálogo que abriu · 2) Anexa ao email');
+  const _ta3=document.createElement('textarea');_ta3.value=bodyRaw;_ta3.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';document.body.appendChild(_ta3);_ta3.focus();_ta3.select();let _cp3=false;try{_cp3=document.execCommand('copy');}catch(e){}document.body.removeChild(_ta3);
+  navigator.clipboard?.writeText(bodyRaw).catch(()=>{});
+  window.location.href=`mailto:${dest}?subject=${encodeURIComponent(subjRaw)}${ccStr}`;
+  toast(_cp3?'📋 Corpo do email copiado — cole no email (pressão longa → Colar)':'✉️ Email aberto — cole o corpo manualmente');
 }
 
 
