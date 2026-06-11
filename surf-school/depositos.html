@@ -757,8 +757,15 @@ function calcEstado(r,storeCfg){
     }
   }
   const vencido=diasDesde>prazo||muitasSessoes||vencidoPorDiaRecolha;
-  if(!r.talao&&!r.dataDeposito){
+  // Comprovativo (foto) é a validação principal — sem foto = não depositado
+  if(!r.foto){
+    if(r.talao||r.dataDeposito)
+      return vencido?{s:'err',label:'🔴 Em atraso – sem comprovativo'}:{s:'warn',label:'⚠️ Sem comprovativo'};
     return vencido?{s:'err',label:'🔴 Em atraso – sem depósito'}:{s:'warn',label:'⚠️ Aguarda depósito'};
+  }
+  // Tem comprovativo — verificar talão e data
+  if(!r.talao&&!r.dataDeposito){
+    return vencido?{s:'err',label:'🔴 Falta talão e data'}:{s:'warn',label:'⚠️ Falta talão e data'};
   }
   if(r.talao&&!r.dataDeposito){
     return vencido?{s:'err',label:'🔴 Falta data depósito'}:{s:'warn',label:'⚠️ Aguarda data dep.'};
@@ -766,6 +773,7 @@ function calcEstado(r,storeCfg){
   if(!r.talao&&r.dataDeposito){
     return vencido?{s:'err',label:'🔴 Falta nº talão'}:{s:'warn',label:'⚠️ Falta nº talão'};
   }
+  // Completo: foto + talão + data
   const dd=new Date(r.dataDeposito);
   const diasParaDep=Math.floor((dd-ma)/86400000);
   if(muitasSessoes)return{s:'warn',label:`⚠️ Tardio (${nsess} sessões)`};
@@ -1049,7 +1057,7 @@ function rTypeCards(data,getCfgFn){
   const cards=tipos.map(tipo=>{
     const td=data.filter(r=>r.tipo===tipo);if(!td.length)return'';
     const total=td.reduce((s,r)=>s+totalValor(r),0);
-    const dep=td.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+    const dep=td.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
     const errs=td.filter(r=>calcEstado(r,getCfg(r)).s==='err').length;
     const warns=td.filter(r=>calcEstado(r,getCfg(r)).s==='warn').length;
     const notYetDep=total-dep;
@@ -1223,16 +1231,17 @@ function prevMonthStr(mes){
 function storeComplianceMes(sid,mes){
   const mr=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes));
   const cfg2=allStoreConfigs.find(c=>c.store_id===sid);
+  const normCfg=cfg2?{prosegurDay:cfg2.prosegur_day||'',lomisDay:cfg2.lomis_day||'',cambioDia:cfg2.cambio_dia||''}:null;
   const lojas=cfg2?.lojas||[...new Set(mr.map(r=>r.loja).filter(Boolean))];
   const missing=[...new Set(lojas.flatMap(l=>getMissingDays(mes,l)||[]))].length;
   const total=mr.length+missing;
   if(!total)return null;
-  const ok=mr.filter(r=>calcEstado(r).s==='ok').length;
-  const prog=mr.filter(r=>calcEstado(r).s==='prog').length;
+  const ok=mr.filter(r=>calcEstado(r,normCfg).s==='ok').length;
+  const prog=mr.filter(r=>calcEstado(r,normCfg).s==='prog').length;
   return Math.round((ok+prog)*100/total);
 }
 function avgCycleDays(storeRegs){
-  const confirmed=storeRegs.filter(r=>r.talao&&r.dataDeposito);
+  const confirmed=storeRegs.filter(r=>r.foto&&r.talao&&r.dataDeposito);
   if(!confirmed.length)return null;
   const days=confirmed.map(r=>{
     const oldest=maisAntigaData(r);if(!oldest)return null;
@@ -1243,7 +1252,7 @@ function avgCycleDays(storeRegs){
   return Math.round(days.reduce((a,b)=>a+b,0)/days.length);
 }
 function storeExposureVal(storeRegs){
-  return storeRegs.filter(r=>!r.talao||!r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+  return storeRegs.filter(r=>!r.foto||!r.talao||!r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
 }
 
 function rptStorePdf(loja,mes){
@@ -1254,11 +1263,12 @@ function rptStorePdf(loja,mes){
   const storeEmail=ownerCfg?.email||'';
   const missingArr=(getMissingDays(mes,loja)||[]).sort();
   const totalVal=lojaRegs.reduce((s,r)=>s+totalValor(r),0);
-  const depVal=lojaRegs.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
-  const ok=lojaRegs.filter(r=>calcEstado(r).s==='ok').length;
-  const warn=lojaRegs.filter(r=>calcEstado(r).s==='warn').length;
-  const err=lojaRegs.filter(r=>calcEstado(r).s==='err').length;
-  const prog=lojaRegs.filter(r=>calcEstado(r).s==='prog').length;
+  const depVal=lojaRegs.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+  const storeCfg2=ownerCfg?{prosegurDay:ownerCfg.prosegur_day||'',lomisDay:ownerCfg.lomis_day||'',cambioDia:ownerCfg.cambio_dia||''}:null;
+  const ok=lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==='ok').length;
+  const warn=lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==='warn').length;
+  const err=lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==='err').length;
+  const prog=lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==='prog').length;
   const totalAdj=lojaRegs.length+missingArr.length;
   const compPct=totalAdj>0?Math.round((ok+prog)*100/totalAdj):0;
   const compColor=compPct>=80?'#166534':compPct>=50?'#92400e':'#991b1b';
@@ -1272,7 +1282,7 @@ function rptStorePdf(loja,mes){
   const estadoGeral=compPct>=80?{icon:'✅',label:'CONFORME',col:'#166534',bg:'#f0fdf4',border:'#86efac'}
     :compPct>=50?{icon:'⚠️',label:'ATENÇÃO NECESSÁRIA',col:'#92400e',bg:'#fffbeb',border:'#fde68a'}
     :{icon:'🔴',label:'NÃO CONFORME — AÇÃO URGENTE',col:'#991b1b',bg:'#fef2f2',border:'#fca5a5'};
-  const statusBadge=r=>{const e=calcEstado(r);return e.s==='ok'?'<span style="color:#166534;font-weight:700">✅ OK</span>':e.s==='warn'?'<span style="color:#92400e;font-weight:700">⚠️ Aviso</span>':e.s==='err'?'<span style="color:#991b1b;font-weight:700">🔴 Em Atraso</span>':'<span style="color:#1d4ed8;font-weight:700">◷ Em Curso</span>';};
+  const statusBadge=r=>{const e=calcEstado(r,storeCfg2);return e.s==='ok'?'<span style="color:#166534;font-weight:700">✅ OK</span>':e.s==='warn'?'<span style="color:#92400e;font-weight:700">⚠️ Aviso</span>':e.s==='err'?'<span style="color:#991b1b;font-weight:700">🔴 Em Atraso</span>':'<span style="color:#1d4ed8;font-weight:700">◷ Em Curso</span>';};
   const regRows=lojaRegs.map(r=>{
     const sessMin=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort()[0]||'';
     const sessMax=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort().at(-1)||'';
@@ -1769,7 +1779,7 @@ function rDash(){
   const wNoFoto=warnRegs.filter(r=>!r.foto).length;
   const wNoTalao=warnRegs.filter(r=>!r.talao).length;
   const wNoDate=warnRegs.filter(r=>!r.dataDeposito).length;
-  const wTardio=warnRegs.filter(r=>r.talao&&r.dataDeposito&&r.foto).length;
+  const wTardio=warnRegs.filter(r=>r.foto&&r.talao&&r.dataDeposito).length;
   const wParts=[];
   if(wNoFoto)wParts.push(`sem foto: ${wNoFoto}`);
   if(wNoTalao)wParts.push(`sem talão: ${wNoTalao}`);
@@ -1819,7 +1829,7 @@ function rDash(){
     const ld=data.filter(r=>r.loja===loja).sort((a,b)=>{const da=getRefDate(a);const db=getRefDate(b);return db<da?-1:db>da?1:0});
     if(!ld.length)return'';
     const lt=ld.reduce((s,r)=>s+totalValor(r),0);
-    const ldep=ld.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+    const ldep=ld.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
     const lok=ld.filter(r=>calcEstado(r,getCfg(r)).s==='ok').length;
     const lwarn=ld.filter(r=>calcEstado(r,getCfg(r)).s==='warn').length;
     const lerr=ld.filter(r=>calcEstado(r,getCfg(r)).s==='err').length;
@@ -1991,7 +2001,7 @@ function updEmailPrev(){
   const cc=[cfg.emailCC,cfg.emailCC2].filter(Boolean).join(', ')||'—';
   const ml=mesLabel(mes);
   const total=data.reduce((s,r)=>s+totalValor(r),0);
-  const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+  const totalDep=data.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
   const erros=data.filter(r=>calcEstado(r).s==='err').length;
   const avisos=data.filter(r=>calcEstado(r).s==='warn').length;
   const subj=`Folha Depósitos – ${loja} – ${ml} – ${empresa}`;
@@ -2085,7 +2095,7 @@ async function expXLSX(data){
   const empresa=cfg.emp||'Empresa'; const nif=cfg.nif||'';
   const ml=mesLabel(mes);
   const total=data.reduce((s,r)=>s+totalValor(r),0);
-  const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+  const totalDep=data.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
   const erros=data.filter(r=>calcEstado(r).s==='err').length;
 
   const WB=new ExcelJS.Workbook();
@@ -2181,7 +2191,7 @@ async function expXLSX(data){
     const est=calcEstado(r); const s=r.sessoes[0]||{};
     const tv=totalValor(r);
     const rowBg=idx%2===0?white:llblue;
-    const envio=r.talao&&r.dataDeposito?'S':'';
+    const envio=r.foto&&r.talao&&r.dataDeposito?'S':'';
     const statusBg=est.s==='ok'?lgreen:est.s==='warn'?lorange:est.s==='err'?lred:lgray;
     const statusFc=est.s==='ok'?green:est.s==='warn'?orange:est.s==='err'?red:gray;
     const row=WS.addRow([idx+1,s.dataVendas||'',s.sessao||'',r.dataDeposito||'',r.tipo||'',s.codBarras||'',tv,r.talao||'',r.responsavel||'',envio,est.label.replace(/[📅✅⚠️🔴]/gu,'').trim(),r.obs||'']);
@@ -2232,7 +2242,7 @@ async function expXLSX(data){
   cfg.lojas.forEach((l,i)=>{
     const ld=data.filter(r=>r.loja===l);if(!ld.length)return;
     const lt=ld.reduce((s,r)=>s+totalValor(r),0);
-    const ldep=ld.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+    const ldep=ld.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
     const row=WS2.addRow([l,ld.length,lt,ldep,lt-ldep,ld.filter(r=>calcEstado(r).s==='ok').length,ld.filter(r=>calcEstado(r).s==='warn').length,ld.filter(r=>calcEstado(r).s==='err').length]);
     row.height=18; const bg=i%2===0?white:llblue;
     row.eachCell((c,col)=>{c.fill=fill(bg);c.font=font({size:10,color:{argb:gray}});c.border=bdr();c.alignment={vertical:'middle'};if(col>=3&&col<=5){c.numFmt='#,##0.00 "€"';c.alignment={horizontal:'right',vertical:'middle'};}if(col>=6){c.alignment={horizontal:'center',vertical:'middle'};}});
@@ -2258,7 +2268,7 @@ function expEmail(data){
   const empresa=cfg.emp||'Empresa'; const nif=cfg.nif||'';
   const dest=cfg.email||''; const cc=cfg.emailCC||''; const cc2=cfg.emailCC2||'';
   const total=data.reduce((s,r)=>s+totalValor(r),0);
-  const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+  const totalDep=data.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
   const ml=mesLabel(mes);
   const erros=data.filter(r=>calcEstado(r).s==='err').length;
   const avisos=data.filter(r=>calcEstado(r).s==='warn').length;
@@ -2273,7 +2283,7 @@ function expEmail(data){
     const bc=est.s==='ok'?'#d1fae5':est.s==='warn'?'#fed7aa':est.s==='err'?'#fee2e2':'#f3f4f6';
     const fc=est.s==='ok'?'#065f46':est.s==='warn'?'#92400e':est.s==='err'?'#7f1d1d':'#374151';
     const cbs=r.sessoes.filter(s=>s.codBarras).map(s=>s.codBarras).join(', ');
-    const envio=r.talao&&r.dataDeposito?'<span style="color:#065f46;font-weight:700">✓ SIM</span>':'<span style="color:#9ca3af">—</span>';
+    const envio=r.foto&&r.talao&&r.dataDeposito?'<span style="color:#065f46;font-weight:700">✓ SIM</span>':'<span style="color:#9ca3af">—</span>';
     const sesStr=r.sessoes.map(s=>'<div style="font-size:8.5px;color:#6b7280;line-height:1.4">'+fd(s.dataVendas)+' · Sess.'+( s.sessao||'—')+' · <b>'+fmt(s.valor)+'</b>'+(s.codBarras?' · 📦'+s.codBarras:'')+' </div>').join('');
     const fotoEmailCell=r.foto
       ?`<img src="${r.foto}" style="width:70px;height:48px;object-fit:cover;border-radius:4px;border:1.5px solid #e5e7eb;display:block">`
@@ -2299,7 +2309,7 @@ function expEmail(data){
   cfg.lojas.forEach(l=>{
     const ld=data.filter(r=>r.loja===l);if(!ld.length)return;
     const lt=ld.reduce((s,r)=>s+totalValor(r),0);
-    const ldep=ld.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+    const ldep=ld.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
     const pct=lt>0?Math.round(ldep/lt*100):0;
     lojaRows+=`<tr><td style="padding:6px 8px;font-weight:700">${l}</td><td style="text-align:center;padding:6px">${ld.length}</td><td style="text-align:right;padding:6px 8px;font-weight:700;color:#1e40af">${fmt(lt)}</td><td style="text-align:right;padding:6px 8px;color:#065f46;font-weight:700">${fmt(ldep)}</td><td style="text-align:right;padding:6px 8px;color:#92400e">${fmt(lt-ldep)}</td><td style="text-align:center;padding:6px">${pct}%</td><td style="text-align:center;padding:6px;color:#065f46">${ld.filter(r=>calcEstado(r).s==='ok').length}</td><td style="text-align:center;padding:6px;color:#92400e">${ld.filter(r=>calcEstado(r).s==='warn').length}</td><td style="text-align:center;padding:6px;color:#7f1d1d">${ld.filter(r=>calcEstado(r).s==='err').length}</td></tr>`;
   });
