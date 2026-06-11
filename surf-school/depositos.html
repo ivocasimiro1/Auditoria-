@@ -403,6 +403,7 @@ select{
     <div class="kpi orange"><div class="kl">⏳ Por Depositar</div><div class="kv" id="d-pend">€0</div></div>
     <div class="kpi red"><div class="kl">🔴 Em Atraso / Falta</div><div class="kv" id="d-err">0</div><div class="ks" id="d-err-s"></div></div>
   </div>
+  <div id="sa-supervision"></div>
   <div id="sa-stores-panel"></div>
   <div id="dash-alerts"></div>
   <div id="dash-types"></div>
@@ -1420,6 +1421,162 @@ function rStoresStatus(){
   </div>`;
 }
 
+function rSASupervision(){
+  const panel=document.getElementById('sa-supervision');
+  if(!panel||!isSA)return;
+  const mes=document.getElementById('dash-mes')?.value||curMesStr();
+  const mesLabel=mes.slice(0,7);
+  // Build per-store stats from allStoreConfigs + any stores with records
+  const knownSids=new Set(allStoreConfigs.map(c=>c.store_id));
+  regs.forEach(r=>{if(r.store_id&&r.store_id!=='super')knownSids.add(r.store_id);});
+  const storeList=[];
+  knownSids.forEach(sid=>{
+    const cfg2=allStoreConfigs.find(c=>c.store_id===sid);
+    const empName=cfg2?.emp||sid;
+    const email=cfg2?.email||'';
+    const storeRegs=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes.slice(0,7)));
+    const ok=storeRegs.filter(r=>calcEstado(r).s==='ok').length;
+    const warn=storeRegs.filter(r=>calcEstado(r).s==='warn').length;
+    const err=storeRegs.filter(r=>calcEstado(r).s==='err').length;
+    const prog=storeRegs.filter(r=>calcEstado(r).s==='prog').length;
+    const total=storeRegs.length;
+    const compliant=total>0?Math.round((ok+prog)*100/total):null;
+    // avg delay days for err records
+    const today=new Date();
+    let delaySum=0,delayCount=0;
+    storeRegs.filter(r=>calcEstado(r).s==='err').forEach(r=>{
+      const ref=maisAntigaData(r);
+      if(ref){const d=Math.floor((today-ref)/86400000);if(d>=0){delaySum+=d;delayCount++;}}
+    });
+    const avgDelay=delayCount>0?Math.round(delaySum/delayCount):0;
+    const lateVal=storeRegs.filter(r=>calcEstado(r).s==='err').reduce((s,r)=>s+totalValor(r),0);
+    storeList.push({sid,empName,email,total,ok,warn,err,prog,compliant,avgDelay,lateVal});
+  });
+  // Sort: worst first (err desc, then warn desc, then compliant asc)
+  storeList.sort((a,b)=>{
+    if(b.err!==a.err)return b.err-a.err;
+    if(b.warn!==a.warn)return b.warn-a.warn;
+    const ac=a.compliant??-1,bc=b.compliant??-1;
+    return ac-bc;
+  });
+  // Global KPIs
+  const activeStores=storeList.filter(s=>s.total>0).length;
+  const complianceScores=storeList.filter(s=>s.compliant!==null).map(s=>s.compliant);
+  const avgCompliance=complianceScores.length?Math.round(complianceScores.reduce((a,b)=>a+b,0)/complianceScores.length):0;
+  const totalLate=storeList.reduce((s,x)=>s+x.lateVal,0);
+  const delayScores=storeList.filter(s=>s.avgDelay>0).map(s=>s.avgDelay);
+  const avgDelayGlobal=delayScores.length?Math.round(delayScores.reduce((a,b)=>a+b,0)/delayScores.length):0;
+  // Credentials from localStorage
+  let credNotes={};try{credNotes=JSON.parse(localStorage.getItem('sa_cred_notes')||'{}');}catch(e){}
+  window._saCredSave=(sid,field,val)=>{
+    let cn={};try{cn=JSON.parse(localStorage.getItem('sa_cred_notes')||'{}');}catch(e){}
+    if(!cn[sid])cn[sid]={};
+    cn[sid][field]=val;
+    localStorage.setItem('sa_cred_notes',JSON.stringify(cn));
+  };
+  const kpiColor=(v,good,bad)=>{
+    if(v>=good)return'#16a34a';
+    if(v<=bad)return'#dc2626';
+    return'#d97706';
+  };
+  const compColor=kpiColor(avgCompliance,80,50);
+  const tableRows=storeList.map(s=>{
+    const rowColor=s.err>0?'#fef2f2':s.warn>0?'#fffbeb':s.total===0?'#f8fafc':'#f0fdf4';
+    const borderColor=s.err>0?'#fca5a5':s.warn>0?'#fcd34d':s.total===0?'#e2e8f0':'#86efac';
+    const badge=s.total===0
+      ?`<span style="background:#e2e8f0;color:#64748b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600">Sem dados</span>`
+      :s.compliant>=80?`<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600">✓ ${s.compliant}%</span>`
+      :s.compliant>=50?`<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600">⚠ ${s.compliant}%</span>`
+      :`<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600">✗ ${s.compliant}%</span>`;
+    const statsCells=`<span style="color:#16a34a;font-size:11px" title="OK">✓${s.ok}</span>`
+      +(s.warn?` <span style="color:#d97706;font-size:11px" title="Aviso">⚠${s.warn}</span>`:'')
+      +(s.err?` <span style="color:#dc2626;font-size:11px" title="Erro">✗${s.err}</span>`:'')
+      +(s.prog?` <span style="color:#2563eb;font-size:11px" title="Em progresso">◷${s.prog}</span>`:'');
+    const delayStr=s.avgDelay>0?`<span style="color:#dc2626;font-size:11px">${s.avgDelay}d atraso</span>`:'<span style="color:#94a3b8;font-size:11px">—</span>';
+    const lateStr=s.lateVal>0?`<span style="color:#dc2626;font-size:11px">${fmt(s.lateVal)}</span>`:'<span style="color:#94a3b8;font-size:11px">—</span>';
+    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:${rowColor};border-left:3px solid ${borderColor};border-bottom:1px solid #f1f5f9;flex-wrap:wrap">
+      <div style="flex:1;min-width:120px">
+        <div style="font-size:12px;font-weight:700;color:#1e293b">${s.empName}</div>
+        <div style="font-size:10px;color:#94a3b8">${s.sid}</div>
+      </div>
+      <div style="min-width:80px">${badge}</div>
+      <div style="min-width:90px;display:flex;gap:4px;flex-wrap:wrap">${statsCells}</div>
+      <div style="min-width:70px">${delayStr}</div>
+      <div style="min-width:70px">${lateStr}</div>
+      <button onclick="filterLista('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap">Ver lista</button>
+    </div>`;
+  }).join('');
+  const credRows=storeList.map(s=>{
+    const cn=credNotes[s.sid]||{};
+    return`<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:6px">${s.empName} <span style="font-size:10px;color:#94a3b8;font-weight:400">${s.sid}</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="flex:1;min-width:160px">
+          <label style="font-size:10px;color:#64748b;display:block;margin-bottom:2px">Email de acesso</label>
+          <input type="email" value="${(cn.email||s.email||'').replace(/"/g,'&quot;')}" placeholder="${s.email||'email@loja.com'}"
+            onchange="window._saCredSave('${s.sid}','email',this.value)"
+            style="width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;font-size:11px;background:#fff;color:#1e293b">
+        </div>
+        <div style="flex:1;min-width:160px">
+          <label style="font-size:10px;color:#64748b;display:block;margin-bottom:2px">Nota de password</label>
+          <input type="text" value="${(cn.pass||'').replace(/"/g,'&quot;')}" placeholder="Guardar nota aqui..."
+            onchange="window._saCredSave('${s.sid}','pass',this.value)"
+            style="width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;font-size:11px;background:#fff;color:#1e293b">
+        </div>
+        <div style="flex:1;min-width:160px">
+          <label style="font-size:10px;color:#64748b;display:block;margin-bottom:2px">Notas internas</label>
+          <input type="text" value="${(cn.notes||'').replace(/"/g,'&quot;')}" placeholder="Observações..."
+            onchange="window._saCredSave('${s.sid}','notes',this.value)"
+            style="width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;font-size:11px;background:#fff;color:#1e293b">
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  panel.innerHTML=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
+    <div style="padding:12px 14px 10px;background:linear-gradient(135deg,#1e3a5f,#1e40af);border-bottom:1px solid #1d4ed8">
+      <div class="ct" style="margin-bottom:4px;color:#fff">Supervisão Global — ${mesLabel}</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
+        <div style="text-align:center;background:rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;min-width:80px">
+          <div style="font-size:22px;font-weight:800;color:#fff">${activeStores}</div>
+          <div style="font-size:10px;color:#bfdbfe">Lojas ativas</div>
+        </div>
+        <div style="text-align:center;background:rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;min-width:80px">
+          <div style="font-size:22px;font-weight:800;color:${compColor==='#16a34a'?'#86efac':compColor==='#dc2626'?'#fca5a5':'#fde68a'}">${avgCompliance}%</div>
+          <div style="font-size:10px;color:#bfdbfe">Compliance médio</div>
+        </div>
+        <div style="text-align:center;background:rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;min-width:80px">
+          <div style="font-size:22px;font-weight:800;color:${totalLate>0?'#fca5a5':'#86efac'}">${fmt(totalLate)}</div>
+          <div style="font-size:10px;color:#bfdbfe">Valor em atraso</div>
+        </div>
+        <div style="text-align:center;background:rgba(255,255,255,.12);border-radius:8px;padding:8px 14px;min-width:80px">
+          <div style="font-size:22px;font-weight:800;color:${avgDelayGlobal>3?'#fca5a5':avgDelayGlobal>0?'#fde68a':'#86efac'}">${avgDelayGlobal>0?avgDelayGlobal+'d':'—'}</div>
+          <div style="font-size:10px;color:#bfdbfe">Atraso médio</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0">
+      <div style="display:flex;gap:6px;padding:6px 12px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;font-size:10px;color:#64748b;font-weight:600">
+        <div style="flex:1;min-width:120px">LOJA</div>
+        <div style="min-width:80px">COMPLIANCE</div>
+        <div style="min-width:90px">REGISTOS</div>
+        <div style="min-width:70px">ATRASO MÉD.</div>
+        <div style="min-width:70px">VALOR ATRASO</div>
+        <div style="min-width:60px"></div>
+      </div>
+      ${tableRows||'<div style="padding:16px;text-align:center;color:#94a3b8;font-size:12px">Nenhuma loja registada</div>'}
+    </div>
+    <details style="border-top:1px solid #e2e8f0">
+      <summary style="padding:10px 14px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+        <span style="font-size:14px">🔑</span> Credenciais e notas das lojas
+        <span style="margin-left:auto;font-size:10px;color:#94a3b8">(guardado localmente)</span>
+      </summary>
+      <div style="padding:10px 14px 14px">
+        ${credRows||'<div style="color:#94a3b8;font-size:12px">Nenhuma loja registada</div>'}
+      </div>
+    </details>
+  </div>`;
+}
+
 function rDash(){
   popSel();
   const mes=document.getElementById('dash-mes').value||curMesStr();
@@ -1472,6 +1629,7 @@ function rDash(){
   }
   rTypeCards(data);
   rStoresStatus();
+  rSASupervision();
   const el=document.getElementById('dash-body');
   if(dashView==='table'){el.innerHTML=rDashTable(data);return;}
   if(!data.length){el.innerHTML=`<div class="empty"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>Sem registos para este período</p><small>Adicione o primeiro depósito no separador ➕</small></div>`;return}
