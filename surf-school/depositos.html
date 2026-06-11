@@ -2047,6 +2047,20 @@ function rSASupervision(){
     const wSemComp=warnStoreRegs.filter(r=>!r.foto&&(r.talao||r.dataDeposito)).length;
     const wPendentes=warnStoreRegs.filter(r=>!r.foto&&!r.talao&&!r.dataDeposito).length;
     const wACompl=warnStoreRegs.filter(r=>r.foto&&(!r.talao||!r.dataDeposito)).length;
+    // Contagens globais (não só nos warn)
+    const semFoto=storeRegs.filter(r=>!r.foto).length;
+    const semTalao=storeRegs.filter(r=>!r.talao&&r.dataDeposito).length;
+    const tardios=storeRegs.filter(r=>{const e=calcEstado(r,normCfg);return e.s==='warn'&&e.label.includes('tardio');}).length;
+    // Detetar "saltos de depósito": registos mais antigos ainda por depositar enquanto já há mais recentes depositados
+    const sortedByRef=[...storeRegs].sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
+    const gapRecs=sortedByRef.filter((r,i)=>{
+      if(r.dataDeposito)return false; // este já foi depositado
+      const refDate=getRefDate(r);
+      // existe algum registo mais recente que já foi depositado?
+      return sortedByRef.some(r2=>r2!==r&&r2.dataDeposito&&getRefDate(r2)>refDate);
+    });
+    const gaps=gapRecs.length;
+    const gapDates=gapRecs.map(r=>fd(getRefDate(r)).slice(0,5)).join(', ');
     const displayName=(storeLojas2&&storeLojas2.length)?storeLojas2.join(' / '):empName;
     const dowNames=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const servicos=[];
@@ -2059,11 +2073,12 @@ function rSASupervision(){
     const allSidRegs=regs.filter(r=>r.store_id===sid);
     if(allSidRegs.some(r=>r.tipo==='Depósito Direto'))servicos.push('Dep. Direto');
     const servicoStr=servicos.join(' · ')||'';
-    storeList.push({sid,empName,displayName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl,servicoStr});
+    storeList.push({sid,empName,displayName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl,servicoStr,semFoto,semTalao,tardios,gaps,gapDates});
   });
   // Sort: stores with data first (worst-to-best), then no-data alphabetically
   const severity=s=>{
     if(s.total===0)return 99; // no data → bottom
+    if(s.gaps>0)return -1; // PIOR: saltos de depósito
     if(s.err>0||(s.compliant!==null&&s.compliant<50))return 0; // critical
     if(s.warn>0||(s.compliant!==null&&s.compliant<80))return 1; // warning
     return 2; // ok
@@ -2119,7 +2134,13 @@ function rSASupervision(){
     const storeRecs=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes.slice(0,7))).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
     const totalVal2=storeRecs.reduce((sum,r)=>sum+totalValor(r),0);
     const depVal2=storeRecs.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((sum,r)=>sum+totalValor(r),0);
-    const estadoLabel2=s.err>0||(s.compliant!==null&&s.compliant<50)?'*** DEPOSITOS EM ATRASO - ACAO URGENTE ***':s.warn>0||(s.compliant!==null&&s.compliant<80)?'Atencao: verificar depositos pendentes':'Tudo em ordem';
+    // Detetar saltos de depósito para o email
+    const saGapRecs=storeRecs.filter((r,i)=>{
+      if(r.dataDeposito)return false;
+      const refDate=getRefDate(r);
+      return storeRecs.some(r2=>r2!==r&&r2.dataDeposito&&getRefDate(r2)>refDate);
+    });
+    const estadoLabel2=saGapRecs.length>0?'!!! SALTO DE DEPOSITO DETECTADO !!!':s.err>0||(s.compliant!==null&&s.compliant<50)?'*** DEPOSITOS EM ATRASO - ACAO URGENTE ***':s.warn>0||(s.compliant!==null&&s.compliant<80)?'Atencao: verificar depositos pendentes':'Tudo em ordem';
     const saEur=v=>fmt(v).replace('€','EUR');
     const recBlocks=[];
     storeRecs.forEach((r,i)=>{
@@ -2144,6 +2165,27 @@ function rSASupervision(){
       estadoLabel2,
       `Compliance: ${s.compliant??0}%`,
       '',
+      ...(saGapRecs.length>0?[
+        '!!! ATENCAO CRITICA !!!',
+        '===================================',
+        'SALTO DE DEPOSITO DETECTADO',
+        '===================================',
+        'Foram registados depositos de datas',
+        'mais recentes enquanto as seguintes',
+        'sessoes mais antigas ainda nao foram',
+        'depositadas. Isto nao e aceitavel.',
+        '',
+        'Sessoes em falta (mais antigas):',
+        ...saGapRecs.map(r=>{
+          const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
+          const period=sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
+          return`  ${period} | ${r.tipo||'--'} | ${saEur(totalValor(r))}`;
+        }),
+        '',
+        'Regularizar IMEDIATAMENTE.',
+        '===================================',
+        ''
+      ]:[]),
       '--- RESUMO ---',
       `Total do mes:   ${saEur(totalVal2)}`,
       `Depositado:     ${saEur(depVal2)}`,
@@ -2214,27 +2256,57 @@ function rSASupervision(){
         <button onclick="filterListaBySid('${s.sid}','')" style="background:#e2e8f0;color:#475569;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;touch-action:manipulation">Lista</button>
       </div>`;
     }
+    // Barra de indicadores visual (OK / Tardio / Sem Foto / Em Atraso)
+    const totalReg=s.total||1;
+    const barOk=Math.round((s.ok/totalReg)*100);
+    const barTardio=Math.round((s.tardios/totalReg)*100);
+    const barSemFoto=Math.round(((s.semFoto-s.tardios>0?s.semFoto-s.tardios:0)/totalReg)*100);
+    const barErr=Math.round((s.err/totalReg)*100);
+    const barW=Math.max(barOk+barTardio+barSemFoto+barErr,1);
+    const indicBar=s.total>0?`<div style="display:flex;height:5px;border-radius:3px;overflow:hidden;margin-top:5px;gap:1px" title="OK ${s.ok} | Tardio ${s.tardios} | Sem foto ${s.semFoto} | Atraso ${s.err}">
+      ${barOk>0?`<div style="flex:${barOk};background:#16a34a;border-radius:2px"></div>`:''}
+      ${barTardio>0?`<div style="flex:${barTardio};background:#f59e0b;border-radius:2px"></div>`:''}
+      ${barSemFoto>0?`<div style="flex:${barSemFoto};background:#fb923c;border-radius:2px"></div>`:''}
+      ${barErr>0?`<div style="flex:${barErr};background:#dc2626;border-radius:2px"></div>`:''}
+      ${barW<100?`<div style="flex:${100-barW};background:#e2e8f0;border-radius:2px"></div>`:''}
+    </div>`:'';
+    const indicLabels=s.total>0?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+      ${s.ok>0?`<span style="font-size:10px;color:#16a34a;font-weight:600">✓ ${s.ok} OK</span>`:''}
+      ${s.tardios>0?`<span style="font-size:10px;color:#d97706;font-weight:600">⏱ ${s.tardios} tard.</span>`:''}
+      ${s.semFoto>0?`<span style="font-size:10px;color:#ea580c;font-weight:600">📷 ${s.semFoto} s/foto</span>`:''}
+      ${s.semTalao>0?`<span style="font-size:10px;color:#9333ea;font-weight:600">🧾 ${s.semTalao} s/talão</span>`:''}
+      ${s.err>0?`<span style="font-size:10px;color:#dc2626;font-weight:700">🔴 ${s.err} atraso</span>`:''}
+      ${s.storeMissingCount>0?`<span style="font-size:10px;color:#64748b">📋 ${s.storeMissingCount} dias s/reg.</span>`:''}
+    </div>`:'';
     // PROBLEM: colored card with email button
-    if(hasProblem){
-      const bg=isCritical?'#fef2f2':'#fffbeb';
-      const border=isCritical?'#fca5a5':'#fcd34d';
-      const titleCol=isCritical?'#7f1d1d':'#78350f';
-      const subCol=isCritical?'#991b1b':'#92400e';
-      const btnBg=isCritical?'#dc2626':'#d97706';
-      const icon=isCritical?'🔴':'🟡';
+    if(hasProblem||s.gaps>0){
+      const hasGap=s.gaps>0;
+      const bg=hasGap?'#fff1f2':isCritical?'#fef2f2':'#fffbeb';
+      const border=hasGap?'#f43f5e':isCritical?'#fca5a5':'#fcd34d';
+      const titleCol=hasGap?'#881337':isCritical?'#7f1d1d':'#78350f';
+      const subCol=hasGap?'#be123c':isCritical?'#991b1b':'#92400e';
+      const btnBg=hasGap||isCritical?'#dc2626':'#d97706';
+      const icon=hasGap?'⛔':isCritical?'🔴':'🟡';
       const subBadges=[];
+      // Alerta de salto — sempre primeiro e em destaque
+      if(hasGap)subBadges.push(`<div style="background:#fff1f2;border:2px solid #f43f5e;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:800;color:#be123c;width:100%;margin-bottom:2px">
+        ⛔ SALTO DE DEPÓSITO — ${s.gaps} registo${s.gaps!==1?'s':''} mais antigo${s.gaps!==1?'s':''} por depositar enquanto há depósitos mais recentes registados<br>
+        <span style="font-size:10px;font-weight:600;opacity:.85">Sessões em falta: ${s.gapDates}</span>
+      </div>`);
       if(s.err>0)subBadges.push(`<button onclick="filterListaBySid('${s.sid}','err')" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">🔴 ${s.err} em atraso</button>`);
-      if(s.wSemComp>0)subBadges.push(`<button onclick="filterListaBySid('${s.sid}','warn')" style="background:#fff7ed;color:#92400e;border:1px solid #fed7aa;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">📷 ${s.wSemComp} sem comprovativo</button>`);
+      if(s.semFoto>0)subBadges.push(`<button onclick="filterListaBySid('${s.sid}','')" style="background:#fff7ed;color:#92400e;border:1px solid #fed7aa;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">📷 ${s.semFoto} sem comprovativo</button>`);
       if(s.wPendentes>0)subBadges.push(`<button onclick="filterListaBySid('${s.sid}','warn')" style="background:#fff7ed;color:#92400e;border:1px solid #fed7aa;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">⏳ ${s.wPendentes} pendente${s.wPendentes!==1?'s':''}</button>`);
-      if(s.wACompl>0)subBadges.push(`<button onclick="filterListaBySid('${s.sid}','warn')" style="background:#fff7ed;color:#92400e;border:1px solid #fed7aa;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">⚠️ ${s.wACompl} a completar</button>`);
+      if(s.semTalao>0)subBadges.push(`<button onclick="filterListaBySid('${s.sid}','')" style="background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">🧾 ${s.semTalao} sem talão</button>`);
+      if(s.tardios>0)subBadges.push(`<span style="background:#fffbeb;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600">⏱ ${s.tardios} tardio${s.tardios!==1?'s':''}</span>`);
       if(s.storeMissingCount>0)subBadges.push(`<span style="background:#f3f4f6;color:#6b7280;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600">📋 ${s.storeMissingCount} dias s/ reg.</span>`);
-      return`<div style="background:${bg};border-left:4px solid ${border};border-bottom:1px solid #e2e8f0;padding:12px 14px">
+      return`<div style="background:${bg};border-left:4px solid ${border};border-bottom:2px solid #e2e8f0;padding:12px 14px">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
           <div style="flex:1;min-width:120px">
-            <div style="font-size:13px;font-weight:800;color:${titleCol}">${icon} ${s.displayName}${bulkWarn}</div>
+            <div style="font-size:13px;font-weight:800;color:${titleCol}">${icon} ${s.displayName}</div>
             ${s.displayName!==s.empName?`<div style="font-size:10px;color:${subCol};margin-top:1px">${s.empName}</div>`:''}
             ${s.servicoStr?`<div style="font-size:10px;color:${subCol};opacity:.8;margin-top:1px">🚚 ${s.servicoStr}</div>`:''}
             <div style="display:flex;gap:4px;align-items:center;margin-top:4px">${badge}${trendStr?`<span style="margin-left:3px">${trendStr}</span>`:''}</div>
+            ${indicBar}
           </div>
           <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;flex-shrink:0">
             <button onclick="filterListaBySid('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:7px;padding:6px 11px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation">Lista</button>
@@ -2246,27 +2318,25 @@ function rSASupervision(){
       </div>`;
     }
     // OK active store: green compact row
-    const statsCells=`<span onclick="filterListaBySid('${s.sid}','ok')" style="color:#16a34a;font-size:11px;cursor:pointer" title="Ver OK">✓${s.ok}</span>`
-      +(s.warn?` <span onclick="filterListaBySid('${s.sid}','warn')" style="color:#d97706;font-size:11px;cursor:pointer" title="Ver avisos">⚠${s.warn}</span>`:'')
-      +(s.err?` <span onclick="filterListaBySid('${s.sid}','err')" style="color:#dc2626;font-size:11px;cursor:pointer" title="Ver em atraso">✗${s.err}</span>`:'')
-      +(s.prog?` <span onclick="filterListaBySid('${s.sid}','prog')" style="color:#2563eb;font-size:11px;cursor:pointer" title="Ver programados">◷${s.prog}</span>`:'');
     const cycleStr=s.cycle!==null?`<span style="color:${s.cycle<=2?'#16a34a':s.cycle<=4?'#d97706':'#dc2626'};font-size:11px;font-weight:600">${s.cycle}d</span>`:'<span style="color:#94a3b8;font-size:11px">—</span>';
     const exposureStr=s.exposure>0?`<span style="color:#dc2626;font-size:11px;font-weight:600">${fmt(s.exposure)}</span>`:'<span style="color:#16a34a;font-size:11px">✓ 0</span>';
-    return`<div style="display:flex;align-items:center;gap:5px;padding:7px 10px;background:${rowColor};border-left:3px solid ${borderColor};border-bottom:1px solid #f1f5f9;flex-wrap:wrap">
-      <div style="background:${rankBg};color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">${idx+1}</div>
-      <div style="flex:1;min-width:100px">
-        <div style="font-size:12px;font-weight:700;color:#1e293b">${s.displayName}${bulkWarn}</div>
-        ${s.displayName!==s.empName?`<div style="font-size:10px;color:#94a3b8;margin-bottom:1px">${s.empName}</div>`:''}
-        ${s.servicoStr?`<div style="font-size:10px;color:#64748b;margin-bottom:1px">🚚 ${s.servicoStr}</div>`:''}
-        <div style="display:flex;gap:4px;align-items:center;margin-top:1px">${badge}${trendStr?`<span style="margin-left:3px">${trendStr}</span>`:''}</div>
+    return`<div style="padding:9px 12px;background:${rowColor};border-left:3px solid ${borderColor};border-bottom:1px solid #f1f5f9">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <div style="background:${rankBg};color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">${idx+1}</div>
+        <div style="flex:1;min-width:100px">
+          <div style="font-size:12px;font-weight:700;color:#1e293b">${s.displayName}</div>
+          ${s.displayName!==s.empName?`<div style="font-size:10px;color:#94a3b8;margin-bottom:1px">${s.empName}</div>`:''}
+          ${s.servicoStr?`<div style="font-size:10px;color:#64748b;margin-bottom:1px">🚚 ${s.servicoStr}</div>`:''}
+          <div style="display:flex;gap:4px;align-items:center;margin-top:1px">${badge}${trendStr?`<span style="margin-left:3px">${trendStr}</span>`:''}</div>
+        </div>
+        <div style="min-width:50px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">CICLO</div>${cycleStr}</div>
+        <div style="min-width:65px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">EXPOSIÇÃO</div>${exposureStr}</div>
+        <div style="display:flex;gap:3px">
+          <button onclick="filterListaBySid('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">Lista</button>
+          <button onclick="rptStorePdf('${pdfLoja}','${mes}')" style="background:#0f172a;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">📄 PDF</button>
+        </div>
       </div>
-      <div style="min-width:60px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">REGISTOS</div>${statsCells}</div>
-      <div style="min-width:50px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">CICLO</div>${cycleStr}</div>
-      <div style="min-width:65px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">EXPOSIÇÃO</div>${exposureStr}</div>
-      <div style="display:flex;gap:3px;flex-wrap:wrap">
-        <button onclick="filterListaBySid('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">Lista</button>
-        <button onclick="rptStorePdf('${pdfLoja}','${mes}')" style="background:#0f172a;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">📄 PDF</button>
-      </div>
+      ${indicLabels}${indicBar}
     </div>`;
   }).join('');
   const credRows=storeList.map(s=>{
@@ -2813,6 +2883,12 @@ async function updEmailPrev(){
   const dv=s=>fd(s).slice(0,5); // DD/MM apenas
   const eur=v=>fmt(v).replace('€','EUR');
   const estadoTxt=erros>0?'*** DEPOSITOS EM ATRASO - VERIFICAR ***':avisos>0?'Atencao: '+avisos+' deposito(s) a verificar':'Tudo em ordem';
+  // Detetar saltos de depósito nesta loja
+  const emailGapRecs=[...data].sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1).filter((r,i,arr)=>{
+    if(r.dataDeposito)return false;
+    const refDate=getRefDate(r);
+    return arr.some(r2=>r2!==r&&r2.dataDeposito&&getRefDate(r2)>refDate);
+  });
   // Blocos por sessao — max ~38 chars por linha
   const sessBlocks=[];
   let depIdx=0;
@@ -2847,6 +2923,25 @@ async function updEmailPrev(){
     '',
     `Segue a folha de depositos de ${ml}.`,
     '',
+    ...(emailGapRecs.length>0?[
+      '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
+      'ALERTA: SALTO DE DEPOSITO',
+      '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
+      'Existem depositos de datas mais',
+      'recentes enquanto os registos abaixo',
+      'ainda nao foram depositados.',
+      '',
+      'Registos em falta (mais antigos):',
+      ...emailGapRecs.map(r=>{
+        const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
+        const period=sm.length>1?dv(sm[0])+' a '+dv(sm[sm.length-1]):sm.length?dv(sm[0]):'--';
+        return`  ${period} | ${r.tipo||'--'} | ${eur(totalValor(r))}`;
+      }),
+      '',
+      'Solicita-se esclarecimento urgente.',
+      '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
+      ''
+    ]:[]),
     '--- RESUMO ---',
     `Total vendas:   ${eur(total)}`,
     `Depositado:     ${eur(totalDep)}`,
@@ -2857,7 +2952,7 @@ async function updEmailPrev(){
     '',
     '===================================',
     'SESSOES DE CAIXA',
-    '===================================',
+    '==================================='
     '',
     ...sessBlocks,
     sep36,
