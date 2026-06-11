@@ -427,7 +427,7 @@ select{
     <div class="fg"><label>Responsável *</label><select id="f-resp"></select></div>
     <div class="fg"><label>Observações</label><textarea id="f-obs" placeholder="Notas opcionais..." rows="2"></textarea></div>
     <div class="fg">
-      <label>Foto do Talão</label>
+      <label>Foto do Talão <span style="color:#dc2626;font-weight:700">*</span></label>
       <div class="photo-area" id="pa">
         <input type="file" id="f-foto" accept="image/*" capture="environment" onchange="handlePhoto(this)">
         <p id="pl">📷 Tirar foto / Escolher imagem</p>
@@ -730,28 +730,46 @@ saveR();
 function totalValor(r){return(r.sessoes||[]).reduce((s,x)=>s+(parseFloat(x.valor)||0),0)}
 function maisAntigaData(r){const ds=(r.sessoes||[]).filter(x=>x.dataVendas).map(x=>new Date(x.dataVendas));return ds.length?new Date(Math.min(...ds)):null}
 
-function calcEstado(r){
+function calcEstado(r,storeCfg){
   const today=new Date();today.setHours(0,0,0,0);
-  const prazo=(r.tipo==='Depósito Direto')?2:7; // 2 dias Direto, 7 dias Prosegur/Lomis/Câmbio
   const nsess=(r.sessoes||[]).length;
   const tv=totalValor(r);
   if(!r.sessoes||!r.sessoes.length)return{s:'prog',label:'📅 Sem sessões'};
+  if(r.sessoes.some(s=>!s.sessao||(parseFloat(s.valor)||0)<=0))
+    return{s:'err',label:'🔴 Dados incompletos'};
   const ma=maisAntigaData(r);
   if(!ma)return{s:'prog',label:'📅 Sem data de vendas'};
   if(ma>=today)return{s:'prog',label:'📅 Programado'};
   if(tv===0)return{s:'ok',label:'✅ Sem vendas'};
   const diasDesde=Math.floor((today-ma)/86400000);
   const muitasSessoes=(r.tipo==='Depósito Direto')&&nsess>3;
+  // Calcular prazo: Direto=2 dias; outros=dia de recolha configurado ou 7 dias
+  let prazo=r.tipo==='Depósito Direto'?2:7;
+  let vencidoPorDiaRecolha=false;
+  if(r.tipo!=='Depósito Direto'&&storeCfg){
+    const sc=storeCfg;
+    const dStr=({Prosegur:sc.prosegurDay??sc.prosegur_day,Lomis:sc.lomisDay??sc.lomis_day,'Câmbio':sc.cambioDia??sc.cambio_dia})[r.tipo];
+    if(dStr!==undefined&&dStr!==''&&dStr!==null){
+      const dow=parseInt(dStr);
+      if(!isNaN(dow)){
+        // próximo dia de recolha após a sessão mais antiga
+        const maDow=ma.getDay();
+        let dist=(dow-maDow+7)%7;if(dist===0)dist=7;
+        const dRecolha=new Date(ma);dRecolha.setDate(ma.getDate()+dist);dRecolha.setHours(0,0,0,0);
+        vencidoPorDiaRecolha=dRecolha<=today;
+        prazo=dist;
+      }
+    }
+  }
+  const vencido=diasDesde>prazo||muitasSessoes||vencidoPorDiaRecolha;
   if(!r.talao&&!r.dataDeposito){
-    if(diasDesde>prazo||muitasSessoes)return{s:'err',label:'🔴 Em atraso – sem depósito'};
-    return{s:'warn',label:'⚠️ Aguarda depósito'};
+    return vencido?{s:'err',label:'🔴 Em atraso – sem depósito'}:{s:'warn',label:'⚠️ Aguarda depósito'};
   }
   if(r.talao&&!r.dataDeposito){
-    if(diasDesde>prazo||muitasSessoes)return{s:'err',label:'🔴 Falta data depósito'};
-    return{s:'warn',label:'⚠️ Aguarda data dep.'};
+    return vencido?{s:'err',label:'🔴 Falta data depósito'}:{s:'warn',label:'⚠️ Aguarda data dep.'};
   }
   if(!r.talao&&r.dataDeposito){
-    return diasDesde>prazo||muitasSessoes?{s:'err',label:'🔴 Falta nº talão'}:{s:'warn',label:'⚠️ Falta nº talão'};
+    return vencido?{s:'err',label:'🔴 Falta nº talão'}:{s:'warn',label:'⚠️ Falta nº talão'};
   }
   const dd=new Date(r.dataDeposito);
   const diasParaDep=Math.floor((dd-ma)/86400000);
@@ -914,7 +932,58 @@ function checkSesAlert(){
   }
 }
 
-function handlePhoto(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{fotoB64=e.target.result;document.getElementById('pp').src=fotoB64;document.getElementById('pp').style.display='block';document.getElementById('pa').classList.add('has');document.getElementById('pl').textContent='✓ '+f.name};r.readAsDataURL(f)}
+function checkGuardarBtn(){
+  const btn=document.getElementById('guardar-btn');
+  if(!btn)return;
+  const loja=document.getElementById('f-loja')?.value;
+  const tipo=document.getElementById('f-tipo')?.value;
+  const resp=document.getElementById('f-resp')?.value;
+  if(!loja||!tipo||!resp){btn.disabled=true;btn.style.opacity='.5';return;}
+  const sessoes=getSesSionsData();
+  if(!sessoes.length){btn.disabled=true;btn.style.opacity='.5';return;}
+  const allValid=sessoes.every(s=>s.dataVendas&&s.sessao&&s.valor>0);
+  if(!allValid){btn.disabled=true;btn.style.opacity='.5';return;}
+  if(tipo==='Depósito Direto'&&sessoes.length>3){
+    const just=(document.getElementById('f-just')?.value||'').trim();
+    if(!just){btn.disabled=true;btn.style.opacity='.5';return;}
+  }
+  if(!fotoB64){btn.disabled=true;btn.style.opacity='.5';return;}
+  btn.disabled=false;btn.style.opacity='1';
+}
+
+function checkPendingSuggestion(){
+  if(editingId)return;
+  const loja=document.getElementById('f-loja')?.value;
+  const tipo=document.getElementById('f-tipo')?.value;
+  if(!loja||!tipo)return;
+  const pending=regs.filter(r=>r.loja===loja&&r.tipo===tipo&&!r.dataDeposito&&!r.talao);
+  if(!pending.length)return;
+  const allSess=pending.flatMap(r=>r.sessoes||[]);
+  const total=allSess.reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
+  const al=document.getElementById('ses-alert');
+  al.style.display='block';
+  al.innerHTML=`<div class="alert-banner" style="background:#f0f9ff;border-color:#bae6fd;color:#0369a1">
+    💡 <strong>${pending.length} registo(s) pendente(s)</strong> para ${loja} — ${tipo}<br>
+    <span style="font-size:11px">${allSess.length} sessões · Total ${fmt(total)} por depositar</span><br>
+    <button onclick="importPendingSess()" style="background:#1d4ed8;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-top:6px;touch-action:manipulation">📥 Importar sessões pendentes</button>
+  </div>`;
+}
+
+function importPendingSess(){
+  const loja=document.getElementById('f-loja')?.value;
+  const tipo=document.getElementById('f-tipo')?.value;
+  if(!loja||!tipo)return;
+  const pending=regs.filter(r=>r.loja===loja&&r.tipo===tipo&&!r.dataDeposito&&!r.talao);
+  if(!pending.length)return;
+  // Clear current sessions and add all pending
+  document.getElementById('ses-list').innerHTML='';sesCount=0;
+  pending.forEach(r=>{(r.sessoes||[]).forEach(s=>addSes(s));});
+  const cnt=pending.flatMap(r=>r.sessoes||[]).length;
+  toast(`✓ ${cnt} sessões importadas`);
+  document.getElementById('ses-alert').style.display='none';
+}
+
+function handlePhoto(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{fotoB64=e.target.result;document.getElementById('pp').src=fotoB64;document.getElementById('pp').style.display='block';document.getElementById('pa').classList.add('has');document.getElementById('pl').textContent='✓ '+f.name;checkGuardarBtn();};r.readAsDataURL(f)}
 
 async function guardar(){
   const loja=document.getElementById('f-loja').value;
@@ -1057,6 +1126,623 @@ function rDashTable(data){
     </table>
   </div>`;
 }
+function filterLista(loja,st){
+  sp('lista');
+  const lojaSel=document.getElementById('fl-loj');
+  if(lojaSel)lojaSel.value=loja;
+  activeSt=st;
+  document.querySelectorAll('#fc .chip').forEach(c=>c.classList.toggle('active',c.dataset.s===st));
+  rLista();
+}
+function filterListaByStatus(st){
+  const loja=document.getElementById('dash-loja')?.value||'';
+  filterLista(loja,st);
+}
+function abrirNovoComDia(date){
+  sp('novo');
+  const sl=document.getElementById('ses-list');
+  if(sl){sl.innerHTML='';sesCount=0;}
+  addSes({dataVendas:date});
+  checkGuardarBtn();
+}
+
+function rStoresStatus(){
+  const panel=document.getElementById('sa-stores-panel');
+  if(!panel||!isSA){if(panel)panel.innerHTML='';return;}
+  const mes=document.getElementById('dash-mes')?.value||curMesStr();
+  const storeStats={};
+  regs.forEach(r=>{
+    const sid=r.store_id;if(!sid)return;
+    if(!storeStats[sid])storeStats[sid]={total:0,thisMes:0,lastDate:''};
+    const s=storeStats[sid];s.total++;
+    const ref=r.criadoEm||'';
+    if(ref.startsWith(mes))s.thisMes++;
+    if(!s.lastDate||ref>s.lastDate)s.lastDate=ref;
+  });
+  const knownStores=new Map();
+  allStoreConfigs.forEach(c=>{knownStores.set(c.store_id,{emp:c.emp||c.store_id,email:c.email||''});});
+  Object.keys(storeStats).forEach(sid=>{
+    if(!knownStores.has(sid)){
+      // Store has records but no config — derive display name from loja names in records
+      const lojaNames=[...new Set(regs.filter(r=>r.store_id===sid).map(r=>r.loja).filter(Boolean))];
+      knownStores.set(sid,{emp:lojaNames.join(', ')||sid,email:'',noConfig:true});
+    }
+  });
+  if(!knownStores.size){panel.innerHTML='';return;}
+  const list=[...knownStores.entries()].map(([sid,info])=>{
+    const st=storeStats[sid]||{total:0,thisMes:0,lastDate:''};
+    const status=st.total===0?'never':st.thisMes>0?'active':'idle';
+    return{sid,info,st,status};
+  }).sort((a,b)=>{
+    const o={active:0,idle:1,never:2};
+    return(o[a.status]-o[b.status])||((b.st.lastDate||'').localeCompare(a.st.lastDate||''));
+  });
+  const activeCount=list.filter(x=>x.status==='active').length;
+  const idleCount=list.filter(x=>x.status==='idle').length;
+  const neverCount=list.filter(x=>x.status==='never').length;
+  const mesLabel=new Date(mes+'-01').toLocaleDateString('pt-PT',{month:'long',year:'numeric'});
+  const rows=list.map(({sid,info,st,status})=>{
+    const dot=status==='active'?'🟢':status==='idle'?'🟡':'⚪';
+    const lastStr=st.lastDate?fd(st.lastDate.split('T')[0]):'—';
+    const emailBadge=info.noConfig
+      ?`<span style="color:var(--orange);font-size:10px;font-weight:700">⚠️ sem configurações</span>`
+      :info.email?`<span style="color:var(--green);font-size:10px">✓ email</span>`:`<span style="color:var(--g400);font-size:10px">sem email</span>`;
+    const rightTop=st.thisMes>0
+      ?`<span style="font-size:12px;font-weight:700;color:var(--green)">${st.thisMes} reg. este mês</span>`
+      :(status==='idle'?`<span style="font-size:11px;color:var(--orange)">Inativo este mês</span>`
+      :`<span style="font-size:11px;color:var(--g400)">Nunca usou</span>`);
+    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--g100)">
+      <div style="font-size:18px;flex-shrink:0;line-height:1">${dot}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--g800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${info.emp||sid}</div>
+        <div style="font-size:11px;color:var(--g400);margin-top:2px;display:flex;gap:8px;align-items:center"><span>${sid}</span>${emailBadge}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        ${rightTop}
+        <div style="font-size:10px;color:var(--g400);margin-top:2px">Total: ${st.total} · Último: ${lastStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+  panel.innerHTML=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
+    <div style="padding:12px 14px 10px;background:linear-gradient(135deg,#f8fafc,#eff6ff);border-bottom:1px solid var(--g100);display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:6px">
+      <div>
+        <div class="ct" style="margin-bottom:4px">Lojas a Utilizar</div>
+        <div style="font-size:11px;color:var(--g500)">Atividade em ${mesLabel}</div>
+      </div>
+      <div style="display:flex;gap:10px;font-size:11px;color:var(--g600);flex-wrap:wrap">
+        ${activeCount?`<span>🟢 <strong>${activeCount}</strong> ativas</span>`:''}
+        ${idleCount?`<span>🟡 <strong>${idleCount}</strong> inativas</span>`:''}
+        ${neverCount?`<span>⚪ <strong>${neverCount}</strong> sem uso</span>`:''}
+      </div>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function prevMonthStr(mes){
+  const[y,m]=mes.split('-').map(Number);
+  return m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`;
+}
+function storeComplianceMes(sid,mes){
+  const mr=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes));
+  const cfg2=allStoreConfigs.find(c=>c.store_id===sid);
+  const lojas=cfg2?.lojas||[...new Set(mr.map(r=>r.loja).filter(Boolean))];
+  const missing=[...new Set(lojas.flatMap(l=>getMissingDays(mes,l)||[]))].length;
+  const total=mr.length+missing;
+  if(!total)return null;
+  const ok=mr.filter(r=>calcEstado(r).s==='ok').length;
+  const prog=mr.filter(r=>calcEstado(r).s==='prog').length;
+  return Math.round((ok+prog)*100/total);
+}
+function avgCycleDays(storeRegs){
+  const confirmed=storeRegs.filter(r=>r.talao&&r.dataDeposito);
+  if(!confirmed.length)return null;
+  const days=confirmed.map(r=>{
+    const oldest=maisAntigaData(r);if(!oldest)return null;
+    const dep=new Date(r.dataDeposito);
+    return Math.max(0,Math.floor((dep-oldest)/86400000));
+  }).filter(d=>d!==null);
+  if(!days.length)return null;
+  return Math.round(days.reduce((a,b)=>a+b,0)/days.length);
+}
+function storeExposureVal(storeRegs){
+  return storeRegs.filter(r=>!r.talao||!r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+}
+
+function rptStorePdf(loja,mes){
+  const lojaRegs=regs.filter(r=>r.loja===loja&&getRefDate(r).startsWith(mes.slice(0,7)))
+    .sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
+  const ownerCfg=allStoreConfigs.find(c=>(c.lojas||[]).includes(loja));
+  const empName=ownerCfg?.emp||loja;
+  const storeEmail=ownerCfg?.email||'';
+  const missingArr=(getMissingDays(mes,loja)||[]).sort();
+  const totalVal=lojaRegs.reduce((s,r)=>s+totalValor(r),0);
+  const depVal=lojaRegs.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+  const ok=lojaRegs.filter(r=>calcEstado(r).s==='ok').length;
+  const warn=lojaRegs.filter(r=>calcEstado(r).s==='warn').length;
+  const err=lojaRegs.filter(r=>calcEstado(r).s==='err').length;
+  const prog=lojaRegs.filter(r=>calcEstado(r).s==='prog').length;
+  const totalAdj=lojaRegs.length+missingArr.length;
+  const compPct=totalAdj>0?Math.round((ok+prog)*100/totalAdj):0;
+  const compColor=compPct>=80?'#166534':compPct>=50?'#92400e':'#991b1b';
+  const compBg=compPct>=80?'#dcfce7':compPct>=50?'#fef3c7':'#fee2e2';
+  const hoje=new Date();
+  const dataRel=hoje.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const horaRel=hoje.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
+  const [yy,mm]=mes.split('-');
+  const mnames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const mesNome=mnames[parseInt(mm)-1]+' '+yy;
+  const estadoGeral=compPct>=80?{icon:'✅',label:'CONFORME',col:'#166534',bg:'#f0fdf4',border:'#86efac'}
+    :compPct>=50?{icon:'⚠️',label:'ATENÇÃO NECESSÁRIA',col:'#92400e',bg:'#fffbeb',border:'#fde68a'}
+    :{icon:'🔴',label:'NÃO CONFORME — AÇÃO URGENTE',col:'#991b1b',bg:'#fef2f2',border:'#fca5a5'};
+  const statusBadge=r=>{const e=calcEstado(r);return e.s==='ok'?'<span style="color:#166534;font-weight:700">✅ OK</span>':e.s==='warn'?'<span style="color:#92400e;font-weight:700">⚠️ Aviso</span>':e.s==='err'?'<span style="color:#991b1b;font-weight:700">🔴 Em Atraso</span>':'<span style="color:#1d4ed8;font-weight:700">◷ Em Curso</span>';};
+  const regRows=lojaRegs.map(r=>{
+    const sessMin=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort()[0]||'';
+    const sessMax=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort().at(-1)||'';
+    const dateRange=sessMin===sessMax?fd(sessMin):(sessMin&&sessMax?fd(sessMin)+' a '+fd(sessMax):'—');
+    const nsess=r.sessoes.length;
+    return`<tr>
+      <td>${dateRange}</td>
+      <td>${r.tipo||'—'}</td>
+      <td style="text-align:right;font-weight:600">${fmt(totalValor(r))}</td>
+      <td>${r.dataDeposito?fd(r.dataDeposito):'—'}</td>
+      <td>${r.talao||'—'}</td>
+      <td style="text-align:center">${nsess}</td>
+      <td>${statusBadge(r)}</td>
+    </tr>`;
+  }).join('');
+  const missingHtml=missingArr.length?`
+    <div class="section">
+      <h3>Dias Sem Registo de Sessão (${missingArr.length} dia${missingArr.length!==1?'s':''})</h3>
+      <p style="color:#64748b;font-size:12px;margin-bottom:10px">Os seguintes dias do mês de ${mesNome} não têm qualquer sessão registada no sistema. Deverá confirmar se houve atividade comercial nesses dias e, caso sim, proceder ao registo e respetivo depósito.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${missingArr.map(d=>`<span style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600">${fd(d)}</span>`).join('')}
+      </div>
+    </div>`:'';
+  const recoms=[];
+  if(err>0)recoms.push(`<li>Regularizar <strong>${err} depósito(s) em atraso</strong> no valor total de <strong>${fmt(lojaRegs.filter(r=>calcEstado(r).s==='err').reduce((s,r)=>s+totalValor(r),0))}</strong> com a máxima urgência.</li>`);
+  if(warn>0)recoms.push(`<li>Verificar <strong>${warn} registo(s) com aviso</strong> e garantir que os depósitos são efetuados dentro do prazo.</li>`);
+  if(missingArr.length>0)recoms.push(`<li>Registar ou justificar <strong>${missingArr.length} dia(s) sem sessão</strong>: ${missingArr.slice(0,5).map(d=>fd(d)).join(', ')}${missingArr.length>5?` e mais ${missingArr.length-5}...`:''}.</li>`);
+  if(recoms.length===0)recoms.push('<li>Manter a regularidade e continuar a registar as sessões e depósitos dentro dos prazos definidos.</li>');
+  // SVG inline do logo Despomar
+  const LOGO_SVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 110" width="224" height="44">
+    <circle cx="55" cy="55" r="50" fill="white" stroke="#1976d2" stroke-width="2.5"/>
+    <path d="M55,9 C71,9 84,18 88,32 C80,25 69,23 59,26 C49,30 42,39 42,50 C38,39 32,29 26,25 C34,15 44,9 55,9Z" fill="#56cce8"/>
+    <path d="M88,32 C98,44 96,60 86,70 C83,60 76,54 67,53 C58,52 50,55 45,62 C46,50 43,38 38,30 C46,23 57,20 66,24 C76,28 85,30 88,32Z" fill="#1aa8d8"/>
+    <path d="M86,70 C76,82 61,88 48,85 C58,79 64,69 62,58 C60,47 51,41 41,42 C46,32 52,24 59,22 C68,26 78,36 84,48 C88,56 88,64 86,70Z" fill="#1462a8"/>
+    <text x="120" y="72" font-family="'Segoe UI',Arial,sans-serif" font-size="62" font-weight="700" fill="#2c3e6e">Despomar</text>
+  </svg>`;
+
+  const html=`<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
+<title>Relatório Compliance — ${loja} — ${mesNome}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;color:#1e293b;background:#fff;padding:0}
+.page{max-width:800px;margin:0 auto;padding:32px 40px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1e3a5f;padding-bottom:16px;margin-bottom:24px}
+.brand{font-size:22px;font-weight:900;color:#1e3a5f;letter-spacing:-0.5px}
+.brand span{color:#3b82f6}
+.doc-info{text-align:right;font-size:11px;color:#64748b;line-height:1.6}
+.doc-title{font-size:16px;font-weight:800;color:#1e3a5f;margin-bottom:2px}
+.email-btn{display:inline-flex;align-items:center;gap:8px;background:#1d4ed8;color:#fff;border:none;border-radius:9px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;margin-bottom:20px}
+.email-btn:hover{background:#1e40af}
+@media print{.email-btn{display:none!important}}
+.estado-box{border:2px solid ${estadoGeral.border};background:${estadoGeral.bg};border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+.estado-icon{font-size:28px}
+.estado-text .label{font-size:15px;font-weight:800;color:${estadoGeral.col}}
+.estado-text .desc{font-size:12px;color:#64748b;margin-top:2px;line-height:1.4}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center}
+.kpi .val{font-size:20px;font-weight:800;color:#1e293b}
+.kpi .lbl{font-size:10px;color:#64748b;margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+.kpi.comp .val{color:${compColor};background:${compBg};border-radius:6px;padding:2px 8px;display:inline-block}
+.section{margin-bottom:20px}
+.section h3{font-size:13px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid #e2e8f0}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f1f5f9;color:#475569;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:7px 10px;text-align:left;border-bottom:2px solid #e2e8f0}
+td{padding:7px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.no-records{text-align:center;color:#94a3b8;padding:20px;font-size:12px;font-style:italic}
+.recoms li{margin-bottom:6px;color:#374151;line-height:1.5;padding-left:4px}
+.footer{margin-top:32px;padding-top:12px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:10px;color:#94a3b8}
+@media print{
+  body{padding:0}
+  .page{padding:20px 28px;max-width:100%}
+  @page{margin:1.5cm;size:A4}
+}
+</style></head><body>
+<div class="page">
+  <div class="header">
+    <div>
+      ${LOGO_SVG}
+      <div style="margin-top:10px">
+        <div class="doc-title">Relatório de Conformidade de Depósitos</div>
+        <div style="font-size:12px;color:#475569;margin-top:2px"><strong>${loja}</strong> · ${mesNome}</div>
+      </div>
+    </div>
+    <div class="doc-info">
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:6px">Sistema de Controlo de Depósitos</div>
+      <div>Gerado em ${dataRel} às ${horaRel}</div>
+      <div>Confidencial — uso interno</div>
+      ${storeEmail?`<div style="margin-top:4px">📧 ${storeEmail}</div>`:''}
+    </div>
+  </div>
+
+  ${storeEmail?`<div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap">
+    <a class="email-btn" href="mailto:${storeEmail}?cc=ivo@despomar.com&subject=${encodeURIComponent('Relatório Conformidade Depósitos — '+loja+' — '+mesNome)}&body=${encodeURIComponent('Exmo(a) Sr(a) Gerente,\n\nAdjunto/em anexo o relatório de conformidade de depósitos referente a '+mesNome+'.\n\nCompliance: '+compPct+'%\nTotal do mês: '+fmt(totalVal)+'\n'+(err>0?'⚠️ '+err+' depósito(s) em atraso — '+fmt(lojaRegs.filter(r=>calcEstado(r).s==="err").reduce((s,r)=>s+totalValor(r),0))+'\n':'')+(missingArr.length>0?'📅 '+missingArr.length+' dia(s) sem registo\n':'')+(err===0&&missingArr.length===0?'✅ Tudo conforme.\n':'\nPor favor regularize a situação com a máxima brevidade.\n')+'\nCumprimentos,\nIvo Casimiro\nDespomar — Gestão Interna\nauditoria-25b.pages.dev/depositos')}">📧 Enviar por Email ao Gerente</a>
+    <button class="email-btn" style="background:#0f172a" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+  </div>`:''}
+
+  <div class="estado-box">
+    <div class="estado-icon">${estadoGeral.icon}</div>
+    <div class="estado-text">
+      <div class="label">${estadoGeral.label}</div>
+      <div class="desc">Loja ${loja} · Compliance de ${compPct}% em ${mesNome}${missingArr.length>0?` · ${missingArr.length} dia(s) sem registo`:''}</div>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi comp"><div class="val">${compPct}%</div><div class="lbl">Compliance</div></div>
+    <div class="kpi"><div class="val">${fmt(totalVal)}</div><div class="lbl">Total Mês</div></div>
+    <div class="kpi"><div class="val">${fmt(depVal)}</div><div class="lbl">Depositado</div></div>
+    <div class="kpi"><div class="val" style="color:${missingArr.length>0?'#991b1b':'#16a34a'}">${missingArr.length}</div><div class="lbl">Dias s/ Registo</div></div>
+  </div>
+
+  <div class="section">
+    <h3>Registos do Mês — ${lojaRegs.length} depósito(s)</h3>
+    ${lojaRegs.length?`<table>
+      <thead><tr><th>Data(s) Sessão</th><th>Tipo</th><th style="text-align:right">Valor</th><th>Data Depósito</th><th>Talão</th><th style="text-align:center">Sessões</th><th>Estado</th></tr></thead>
+      <tbody>${regRows}</tbody>
+    </table>`:`<div class="no-records">Nenhum depósito registado para ${mesNome}.</div>`}
+  </div>
+
+  ${missingHtml}
+
+  <div class="section">
+    <h3>Recomendações</h3>
+    <ul class="recoms" style="padding-left:16px">${recoms.join('')}</ul>
+  </div>
+
+  <div class="footer">
+    <div>Despomar · Sistema de Controlo de Depósitos · auditoria-25b.pages.dev</div>
+    <div>${dataRel}</div>
+  </div>
+</div>
+<script>window.onload=()=>{window.print();}<\/script>
+</body></html>`;
+  const pw=window.open('about:blank','_blank');
+  if(!pw){toast('⚠️ Popup bloqueado — permite popups para esta página.');return;}
+  pw.document.write(html);pw.document.close();
+}
+
+function rSASupervision(){
+  const panel=document.getElementById('sa-supervision');
+  if(!panel||!isSA)return;
+  const mes=(document.getElementById('sup-mes')?.value||document.getElementById('dash-mes')?.value)||curMesStr();
+  const mesLabelStr=mesLabel(mes);
+  const lojaFil=document.getElementById('sup-loja')?.value||'';
+  let filterSids=null;
+  if(lojaFil){
+    const matchingSids=new Set();
+    allStoreConfigs.forEach(c=>{if((c.lojas||[]).includes(lojaFil))matchingSids.add(c.store_id);});
+    regs.filter(r=>r.loja===lojaFil&&r.store_id&&r.store_id!=='super').forEach(r=>matchingSids.add(r.store_id));
+    if(matchingSids.size)filterSids=matchingSids;
+  }
+  // Build per-store stats from allStoreConfigs + any stores with records
+  const knownSids=new Set(allStoreConfigs.map(c=>c.store_id));
+  regs.forEach(r=>{if(r.store_id&&r.store_id!=='super')knownSids.add(r.store_id);});
+  const storeList=[];
+  const lastMes=prevMonthStr(mes);
+  knownSids.forEach(sid=>{
+    if(filterSids&&!filterSids.has(sid))return;
+    const cfg2=allStoreConfigs.find(c=>c.store_id===sid);
+    const normCfg=cfg2?{prosegurDay:cfg2.prosegur_day||'',lomisDay:cfg2.lomis_day||'',cambioDia:cfg2.cambio_dia||''}:null;
+    const empName=cfg2?.emp||sid;
+    const email=cfg2?.email||'';
+    const storeRegs=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes.slice(0,7)));
+    const ok=storeRegs.filter(r=>calcEstado(r,normCfg).s==='ok').length;
+    const warn=storeRegs.filter(r=>calcEstado(r,normCfg).s==='warn').length;
+    const err=storeRegs.filter(r=>calcEstado(r,normCfg).s==='err').length;
+    const prog=storeRegs.filter(r=>calcEstado(r,normCfg).s==='prog').length;
+    const total=storeRegs.length;
+    // Compliance must account for missing days (days with no records count against score)
+    const storeLojas2=cfg2?.lojas||[...new Set(storeRegs.map(r=>r.loja).filter(Boolean))];
+    const storeMissingArr=[...new Set(storeLojas2.flatMap(l=>getMissingDays(mes,l)||[]))];
+    const storeMissingCount=storeMissingArr.length;
+    const totalAdj=total+storeMissingCount;
+    const compliant=totalAdj>0?Math.round((ok+prog)*100/totalAdj):null;
+    const lastCompliant=storeComplianceMes(sid,lastMes);
+    const today=new Date();
+    let delaySum=0,delayCount=0;
+    storeRegs.filter(r=>calcEstado(r,normCfg).s==='err').forEach(r=>{
+      const ref=maisAntigaData(r);
+      if(ref){const d=Math.floor((today-ref)/86400000);if(d>=0){delaySum+=d;delayCount++;}}
+    });
+    const avgDelay=delayCount>0?Math.round(delaySum/delayCount):0;
+    const lateVal=storeRegs.filter(r=>calcEstado(r,normCfg).s==='err').reduce((s,r)=>s+totalValor(r),0);
+    const cycle=avgCycleDays(storeRegs);
+    const exposure=storeExposureVal(storeRegs);
+    // max age: how many days the oldest unconfirmed record has been open
+    let maxAge=0;
+    storeRegs.filter(r=>!r.talao||!r.dataDeposito).forEach(r=>{
+      const ref=maisAntigaData(r);
+      if(ref){const d=Math.floor((today-ref)/86400000);if(d>maxAge)maxAge=d;}
+    });
+    // flag: any record with >3 sessions combined (possible cash accumulation)
+    const bulkFlag=storeRegs.some(r=>r.sessoes&&r.sessoes.length>3);
+    const displayName=(storeLojas2&&storeLojas2.length)?storeLojas2.join(' / '):empName;
+    storeList.push({sid,empName,displayName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,bulkFlag,storeMissingCount,storeLojas2});
+  });
+  // Sort: stores with data first (worst-to-best), then no-data alphabetically
+  const severity=s=>{
+    if(s.total===0)return 99; // no data → bottom
+    if(s.err>0||(s.compliant!==null&&s.compliant<50))return 0; // critical
+    if(s.warn>0||(s.compliant!==null&&s.compliant<80))return 1; // warning
+    return 2; // ok
+  };
+  storeList.sort((a,b)=>{
+    const sa=severity(a),sb=severity(b);
+    if(sa!==sb)return sa-sb;
+    // same tier: alphabetical
+    return a.displayName.localeCompare(b.displayName,'pt');
+  });
+  // Global KPIs
+  const activeStores=storeList.filter(s=>s.total>0).length;
+  const complianceScores=storeList.filter(s=>s.compliant!==null).map(s=>s.compliant);
+  const avgCompliance=complianceScores.length?Math.round(complianceScores.reduce((a,b)=>a+b,0)/complianceScores.length):0;
+  const totalLate=storeList.reduce((s,x)=>s+x.lateVal,0);
+  const delayScores=storeList.filter(s=>s.avgDelay>0).map(s=>s.avgDelay);
+  const avgDelayGlobal=delayScores.length?Math.round(delayScores.reduce((a,b)=>a+b,0)/delayScores.length):0;
+  // New KPIs
+  const totalExposure=storeList.reduce((s,x)=>s+x.exposure,0);
+  const cycleScores=storeList.filter(s=>s.cycle!==null).map(s=>s.cycle);
+  const avgCycleGlobal=cycleScores.length?Math.round(cycleScores.reduce((a,b)=>a+b,0)/cycleScores.length):null;
+  // Build 6-month history for each store
+  const histMonths=[];
+  let hm=mes;
+  for(let i=0;i<6;i++){histMonths.unshift(hm);hm=prevMonthStr(hm);}
+  // Alert tiers (only stores with data — inactive excluded)
+  const criticalStores=storeList.filter(s=>s.total>0&&(s.err>0||(s.compliant!==null&&s.compliant<50)));
+  const warnStores=storeList.filter(s=>s.total>0&&!criticalStores.includes(s)&&(s.warn>0||(s.compliant!==null&&s.compliant<80)));
+  const inactiveStores=storeList.filter(s=>s.total===0);
+  // Credentials: dep_config.password_note (if column exists) merged with localStorage fallback
+  let credNotes={};try{credNotes=JSON.parse(localStorage.getItem('sa_cred_notes')||'{}');}catch(e){}
+  window._saCredSave=async(sid,field,val)=>{
+    let cn={};try{cn=JSON.parse(localStorage.getItem('sa_cred_notes')||'{}');}catch(e){}
+    if(!cn[sid])cn[sid]={};cn[sid][field]=val;
+    localStorage.setItem('sa_cred_notes',JSON.stringify(cn));
+    if(field==='pass'){
+      try{await SB.from('dep_config').upsert({store_id:sid,password_note:val},{onConflict:'store_id'});}catch(e){}
+    }
+  };
+  window._saCopyCred=(val)=>{
+    navigator.clipboard?.writeText(val).then(()=>toast('✓ Copiado!')).catch(()=>toast('Copiar: '+val));
+  };
+  window._saAlertEmail=(sid)=>{
+    const s=storeList.find(x=>x.sid===sid);if(!s)return;
+    const cn=credNotes[sid]||{};
+    const destEmail=cn.email||s.email||'';
+    const mesLabel2=mes.slice(0,7);
+    // Collect missing days across all lojas for this store
+    const cfg2b=allStoreConfigs.find(c=>c.store_id===sid);
+    const storeLojas=cfg2b?.lojas||[...new Set(regs.filter(r=>r.store_id===sid).map(r=>r.loja).filter(Boolean))];
+    const allMissing=[...new Set(storeLojas.flatMap(l=>getMissingDays(mes,l)||[]))].sort();
+    let body=`Exmo(a) Sr(a),\n\nEsta mensagem refere-se ao controlo de depósitos do mês de ${mesLabel2} da vossa loja (${s.empName}).\n\n`;
+    if(s.err>0)body+=`⚠️ DEPÓSITOS EM ATRASO: ${s.err} registo(s) com valor total de ${fmt(s.lateVal)} aguardam regularização urgente.\n\n`;
+    if(s.warn>0)body+=`⚠️ DEPÓSITOS COM AVISO: ${s.warn} registo(s) necessitam de verificação.\n\n`;
+    if(allMissing.length>0)body+=`📅 DIAS SEM REGISTO: ${allMissing.length} dia(s) sem sessão registada:\n${allMissing.map(d=>fd(d)).join(', ')}\n\n`;
+    body+=`Por favor aceda ao sistema para regularizar a situação ou contacte-nos diretamente para justificação.\n\nAcesso: https://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nGestão Despomar`;
+    const subject=encodeURIComponent(`⚠️ Depósitos ${mesLabel2} — Regularização necessária — ${s.empName}`);
+    window.open(`mailto:${destEmail}?subject=${subject}&body=${encodeURIComponent(body)}`,'_blank');
+  };
+  const kpiColor=(v,good,bad)=>{if(v>=good)return'#16a34a';if(v<=bad)return'#dc2626';return'#d97706';};
+  const compColor=kpiColor(avgCompliance,80,50);
+  // Month abbreviations for history table
+  const monthAbbr=m=>{const[y,mo]=m.split('-');const names=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];return names[parseInt(mo)-1]+(m!==mes?'':' ◀');};
+  const tableRows=storeList.map((s,idx)=>{
+    const rowColor=s.err>0?'#fef2f2':s.warn>0?'#fffbeb':s.total===0?'#f8fafc':'#f0fdf4';
+    const borderColor=s.err>0?'#fca5a5':s.warn>0?'#fcd34d':s.total===0?'#e2e8f0':'#86efac';
+    const rankBg=idx===0&&s.err>0?'#dc2626':idx<=1&&s.err>0?'#ef4444':'#94a3b8';
+    const badge=s.total===0
+      ?`<span style="background:#e2e8f0;color:#64748b;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600">—</span>`
+      :s.compliant>=80?`<span style="background:#dcfce7;color:#166534;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600">✓ ${s.compliant}%</span>`
+      :s.compliant>=50?`<span style="background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600">⚠ ${s.compliant}%</span>`
+      :`<span style="background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600">✗ ${s.compliant}%</span>`;
+    // Trend vs last month
+    let trendStr='';
+    if(s.compliant!==null&&s.lastCompliant!==null){
+      const diff=s.compliant-s.lastCompliant;
+      trendStr=diff>5?`<span style="color:#16a34a;font-size:10px;font-weight:700" title="Melhorou vs mês anterior">↑ +${diff}%</span>`:diff<-5?`<span style="color:#dc2626;font-size:10px;font-weight:700" title="Piorou vs mês anterior">↓ ${diff}%</span>`:`<span style="color:#94a3b8;font-size:10px">→</span>`;
+    }
+    const bulkWarn=s.bulkFlag?`<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700;margin-left:4px">bulk</span>`:'';
+    const pdfLoja=(s.storeLojas2||[s.displayName])[0];
+    // Classify
+    const isInactive=s.total===0;
+    const isCritical=!isInactive&&(s.err>0||(s.compliant!==null&&s.compliant<50));
+    const isWarning=!isInactive&&!isCritical&&(s.warn>0||(s.compliant!==null&&s.compliant<80));
+    const hasProblem=isCritical||isWarning;
+    // INACTIVE: grey compact row
+    if(isInactive){
+      return`<div style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:#f8fafc;border-left:3px solid #cbd5e1;border-bottom:1px solid #f1f5f9;flex-wrap:wrap;opacity:.75">
+        <div style="background:#94a3b8;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">${idx+1}</div>
+        <div style="flex:1;min-width:100px">
+          <div style="font-size:12px;font-weight:700;color:#475569">${s.displayName}</div>
+          ${s.displayName!==s.empName?`<div style="font-size:10px;color:#94a3b8">${s.empName}</div>`:''}
+          <div style="font-size:10px;color:#94a3b8;margin-top:1px">⚫ Sem registos em ${mesLabelStr}</div>
+        </div>
+        <button onclick="filterLista('${s.sid}','')" style="background:#e2e8f0;color:#475569;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;touch-action:manipulation">Lista</button>
+      </div>`;
+    }
+    // PROBLEM: colored card with email button
+    if(hasProblem){
+      const bg=isCritical?'#fef2f2':'#fffbeb';
+      const border=isCritical?'#fca5a5':'#fcd34d';
+      const titleCol=isCritical?'#7f1d1d':'#78350f';
+      const subCol=isCritical?'#991b1b':'#92400e';
+      const btnBg=isCritical?'#dc2626':'#d97706';
+      const icon=isCritical?'🔴':'🟡';
+      let detail=s.err>0?`${s.err} em atraso${s.lateVal>0?' · '+fmt(s.lateVal):''}${s.maxAge>0?' · '+s.maxAge+'d em aberto':''}`
+        :s.warn>0?`${s.warn} com aviso · ${s.total} registo(s)`
+        :isCritical?`Compliance ${s.compliant}% — crítico · ${s.storeMissingCount} dia(s) sem registo`
+        :`Compliance ${s.compliant}% · ${s.storeMissingCount} dia(s) sem registo`;
+      return`<div style="background:${bg};border-left:4px solid ${border};border-bottom:1px solid #e2e8f0;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:120px">
+          <div style="font-size:13px;font-weight:800;color:${titleCol}">${icon} ${s.displayName}${bulkWarn}</div>
+          ${s.displayName!==s.empName?`<div style="font-size:10px;color:${subCol};margin-top:1px">${s.empName}</div>`:''}
+          <div style="font-size:11px;color:${subCol};margin-top:3px">${detail}</div>
+          <div style="display:flex;gap:4px;align-items:center;margin-top:4px">${badge}${trendStr?`<span style="margin-left:3px">${trendStr}</span>`:''}</div>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+          <button onclick="filterLista('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:7px;padding:6px 11px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation">Lista</button>
+          <button onclick="rptStorePdf('${pdfLoja}','${mes}')" style="background:#0f172a;color:#fff;border:none;border-radius:7px;padding:6px 11px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation">📄 PDF</button>
+          <button onclick="window._saAlertEmail('${s.sid}')" style="background:${btnBg};color:#fff;border:none;border-radius:9px;padding:9px 15px;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation;white-space:nowrap">📧 Enviar Email</button>
+        </div>
+      </div>`;
+    }
+    // OK active store: green compact row
+    const statsCells=`<span style="color:#16a34a;font-size:11px">✓${s.ok}</span>`
+      +(s.warn?` <span style="color:#d97706;font-size:11px">⚠${s.warn}</span>`:'')
+      +(s.err?` <span style="color:#dc2626;font-size:11px">✗${s.err}</span>`:'')
+      +(s.prog?` <span style="color:#2563eb;font-size:11px">◷${s.prog}</span>`:'');
+    const cycleStr=s.cycle!==null?`<span style="color:${s.cycle<=2?'#16a34a':s.cycle<=4?'#d97706':'#dc2626'};font-size:11px;font-weight:600">${s.cycle}d</span>`:'<span style="color:#94a3b8;font-size:11px">—</span>';
+    const exposureStr=s.exposure>0?`<span style="color:#dc2626;font-size:11px;font-weight:600">${fmt(s.exposure)}</span>`:'<span style="color:#16a34a;font-size:11px">✓ 0</span>';
+    return`<div style="display:flex;align-items:center;gap:5px;padding:7px 10px;background:${rowColor};border-left:3px solid ${borderColor};border-bottom:1px solid #f1f5f9;flex-wrap:wrap">
+      <div style="background:${rankBg};color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">${idx+1}</div>
+      <div style="flex:1;min-width:100px">
+        <div style="font-size:12px;font-weight:700;color:#1e293b">${s.displayName}${bulkWarn}</div>
+        ${s.displayName!==s.empName?`<div style="font-size:10px;color:#94a3b8;margin-bottom:1px">${s.empName}</div>`:''}
+        <div style="display:flex;gap:4px;align-items:center;margin-top:1px">${badge}${trendStr?`<span style="margin-left:3px">${trendStr}</span>`:''}</div>
+      </div>
+      <div style="min-width:60px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">REGISTOS</div>${statsCells}</div>
+      <div style="min-width:50px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">CICLO</div>${cycleStr}</div>
+      <div style="min-width:65px;text-align:center"><div style="font-size:9px;color:#94a3b8;margin-bottom:1px">EXPOSIÇÃO</div>${exposureStr}</div>
+      <div style="display:flex;gap:3px;flex-wrap:wrap">
+        <button onclick="filterLista('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">Lista</button>
+        <button onclick="rptStorePdf('${pdfLoja}','${mes}')" style="background:#0f172a;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">📄 PDF</button>
+      </div>
+    </div>`;
+  }).join('');
+  const credRows=storeList.map(s=>{
+    const cn=credNotes[s.sid]||{};
+    // password_note from DB takes priority; fall back to localStorage; default hint 12345678
+    const cfg2=allStoreConfigs.find(c=>c.store_id===s.sid);
+    const dbPass=cfg2?.password_note||'';
+    const knownPass=dbPass||cn.pass||'';
+    const passDisplay=knownPass||'12345678';
+    const passIsDefault=!knownPass;
+    const emailVal=(cn.email||s.email||'').replace(/"/g,'&quot;');
+    return`<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:8px">${s.displayName} <span style="font-size:10px;color:#94a3b8;font-weight:400">${s.displayName!==s.empName?s.empName+' · ':''}</span><span style="font-size:10px;color:#94a3b8;font-weight:400">${s.sid}</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div>
+          <label style="font-size:10px;color:#64748b;display:block;margin-bottom:2px">Email de acesso</label>
+          <div style="display:flex;gap:4px;align-items:center">
+            <input type="email" value="${emailVal}" placeholder="${s.email||'email@loja.com'}"
+              onchange="window._saCredSave('${s.sid}','email',this.value)"
+              style="flex:1;min-width:0;border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;font-size:11px;background:#fff;color:#1e293b">
+            ${emailVal?`<button onclick="window._saCopyCred('${emailVal}')" style="background:#e0f2fe;color:#0369a1;border:none;border-radius:6px;padding:5px 7px;font-size:11px;cursor:pointer;flex-shrink:0" title="Copiar">📋</button>`:''}
+          </div>
+        </div>
+        <div>
+          <label style="font-size:10px;color:#64748b;display:block;margin-bottom:2px">
+            Password
+            ${dbPass?'<span style="color:#16a34a;font-weight:700"> ✓ sincronizada</span>':passIsDefault?'<span style="color:#d97706"> (padrão)</span>':'<span style="color:#2563eb"> (local)</span>'}
+          </label>
+          <div style="display:flex;gap:4px;align-items:center">
+            <input type="text" id="pass-input-${s.sid}" value="${passDisplay.replace(/"/g,'&quot;')}"
+              onchange="window._saCredSave('${s.sid}','pass',this.value)"
+              style="flex:1;min-width:0;border:1.5px solid ${dbPass?'#86efac':passIsDefault?'#fcd34d':'#93c5fd'};border-radius:6px;padding:5px 8px;font-size:12px;font-weight:700;background:${dbPass?'#f0fdf4':passIsDefault?'#fefce8':'#eff6ff'};color:#1e293b;letter-spacing:.5px">
+            <button onclick="window._saCopyCred(document.getElementById('pass-input-${s.sid}').value)" style="background:#e0f2fe;color:#0369a1;border:none;border-radius:6px;padding:5px 7px;font-size:11px;cursor:pointer;flex-shrink:0" title="Copiar password">📋</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:10px;color:#64748b;display:block;margin-bottom:2px">Notas internas</label>
+        <input type="text" value="${(cn.notes||'').replace(/"/g,'&quot;')}" placeholder="Observações, responsável, contacto..."
+          onchange="window._saCredSave('${s.sid}','notes',this.value)"
+          style="width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;font-size:11px;background:#fff;color:#1e293b">
+      </div>
+    </div>`;
+  }).join('');
+  // 6-month history table
+  const histRows=storeList.filter(s=>s.total>0||histMonths.some(m=>storeComplianceMes(s.sid,m)!==null)).map(s=>{
+    const cells=histMonths.map(m=>{
+      const c=storeComplianceMes(s.sid,m);
+      if(c===null)return`<td style="padding:4px 6px;text-align:center;font-size:10px;color:#d1d5db;background:#f8fafc">—</td>`;
+      const bg=c>=80?'#dcfce7':c>=50?'#fef3c7':'#fee2e2';
+      const col=c>=80?'#166534':c>=50?'#92400e':'#991b1b';
+      const isCurr=m===mes;
+      return`<td style="padding:4px 6px;text-align:center;font-size:10px;font-weight:700;background:${bg};color:${col};${isCurr?'border:1.5px solid #3b82f6;':''}">${c}%</td>`;
+    }).join('');
+    return`<tr><td style="padding:4px 8px;font-size:11px;font-weight:600;color:#1e293b;white-space:nowrap;border-right:1px solid #e2e8f0">${s.displayName}</td>${cells}</tr>`;
+  }).join('');
+  const totalAlerts=criticalStores.length+warnStores.length;
+  const critHtml=totalAlerts===0
+    ?`<div style="padding:10px 14px;background:#f0fdf4;border-bottom:1px solid #bbf7d0"><div style="font-size:12px;font-weight:700;color:#166534">✅ Todas as lojas com dados em ordem em ${mesLabelStr}${inactiveStores.length?` · ${inactiveStores.length} ainda sem dados`:''}</div></div>`
+    :`<div style="padding:8px 14px;background:#fef9ec;border-bottom:1px solid #fde68a;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      ${criticalStores.length?`<span style="font-size:11px;font-weight:700;color:#991b1b">🔴 ${criticalStores.length} crítico(s)</span>`:''}
+      ${warnStores.length?`<span style="font-size:11px;font-weight:700;color:#92400e">🟡 ${warnStores.length} com aviso</span>`:''}
+      ${inactiveStores.length?`<span style="font-size:11px;color:#64748b">⚫ ${inactiveStores.length} sem dados</span>`:''}
+      <span style="font-size:10px;color:#92400e;margin-left:auto">Role para ver detalhes ↓</span>
+    </div>`;
+  panel.innerHTML=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
+    <div style="padding:12px 14px 12px;background:linear-gradient(135deg,#1e3a5f,#1e40af);border-bottom:1px solid #1d4ed8">
+      <div class="ct" style="margin-bottom:8px;color:#fff;font-size:13px">📊 Supervisão Global — ${mesLabelStr}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:#fff">${activeStores}<span style="font-size:12px;font-weight:400;opacity:.7">/${storeList.length}</span></div>
+          <div style="font-size:9px;color:#bfdbfe">Lojas ativas</div>
+        </div>
+        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:${compColor==='#16a34a'?'#86efac':compColor==='#dc2626'?'#fca5a5':'#fde68a'}">${avgCompliance}%</div>
+          <div style="font-size:9px;color:#bfdbfe">Compliance</div>
+        </div>
+        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:${avgCycleGlobal!==null&&avgCycleGlobal<=2?'#86efac':avgCycleGlobal!==null&&avgCycleGlobal<=4?'#fde68a':'#fca5a5'}">${avgCycleGlobal!==null?avgCycleGlobal+'d':'—'}</div>
+          <div style="font-size:9px;color:#bfdbfe">Ciclo médio</div>
+        </div>
+        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:${totalExposure>0?'#fca5a5':'#86efac'}">${fmt(totalExposure)}</div>
+          <div style="font-size:9px;color:#bfdbfe">Exposição total</div>
+        </div>
+        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:${totalLate>0?'#fca5a5':'#86efac'}">${fmt(totalLate)}</div>
+          <div style="font-size:9px;color:#bfdbfe">Valor em atraso</div>
+        </div>
+        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:${avgDelayGlobal>3?'#fca5a5':avgDelayGlobal>0?'#fde68a':'#86efac'}">${avgDelayGlobal>0?avgDelayGlobal+'d':'—'}</div>
+          <div style="font-size:9px;color:#bfdbfe">Atraso médio</div>
+        </div>
+      </div>
+    </div>
+    ${critHtml}
+    <div style="padding:0">
+      ${tableRows||'<div style="padding:16px;text-align:center;color:#94a3b8;font-size:12px">Nenhuma loja registada</div>'}
+    </div>
+    <details style="border-top:1px solid #e2e8f0">
+      <summary style="padding:10px 14px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+        <span>📅</span> Histórico 6 meses (compliance %)
+        <span style="margin-left:auto;font-size:10px;color:#94a3b8">Verde ≥80% · Amarelo ≥50% · Vermelho &lt;50%</span>
+      </summary>
+      <div style="overflow-x:auto;padding:8px 14px 14px">
+        ${histRows?`<table style="border-collapse:collapse;width:100%;font-size:11px">
+          <thead><tr><th style="padding:4px 8px;text-align:left;font-size:9px;color:#64748b;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">LOJA</th>${histMonths.map(m=>`<th style="padding:4px 6px;text-align:center;font-size:9px;color:#64748b;border-bottom:1px solid #e2e8f0">${monthAbbr(m)}</th>`).join('')}</tr></thead>
+          <tbody>${histRows}</tbody>
+        </table>`:'<div style="color:#94a3b8;font-size:12px">Sem dados suficientes</div>'}
+      </div>
+    </details>
+    <details style="border-top:1px solid #e2e8f0">
+      <summary style="padding:10px 14px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+        <span>🔑</span> Credenciais e passwords das lojas
+        <span style="margin-left:auto;font-size:10px;color:#94a3b8">Password ✓ sincroniza quando a loja altera</span>
+      </summary>
+      <div style="padding:10px 14px 14px">
+        ${credRows||'<div style="color:#94a3b8;font-size:12px">Nenhuma loja registada</div>'}
+      </div>
+    </details>
+  </div>`;
+}
+
 function rDash(){
   popSel();
   const mes=document.getElementById('dash-mes').value||curMesStr();
