@@ -2008,12 +2008,23 @@ function rSASupervision(){
     const cfg2b=allStoreConfigs.find(c=>c.store_id===sid);
     const storeLojas=cfg2b?.lojas||[...new Set(regs.filter(r=>r.store_id===sid).map(r=>r.loja).filter(Boolean))];
     const allMissing=[...new Set(storeLojas.flatMap(l=>getMissingDays(mes,l)||[]))].sort();
-    let body=`Exmo(a) Sr(a),\n\nEsta mensagem refere-se ao controlo de depósitos do mês de ${mesLabel2} da vossa loja (${s.empName}).\n\n`;
-    if(s.err>0)body+=`⚠️ DEPÓSITOS EM ATRASO: ${s.err} registo(s) com valor total de ${fmt(s.lateVal)} aguardam regularização urgente.\n\n`;
-    if(s.warn>0)body+=`⚠️ DEPÓSITOS COM AVISO: ${s.warn} registo(s) necessitam de verificação.\n\n`;
-    if(allMissing.length>0)body+=`📅 DIAS SEM REGISTO: ${allMissing.length} dia(s) sem sessão registada:\n${allMissing.map(d=>fd(d)).join(', ')}\n\n`;
+    // Exclude today from missing days — o dia ainda não terminou
+    const todayStr=new Date().toISOString().split('T')[0];
+    const missingSend=allMissing.filter(d=>d!==todayStr);
+    const mesNomeEmail=mesLabel(mes);
+    let body=`Exmo(a) Sr(a),\n\nEsta mensagem refere-se ao controlo de depósitos de ${mesNomeEmail} da vossa loja (${s.empName}).\n\n`;
+    if(s.err>0)body+=`🔴 DEPÓSITOS EM ATRASO: ${s.err} registo(s) com valor total de ${fmt(s.lateVal)} aguardam regularização urgente.\n\n`;
+    // Warn breakdown — specific reason for each category
+    const warnLines=[];
+    if(s.wSemComp>0)warnLines.push(`📷 ${s.wSemComp} depósito(s) sem comprovativo — necessita de carregar a foto do talão bancário`);
+    if(s.wPendentes>0)warnLines.push(`⏳ ${s.wPendentes} depósito(s) por confirmar — aguarda depósito e/ou comprovativo`);
+    if(s.wACompl>0)warnLines.push(`📋 ${s.wACompl} depósito(s) incompletos — falta nº talão ou data de depósito`);
+    const wTardio=s.warn-(s.wSemComp+s.wPendentes+s.wACompl);
+    if(wTardio>0)warnLines.push(`⚠️ ${wTardio} depósito(s) realizados fora do prazo (informativo — já depositados)`);
+    if(warnLines.length>0)body+=`⚠️ DEPÓSITOS COM AVISO:\n${warnLines.join('\n')}\n\n`;
+    if(missingSend.length>0)body+=`📅 DIAS SEM REGISTO: ${missingSend.length} dia(s) sem sessão registada:\n${missingSend.map(d=>fd(d)).join(', ')}\n\n`;
     body+=`Por favor aceda ao sistema para regularizar a situação ou contacte-nos diretamente para justificação.\n\nAcesso: https://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nGestão Despomar`;
-    const subject=encodeURIComponent(`⚠️ Depósitos ${mesLabel2} — Regularização necessária — ${s.empName}`);
+    const subject=encodeURIComponent(`⚠️ Depósitos ${mesNomeEmail} — Regularização necessária — ${s.empName}`);
     window.open(`mailto:${destEmail}?subject=${subject}&body=${encodeURIComponent(body)}`,'_blank');
   };
   const kpiColor=(v,good,bad)=>{if(v>=good)return'#16a34a';if(v<=bad)return'#dc2626';return'#d97706';};
