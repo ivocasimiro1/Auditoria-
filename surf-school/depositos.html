@@ -2052,15 +2052,20 @@ function rSASupervision(){
     const semTalao=storeRegs.filter(r=>!r.talao&&r.dataDeposito).length;
     const tardios=storeRegs.filter(r=>{const e=calcEstado(r,normCfg);return e.s==='warn'&&e.label.includes('tardio');}).length;
     // Detetar "saltos de depósito": registos mais antigos ainda por depositar enquanto já há mais recentes depositados
+    // Inclui também dias completamente em falta (sem qualquer registo) que antecedem o depósito mais recente
     const sortedByRef=[...storeRegs].sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
-    const gapRecs=sortedByRef.filter((r,i)=>{
-      if(r.dataDeposito)return false; // este já foi depositado
-      const refDate=getRefDate(r);
-      // existe algum registo mais recente que já foi depositado?
-      return sortedByRef.some(r2=>r2!==r&&r2.dataDeposito&&getRefDate(r2)>refDate);
+    const todayStr2=new Date().toISOString().split('T')[0];
+    const newestDepDate=sortedByRef.filter(r=>r.dataDeposito).map(r=>getRefDate(r)).sort().pop()||'';
+    const gapExistingRecs=sortedByRef.filter(r=>{
+      if(r.dataDeposito)return false;
+      return newestDepDate&&getRefDate(r)<newestDepDate;
     });
-    const gaps=gapRecs.length;
-    const gapDates=gapRecs.map(r=>fd(getRefDate(r)).slice(0,5)).join(', ');
+    const gapMissingDays=storeMissingArr.filter(d=>d<newestDepDate&&d<todayStr2);
+    const gaps=gapExistingRecs.length+gapMissingDays.length;
+    const gapDates=[
+      ...gapExistingRecs.map(r=>fd(getRefDate(r)).slice(0,5)),
+      ...gapMissingDays.map(d=>fd(d).slice(0,5))
+    ].sort().join(', ');
     const displayName=(storeLojas2&&storeLojas2.length)?storeLojas2.join(' / '):empName;
     const dowNames=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const servicos=[];
@@ -2134,13 +2139,16 @@ function rSASupervision(){
     const storeRecs=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes.slice(0,7))).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
     const totalVal2=storeRecs.reduce((sum,r)=>sum+totalValor(r),0);
     const depVal2=storeRecs.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((sum,r)=>sum+totalValor(r),0);
-    // Detetar saltos de depósito para o email
-    const saGapRecs=storeRecs.filter((r,i)=>{
+    // Detetar saltos de depósito para o email (inclui dias completamente em falta)
+    const saTodayStr=new Date().toISOString().split('T')[0];
+    const saNewestDepDate=storeRecs.filter(r=>r.dataDeposito).map(r=>getRefDate(r)).sort().pop()||'';
+    const saGapRecs=storeRecs.filter(r=>{
       if(r.dataDeposito)return false;
-      const refDate=getRefDate(r);
-      return storeRecs.some(r2=>r2!==r&&r2.dataDeposito&&getRefDate(r2)>refDate);
+      return saNewestDepDate&&getRefDate(r)<saNewestDepDate;
     });
-    const estadoLabel2=saGapRecs.length>0?'!!! SALTO DE DEPOSITO DETECTADO !!!':s.err>0||(s.compliant!==null&&s.compliant<50)?'*** DEPOSITOS EM ATRASO - ACAO URGENTE ***':s.warn>0||(s.compliant!==null&&s.compliant<80)?'Atencao: verificar depositos pendentes':'Tudo em ordem';
+    const saGapMissingDays=allMissing.filter(d=>d<saNewestDepDate&&d<saTodayStr);
+    const saHasGap=saGapRecs.length>0||saGapMissingDays.length>0;
+    const estadoLabel2=saHasGap?'!!! SALTO DE DEPOSITO DETECTADO !!!':s.err>0||(s.compliant!==null&&s.compliant<50)?'*** DEPOSITOS EM ATRASO - ACAO URGENTE ***':s.warn>0||(s.compliant!==null&&s.compliant<80)?'Atencao: verificar depositos pendentes':'Tudo em ordem';
     const saEur=v=>fmt(v).replace('€','EUR');
     const recBlocks=[];
     storeRecs.forEach((r,i)=>{
@@ -2165,23 +2173,30 @@ function rSASupervision(){
       estadoLabel2,
       `Compliance: ${s.compliant??0}%`,
       '',
-      ...(saGapRecs.length>0?[
+      ...(saHasGap?[
         '!!! ATENCAO CRITICA !!!',
         '===================================',
         'SALTO DE DEPOSITO DETECTADO',
         '===================================',
         'Foram registados depositos de datas',
-        'mais recentes enquanto as seguintes',
-        'sessoes mais antigas ainda nao foram',
-        'depositadas. Isto nao e aceitavel.',
+        'mais recentes enquanto os seguintes',
+        'periodos mais antigos ainda nao foram',
+        'depositados. Isto nao e aceitavel.',
         '',
-        'Sessoes em falta (mais antigas):',
-        ...saGapRecs.map(r=>{
-          const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
-          const period=sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
-          return`  ${period} | ${r.tipo||'--'} | ${saEur(totalValor(r))}`;
-        }),
-        '',
+        ...(saGapRecs.length>0?[
+          'Registos pendentes (mais antigos):',
+          ...saGapRecs.map(r=>{
+            const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
+            const period=sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
+            return`  ${period} | ${r.tipo||'--'} | ${saEur(totalValor(r))}`;
+          }),
+          ''
+        ]:[]),
+        ...(saGapMissingDays.length>0?[
+          'Dias sem qualquer registo:',
+          ...saGapMissingDays.map(d=>`  ${fd(d).slice(0,5)} | SEM REGISTO DE CAIXA`),
+          ''
+        ]:[]),
         'Regularizar IMEDIATAMENTE.',
         '===================================',
         ''
@@ -2883,12 +2898,15 @@ async function updEmailPrev(){
   const dv=s=>fd(s).slice(0,5); // DD/MM apenas
   const eur=v=>fmt(v).replace('€','EUR');
   const estadoTxt=erros>0?'*** DEPOSITOS EM ATRASO - VERIFICAR ***':avisos>0?'Atencao: '+avisos+' deposito(s) a verificar':'Tudo em ordem';
-  // Detetar saltos de depósito nesta loja
-  const emailGapRecs=[...data].sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1).filter((r,i,arr)=>{
+  // Detetar saltos de depósito nesta loja (inclui dias completamente em falta)
+  const _epTodayStr=new Date().toISOString().split('T')[0];
+  const _epNewestDep=[...data].filter(r=>r.dataDeposito).map(r=>getRefDate(r)).sort().pop()||'';
+  const emailGapRecs=[...data].sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1).filter(r=>{
     if(r.dataDeposito)return false;
-    const refDate=getRefDate(r);
-    return arr.some(r2=>r2!==r&&r2.dataDeposito&&getRefDate(r2)>refDate);
+    return _epNewestDep&&getRefDate(r)<_epNewestDep;
   });
+  const emailGapMissingDays=missingInEmail.filter(d=>d<_epNewestDep&&d<_epTodayStr);
+  const emailHasGap=emailGapRecs.length>0||emailGapMissingDays.length>0;
   // Blocos por sessao — max ~38 chars por linha
   const sessBlocks=[];
   let depIdx=0;
@@ -2923,21 +2941,28 @@ async function updEmailPrev(){
     '',
     `Segue a folha de depositos de ${ml}.`,
     '',
-    ...(emailGapRecs.length>0?[
+    ...(emailHasGap?[
       '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
       'ALERTA: SALTO DE DEPOSITO',
       '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
       'Existem depositos de datas mais',
-      'recentes enquanto os registos abaixo',
+      'recentes enquanto os periodos abaixo',
       'ainda nao foram depositados.',
       '',
-      'Registos em falta (mais antigos):',
-      ...emailGapRecs.map(r=>{
-        const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
-        const period=sm.length>1?dv(sm[0])+' a '+dv(sm[sm.length-1]):sm.length?dv(sm[0]):'--';
-        return`  ${period} | ${r.tipo||'--'} | ${eur(totalValor(r))}`;
-      }),
-      '',
+      ...(emailGapRecs.length>0?[
+        'Registos pendentes (mais antigos):',
+        ...emailGapRecs.map(r=>{
+          const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
+          const period=sm.length>1?dv(sm[0])+' a '+dv(sm[sm.length-1]):sm.length?dv(sm[0]):'--';
+          return`  ${period} | ${r.tipo||'--'} | ${eur(totalValor(r))}`;
+        }),
+        ''
+      ]:[]),
+      ...(emailGapMissingDays.length>0?[
+        'Dias sem qualquer registo:',
+        ...emailGapMissingDays.map(d=>`  ${dv(d)} | SEM REGISTO DE CAIXA`),
+        ''
+      ]:[]),
       'Solicita-se esclarecimento urgente.',
       '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
       ''
