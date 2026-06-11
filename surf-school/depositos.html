@@ -3190,6 +3190,33 @@ function expPrint(data, asDownload=false){
   }).join('');
 
   const missingInPdf=getMissingDays(mes,loja);
+  // Gap detection para PDF
+  const _pdfTodayStr=new Date().toISOString().split('T')[0];
+  const _pdfNewestDep=[...data].filter(r=>r.dataDeposito).map(r=>getRefDate(r)).sort().pop()||'';
+  const pdfGapRecs=[...data].filter(r=>{if(r.dataDeposito)return false;return _pdfNewestDep&&getRefDate(r)<_pdfNewestDep;});
+  const pdfGapMissingDays=missingInPdf.filter(d=>d<_pdfNewestDep&&d<_pdfTodayStr);
+  const pdfHasGap=pdfGapRecs.length>0||pdfGapMissingDays.length>0;
+  const _pdfEarliestGap=[...pdfGapMissingDays,...pdfGapRecs.map(r=>getRefDate(r))].sort()[0]||'';
+  const pdfDepAhead=_pdfEarliestGap?[...data].filter(r=>r.dataDeposito&&getRefDate(r)>=_pdfEarliestGap).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1):[];
+  const pdfGapHtml=pdfHasGap?`
+<div style="background:#fff1f2;border:3px solid #f43f5e;border-radius:5px;padding:8px 12px;margin-bottom:8px;page-break-inside:avoid">
+  <div style="font-size:11px;font-weight:800;color:#881337;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">⛔ ALERTA CRÍTICO — SALTO DE DEPÓSITO DETETADO</div>
+  <div style="font-size:7.5px;color:#be123c;margin-bottom:6px">Foram processados depósitos enquanto dias mais antigos ficaram sem qualquer registo de caixa. Situação INACEITÁVEL — verificar urgentemente.</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    ${pdfGapMissingDays.length>0?`<div style="flex:1;min-width:120px">
+      <div style="font-size:7.5px;font-weight:800;color:#991b1b;text-transform:uppercase;margin-bottom:3px">Dias sem registo (${pdfGapMissingDays.length}):</div>
+      <div style="display:flex;flex-wrap:wrap;gap:2px">${pdfGapMissingDays.map(d=>`<span style="background:#fee2e2;border:1px solid #fca5a5;border-radius:3px;padding:1px 6px;font-size:7.5px;font-weight:700;color:#991b1b">${fd(d)}</span>`).join('')}</div>
+    </div>`:''}
+    ${pdfGapRecs.length>0?`<div style="flex:1;min-width:120px">
+      <div style="font-size:7.5px;font-weight:800;color:#991b1b;text-transform:uppercase;margin-bottom:3px">Registos por depositar (${pdfGapRecs.length}):</div>
+      ${pdfGapRecs.map(r=>{const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();const p=sm.length>1?fd(sm[0])+' a '+fd(sm[sm.length-1]):sm.length?fd(sm[0]):'--';return`<div style="font-size:7px;border-left:2px solid #f43f5e;padding:1px 4px;margin-bottom:1px">${p} · ${r.tipo||'--'} · ${fmt(totalValor(r))}</div>`;}).join('')}
+    </div>`:''}
+    ${pdfDepAhead.length>0?`<div style="flex:1;min-width:150px">
+      <div style="font-size:7.5px;font-weight:800;color:#991b1b;text-transform:uppercase;margin-bottom:3px">Depósitos passados à frente (${pdfDepAhead.length}):</div>
+      ${pdfDepAhead.map(r=>{const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();const p=sm.length>1?fd(sm[0])+' a '+fd(sm[sm.length-1]):sm.length?fd(sm[0]):'--';return`<div style="font-size:7px;border-left:2px solid #f43f5e;padding:1px 4px;margin-bottom:1px;background:#fef2f2"><b>${p}</b> · ${r.tipo||'--'} · ${fmt(totalValor(r))} · Dep: ${fd(r.dataDeposito)}</div>`;}).join('')}
+    </div>`:''}
+  </div>
+</div>`:'';
   const missingPdfHtml=missingInPdf.length?`
 <div style="margin-top:8px;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:5px;padding:6px 10px;page-break-inside:avoid">
   <div style="font-size:8.5px;font-weight:800;color:#b45309;margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px">📅 Dias sem sessão registada — ${missingInPdf.length} dia${missingInPdf.length!==1?'s':''} em falta</div>
@@ -3242,6 +3269,7 @@ tbody tr:nth-child(even) td{background:#f8fafc!important}
   </div>
 </div>
 
+${pdfGapHtml}
 ${erros>0?`<div class="err-bar">⚠️ ${erros} depósito(s) em atraso — verificar antes de enviar à contabilidade.</div>`:''}
 
 <table>
