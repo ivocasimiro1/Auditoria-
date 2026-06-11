@@ -2019,8 +2019,6 @@ function rSASupervision(){
     if(s.wSemComp>0)warnLines.push(`📷 ${s.wSemComp} depósito(s) sem comprovativo — necessita de carregar a foto do talão bancário`);
     if(s.wPendentes>0)warnLines.push(`⏳ ${s.wPendentes} depósito(s) por confirmar — aguarda depósito e/ou comprovativo`);
     if(s.wACompl>0)warnLines.push(`📋 ${s.wACompl} depósito(s) incompletos — falta nº talão ou data de depósito`);
-    const wTardio=s.warn-(s.wSemComp+s.wPendentes+s.wACompl);
-    if(wTardio>0)warnLines.push(`⚠️ ${wTardio} depósito(s) realizados fora do prazo (informativo — já depositados)`);
     if(warnLines.length>0)body+=`⚠️ DEPÓSITOS COM AVISO:\n${warnLines.join('\n')}\n\n`;
     if(missingSend.length>0)body+=`📅 DIAS SEM REGISTO: ${missingSend.length} dia(s) sem sessão registada:\n${missingSend.map(d=>fd(d)).join(', ')}\n\n`;
     body+=`Por favor aceda ao sistema para regularizar a situação ou contacte-nos diretamente para justificação.\n\nAcesso: https://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nGestão Despomar`;
