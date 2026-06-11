@@ -62,7 +62,12 @@
 })();
 </script>
 <!-- ExcelJS loaded dynamically on export -->
-<script src="/surf-school/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" onerror="(function(){var s=document.createElement('script');s.src='https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';s.onerror=function(){document.getElementById('sb-err').style.display='block'};document.head.appendChild(s)})()"></script>
+<div id="sb-err" style="display:none;position:fixed;inset:0;background:#1e3a8a;color:#fff;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:9999;padding:24px;text-align:center">
+  <div style="font-size:48px">⚠️</div>
+  <div style="font-size:18px;font-weight:700">Rede da empresa bloqueia o serviço</div>
+  <div style="font-size:14px;opacity:.8;max-width:320px">O departamento de IT está a bloquear os recursos necessários. Por favor usa o <strong>telemóvel</strong> ou outra rede (Wi-Fi pessoal) para aceder.</div>
+</div>
 <style>
 :root{
   --blue:#2563eb;--bl:#eff6ff;--blue-dark:#1d4ed8;
@@ -744,9 +749,21 @@ select{
 
 <script>
 // ─── SUPABASE ─────────────────────────────────────────
+const _SBURL='https://ubeqidccuvsjhjphybxz.supabase.co';
+const _SBKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U';
+// sfetch: REST API direto — funciona sem a biblioteca SB (sem CDN)
+async function sfetch(method,table,qs,body){
+  const h={'apikey':_SBKEY,'Authorization':'Bearer '+_SBKEY,'Content-Type':'application/json','Accept':'application/json'};
+  let m=method.toUpperCase();
+  if(m==='UPSERT'){h['Prefer']='resolution=merge-duplicates';m='POST';}
+  const r=await fetch(`${_SBURL}/rest/v1/${table}${qs?'?'+qs:''}`,{method:m,headers:h,body:body!=null?JSON.stringify(body):undefined});
+  const txt=await r.text();const d=txt?JSON.parse(txt):null;
+  if(!r.ok)return{data:null,error:{message:(d?.message||d?.hint||r.statusText||'Erro '+r.status)}};
+  return{data:Array.isArray(d)?d:(d?[d]:[]),error:null};
+}
 const SB=supabase.createClient(
-  'https://ubeqidccuvsjhjphybxz.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U'
+  _SBURL,
+  _SBKEY
 );
 let sbUser=null,sbProfile=null,isSA=false,allStoreConfigs=[];
 const rowToReg=row=>({id:row.id,store_id:row.store_id,loja:row.loja,tipo:row.tipo,sessoes:row.sessoes||[],dataDeposito:row.data_deposito||'',talao:row.talao||'',responsavel:row.responsavel||'',obs:row.obs||'',foto:row.foto||null,criadoEm:row.criado_em||''});
@@ -799,13 +816,21 @@ async function sbLoad(){
   }catch(e){toast('⚠️ Sem ligação — dados locais: '+e.message);}
   setLoad(false);
 }
-async function sbSave(r){const{error}=await SB.from('dep_registos').upsert(regToRow(r));if(error){toast('⚠️ Erro ao guardar: '+error.message);return false;}return true;}
-async function sbDel(id){const{error}=await SB.from('dep_registos').delete().eq('id',id);if(error){toast('⚠️ Erro: '+error.message);return false;}return true;}
+async function sbSave(r){
+  const row=regToRow(r);
+  if(sbUser){const{error}=await SB.from('dep_registos').upsert(row);if(error){toast('⚠️ Erro ao guardar: '+error.message);return false;}return true;}
+  const{error}=await sfetch('UPSERT','dep_registos','',row);if(error){toast('⚠️ Erro ao guardar: '+error.message);return false;}return true;
+}
+async function sbDel(id){
+  if(sbUser){const{error}=await SB.from('dep_registos').delete().eq('id',id);if(error){toast('⚠️ Erro: '+error.message);return false;}return true;}
+  const{error}=await sfetch('DELETE','dep_registos','id=eq.'+id);if(error){toast('⚠️ Erro: '+error.message);return false;}return true;
+}
 async function sbSaveCfgSB(){
   if(!sbProfile)return;
   const sid=isSA?'super':sbProfile.store_id;
-  const{error}=await SB.from('dep_config').upsert({store_id:sid,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',lojas:cfg.lojas||[],resps:cfg.resps||[]});
-  if(error)console.warn('sbSaveCfgSB:',error.message);
+  const body={store_id:sid,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',lojas:cfg.lojas||[],resps:cfg.resps||[]};
+  if(sbUser){const{error}=await SB.from('dep_config').upsert(body);if(error)console.warn('sbSaveCfgSB:',error.message);return;}
+  const{error}=await sfetch('UPSERT','dep_config','',body);if(error)console.warn('sbSaveCfgSB:',error.message);
 }
 async function sbSyncLojasAll(){
   if(!isSA)return;
@@ -824,15 +849,16 @@ async function sbSyncLojasAll(){
 function showAdminLogin(){document.getElementById('store-panel').style.display='none';document.getElementById('admin-panel').style.display='block';document.getElementById('auth-email').focus();}
 function hideAdminLogin(){document.getElementById('admin-panel').style.display='none';document.getElementById('store-panel').style.display='block';hideAE();}
 async function loadStoreList(){
+  const sel=document.getElementById('store-sel');if(!sel)return;
   try{
-    const{data}=await SB.from('dep_config').select('store_id,emp').neq('store_id','super');
-    const sel=document.getElementById('store-sel');if(!sel)return;
+    const{data,error}=await sfetch('GET','dep_config','select=store_id,emp&store_id=neq.super');
+    if(error)throw new Error(error.message);
     sel.innerHTML='<option value="">— Selecionar loja —</option>';
     if(data?.length){
       data.sort((a,b)=>(a.emp||a.store_id).localeCompare(b.emp||b.store_id,'pt'));
       data.forEach(s=>{const o=document.createElement('option');o.value=s.store_id;o.textContent=s.emp||s.store_id;sel.appendChild(o);});
     }
-  }catch(e){const sel=document.getElementById('store-sel');if(sel)sel.innerHTML='<option value="">Erro ao carregar lojas</option>';}
+  }catch(e){sel.innerHTML='<option value="">Erro ao carregar lojas — verifique a ligação</option>';}
 }
 async function doLoginStore(){
   const sel=document.getElementById('store-sel');
@@ -841,18 +867,21 @@ async function doLoginStore(){
   const btn=document.getElementById('store-btn');
   btn.textContent='A entrar…';btn.disabled=true;hideAE();
   try{
-    const{data:sc}=await SB.from('dep_config').select('*').eq('store_id',storeId).maybeSingle();
+    const{data:scs,error:e1}=await sfetch('GET','dep_config','store_id=eq.'+encodeURIComponent(storeId)+'&select=*');
+    if(e1)throw new Error(e1.message);
+    const sc=scs?.[0]||null;
     const storeName=sc?.emp||storeId;
     const p={store_id:storeId,nome:storeName,role:'store'};
     sbProfile=p;isSA=false;sbUser=null;
     if(sc)cfg={emp:sc.emp||'',email:sc.email||'',emailCC:sc.email_cc||'',emailCC2:sc.email_cc2||'',nif:sc.nif||'',cambioDia:sc.cambio_dia||'',prosegurDay:sc.prosegur_day||'',lomisDay:sc.lomis_day||'',usaDireto:sc.usa_direto??'1',lojas:sc.lojas||[],resps:sc.resps||[]};
     else cfg={emp:storeName,email:'',nif:'',cambioDia:'',prosegurDay:'',lomisDay:'',usaDireto:'1',lojas:[],resps:[]};
-    const{data:rows}=await SB.from('dep_registos').select('*').eq('store_id',storeId).order('criado_em',{ascending:false});
+    const{data:rows,error:e2}=await sfetch('GET','dep_registos','store_id=eq.'+encodeURIComponent(storeId)+'&order=criado_em.desc');
+    if(e2)throw new Error(e2.message);
     regs=(rows||[]).map(rowToReg);
     DB.set('regs',regs);DB.set('cfg',cfg);
     finishLogin(p,null);
   }catch(e){
-    showAE('Erro: '+(e.message||'verifique a ligação'));
+    showAE('Erro: '+(e.message||'verifique a ligação à internet'));
     btn.textContent='Entrar';btn.disabled=false;
   }
 }
