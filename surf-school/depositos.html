@@ -889,18 +889,26 @@ async function afterLogin(user){
     if(btn){btn.textContent='Entrar';btn.disabled=false;}
   }
 }
-let _rtCh=null,_pollT=null;
+let _rtCh=null,_pollT=null,_rtDebT=null;
+function _scheduleRefresh(newRecord){
+  // Debounce: batch rapid Realtime events into a single re-render after 3s
+  if(_rtDebT)clearTimeout(_rtDebT);
+  _rtDebT=setTimeout(async()=>{
+    _rtDebT=null;
+    await sbLoad(true);
+    if(isSA){rSASupervision();}else{rDash();}
+    if(document.getElementById('page-lista').classList.contains('active'))rLista();
+    if(newRecord)toast('🔔 Novo registo recebido');
+  },3000);
+}
 function sbSubscribeRT(){
   if(_rtCh)try{SB.removeChannel(_rtCh);}catch(e){}
   if(_pollT){clearInterval(_pollT);_pollT=null;}
   const chName=isSA?'dep_rt_sa':'dep_rt_'+(sbProfile?.store_id||'x');
   _rtCh=SB.channel(chName)
-    .on('postgres_changes',{event:'*',schema:'public',table:'dep_registos'},async()=>{
-      const prev=regs.length;
-      await sbLoad(true);
-      if(isSA){rSASupervision();}else{rDash();}
-      if(document.getElementById('page-lista').classList.contains('active'))rLista();
-      if(regs.length>prev)toast('🔔 Novo registo recebido');
+    .on('postgres_changes',{event:'*',schema:'public',table:'dep_registos'},payload=>{
+      const isInsert=payload?.eventType==='INSERT';
+      _scheduleRefresh(isInsert);
     })
     .subscribe();
   // Fallback: SA a cada 5 min, lojas a cada 2 min (Realtime trata dos eventos instantâneos)
@@ -1994,7 +2002,7 @@ function rSASupervision(){
   window._saAlertEmail=(sid)=>{
     const s=storeList.find(x=>x.sid===sid);if(!s)return;
     const cn=credNotes[sid]||{};
-    const destEmail=cn.email||s.email||'';
+    const destEmail=cfg2b?.email||s.email||cn.email||'';
     const mesLabel2=mes.slice(0,7);
     // Collect missing days across all lojas for this store
     const cfg2b=allStoreConfigs.find(c=>c.store_id===sid);
