@@ -1,14 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
   <rect width="192" height="192" rx="40" fill="#1e3a8a"/>
-  <rect x="28" y="46" width="136" height="108" rx="12" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="8"/>
-  <circle cx="88" cy="100" r="30" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="7"/>
-  <circle cx="88" cy="100" r="9" fill="rgba(255,255,255,.9)"/>
-  <line x1="88" y1="66" x2="88" y2="74" stroke="rgba(255,255,255,.9)" stroke-width="5" stroke-linecap="round"/>
-  <line x1="88" y1="126" x2="88" y2="134" stroke="rgba(255,255,255,.9)" stroke-width="5" stroke-linecap="round"/>
-  <line x1="54" y1="100" x2="62" y2="100" stroke="rgba(255,255,255,.9)" stroke-width="5" stroke-linecap="round"/>
-  <line x1="114" y1="100" x2="122" y2="100" stroke="rgba(255,255,255,.9)" stroke-width="5" stroke-linecap="round"/>
-  <rect x="140" y="80" width="14" height="36" rx="7" fill="rgba(255,255,255,.9)"/>
-  <rect x="26" y="56" width="8" height="20" rx="4" fill="#93c5fd"/>
-  <rect x="26" y="92" width="8" height="20" rx="4" fill="#93c5fd"/>
-  <text x="74" y="110" font-family="Arial,sans-serif" font-size="30" font-weight="900" fill="#60a5fa">€</text>
+  <circle cx="96" cy="96" r="78" fill="white" stroke="#1976d2" stroke-width="4"/>
+  <path d="M96,18 C120,18 140,32 148,52 C136,42 120,38 104,43 C88,48 78,63 78,80 C72,63 62,48 50,42 C62,27 78,18 96,18Z" fill="#56cce8"/>
+  <path d="M148,52 C162,68 160,90 146,104 C142,90 132,82 118,81 C104,80 92,85 85,95 C87,78 82,60 72,50 C84,38 100,32 114,38 C128,44 143,48 148,52Z" fill="#1aa8d8"/>
+  <path d="M146,104 C132,120 112,128 92,124 C106,116 114,102 111,87 C108,72 95,63 80,65 C88,50 97,38 107,36 C120,42 134,56 142,73 C148,84 148,95 146,104Z" fill="#1462a8"/>
 </svg>
