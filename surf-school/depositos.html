@@ -983,6 +983,7 @@ function sp(name){
     window.scrollTo(0,0);
     if(name==='dash')rDash();
     if(name==='supervisao'){popSupSel();rSASupervision();}
+    if(name==='novo')popSel();
     if(name==='lista')rLista();
     if(name==='exp')rExpSel();
     if(name==='settings')rSettings();
@@ -1009,7 +1010,7 @@ function popSel(){
     // SA: also show lojas from records that aren't in cfg.lojas
     if(isSA){const extra=[...new Set(regs.map(r=>r.loja).filter(l=>l&&!cfg.lojas.includes(l)))];extra.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l+' ★';el.appendChild(o)});}
     if(v)el.value=v;
-    else if(id==='e-loja'&&cfg.lojas.length)el.value=cfg.lojas[0];
+    else if(cfg.lojas.length&&(id==='e-loja'||(id==='f-loja'&&!isSA)||(id==='dash-loja'&&!isSA)))el.value=cfg.lojas[0];
   });
   ['dash-mes','fl-mes','e-mes'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
