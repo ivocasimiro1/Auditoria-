@@ -1803,23 +1803,23 @@ async function _buildPdfAsync(pw,loja,mes){
   if(warn>0)recoms.push(`<li>Verificar <strong>${warn} registo(s) com aviso</strong> e garantir que os depósitos são efetuados dentro do prazo.</li>`);
   if(missingArr.length>0)recoms.push(`<li>Registar ou justificar <strong>${missingArr.length} dia(s) sem sessão</strong>: ${missingArr.slice(0,5).map(d=>fd(d)).join(', ')}${missingArr.length>5?` e mais ${missingArr.length-5}...`:''}.</li>`);
   if(recoms.length===0)recoms.push('<li>Manter a regularidade e continuar a registar as sessões e depósitos dentro dos prazos definidos.</li>');
-  // Build plain-text email body matching PDF structure
-  const pdfSep='─'.repeat(50);
-  let pdfEmailBody=`Relatório de Conformidade de Depósitos\n${loja} · ${mesNome}\n\n${pdfSep}\n\n`;
-  pdfEmailBody+=`${estadoGeral.icon} ${estadoGeral.label}\nLoja ${loja} · Compliance de ${compPct}% em ${mesNome}${missingArr.length>0?` · ${missingArr.length} dia(s) sem registo`:''}\n\n`;
-  pdfEmailBody+=`RESUMO:\n  Compliance: ${compPct}%\n  Total do mês: ${fmt(totalVal)}\n  Depositado: ${fmt(depVal)}\n  Dias sem registo: ${missingArr.length}\n\n`;
+  // Build plain-text email body — ASCII apenas para URL curto em iOS/Android
+  const pdfSep='-'.repeat(50);
+  let pdfEmailBody=`Relatorio de Conformidade de Depositos\n${loja} - ${mesNome}\n\n${pdfSep}\n\n`;
+  pdfEmailBody+=`${estadoGeral.label.replace(/[📅✅⚠️🔴]/gu,'').trim()}\nLoja ${loja} - Compliance de ${compPct}% em ${mesNome}${missingArr.length>0?` - ${missingArr.length} dia(s) sem registo`:''}\n\n`;
+  pdfEmailBody+=`RESUMO:\n  Compliance: ${compPct}%\n  Total do mes: ${fmt(totalVal).replace('€','EUR')}\n  Depositado: ${fmt(depVal).replace('€','EUR')}\n  Dias sem registo: ${missingArr.length}\n\n`;
   if(lojaRegs.length>0){
-    pdfEmailBody+=`${pdfSep}\nREGISTOS DO MÊS — ${lojaRegs.length} DEPÓSITO(S)\n${pdfSep}\n\n`;
+    pdfEmailBody+=`${pdfSep}\nREGISTOS DO MES - ${lojaRegs.length} DEPOSITO(S)\n${pdfSep}\n\n`;
     lojaRegs.forEach((r,i)=>{
       const estR=calcEstado(r,getRecordCfg(r));
       const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
-      const dr=sm.length?(sm[0]===sm[sm.length-1]?fd(sm[0]):fd(sm[0])+' a '+fd(sm[sm.length-1])):'—';
-      pdfEmailBody+=`[${i+1}] ${dr}\n  Tipo: ${r.tipo||'—'}\n  Valor: ${fmt(totalValor(r))}\n  Depósito: ${r.dataDeposito?fd(r.dataDeposito):'—'} | Talão: ${r.talao||'—'} | Sessões: ${(r.sessoes||[]).length}\n  Estado: ${estR.label}\n\n`;
+      const dr=sm.length?(sm[0]===sm[sm.length-1]?fd(sm[0]):fd(sm[0])+' a '+fd(sm[sm.length-1])):'--';
+      const estTxt=estR.label.replace(/[📅✅⚠️🔴]/gu,'').trim();
+      pdfEmailBody+=`[${i+1}] ${dr}\n  Tipo: ${r.tipo||'--'}\n  Valor: ${fmt(totalValor(r)).replace('€','EUR')}\n  Deposito: ${r.dataDeposito?fd(r.dataDeposito):'--'} | Talao: ${r.talao||'--'} | Sessoes: ${(r.sessoes||[]).length}\n  Estado: ${estTxt}\n\n`;
     });
   }
-  if(missingArr.length>0)pdfEmailBody+=`${pdfSep}\nDIAS SEM REGISTO (${missingArr.length} dia${missingArr.length!==1?'s':''}):\n  ${missingArr.map(d=>fd(d)).join(', ')}\n\n`;
-  pdfEmailBody+=`${pdfSep}\n\nPor favor aceda ao sistema para regularizar a situação:\nhttps://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nDespomar — Gestão Interna`;
-  // Sem body no URL (URL longo falha em iOS/Android) — corpo vai para clipboard via onclick
+  if(missingArr.length>0)pdfEmailBody+=`${pdfSep}\nDIAS SEM REGISTO (${missingArr.length}):\n  ${missingArr.map(d=>fd(d)).join(', ')}\n\n`;
+  pdfEmailBody+=`${pdfSep}\n\nPor favor aceda ao sistema:\nhttps://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nDespomar - Gestao Interna`;
   // SVG inline do logo Despomar
   const LOGO_SVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 110" width="224" height="44">
     <circle cx="55" cy="55" r="50" fill="white" stroke="#1976d2" stroke-width="2.5"/>
@@ -1930,10 +1930,17 @@ var _eTo=${JSON.stringify(storeEmail||'')};
 var _eSubj=${JSON.stringify('Relatorio Conformidade Depositos - '+loja+' - '+mesNome)};
 var _eBody=${JSON.stringify(pdfEmailBody)};
 function sendEmailReport(){
-  var ta=document.createElement('textarea');ta.value=_eBody;ta.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';document.body.appendChild(ta);ta.focus();ta.select();var ok=false;try{ok=document.execCommand('copy');}catch(e){}document.body.removeChild(ta);
-  navigator.clipboard&&navigator.clipboard.writeText(_eBody).catch(function(){});
-  window.location.href='mailto:'+_eTo+'?cc=ivo@despomar.com&subject='+encodeURIComponent(_eSubj);
-  if(ok){var t=document.createElement('div');t.textContent='📋 Corpo do email copiado — cole no email (pressão longa → Colar)';t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 22px;border-radius:8px;z-index:9999;font-size:14px;white-space:nowrap';document.body.appendChild(t);setTimeout(function(){t.remove();},5000);}
+  var base='mailto:'+_eTo+'?cc=ivo@despomar.com&subject='+encodeURIComponent(_eSubj);
+  var full=base+'&body='+encodeURIComponent(_eBody);
+  if(full.length<=3800){
+    window.location.href=full;
+  } else {
+    // Fallback clipboard para relatórios muito longos
+    var ta=document.createElement('textarea');ta.value=_eBody;ta.style.cssText='position:fixed;top:-9999px;opacity:0';document.body.appendChild(ta);ta.focus();ta.select();var ok=false;try{ok=document.execCommand('copy');}catch(e){}document.body.removeChild(ta);
+    navigator.clipboard&&navigator.clipboard.writeText(_eBody).catch(function(){});
+    window.location.href=base;
+    if(ok){var t=document.createElement('div');t.textContent='Corpo copiado - cole no email';t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 22px;border-radius:8px;z-index:9999;font-size:14px';document.body.appendChild(t);setTimeout(function(){t.remove();},5000);}
+  }
 }
 if(navigator.share){document.getElementById('share-btn').style.display='inline-flex';}
 async function shareRpt(){
@@ -2085,29 +2092,36 @@ function rSASupervision(){
     const storeRecs=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes.slice(0,7))).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
     const totalVal2=storeRecs.reduce((sum,r)=>sum+totalValor(r),0);
     const depVal2=storeRecs.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((sum,r)=>sum+totalValor(r),0);
-    const estadoLabel2=s.err>0||(s.compliant!==null&&s.compliant<50)?'🔴 NÃO CONFORME — AÇÃO URGENTE':s.warn>0||(s.compliant!==null&&s.compliant<80)?'⚠️ ATENÇÃO NECESSÁRIA':'✅ CONFORME';
-    const sep2='─'.repeat(50);
-    let body=`Relatório de Conformidade de Depósitos\n${s.empName} · ${mesNomeEmail}\n\n${sep2}\n\n`;
-    body+=`${estadoLabel2}\nLoja ${s.empName} · Compliance de ${s.compliant??0}% em ${mesNomeEmail}${allMissing.length>0?` · ${allMissing.length} dia(s) sem registo`:''}\n\n`;
-    body+=`RESUMO:\n  Compliance: ${s.compliant??0}%\n  Total do mês: ${fmt(totalVal2)}\n  Depositado: ${fmt(depVal2)}\n  Dias sem registo: ${allMissing.length}\n\n`;
+    const estadoLabel2=s.err>0||(s.compliant!==null&&s.compliant<50)?'[NAO CONFORME] ACAO URGENTE':s.warn>0||(s.compliant!==null&&s.compliant<80)?'[ATENCAO] Verificar depositos':'[CONFORME]';
+    const sep2='-'.repeat(50);
+    let body=`Relatorio de Conformidade de Depositos\n${s.empName} - ${mesNomeEmail}\n\n${sep2}\n\n`;
+    body+=`${estadoLabel2}\nLoja ${s.empName} - Compliance de ${s.compliant??0}% em ${mesNomeEmail}${allMissing.length>0?` - ${allMissing.length} dia(s) sem registo`:''}\n\n`;
+    body+=`RESUMO:\n  Compliance: ${s.compliant??0}%\n  Total do mes: ${fmt(totalVal2).replace('€','EUR')}\n  Depositado: ${fmt(depVal2).replace('€','EUR')}\n  Dias sem registo: ${allMissing.length}\n\n`;
     if(storeRecs.length>0){
-      body+=`${sep2}\nREGISTOS DO MÊS — ${storeRecs.length} DEPÓSITO(S)\n${sep2}\n\n`;
+      body+=`${sep2}\nREGISTOS DO MES - ${storeRecs.length} DEPOSITO(S)\n${sep2}\n\n`;
       storeRecs.forEach((r,i)=>{
         const estR=calcEstado(r,getRecordCfg(r));
         const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
-        const dr=sm.length?(sm[0]===sm[sm.length-1]?fd(sm[0]):fd(sm[0])+' a '+fd(sm[sm.length-1])):'—';
-        body+=`[${i+1}] ${dr}\n  Tipo: ${r.tipo||'—'}\n  Valor: ${fmt(totalValor(r))}\n  Depósito: ${r.dataDeposito?fd(r.dataDeposito):'—'} | Talão: ${r.talao||'—'} | Sessões: ${(r.sessoes||[]).length}\n  Estado: ${estR.label}\n\n`;
+        const dr=sm.length?(sm[0]===sm[sm.length-1]?fd(sm[0]):fd(sm[0])+' a '+fd(sm[sm.length-1])):'--';
+        const estTxt=estR.label.replace(/[📅✅⚠️🔴]/gu,'').trim();
+        body+=`[${i+1}] ${dr}\n  Tipo: ${r.tipo||'--'}\n  Valor: ${fmt(totalValor(r)).replace('€','EUR')}\n  Deposito: ${r.dataDeposito?fd(r.dataDeposito):'--'} | Talao: ${r.talao||'--'} | Sessoes: ${(r.sessoes||[]).length}\n  Estado: ${estTxt}\n\n`;
       });
     }
-    if(allMissing.length>0)body+=`${sep2}\nDIAS SEM REGISTO (${allMissing.length} dia${allMissing.length!==1?'s':''}):\n  ${allMissing.map(d=>fd(d)).join(', ')}\n\n`;
-    body+=`${sep2}\n\nPor favor aceda ao sistema para regularizar a situação:\nhttps://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nGestão Despomar`;
-    // Copiar corpo para clipboard (síncrono — funciona em iOS/Android dentro do click gesture)
-    const _ta2=document.createElement('textarea');_ta2.value=body;_ta2.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';document.body.appendChild(_ta2);_ta2.focus();_ta2.select();let _cp2=false;try{_cp2=document.execCommand('copy');}catch(e){}document.body.removeChild(_ta2);
-    navigator.clipboard?.writeText(body).catch(()=>{});
-    // Abrir mailto: curto sem body (URL curto = funciona em iOS/Android)
+    if(allMissing.length>0)body+=`${sep2}\nDIAS SEM REGISTO (${allMissing.length}):\n  ${allMissing.map(d=>fd(d)).join(', ')}\n\n`;
+    body+=`${sep2}\n\nPor favor aceda ao sistema:\nhttps://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nGestao Despomar`;
+    // Colocar body no URL — ASCII apenas, URL curto, funciona em iOS/Android
     const subject=encodeURIComponent('Depositos '+mesNomeEmail+' - '+s.empName);
-    window.location.href=`mailto:${destEmail}?subject=${subject}`;
-    toast(_cp2?'📋 Corpo do email copiado — cole no email (pressão longa → Colar)':'✉️ Email aberto — cole o corpo manualmente');
+    const mailtoSA=`mailto:${destEmail}?subject=${subject}&body=${encodeURIComponent(body)}`;
+    if(mailtoSA.length>3800){
+      // Fallback clipboard se a loja tiver muitos registos
+      const _ta2=document.createElement('textarea');_ta2.value=body;_ta2.style.cssText='position:fixed;top:-9999px;opacity:0';document.body.appendChild(_ta2);_ta2.focus();_ta2.select();let _cp2=false;try{_cp2=document.execCommand('copy');}catch(e){}document.body.removeChild(_ta2);
+      navigator.clipboard?.writeText(body).catch(()=>{});
+      window.location.href=`mailto:${destEmail}?subject=${subject}`;
+      toast(_cp2?'📋 Corpo copiado — cole no email (pressao longa → Colar)':'Email aberto');
+    } else {
+      window.location.href=mailtoSA;
+      toast('Email aberto com corpo preenchido');
+    }
   };
   const kpiColor=(v,good,bad)=>{if(v>=good)return'#16a34a';if(v<=bad)return'#dc2626';return'#d97706';};
   const compColor=kpiColor(avgCompliance,80,50);
@@ -2742,55 +2756,55 @@ async function updEmailPrev(){
       <div style="font-size:11px;font-weight:800;color:#b45309;margin-bottom:5px">📅 ${missingInEmail.length} dia${missingInEmail.length!==1?'s':''} sem sessão registada:</div>
       <div style="display:flex;flex-wrap:wrap;gap:4px">${missingInEmail.map(d=>`<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700">${fd(d).split('/').slice(0,2).join('/')}</span>`).join('')}</div>
     </div>`:`<div style="margin-top:8px;font-size:11px;color:#166534;font-weight:700">✅ Todos os dias registados</div>`;
-  // Plain text body for mailto: — per-session table so accountant can verify each session
-  const sep='─'.repeat(52);
+  // Plain text body para mailto: — separadores ASCII para nao inflar o URL em iOS/Android
+  const sep='-'.repeat(52);
   const sessLines=allSess.map(({r,s,isFirst})=>{
     const dup=isDupSess(s);
-    const dataStr=(fd(s.dataVendas)||'—').padEnd(12);
+    const dataStr=(fd(s.dataVendas)||'--').padEnd(12);
     const sessStr=('Sess. '+(s.sessao||'?')).padEnd(12);
-    const valStr=fmt(s.valor||0).padStart(10);
+    const valStr=fmt(s.valor||0).replace('€','EUR').padStart(12);
     let line=`  ${dataStr}${sessStr}${valStr}`;
     if(isFirst){
       line+=`  Dep: ${fd(r.dataDeposito)||'(pendente)'}`;
       if(r.talao)line+=`  Ref: ${r.talao}`;
-      if(dup){line+=`  ⚠️ DUPLICADO`;}
+      if(dup){line+=`  [DUPLICADO]`;}
       else{
         const est=calcEstado(r,getRecordCfg(r));
         const estTxt=est.label.replace(/[📅✅⚠️🔴]/gu,'').trim();
-        const estIcon=est.s==='ok'?'✅':est.s==='warn'?'⚠️':est.s==='err'?'🔴':'📅';
+        const estIcon=est.s==='ok'?'[OK]':est.s==='warn'?'[AVISO]':est.s==='err'?'[ERRO]':'[--]';
         line+=`  ${estIcon} ${estTxt}`;
       }
     } else if(dup){
-      line+=`  ⚠️ DUPLICADO`;
+      line+=`  [DUPLICADO]`;
     }
     return line;
   }).join('\n');
   const missingLine=missingInEmail.length
-    ?`\n${sep}\n📅 DIAS SEM REGISTO (${missingInEmail.length}): ${missingInEmail.map(d=>fd(d).split('/').slice(0,2).join('/')).join(', ')}`
-    :`\n${sep}\n✅ Todos os dias do mês registados.`;
+    ?`\n${sep}\nDIAS SEM REGISTO (${missingInEmail.length}): ${missingInEmail.map(d=>fd(d).split('/').slice(0,2).join('/')).join(', ')}`
+    :`\n${sep}\n[OK] Todos os dias do mes registados.`;
   const shortBody=[
     sep,
-    `FOLHA DE DEPÓSITOS — ${loja.toUpperCase()} — ${ml.toUpperCase()}`,
+    `FOLHA DE DEPOSITOS - ${loja.toUpperCase()} - ${ml.toUpperCase()}`,
     `${empresa}${nif?' | NIF '+nif:''}`,
     sep,'',
     'Exmo(a). Departamento de Contabilidade,','',
-    `Enviamos a folha de depósitos de ${loja}, referente a ${ml}.`,
+    `Enviamos a folha de depositos de ${loja}, referente a ${ml}.`,
     '',sep,
     'RESUMO',sep,
-    `  Total vendas:      ${fmt(total)}`,
-    `  Depositado:        ${fmt(totalDep)}`,
-    `  Por depositar:     ${fmt(total-totalDep)}`,
-    `  N.º depósitos:     ${data.length}`,
-    `  N.º sessões:       ${allSess.length}`,
-    `  Estado:            ${erros>0?'⚠️ '+erros+' depósito(s) em atraso — verificar urgente':avisos>0?'⚠️ '+avisos+' aviso(s)':'✅ Sem problemas'}`,
+    `  Total vendas:      ${fmt(total).replace('€','EUR')}`,
+    `  Depositado:        ${fmt(totalDep).replace('€','EUR')}`,
+    `  Por depositar:     ${fmt(total-totalDep).replace('€','EUR')}`,
+    `  N. depositos:      ${data.length}`,
+    `  N. sessoes:        ${allSess.length}`,
+    `  Estado:            ${erros>0?'[URGENTE] '+erros+' deposito(s) em atraso':avisos>0?'[AVISO] '+avisos+' aviso(s)':'[OK] Sem problemas'}`,
     '',sep,
-    'DETALHE POR SESSÃO DE CAIXA',sep,
-    `  ${'DATA'.padEnd(12)}${'Nº SESSÃO'.padEnd(12)}${'VALOR'.padStart(10)}  DEPÓSITO / TALÃO`,
+    'DETALHE POR SESSAO DE CAIXA',sep,
+    `  ${'DATA'.padEnd(12)}${'N SESSAO'.padEnd(12)}${'VALOR'.padStart(12)}  DEPOSITO / TALAO`,
     sep,
     sessLines,
     missingLine,'',sep,
     'Com os melhores cumprimentos,',
-    `${loja} — ${empresa}`,
+    `${loja} - ${empresa}`,
     sep
   ].join('\n');
   document.getElementById('ep-to').textContent=dest||'(não configurado)';
@@ -2898,15 +2912,22 @@ function expEmail(){
     sp('settings');
     return;
   }
-  // Copiar corpo para clipboard + abrir mailto: curto (funciona em iOS/Android)
   const subjRaw=document.getElementById('ep-sub')?.textContent||'';
   const bodyRaw=document.getElementById('ep-body')?.dataset.body||'';
   const ccRaw=(document.getElementById('ep-cc')?.textContent||'').trim();
   const ccStr=(ccRaw&&ccRaw!=='—')?`&cc=${encodeURIComponent(ccRaw)}`:'';
-  const _ta3=document.createElement('textarea');_ta3.value=bodyRaw;_ta3.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0';document.body.appendChild(_ta3);_ta3.focus();_ta3.select();let _cp3=false;try{_cp3=document.execCommand('copy');}catch(e){}document.body.removeChild(_ta3);
-  navigator.clipboard?.writeText(bodyRaw).catch(()=>{});
-  window.location.href=`mailto:${dest}?subject=${encodeURIComponent(subjRaw)}${ccStr}`;
-  toast(_cp3?'📋 Corpo do email copiado — cole no email (pressão longa → Colar)':'✉️ Email aberto — cole o corpo manualmente');
+  const encodedBody=encodeURIComponent(bodyRaw);
+  const mailtoUrl=`mailto:${dest}?subject=${encodeURIComponent(subjRaw)}${ccStr}&body=${encodedBody}`;
+  // Se o URL for muito longo (>3800 chars) usa clipboard em vez do body no URL
+  if(mailtoUrl.length>3800){
+    const _ta=document.createElement('textarea');_ta.value=bodyRaw;_ta.style.cssText='position:fixed;top:-9999px;opacity:0';document.body.appendChild(_ta);_ta.focus();_ta.select();let _ok=false;try{_ok=document.execCommand('copy');}catch(e){}document.body.removeChild(_ta);
+    navigator.clipboard?.writeText(bodyRaw).catch(()=>{});
+    window.location.href=`mailto:${dest}?subject=${encodeURIComponent(subjRaw)}${ccStr}`;
+    toast(_ok?'📋 Corpo copiado — cole no email (pressão longa → Colar)':'✉️ Email aberto');
+  } else {
+    window.location.href=mailtoUrl;
+    toast('✉️ Email aberto com corpo preenchido');
+  }
 }
 
 
