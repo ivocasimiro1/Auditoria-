@@ -400,8 +400,15 @@ select{
   <div class="kpi-row">
     <div class="kpi blue"><div class="kl">Total Mês</div><div class="kv" id="d-total">€0</div><div class="ks" id="d-total-s"></div></div>
     <div class="kpi green"><div class="kl">✅ Depositado</div><div class="kv" id="d-dep">€0</div></div>
-    <div class="kpi orange"><div class="kl">⏳ Por Depositar</div><div class="kv" id="d-pend">€0</div></div>
-    <div class="kpi red"><div class="kl">🔴 Em Atraso / Falta</div><div class="kv" id="d-err">0</div><div class="ks" id="d-err-s"></div></div>
+    <div class="kpi orange"><div class="kl">⏳ Por Depositar</div><div class="kv" id="d-pend">€0</div><div class="ks" id="d-pend-s"></div></div>
+    <div class="kpi red">
+      <div class="kl">🔴 Em Atraso / Falta</div>
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:2px">
+        <div style="min-width:40px"><div class="kv" id="d-err-reg">0</div><div class="ks">atrasados</div></div>
+        <div style="color:#fca5a5;font-size:18px;padding-bottom:4px;line-height:1">+</div>
+        <div style="min-width:40px"><div class="kv" id="d-err-dias">0</div><div class="ks">dias s/ registo</div></div>
+      </div>
+    </div>
   </div>
   <div id="sa-supervision"></div>
   <div id="sa-stores-panel"></div>
@@ -617,6 +624,14 @@ select{
     <button class="btn" style="background:#f3f4f6;color:#4b5563;border:2px dashed #d1d5db" onclick="loadDemo()">🧪 Carregar Dados Demo</button>
     <button class="btn bd" onclick="clearAll()">🗑️ Limpar Todos os Dados</button>
   </div>
+  <div class="card" id="change-pass-card" style="display:none">
+    <div class="ct">🔑 Alterar Password</div>
+    <div id="cp-msg" style="display:none;border-radius:8px;padding:10px 13px;margin-bottom:12px;font-size:13px;font-weight:600"></div>
+    <div class="fg"><label>Nova password</label><input type="password" id="cp-new" placeholder="mínimo 6 caracteres" autocomplete="new-password"></div>
+    <div class="fg"><label>Confirmar nova password</label><input type="password" id="cp-conf" placeholder="repetir nova password" autocomplete="new-password"></div>
+    <button class="btn bs" onclick="doChangePass()">🔑 Alterar Password</button>
+    <p style="font-size:11px;color:var(--g400);margin-top:8px;line-height:1.5">A alteração é imediata. O gestor de topo será notificado automaticamente.</p>
+  </div>
   <div class="card" id="logout-card" style="display:none">
     <div class="ct">Sessão</div>
     <div id="user-info" style="font-size:13px;color:var(--g600);margin-bottom:12px;padding:10px 12px;background:var(--bl);border-radius:8px"></div>
@@ -752,6 +767,7 @@ async function afterLogin(user){
   document.getElementById('tsub').textContent=isSA?('⭐ '+(p.nome||'Super Admin')):(p.nome||p.store_id||cfg.emp||'Depósitos');
   const lc=document.getElementById('logout-card');if(lc)lc.style.display='block';
   const lb=document.getElementById('logout-btn');if(lb)lb.style.display='flex';
+  const cpc=document.getElementById('change-pass-card');if(cpc)cpc.style.display=isSA?'none':'block';
   const ui=document.getElementById('user-info');
   if(ui)ui.innerHTML=`<strong>${p.nome||p.store_id}</strong> · ${isSA?'Super Admin':'Staff'}<br><span style="font-size:11px;color:var(--g400)">${user.email}</span>`;
   popSel();rDash();
@@ -1466,13 +1482,35 @@ function rSASupervision(){
   const totalLate=storeList.reduce((s,x)=>s+x.lateVal,0);
   const delayScores=storeList.filter(s=>s.avgDelay>0).map(s=>s.avgDelay);
   const avgDelayGlobal=delayScores.length?Math.round(delayScores.reduce((a,b)=>a+b,0)/delayScores.length):0;
-  // Credentials from localStorage
+  // Credentials: dep_config.password_note (if column exists) merged with localStorage fallback
   let credNotes={};try{credNotes=JSON.parse(localStorage.getItem('sa_cred_notes')||'{}');}catch(e){}
-  window._saCredSave=(sid,field,val)=>{
+  window._saCredSave=async(sid,field,val)=>{
     let cn={};try{cn=JSON.parse(localStorage.getItem('sa_cred_notes')||'{}');}catch(e){}
-    if(!cn[sid])cn[sid]={};
-    cn[sid][field]=val;
+    if(!cn[sid])cn[sid]={};cn[sid][field]=val;
     localStorage.setItem('sa_cred_notes',JSON.stringify(cn));
+    if(field==='pass'){
+      try{await SB.from('dep_config').upsert({store_id:sid,password_note:val},{onConflict:'store_id'});}catch(e){}
+    }
+  };
+  window._saCopyCred=(val)=>{
+    navigator.clipboard?.writeText(val).then(()=>toast('✓ Copiado!')).catch(()=>toast('Copiar: '+val));
+  };
+  window._saAlertEmail=(sid)=>{
+    const s=storeList.find(x=>x.sid===sid);if(!s)return;
+    const cn=credNotes[sid]||{};
+    const destEmail=cn.email||s.email||'';
+    const mesLabel2=mes.slice(0,7);
+    // Collect missing days across all lojas for this store
+    const cfg2b=allStoreConfigs.find(c=>c.store_id===sid);
+    const storeLojas=cfg2b?.lojas||[...new Set(regs.filter(r=>r.store_id===sid).map(r=>r.loja).filter(Boolean))];
+    const allMissing=[...new Set(storeLojas.flatMap(l=>getMissingDays(mes,l)||[]))].sort();
+    let body=`Exmo(a) Sr(a),\n\nEsta mensagem refere-se ao controlo de depósitos do mês de ${mesLabel2} da vossa loja (${s.empName}).\n\n`;
+    if(s.err>0)body+=`⚠️ DEPÓSITOS EM ATRASO: ${s.err} registo(s) com valor total de ${fmt(s.lateVal)} aguardam regularização urgente.\n\n`;
+    if(s.warn>0)body+=`⚠️ DEPÓSITOS COM AVISO: ${s.warn} registo(s) necessitam de verificação.\n\n`;
+    if(allMissing.length>0)body+=`📅 DIAS SEM REGISTO: ${allMissing.length} dia(s) sem sessão registada:\n${allMissing.map(d=>fd(d)).join(', ')}\n\n`;
+    body+=`Por favor aceda ao sistema para regularizar a situação ou contacte-nos diretamente para justificação.\n\nAcesso: https://auditoria-25b.pages.dev/depositos\n\nCumprimentos,\nIvo Casimiro\nGestão Despomar`;
+    const subject=encodeURIComponent(`⚠️ Depósitos ${mesLabel2} — Regularização necessária — ${s.empName}`);
+    window.open(`mailto:${destEmail}?subject=${subject}&body=${encodeURIComponent(body)}`,'_blank');
   };
   const kpiColor=(v,good,bad)=>{
     if(v>=good)return'#16a34a';
@@ -1494,41 +1532,62 @@ function rSASupervision(){
       +(s.prog?` <span style="color:#2563eb;font-size:11px" title="Em progresso">◷${s.prog}</span>`:'');
     const delayStr=s.avgDelay>0?`<span style="color:#dc2626;font-size:11px">${s.avgDelay}d atraso</span>`:'<span style="color:#94a3b8;font-size:11px">—</span>';
     const lateStr=s.lateVal>0?`<span style="color:#dc2626;font-size:11px">${fmt(s.lateVal)}</span>`:'<span style="color:#94a3b8;font-size:11px">—</span>';
-    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:${rowColor};border-left:3px solid ${borderColor};border-bottom:1px solid #f1f5f9;flex-wrap:wrap">
-      <div style="flex:1;min-width:120px">
+    const hasIssues=s.err>0||s.warn>0;
+    const alertBtn=hasIssues?`<button onclick="window._saAlertEmail('${s.sid}')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">📧 Alertar</button>`:'';
+    return`<div style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:${rowColor};border-left:3px solid ${borderColor};border-bottom:1px solid #f1f5f9;flex-wrap:wrap">
+      <div style="flex:1;min-width:110px">
         <div style="font-size:12px;font-weight:700;color:#1e293b">${s.empName}</div>
         <div style="font-size:10px;color:#94a3b8">${s.sid}</div>
       </div>
-      <div style="min-width:80px">${badge}</div>
-      <div style="min-width:90px;display:flex;gap:4px;flex-wrap:wrap">${statsCells}</div>
-      <div style="min-width:70px">${delayStr}</div>
-      <div style="min-width:70px">${lateStr}</div>
-      <button onclick="filterLista('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap">Ver lista</button>
+      <div style="min-width:72px">${badge}</div>
+      <div style="min-width:80px;display:flex;gap:4px;flex-wrap:wrap">${statsCells}</div>
+      <div style="min-width:60px">${delayStr}</div>
+      <div style="min-width:60px">${lateStr}</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button onclick="filterLista('${s.sid}','')" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation">Ver lista</button>
+        ${alertBtn}
+      </div>
     </div>`;
   }).join('');
   const credRows=storeList.map(s=>{
     const cn=credNotes[s.sid]||{};
+    // password_note from DB takes priority; fall back to localStorage; default hint 12345688
+    const cfg2=allStoreConfigs.find(c=>c.store_id===s.sid);
+    const dbPass=cfg2?.password_note||'';
+    const knownPass=dbPass||cn.pass||'';
+    const passDisplay=knownPass||'12345688';
+    const passIsDefault=!knownPass;
+    const emailVal=(cn.email||s.email||'').replace(/"/g,'&quot;');
     return`<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;margin-bottom:8px">
-      <div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:6px">${s.empName} <span style="font-size:10px;color:#94a3b8;font-weight:400">${s.sid}</span></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <div style="flex:1;min-width:160px">
+      <div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:8px">${s.empName} <span style="font-size:10px;color:#94a3b8;font-weight:400">${s.sid}</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div>
           <label style="font-size:10px;color:#64748b;display:block;margin-bottom:2px">Email de acesso</label>
-          <input type="email" value="${(cn.email||s.email||'').replace(/"/g,'&quot;')}" placeholder="${s.email||'email@loja.com'}"
-            onchange="window._saCredSave('${s.sid}','email',this.value)"
-            style="width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;font-size:11px;background:#fff;color:#1e293b">
+          <div style="display:flex;gap:4px;align-items:center">
+            <input type="email" value="${emailVal}" placeholder="${s.email||'email@loja.com'}"
+              onchange="window._saCredSave('${s.sid}','email',this.value)"
+              style="flex:1;min-width:0;border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;font-size:11px;background:#fff;color:#1e293b">
+            ${emailVal?`<button onclick="window._saCopyCred('${emailVal}')" style="background:#e0f2fe;color:#0369a1;border:none;border-radius:6px;padding:5px 7px;font-size:11px;cursor:pointer;flex-shrink:0" title="Copiar">📋</button>`:''}
+          </div>
         </div>
-        <div style="flex:1;min-width:160px">
-          <label style="font-size:10px;color:#64748b;display:block;margin-bottom:2px">Nota de password</label>
-          <input type="text" value="${(cn.pass||'').replace(/"/g,'&quot;')}" placeholder="Guardar nota aqui..."
-            onchange="window._saCredSave('${s.sid}','pass',this.value)"
-            style="width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;font-size:11px;background:#fff;color:#1e293b">
+        <div>
+          <label style="font-size:10px;color:#64748b;display:block;margin-bottom:2px">
+            Password
+            ${dbPass?'<span style="color:#16a34a;font-weight:700"> ✓ sincronizada</span>':passIsDefault?'<span style="color:#d97706"> (padrão)</span>':'<span style="color:#2563eb"> (local)</span>'}
+          </label>
+          <div style="display:flex;gap:4px;align-items:center">
+            <input type="text" id="pass-input-${s.sid}" value="${passDisplay.replace(/"/g,'&quot;')}"
+              onchange="window._saCredSave('${s.sid}','pass',this.value)"
+              style="flex:1;min-width:0;border:1.5px solid ${dbPass?'#86efac':passIsDefault?'#fcd34d':'#93c5fd'};border-radius:6px;padding:5px 8px;font-size:12px;font-weight:700;background:${dbPass?'#f0fdf4':passIsDefault?'#fefce8':'#eff6ff'};color:#1e293b;letter-spacing:.5px">
+            <button onclick="window._saCopyCred(document.getElementById('pass-input-${s.sid}').value)" style="background:#e0f2fe;color:#0369a1;border:none;border-radius:6px;padding:5px 7px;font-size:11px;cursor:pointer;flex-shrink:0" title="Copiar password">📋</button>
+          </div>
         </div>
-        <div style="flex:1;min-width:160px">
-          <label style="font-size:10px;color:#64748b;display:block;margin-bottom:2px">Notas internas</label>
-          <input type="text" value="${(cn.notes||'').replace(/"/g,'&quot;')}" placeholder="Observações..."
-            onchange="window._saCredSave('${s.sid}','notes',this.value)"
-            style="width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;font-size:11px;background:#fff;color:#1e293b">
-        </div>
+      </div>
+      <div>
+        <label style="font-size:10px;color:#64748b;display:block;margin-bottom:2px">Notas internas</label>
+        <input type="text" value="${(cn.notes||'').replace(/"/g,'&quot;')}" placeholder="Observações, responsável, contacto..."
+          onchange="window._saCredSave('${s.sid}','notes',this.value)"
+          style="width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;font-size:11px;background:#fff;color:#1e293b">
       </div>
     </div>`;
   }).join('');
@@ -1567,8 +1626,8 @@ function rSASupervision(){
     </div>
     <details style="border-top:1px solid #e2e8f0">
       <summary style="padding:10px 14px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
-        <span style="font-size:14px">🔑</span> Credenciais e notas das lojas
-        <span style="margin-left:auto;font-size:10px;color:#94a3b8">(guardado localmente)</span>
+        <span style="font-size:14px">🔑</span> Credenciais e passwords das lojas
+        <span style="margin-left:auto;font-size:10px;color:#94a3b8">Password ✓ sincroniza quando a loja altera</span>
       </summary>
       <div style="padding:10px 14px 14px">
         ${credRows||'<div style="color:#94a3b8;font-size:12px">Nenhuma loja registada</div>'}
@@ -1595,18 +1654,19 @@ function rDash(){
   const ts=document.getElementById('d-total-s');if(ts)ts.textContent=data.length+' dep. · '+data.reduce((s,r)=>s+r.sessoes.length,0)+' sessões';
   document.getElementById('d-dep').textContent=fmt(depositado);
   document.getElementById('d-pend').textContent=fmt(porDep);
+  const ps=document.getElementById('d-pend-s');if(ps){
+    const warns=data.filter(r=>calcEstado(r).s==='warn').length;
+    const parts2=[];
+    if(erros>0)parts2.push(erros+' em atraso');
+    if(warns>0)parts2.push(warns+' aviso');
+    ps.textContent=parts2.join(' · ')||'Tudo depositado ✓';
+  }
   const alertsCount=getOverdueAlerts(lojaFil).length;
   const lojasList=lojaFil?[lojaFil]:cfg.lojas;
   const missingTotal=lojasList.reduce((s,l)=>s+getMissingDays(mes,l).length,0);
-  const errTotal=erros+alertsCount+missingTotal;
-  document.getElementById('d-err').textContent=errTotal||'0';
-  const es=document.getElementById('d-err-s');if(es){
-    const parts=[];
-    if(erros>0)parts.push(erros+' registo(s) em atraso');
-    if(alertsCount>0)parts.push(alertsCount+' loja(s) sem registo');
-    if(missingTotal>0)parts.push(missingTotal+' dia(s) em falta');
-    es.textContent=parts.join(' · ');
-  }
+  const lateCount=erros+alertsCount;
+  const errReg=document.getElementById('d-err-reg');if(errReg)errReg.textContent=lateCount||'0';
+  const errDias=document.getElementById('d-err-dias');if(errDias)errDias.textContent=missingTotal||'0';
   // Overdue alerts — lojas sem registo há mais dias que o prazo
   const dab=document.getElementById('dash-alerts');
   if(dab){
@@ -2443,6 +2503,40 @@ function rSettings(){
   document.getElementById('rtags').innerHTML=cfg.resps.map(r=>`<span class="tag" style="background:var(--gl);color:var(--green)">${r}<button onclick="remR('${r.replace(/'/g,"\\'")}')">×</button></span>`).join('');
 }
 async function scBtn(){sc();await sbSaveCfgSB();toast('✓ Configurações guardadas!');}
+async function doChangePass(){
+  const npEl=document.getElementById('cp-new');
+  const ncEl=document.getElementById('cp-conf');
+  const msgEl=document.getElementById('cp-msg');
+  const np=npEl.value,nc=ncEl.value;
+  const showMsg=(txt,ok)=>{msgEl.style.display='block';msgEl.style.background=ok?'#f0fdf4':'#fef2f2';msgEl.style.color=ok?'#166534':'#991b1b';msgEl.textContent=txt;};
+  if(!np||np.length<6){showMsg('A nova password tem de ter pelo menos 6 caracteres.',false);return;}
+  if(np!==nc){showMsg('As passwords não coincidem.',false);return;}
+  const{error}=await SB.auth.updateUser({password:np});
+  if(error){showMsg('Erro: '+error.message,false);return;}
+  // Save note to dep_config for SA visibility
+  const sid=sbProfile?.store_id;
+  if(sid){
+    try{
+      await SB.from('dep_config').upsert({store_id:sid,password_note:np},{onConflict:'store_id'});
+    }catch(e){
+      let cn={};try{cn=JSON.parse(localStorage.getItem('sa_cred_notes')||'{}');}catch(e2){}
+      if(!cn[sid])cn[sid]={};cn[sid].pass=np;
+      localStorage.setItem('sa_cred_notes',JSON.stringify(cn));
+    }
+    // Notify SA by email
+    try{
+      const empName=cfg.emp||sid;
+      await fetch('https://formsubmit.co/ajax/ivocasimiro@gmail.com',{
+        method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify({_subject:`🔑 Password alterada — ${empName}`,
+          message:`A loja ${empName} (${sid}) alterou a password de acesso ao sistema de depósitos.\n\nNova password: ${np}\nData: ${new Date().toLocaleString('pt-PT')}\nEmail: ${sbUser?.email||'(desconhecido)'}`,
+          _captcha:'false'})
+      });
+    }catch(e){}
+  }
+  showMsg('✓ Password alterada com sucesso! O administrador foi notificado.',true);
+  npEl.value='';ncEl.value='';
+}
 function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';cfg.prosegurDay=document.getElementById('c-prosegur-dia')?.value||'';cfg.lomisDay=document.getElementById('c-lomis-dia')?.value||'';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
 
 function expBackup(){const b={regs,cfg,v:3,at:new Date().toISOString()};const blob=new Blob([JSON.stringify(b,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`backup_depositos_${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(url);toast('✓ Backup exportado!')}
