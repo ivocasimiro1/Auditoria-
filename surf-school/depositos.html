@@ -381,42 +381,22 @@ select{
     </div>
     <div class="auth-body">
       <div id="auth-err"></div>
-      <!-- Painel loja (sem password) -->
-      <div id="store-panel">
-        <div class="fg">
-          <label>Selecionar Loja</label>
-          <select id="store-sel" style="min-height:46px;font-size:15px;font-weight:600">
-            <option value="">A carregar lojas…</option>
-          </select>
-        </div>
-        <button class="btn" id="store-btn" onclick="doLoginStore()">
-          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
-          Entrar
-        </button>
-        <button type="button" onclick="showAdminLogin()" style="background:none;border:none;color:#9ca3af;font-size:12px;cursor:pointer;width:100%;margin-top:14px;padding:4px;touch-action:manipulation">
-          🔑 Administrador Despomar
-        </button>
+      <div class="fg">
+        <label>Email</label>
+        <input type="email" id="auth-email" placeholder="loja@despomar.com" inputmode="email" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('auth-pass').focus()">
       </div>
-      <!-- Painel admin (email + password) -->
-      <div id="admin-panel" style="display:none">
-        <div class="fg">
-          <label>Email</label>
-          <input type="email" id="auth-email" placeholder="ivo@despomar.com" inputmode="email" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('auth-pass').focus()">
-        </div>
-        <div class="fg">
-          <label>Password</label>
-          <input type="password" id="auth-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-        </div>
-        <button class="btn" id="auth-btn" onclick="doLogin()">
-          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
-          Entrar como Administrador
-        </button>
-        <div id="auth-ok" style="display:none;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:600;margin-top:12px;text-align:center"></div>
-        <div style="display:flex;justify-content:space-between;margin-top:10px">
-          <button type="button" onclick="hideAdminLogin()" style="background:none;border:none;color:#6b7280;font-size:13px;cursor:pointer;padding:4px;touch-action:manipulation">← Voltar</button>
-          <button type="button" onclick="showReset()" style="background:none;border:none;color:#6b7280;font-size:13px;cursor:pointer;padding:4px;text-decoration:underline;text-underline-offset:2px;touch-action:manipulation">Esqueceu a password?</button>
-        </div>
+      <div class="fg">
+        <label>Password</label>
+        <input type="password" id="auth-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
+      <button class="btn" id="auth-btn" onclick="doLogin()">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+        Entrar
+      </button>
+      <div id="auth-ok" style="display:none;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:600;margin-top:12px;text-align:center"></div>
+      <button type="button" onclick="showReset()" style="background:none;border:none;color:#6b7280;font-size:13px;cursor:pointer;width:100%;margin-top:12px;padding:4px;text-decoration:underline;text-underline-offset:2px;touch-action:manipulation">
+        Esqueceu a password?
+      </button>
     </div>
     <div id="reset-body" style="display:none;padding:0 24px 24px">
       <div style="font-size:13px;color:#374151;margin-bottom:14px;line-height:1.5">Introduz o teu email e enviamos um link para criares uma nova password.</div>
@@ -846,45 +826,6 @@ async function sbSyncLojasAll(){
     toast('✓ Lojas/Responsáveis sincronizados em todas as lojas');
   }catch(e){console.warn('syncAll:',e);}
 }
-function showAdminLogin(){document.getElementById('store-panel').style.display='none';document.getElementById('admin-panel').style.display='block';document.getElementById('auth-email').focus();}
-function hideAdminLogin(){document.getElementById('admin-panel').style.display='none';document.getElementById('store-panel').style.display='block';hideAE();}
-async function loadStoreList(){
-  const sel=document.getElementById('store-sel');if(!sel)return;
-  try{
-    const{data,error}=await sfetch('GET','dep_config','select=store_id,emp&store_id=neq.super');
-    if(error)throw new Error(error.message);
-    sel.innerHTML='<option value="">— Selecionar loja —</option>';
-    if(data?.length){
-      data.sort((a,b)=>(a.emp||a.store_id).localeCompare(b.emp||b.store_id,'pt'));
-      data.forEach(s=>{const o=document.createElement('option');o.value=s.store_id;o.textContent=s.emp||s.store_id;sel.appendChild(o);});
-    }
-  }catch(e){sel.innerHTML='<option value="">Erro ao carregar lojas — verifique a ligação</option>';}
-}
-async function doLoginStore(){
-  const sel=document.getElementById('store-sel');
-  const storeId=sel?.value;
-  if(!storeId){showAE('Seleciona uma loja');return;}
-  const btn=document.getElementById('store-btn');
-  btn.textContent='A entrar…';btn.disabled=true;hideAE();
-  try{
-    const{data:scs,error:e1}=await sfetch('GET','dep_config','store_id=eq.'+encodeURIComponent(storeId)+'&select=*');
-    if(e1)throw new Error(e1.message);
-    const sc=scs?.[0]||null;
-    const storeName=sc?.emp||storeId;
-    const p={store_id:storeId,nome:storeName,role:'store'};
-    sbProfile=p;isSA=false;sbUser=null;
-    if(sc)cfg={emp:sc.emp||'',email:sc.email||'',emailCC:sc.email_cc||'',emailCC2:sc.email_cc2||'',nif:sc.nif||'',cambioDia:sc.cambio_dia||'',prosegurDay:sc.prosegur_day||'',lomisDay:sc.lomis_day||'',usaDireto:sc.usa_direto??'1',lojas:sc.lojas||[],resps:sc.resps||[]};
-    else cfg={emp:storeName,email:'',nif:'',cambioDia:'',prosegurDay:'',lomisDay:'',usaDireto:'1',lojas:[],resps:[]};
-    const{data:rows,error:e2}=await sfetch('GET','dep_registos','store_id=eq.'+encodeURIComponent(storeId)+'&order=criado_em.desc');
-    if(e2)throw new Error(e2.message);
-    regs=(rows||[]).map(rowToReg);
-    DB.set('regs',regs);DB.set('cfg',cfg);
-    finishLogin(p,null);
-  }catch(e){
-    showAE('Erro: '+(e.message||'verifique a ligação à internet'));
-    btn.textContent='Entrar';btn.disabled=false;
-  }
-}
 async function doLogin(){
   const email=document.getElementById('auth-email').value.trim();
   const pass=document.getElementById('auth-pass').value;
@@ -897,12 +838,12 @@ async function doLogin(){
       const msg=error.message.includes('Invalid')||error.message.includes('credentials')?'Email ou password incorretos':
                 error.message.includes('network')||error.message.includes('fetch')?'Sem ligação à internet. Verifique a rede e tente de novo.':
                 error.message;
-      showAE(msg);btn.textContent='Entrar como Administrador';btn.disabled=false;return;
+      showAE(msg);btn.textContent='Entrar';btn.disabled=false;return;
     }
     await afterLogin(data.user);
   }catch(e){
     showAE('Erro inesperado: '+(e.message||'verifique a ligação e tente de novo'));
-    btn.textContent='Entrar como Administrador';btn.disabled=false;
+    btn.textContent='Entrar';btn.disabled=false;
   }
 }
 async function afterLogin(user){
@@ -910,31 +851,28 @@ async function afterLogin(user){
   try{
     sbUser=user;
     const{data:p,error}=await SB.from('dep_users').select('*').eq('id',user.id).single();
-    if(error||!p){showAE('Conta sem permissões. Contacte o administrador. ('+(error?.message||'sem dados')+')');await SB.auth.signOut();if(btn){btn.textContent='Entrar como Administrador';btn.disabled=false;}return;}
+    if(error||!p){showAE('Conta sem permissões. Contacte o administrador. ('+(error?.message||'sem dados')+')');await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;}
     sbProfile=p;isSA=(p.role==='super_admin');
     await sbLoad();
-    finishLogin(p,user);
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('tsub').textContent=isSA?('⭐ '+(p.nome||'Super Admin')):(p.nome||p.store_id||cfg.emp||'Depósitos');
+    const lb=document.getElementById('logout-btn');if(lb)lb.style.display='flex';
+    const uc=document.getElementById('user-chip');if(uc)uc.style.display='flex';
+    const ucn=document.getElementById('user-chip-name');if(ucn)ucn.textContent=(p.nome||p.store_id||'')+(isSA?' ⭐':'');
+    const uce=document.getElementById('user-chip-email');if(uce)uce.textContent=user.email;
+    const cpc=document.getElementById('change-pass-card');if(cpc)cpc.style.display=isSA?'none':'block';
+    document.querySelectorAll('.sa-tab').forEach(el=>el.style.display=isSA?'flex':'none');
+    const nbNovo=document.getElementById('nb-novo');if(nbNovo)nbNovo.style.display=isSA?'none':'flex';
+    const nbDash=document.getElementById('nb-dash');if(nbDash)nbDash.style.display=isSA?'none':'flex';
+    popSel();
+    if(isSA){popSupSel();sp('supervisao');}else{rDash();}
+    sbSubscribeRT();
   }catch(e){
     console.error('afterLogin error:',e);
     showAE('Erro ao carregar: '+(e.message||String(e))+'. Tente recarregar a página (F5).');
     try{await SB.auth.signOut();}catch(e2){}
-    if(btn){btn.textContent='Entrar como Administrador';btn.disabled=false;}
+    if(btn){btn.textContent='Entrar';btn.disabled=false;}
   }
-}
-function finishLogin(p,user){
-  document.getElementById('auth-screen').style.display='none';
-  document.getElementById('tsub').textContent=isSA?('⭐ '+(p.nome||'Super Admin')):(p.nome||p.store_id||cfg.emp||'Depósitos');
-  const lb=document.getElementById('logout-btn');if(lb)lb.style.display='flex';
-  const uc=document.getElementById('user-chip');if(uc)uc.style.display='flex';
-  const ucn=document.getElementById('user-chip-name');if(ucn)ucn.textContent=(p.nome||p.store_id||'')+(isSA?' ⭐':'');
-  const uce=document.getElementById('user-chip-email');if(uce)uce.textContent=user?.email||p.store_id||'';
-  const cpc=document.getElementById('change-pass-card');if(cpc)cpc.style.display=(isSA||!user)?'none':'block';
-  document.querySelectorAll('.sa-tab').forEach(el=>el.style.display=isSA?'flex':'none');
-  const nbNovo=document.getElementById('nb-novo');if(nbNovo)nbNovo.style.display=isSA?'none':'flex';
-  const nbDash=document.getElementById('nb-dash');if(nbDash)nbDash.style.display=isSA?'none':'flex';
-  popSel();
-  if(isSA){popSupSel();sp('supervisao');}else{rDash();}
-  try{sbSubscribeRT();}catch(e){}
 }
 let _rtCh=null;
 function sbSubscribeRT(){
@@ -951,7 +889,7 @@ function sbSubscribeRT(){
 }
 async function doLogout(){
   if(!confirm('Terminar sessão?'))return;
-  if(sbUser)try{await SB.auth.signOut();}catch(e){}
+  await SB.auth.signOut();
   sbUser=null;sbProfile=null;isSA=false;regs=[];
   cfg={emp:'Despomar',email:'',nif:'',lojas:[],resps:[]};
   if(_rtCh)try{SB.removeChannel(_rtCh);}catch(e){}
@@ -967,11 +905,7 @@ async function doLogout(){
   const pgd=document.getElementById('page-dash');if(pgd)pgd.classList.add('active');
   const nbd=document.getElementById('nb-dash');if(nbd)nbd.classList.add('active');
   const as=document.getElementById('auth-screen');as.style.display='flex';
-  // Reset to store selector panel
-  hideAdminLogin();
-  document.getElementById('store-btn').textContent='Entrar';
-  document.getElementById('store-btn').disabled=false;
-  document.getElementById('auth-btn').textContent='Entrar como Administrador';
+  document.getElementById('auth-btn').textContent='Entrar';
   document.getElementById('auth-btn').disabled=false;
   document.getElementById('auth-email').value='';
   document.getElementById('auth-pass').value='';
@@ -3222,7 +3156,6 @@ function loadDemo(){
 async function init(){
   popSel();addSes();
   document.getElementById('tsub').textContent=cfg.emp||'Depósitos';
-  loadStoreList(); // populate store dropdown (no auth needed)
   const{data:{session}}=await SB.auth.getSession();
   if(session?.user){await afterLogin(session.user);}
   else{document.getElementById('auth-screen').style.display='flex';}
