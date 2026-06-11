@@ -879,23 +879,33 @@ async function afterLogin(user){
     if(btn){btn.textContent='Entrar';btn.disabled=false;}
   }
 }
-let _rtCh=null;
+let _rtCh=null,_pollT=null;
 function sbSubscribeRT(){
   if(_rtCh)try{SB.removeChannel(_rtCh);}catch(e){}
-  // SA subscreve canal único sem filtro de store_id para receber de todas as lojas
-  const chName=isSA?'dep_rt_sa':'dep_rt_'+sbProfile?.store_id;
+  if(_pollT){clearInterval(_pollT);_pollT=null;}
+  const chName=isSA?'dep_rt_sa':'dep_rt_'+(sbProfile?.store_id||'x');
   _rtCh=SB.channel(chName)
-    .on('postgres_changes',{event:'*',schema:'public',table:'dep_registos'},async(payload)=>{
+    .on('postgres_changes',{event:'*',schema:'public',table:'dep_registos'},async()=>{
       const prev=regs.length;
       await sbLoad();
       if(isSA){rSASupervision();}else{rDash();}
       if(document.getElementById('page-lista').classList.contains('active'))rLista();
       if(regs.length>prev)toast('🔔 Novo registo recebido');
-      else toast('🔄 Dados atualizados');
     })
-    .subscribe((status)=>{
-      if(status==='SUBSCRIBED'&&isSA)console.log('SA Realtime: subscribed to all stores');
-    });
+    .subscribe();
+  // Fallback: refresh a cada 30s mesmo que Realtime não funcione
+  _pollT=setInterval(async()=>{
+    if(!sbUser)return;
+    const prevLen=regs.length;
+    const prevHash=regs.map(r=>r.id+'|'+(r.foto?'1':'0')+'|'+(r.talao||'')).join(',');
+    await sbLoad();
+    const newHash=regs.map(r=>r.id+'|'+(r.foto?'1':'0')+'|'+(r.talao||'')).join(',');
+    if(newHash!==prevHash){
+      if(isSA){rSASupervision();}else{rDash();}
+      if(document.getElementById('page-lista').classList.contains('active'))rLista();
+      if(regs.length>prevLen)toast('🔔 Novo registo recebido');
+    }
+  },30000);
 }
 async function doLogout(){
   if(!confirm('Terminar sessão?'))return;
@@ -904,6 +914,7 @@ async function doLogout(){
   cfg={emp:'Despomar',email:'',nif:'',lojas:[],resps:[]};
   if(_rtCh)try{SB.removeChannel(_rtCh);}catch(e){}
   _rtCh=null;
+  if(_pollT){clearInterval(_pollT);_pollT=null;}
   const lb=document.getElementById('logout-btn');if(lb)lb.style.display='none';
   const uc=document.getElementById('user-chip');if(uc)uc.style.display='none';
   document.querySelectorAll('.sa-tab').forEach(el=>el.style.display='none');
