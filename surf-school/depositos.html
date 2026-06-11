@@ -675,6 +675,7 @@ select{
     <button class="btn bo" onclick="expBackup()">📥 Exportar Backup (.json)</button>
     <button class="btn" style="background:var(--g100);color:var(--g600)" onclick="document.getElementById('impf').click()">📤 Importar Backup</button>
     <input type="file" id="impf" accept=".json" style="display:none" onchange="impBackup(this)">
+    <button class="btn" style="background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe" onclick="reSync()">☁️ Re-sincronizar com Supabase</button>
     <button class="btn" style="background:#f3f4f6;color:#4b5563;border:2px dashed #d1d5db" onclick="loadDemo()">🧪 Carregar Dados Demo</button>
     <button class="btn bd" onclick="clearAll()">🗑️ Limpar Todos os Dados</button>
   </div>
@@ -3162,6 +3163,23 @@ function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.
 function expBackup(){const b={regs,cfg,v:3,at:new Date().toISOString()};const blob=new Blob([JSON.stringify(b,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`backup_depositos_${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(url);toast('✓ Backup exportado!')}
 function impBackup(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.regs){regs=d.regs;saveR()}if(d.cfg){cfg=d.cfg;saveCfg()}popSel();rSettings();rDash();toast('✓ Importado!')}catch{toast('⚠️ Ficheiro inválido')}};r.readAsText(f)}
 function clearAll(){if(!confirm('Apagar TODOS os dados?'))return;regs=[];saveR();rDash();toast('Dados eliminados')}
+
+async function reSync(){
+  if(!sbUser){toast('⚠️ Tens de estar ligado à conta para sincronizar');return;}
+  if(!regs.length){toast('ℹ️ Sem registos locais para sincronizar');return;}
+  if(!confirm(`Enviar ${regs.length} registo(s) local(is) para o Supabase?\n\nIsto não apaga dados — apenas actualiza/cria no servidor.`))return;
+  toast('☁️ A sincronizar...');
+  let ok=0,err=0;
+  for(const r of regs){
+    try{
+      const row=regToRow(r);
+      const{error}=await SB.from('dep_registos').upsert(row);
+      if(error)err++;else ok++;
+    }catch(e){err++;}
+  }
+  if(err===0)toast(`✅ ${ok} registo(s) sincronizado(s) com sucesso!`);
+  else toast(`⚠️ ${ok} ok · ${err} com erro — verifica a ligação`);
+}
 
 
 // ─── DADOS REAIS — ESS GUIA MAIO 2026 ────────────────
