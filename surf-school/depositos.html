@@ -765,7 +765,7 @@ async function doLogin(){
   btn.textContent='A entrar...';btn.disabled=true;hideAE();
   const{data,error}=await SB.auth.signInWithPassword({email,password:pass});
   if(error){showAE(error.message.includes('Invalid')?'Email ou password incorretos':error.message);btn.textContent='Entrar';btn.disabled=false;return;}
-  await afterLogin(data.user);
+  try{await afterLogin(data.user);}catch(e){console.error('afterLogin error:',e);showAE('Erro ao iniciar sessão. Tenta de novo.');btn.textContent='Entrar';btn.disabled=false;}
 }
 async function afterLogin(user){
   sbUser=user;
@@ -783,8 +783,8 @@ async function afterLogin(user){
   // SA: show Supervisão tab, hide Novo; store: hide Supervisão tab
   document.querySelectorAll('.sa-tab').forEach(el=>el.style.display=isSA?'flex':'none');
   const nbNovo=document.getElementById('nb-novo');if(nbNovo)nbNovo.style.display=isSA?'none':'flex';
-  popSel();
-  if(isSA){popSupSel();sp('supervisao');}else{rDash();}
+  try{popSel();}catch(e){console.warn('popSel:',e);}
+  try{if(isSA){popSupSel();sp('supervisao');}else{rDash();}}catch(e){console.warn('nav:',e);try{if(isSA)sp('supervisao');else sp('dash');}catch(e2){}}
   sbSubscribeRT();
 }
 let _rtCh=null;
