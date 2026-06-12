@@ -5,28 +5,16 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Manual de Utilização — Controlo de Depósitos · Despomar</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --blue:#1e3a8a;--blue2:#2563eb;--blue-l:#eff6ff;
   --green:#059669;--green-l:#ecfdf5;
   --orange:#d97706;--orange-l:#fffbeb;
   --red:#dc2626;--red-l:#fef2f2;
-  --g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;--g400:#94a3b8;--g500:#64748b;--g700:#334155;--g800:#1e293b;
+  --purple:#6d28d9;--purple2:#7c3aed;--purple-l:#f5f3ff;
+  --g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;--g400:#94a3b8;--g500:#64748b;--g600:#475569;--g700:#334155;--g800:#1e293b;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;color:var(--g800);background:#fff;line-height:1.55}
-
-/* ── COVER ── */
-.cover{background:linear-gradient(145deg,#0f1f5c,#1e3a8a,#2563eb);color:#fff;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:40px 32px;page-break-after:always;position:relative}
-.cover-logo{width:80px;height:80px;background:rgba(255,255,255,.15);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;border:2px solid rgba(255,255,255,.25)}
-.cover-logo svg{width:44px;height:44px}
-.cover h1{font-size:28px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
-.cover h2{font-size:16px;font-weight:400;opacity:.75;margin-bottom:32px}
-.cover-meta{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:16px 28px;font-size:13px;line-height:2;margin-bottom:32px}
-.cover-url{background:rgba(255,255,255,.2);border-radius:8px;padding:8px 20px;font-size:14px;font-weight:700;letter-spacing:.3px;font-family:monospace}
-.cover-footer{position:absolute;bottom:32px;font-size:11px;opacity:.5}
-
-/* ── LAYOUT ── */
-.page{max-width:800px;margin:0 auto;padding:40px 32px}
 @media print{
   @page{size:A4;margin:15mm 15mm 18mm 15mm}
   @page:first{margin:0}
@@ -34,53 +22,59 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;f
   .page{padding:0}
   .cover{height:270mm;page-break-after:always;min-height:unset}
   .chapter{page-break-before:always}
-  .chapter-title{page-break-after:avoid;page-break-inside:avoid}
+  .chapter-title{page-break-after:avoid}
   h3{page-break-after:avoid}
-  .section{page-break-inside:auto}
   .mockup{page-break-inside:avoid;max-width:340px!important}
   .phone-wrap{page-break-inside:avoid}
-  table{page-break-inside:auto}
   tr{page-break-inside:avoid}
-  .tip,.warning,.important,.success{page-break-inside:avoid}
+  .tip,.warning,.important,.success,.sa-note{page-break-inside:avoid}
   .step-list li{page-break-inside:avoid}
-  .toc{page-break-inside:avoid;page-break-after:always}
+  .toc{page-break-after:always}
   .doc-footer{page-break-inside:avoid}
-  .cover-footer{display:none}
+  .cover-footer,.no-print{display:none!important}
 }
-
-/* ── HEADINGS ── */
-.chapter-title{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border-radius:12px;padding:18px 24px;margin-bottom:24px;margin-top:8px}
+.cover{background:linear-gradient(145deg,#0f1f5c,#1e3a8a,#2563eb);color:#fff;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:40px 32px;page-break-after:always;position:relative}
+.cover-logo{width:80px;height:80px;background:rgba(255,255,255,.15);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;border:2px solid rgba(255,255,255,.25)}
+.cover h1{font-size:28px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
+.cover h2{font-size:16px;font-weight:400;opacity:.75;margin-bottom:32px}
+.cover-meta{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:16px 28px;font-size:13px;line-height:2;margin-bottom:32px}
+.cover-url{background:rgba(255,255,255,.2);border-radius:8px;padding:8px 20px;font-size:14px;font-weight:700;letter-spacing:.3px;font-family:monospace}
+.cover-footer{position:absolute;bottom:32px;font-size:11px;opacity:.5}
+.page{max-width:800px;margin:0 auto;padding:40px 32px}
+.chapter-title{color:#fff;border-radius:12px;padding:18px 24px;margin-bottom:24px;margin-top:8px}
+.chapter-title.loja{background:linear-gradient(135deg,var(--blue),var(--blue2))}
+.chapter-title.sa{background:linear-gradient(135deg,var(--purple),var(--purple2))}
+.chapter-title.neutral{background:linear-gradient(135deg,#374151,#4b5563)}
 .chapter-title .num{font-size:11px;font-weight:700;opacity:.7;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
 .chapter-title h2{font-size:20px;font-weight:800;letter-spacing:-.3px}
 .chapter-title p{font-size:12px;opacity:.8;margin-top:4px}
-
 h3{font-size:13px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin:24px 0 12px;display:flex;align-items:center;gap:8px}
 h3::before{content:'';display:inline-block;width:4px;height:16px;background:var(--blue2);border-radius:2px;flex-shrink:0}
-
-/* ── SECTIONS ── */
+h3.sa-h{color:var(--purple)}
+h3.sa-h::before{background:var(--purple2)}
 .section{margin-bottom:24px}
 .step-list{list-style:none;counter-reset:steps}
 .step-list li{counter-increment:steps;display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
 .step-list li::before{content:counter(steps);background:var(--blue2);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px}
+.step-list.sa li::before{background:var(--purple)}
 .step-list li span{font-size:13px;line-height:1.5}
 .step-list li strong{color:var(--g800)}
-
-/* ── CALLOUTS ── */
 .tip{background:var(--blue-l);border-left:4px solid var(--blue2);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:12px;color:var(--blue)}
 .warning{background:var(--orange-l);border-left:4px solid var(--orange);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:12px;color:#92400e}
 .important{background:var(--red-l);border-left:4px solid var(--red);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:12px;color:#991b1b}
 .success{background:var(--green-l);border-left:4px solid var(--green);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:12px;color:#065f46}
-.tip b,.warning b,.important b,.success b{font-weight:800}
-
-/* ── MOCKUP SCREEN ── */
+.sa-note{background:var(--purple-l);border-left:4px solid var(--purple2);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:12px;color:#4c1d95}
+.tip b,.warning b,.important b,.success b,.sa-note b{font-weight:800}
 .mockup{background:#fff;border:1.5px solid var(--g200);border-radius:14px;overflow:hidden;margin:16px 0;box-shadow:0 2px 16px rgba(0,0,0,.08)}
 .mockup-bar{background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;color:#fff}
+.mockup-bar.sa{background:linear-gradient(135deg,#3b0764,#6d28d9)}
 .mockup-bar .title{font-size:12px;font-weight:700}
 .mockup-bar .sub{font-size:10px;opacity:.7}
-.mockup-nav{background:#fff;border-bottom:1px solid var(--g100);display:flex;height:52px}
-.nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--g400);gap:2px;text-transform:uppercase;letter-spacing:.3px}
+.mockup-nav{background:#fff;border-bottom:1px solid var(--g100);display:flex;height:50px}
+.nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:var(--g400);gap:2px;text-transform:uppercase;letter-spacing:.3px;padding:0 2px}
 .nav-tab.active{color:var(--blue2);border-bottom:2.5px solid var(--blue2)}
-.nav-tab .icon{font-size:16px}
+.nav-tab.active.sa{color:var(--purple2);border-bottom-color:var(--purple2)}
+.nav-tab .icon{font-size:14px}
 .mockup-body{padding:14px;background:var(--g50)}
 .mockup-kpi{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .kpi{background:#fff;border-radius:10px;padding:10px 12px;border:1px solid var(--g100)}
@@ -90,6 +84,7 @@ h3::before{content:'';display:inline-block;width:4px;height:16px;background:var(
 .kpi.green .kv{color:var(--green)}
 .kpi.orange .kv{color:var(--orange)}
 .kpi.red .kv{color:var(--red)}
+.kpi.purple .kv{color:var(--purple2)}
 .mock-card{background:#fff;border-radius:10px;padding:10px 12px;border:1px solid var(--g100);margin-bottom:8px}
 .mock-row{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--g100)}
 .mock-row:last-child{border-bottom:none}
@@ -97,6 +92,7 @@ h3::before{content:'';display:inline-block;width:4px;height:16px;background:var(
 .mock-dot.ok{background:var(--green)}
 .mock-dot.warn{background:var(--orange)}
 .mock-dot.prog{background:var(--blue2)}
+.mock-dot.err{background:var(--red)}
 .mock-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;display:inline-block}
 .mock-badge.ok{background:#dcfce7;color:#166534}
 .mock-badge.warn{background:#fef9c3;color:#854d0e}
@@ -108,249 +104,403 @@ h3::before{content:'';display:inline-block;width:4px;height:16px;background:var(
 .mock-input.filled{border-color:var(--blue2)}
 .mock-btn{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;border-radius:9px;padding:11px;font-size:12px;font-weight:700;width:100%;text-align:center;margin-top:8px}
 .mock-btn.green{background:linear-gradient(135deg,#047857,#059669)}
+.mock-btn.purple{background:linear-gradient(135deg,#4c1d95,#6d28d9)}
 .mock-divider{height:1px;background:var(--g100);margin:8px 0}
 .mock-ses-row{display:flex;gap:6px;align-items:flex-start;padding:8px;background:var(--g50);border-radius:8px;margin-bottom:6px;border:1px solid var(--g100)}
 .mock-ses-num{background:var(--blue2);color:#fff;border-radius:50%;width:18px;height:18px;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mock-grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.tag{display:inline-block;background:var(--g100);color:var(--g500);font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;margin:2px 2px 2px 0}
-.tag.blue{background:var(--blue-l);color:var(--blue)}
-
-/* ── TABLE ── */
 table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}
 th{background:var(--g800);color:#fff;padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
 td{padding:8px 12px;border-bottom:1px solid var(--g100)}
 tr:nth-child(even) td{background:var(--g50)}
 td strong{color:var(--g800);font-weight:700}
 td code{background:var(--g100);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:11px}
-
-/* ── INDEX ── */
 .toc{background:var(--g50);border-radius:12px;padding:20px 24px;margin:24px 0}
 .toc h3{margin-top:0}
 .toc ol{padding-left:20px;line-height:2.2}
 .toc li{font-size:13px;color:var(--g700)}
-.toc li a{color:var(--blue2);text-decoration:none;font-weight:600}
-
-/* ── STATUS PILLS ── */
+.toc li a{text-decoration:none;font-weight:600}
+.toc li a.loja-a{color:var(--blue2)}
+.toc li a.sa-a{color:var(--purple2)}
 .pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
 .pill.ok{background:#dcfce7;color:#166534}
 .pill.warn{background:#fef9c3;color:#854d0e}
 .pill.err{background:#fee2e2;color:#991b1b}
 .pill.prog{background:var(--blue-l);color:var(--blue)}
-
-/* ── MOBILE/DESKTOP BADGE ── */
 .device-badge{display:inline-flex;align-items:center;gap:6px;background:var(--g100);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--g600);margin-bottom:12px;margin-right:8px}
-
-/* ── SEPARATOR ── */
 .divider{border:none;border-top:1.5px solid var(--g100);margin:32px 0}
-
-/* ── PHONE FRAME ── */
 .phone-frame{background:#0f172a;border-radius:32px;padding:12px;width:240px;margin:0 auto 16px;box-shadow:0 8px 32px rgba(0,0,0,.3)}
 .phone-screen{border-radius:22px;overflow:hidden;background:#fff}
-.phone-notch{background:#0f172a;height:20px;display:flex;align-items:center;justify-content:center;margin-bottom:0}
+.phone-notch{background:#0f172a;height:20px;display:flex;align-items:center;justify-content:center}
 .phone-notch::after{content:'';width:60px;height:6px;background:#1e293b;border-radius:3px}
 .phone-wrap{display:flex;gap:24px;align-items:flex-start;justify-content:center;margin:16px 0;flex-wrap:wrap}
 .phone-label{text-align:center;font-size:11px;color:var(--g500);margin-top:8px;font-weight:600}
-
-/* ── FOOTER ── */
 .doc-footer{background:var(--g800);color:#fff;padding:24px 32px;margin-top:40px;border-radius:12px;text-align:center}
 .doc-footer p{font-size:12px;opacity:.7;margin-top:6px}
+.pct-high{background:#dcfce7;color:#166534;border-radius:4px;font-weight:700;padding:2px 6px;font-size:10px;display:inline-block}
+.pct-mid{background:#fef9c3;color:#854d0e;border-radius:4px;font-weight:700;padding:2px 6px;font-size:10px;display:inline-block}
+.pct-low{background:#fee2e2;color:#991b1b;border-radius:4px;font-weight:700;padding:2px 6px;font-size:10px;display:inline-block}
+.pct-na{color:var(--g400);font-size:10px;display:inline-block}
+p{margin-bottom:10px;font-size:13px;color:var(--g600)}
 </style>
 </head>
 <body>
 
-<!-- ════════════════ CAPA ════════════════ -->
+<!-- ════ CAPA ════ -->
 <div class="cover">
   <div class="cover-logo">
-    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="32" cy="27" r="15" stroke="white" stroke-width="2.5" fill="rgba(255,255,255,0.12)"/>
-      <path d="M37 21.5C35.8 20.5 34.3 20 32.5 20c-4 0-7 3-7 7s3 7 7 7c1.8 0 3.3-.5 4.5-1.5" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="24" y1="26" x2="34" y2="26" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="24" y1="29" x2="34" y2="29" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-      <line x1="32" y1="44" x2="32" y2="54" stroke="#93c5fd" stroke-width="3" stroke-linecap="round"/>
-      <polyline points="27,50 32,55 37,50" fill="none" stroke="#93c5fd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
+    <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="27" r="15" stroke="white" stroke-width="2.5" fill="rgba(255,255,255,.12)"/><path d="M37 21.5C35.8 20.5 34.3 20 32.5 20c-4 0-7 3-7 7s3 7 7 7c1.8 0 3.3-.5 4.5-1.5" stroke="white" stroke-width="2.5" stroke-linecap="round"/><line x1="24" y1="26" x2="34" y2="26" stroke="white" stroke-width="2.5" stroke-linecap="round"/><line x1="24" y1="29" x2="34" y2="29" stroke="white" stroke-width="2.5" stroke-linecap="round"/><line x1="32" y1="44" x2="32" y2="54" stroke="#93c5fd" stroke-width="3" stroke-linecap="round"/><polyline points="27,50 32,55 37,50" fill="none" stroke="#93c5fd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </div>
   <h1>Controlo de Depósitos</h1>
   <h2>Manual de Utilização · Despomar</h2>
   <div class="cover-meta">
     <div><strong>Aplicação:</strong> Controlo e Reporte de Depósitos por Loja</div>
-    <div><strong>Utilização:</strong> Computador e Telemóvel</div>
+    <div><strong>Utilização:</strong> Computador · Tablet · Telemóvel</div>
     <div><strong>Versão:</strong> Junho 2026</div>
     <div><strong>Grupo:</strong> Despomar / 58 Surf</div>
   </div>
-  <div class="cover-url">https://auditoria-25b.pages.dev/depositos</div>
+  <div class="cover-url">auditoria-25b.pages.dev/depositos</div>
+  <div class="cover-footer">Documento confidencial · Uso interno Despomar</div>
 </div>
 
-<!-- ════════════════ ÍNDICE ════════════════ -->
+<!-- ════ ÍNDICE ════ -->
 <div class="page">
   <div class="toc">
     <h3>Índice</h3>
     <ol>
-      <li><a href="#acesso">Acesso e Login</a></li>
-      <li><a href="#configuracoes">Configurações da Loja</a> <strong style="color:var(--red);font-size:11px">— OBRIGATÓRIO</strong></li>
-      <li><a href="#novo">Registar um Novo Depósito</a></li>
-      <li><a href="#dashboard">Dashboard — Resumo do Mês</a></li>
-      <li><a href="#lista">Lista de Registos e Edição</a></li>
-      <li><a href="#exportar">Exportar e Enviar para Contabilidade</a></li>
-      <li><a href="#estados">Significado dos Estados</a></li>
-      <li><a href="#mobile">Utilização no Telemóvel</a></li>
-      <li><a href="#faq">Perguntas Frequentes</a></li>
+      <li><a href="#acesso" class="loja-a">Acesso e Login</a></li>
+      <li><a href="#configuracoes" class="loja-a">Configurações da Loja</a> <strong style="color:var(--red);font-size:11px">— OBRIGATÓRIO</strong></li>
+      <li><a href="#novo" class="loja-a">Registar um Novo Depósito</a></li>
+      <li><a href="#dashboard" class="loja-a">Dashboard — Resumo do Mês</a></li>
+      <li><a href="#lista" class="loja-a">Lista de Registos e Edição</a></li>
+      <li><a href="#mapa" class="loja-a">Mapa de Depósitos — Calendário do Mês</a></li>
+      <li><a href="#email" class="loja-a">Enviar E-mail à Contabilidade</a></li>
+      <li><a href="#estados" class="loja-a">Significado dos Estados</a></li>
+      <li><a href="#mobile" class="loja-a">Utilização no Telemóvel</a></li>
+      <li><a href="#superadmin" class="sa-a">⚡ Super Admin — Guia Completo</a></li>
+      <li><a href="#faq" class="loja-a">Perguntas Frequentes</a></li>
     </ol>
   </div>
-
-  <div class="tip"><b>ℹ️ Este manual aplica-se a todas as lojas do grupo Despomar.</b> Cada loja tem a sua conta individual com dados separados das restantes.</div>
+  <div class="tip"><b>ℹ️ Este manual tem duas partes:</b> Capítulos 1–9 para o responsável de loja, Capítulo 10 exclusivo para a gestão Despomar (Super Admin).</div>
 </div>
 
-<!-- ════════════════ 1. ACESSO ════════════════ -->
-<div class="page chapter" id="acesso">
-  <div class="chapter-title">
-    <div class="num">Capítulo 1</div>
-    <h2>Acesso e Login</h2>
-    <p>Como entrar na aplicação em computador ou telemóvel</p>
+<!-- ════ GUIA DE NAVEGAÇÃO ════ -->
+<div class="page" style="padding-bottom:0" id="nav-guide">
+  <div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;border-radius:14px;padding:20px 24px;margin-bottom:24px">
+    <div style="font-size:11px;font-weight:700;opacity:.6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Como se navega na aplicação</div>
+    <div style="font-size:20px;font-weight:800">📱 Os Menus da Aplicação</div>
+    <div style="font-size:13px;opacity:.75;margin-top:4px">Todos os botões estão na barra inferior do ecrã. Toque para mudar de página.</div>
   </div>
 
-  <div class="section">
-    <span class="device-badge">💻 Computador</span>
-    <span class="device-badge">📱 Telemóvel</span>
-    <p style="margin-bottom:14px;color:var(--g600)">O acesso é feito através do browser (Chrome, Safari, Firefox). Não é necessário instalar nada.</p>
+  <!-- LOJA NAV -->
+  <div style="background:#fff;border:1.5px solid var(--g200);border-radius:14px;padding:20px 20px 24px;margin-bottom:20px;box-shadow:0 2px 16px rgba(0,0,0,.06)">
+    <div style="font-size:12px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+      <span style="background:var(--blue-l);border-radius:6px;padding:3px 10px">🏪 BARRA DE NAVEGAÇÃO — LOJA</span>
+    </div>
 
+    <!-- Big nav illustration -->
+    <div style="background:#f1f5f9;border-radius:12px;padding:16px 10px 8px;margin-bottom:20px;position:relative">
+      <div style="background:#fff;border-radius:10px;border:2px solid var(--g200);overflow:hidden;max-width:480px;margin:0 auto;box-shadow:0 4px 16px rgba(0,0,0,.08)">
+        <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:10px 16px;color:#fff;font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center">
+          <span>📊 Dashboard · ESS Guia</span>
+          <span style="background:rgba(255,255,255,.2);border-radius:7px;padding:4px 10px;font-size:11px">⚙️</span>
+        </div>
+        <div style="padding:12px 16px;background:var(--g50);height:50px;display:flex;align-items:center;justify-content:center">
+          <div style="font-size:11px;color:var(--g400);font-style:italic">… conteúdo da página …</div>
+        </div>
+        <!-- NAV BAR -->
+        <div style="display:flex;border-top:2px solid var(--g200);background:#fff">
+          <div style="flex:1;padding:10px 4px;text-align:center;border-bottom:3px solid var(--blue2)">
+            <div style="font-size:20px">📊</div>
+            <div style="font-size:9px;font-weight:800;color:var(--blue2);margin-top:2px">Dashboard</div>
+          </div>
+          <div style="flex:1;padding:10px 4px;text-align:center">
+            <div style="font-size:20px">➕</div>
+            <div style="font-size:9px;font-weight:700;color:var(--g400);margin-top:2px">Novo</div>
+          </div>
+          <div style="flex:1;padding:10px 4px;text-align:center">
+            <div style="font-size:20px">📋</div>
+            <div style="font-size:9px;font-weight:700;color:var(--g400);margin-top:2px">Lista</div>
+          </div>
+          <div style="flex:1;padding:10px 4px;text-align:center">
+            <div style="font-size:20px">🗓️</div>
+            <div style="font-size:9px;font-weight:700;color:var(--g400);margin-top:2px">Mapa</div>
+          </div>
+          <div style="flex:1;padding:10px 4px;text-align:center">
+            <div style="font-size:20px">📧</div>
+            <div style="font-size:9px;font-weight:700;color:var(--g400);margin-top:2px">E-mail</div>
+          </div>
+        </div>
+      </div>
+      <!-- Number callouts below -->
+      <div style="display:flex;max-width:480px;margin:10px auto 0;padding:0 2px">
+        <div style="flex:1;text-align:center"><div style="background:var(--blue2);color:#fff;width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-bottom:2px">1</div></div>
+        <div style="flex:1;text-align:center"><div style="background:var(--blue2);color:#fff;width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-bottom:2px">2</div></div>
+        <div style="flex:1;text-align:center"><div style="background:var(--blue2);color:#fff;width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-bottom:2px">3</div></div>
+        <div style="flex:1;text-align:center"><div style="background:var(--blue2);color:#fff;width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-bottom:2px">4</div></div>
+        <div style="flex:1;text-align:center"><div style="background:var(--blue2);color:#fff;width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-bottom:2px">5</div></div>
+      </div>
+    </div>
+
+    <!-- Callout legend -->
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:var(--blue-l);border-radius:10px;border-left:4px solid var(--blue2)">
+        <div style="background:var(--blue2);color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:var(--g800)">📊 Dashboard — Resumo do Mês</div>
+          <div style="font-size:12px;color:var(--g600);margin-top:2px">Ecrã inicial. Mostra os totais do mês, alertas de dias em falta e lista de depósitos. <strong>É aqui que começa sempre.</strong></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:#f0fdf4;border-radius:10px;border-left:4px solid var(--green)">
+        <div style="background:var(--green);color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:var(--g800)">➕ Novo — Registar Depósito</div>
+          <div style="font-size:12px;color:var(--g600);margin-top:2px">Formulário para registar um novo depósito. Escolhe loja, tipo de serviço, sessões de caixa, valor, data e talão. <strong>Use sempre que houver um depósito para registar.</strong></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:var(--g50);border-radius:10px;border-left:4px solid var(--g400)">
+        <div style="background:var(--g500);color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:var(--g800)">📋 Lista — Consultar e Editar</div>
+          <div style="font-size:12px;color:var(--g600);margin-top:2px">Lista de todos os depósitos registados. Filtra por mês, loja e estado. Permite editar (✏️) ou apagar registos existentes. <strong>Use para corrigir erros ou consultar histórico.</strong></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:#f0fdf4;border-radius:10px;border-left:4px solid #0891b2">
+        <div style="background:#0891b2;color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:var(--g800)">🗓️ Mapa — Calendário do Mês</div>
+          <div style="font-size:12px;color:var(--g600);margin-top:2px">Mostra todos os dias do mês numa tabela: os que têm depósito aparecem com os dados, os sem registo aparecem em branco. <strong>Use para ver lacunas e imprimir o registo mensal em PDF.</strong></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:#eff6ff;border-radius:10px;border-left:4px solid #0ea5e9">
+        <div style="background:#0ea5e9;color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">5</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:var(--g800)">📧 E-mail — Enviar à Contabilidade</div>
+          <div style="font-size:12px;color:var(--g600);margin-top:2px">Prepara e envia automaticamente um email à contabilidade com os depósitos do mês. O texto fica pré-preenchido. <strong>Use no fim do mês ou quando a contabilidade pedir o extrato.</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRA TOPO -->
+  <div style="background:#fff;border:1.5px solid var(--g200);border-radius:14px;padding:20px 20px 20px;margin-bottom:20px;box-shadow:0 2px 16px rgba(0,0,0,.06)">
+    <div style="font-size:12px;font-weight:800;color:var(--g600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">
+      🔵 BARRA SUPERIOR (Topo do Ecrã)
+    </div>
+    <div style="background:#f1f5f9;border-radius:12px;padding:12px 10px;margin-bottom:16px">
+      <div style="background:#fff;border-radius:10px;border:2px solid var(--g200);overflow:hidden;max-width:480px;margin:0 auto">
+        <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:12px 16px;color:#fff;display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:4px 8px;font-size:11px">←</div>
+            <div>
+              <div style="font-size:13px;font-weight:800">📊 Dashboard</div>
+              <div style="font-size:10px;opacity:.7">ESS Guia</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 10px;font-size:13px">🚪</div>
+            <div style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 10px;font-size:13px">⚙️</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;max-width:480px;margin:10px auto 0;padding:0 8px;justify-content:space-between">
+        <div style="display:flex;gap:6px;align-items:center"><div style="background:var(--blue2);color:#fff;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center">A</div><span style="font-size:11px;color:var(--g600)">Título da página + loja</span></div>
+        <div style="display:flex;gap:6px;align-items:center"><div style="background:#dc2626;color:#fff;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center">B</div><span style="font-size:11px;color:var(--g600)">Sair (logout)</span><div style="background:var(--g500);color:#fff;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-left:8px">C</div><span style="font-size:11px;color:var(--g600)">Configurações ⚙️</span></div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--g600);line-height:1.8">
+      <div><strong>← Voltar (seta)</strong> — aparece quando se está numa sub-página, para voltar ao Dashboard</div>
+      <div><strong>🚪 Sair</strong> — termina a sessão (logout)</div>
+      <div><strong>⚙️ Configurações</strong> — aceder às configurações da loja (email, serviços, responsáveis)</div>
+    </div>
+  </div>
+
+  <!-- SA NAV -->
+  <div style="background:#fff;border:1.5px solid #ddd6fe;border-radius:14px;padding:20px 20px 24px;margin-bottom:0;box-shadow:0 2px 16px rgba(109,40,217,.08)">
+    <div style="font-size:12px;font-weight:800;color:var(--purple2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+      <span style="background:var(--purple-l);border-radius:6px;padding:3px 10px">⚡ BARRA DE NAVEGAÇÃO — SUPER ADMIN (Ivo)</span>
+    </div>
+    <div style="background:#f5f3ff;border-radius:12px;padding:16px 10px 8px;margin-bottom:20px">
+      <div style="background:#fff;border-radius:10px;border:2px solid #ddd6fe;overflow:hidden;max-width:400px;margin:0 auto">
+        <div style="background:linear-gradient(135deg,#3b0764,#6d28d9);padding:10px 16px;color:#fff;font-size:12px;font-weight:700">⚡ Supervisão · Todas as Lojas</div>
+        <div style="padding:10px 16px;background:var(--g50);height:40px;display:flex;align-items:center;justify-content:center">
+          <div style="font-size:11px;color:var(--g400);font-style:italic">… conteúdo da página …</div>
+        </div>
+        <div style="display:flex;border-top:2px solid #ddd6fe;background:#fff">
+          <div style="flex:1;padding:10px 4px;text-align:center;border-bottom:3px solid var(--purple2)">
+            <div style="font-size:20px">📊</div>
+            <div style="font-size:9px;font-weight:800;color:var(--purple2);margin-top:2px">Superv.</div>
+          </div>
+          <div style="flex:1;padding:10px 4px;text-align:center">
+            <div style="font-size:20px">📋</div>
+            <div style="font-size:9px;font-weight:700;color:var(--g400);margin-top:2px">Lista</div>
+          </div>
+          <div style="flex:1;padding:10px 4px;text-align:center">
+            <div style="font-size:20px">🗓️</div>
+            <div style="font-size:9px;font-weight:700;color:var(--g400);margin-top:2px">Mapa</div>
+          </div>
+          <div style="flex:1;padding:10px 4px;text-align:center">
+            <div style="font-size:20px">📧</div>
+            <div style="font-size:9px;font-weight:700;color:var(--g400);margin-top:2px">E-mail</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;max-width:400px;margin:10px auto 0;padding:0 2px">
+        <div style="flex:1;text-align:center"><div style="background:var(--purple2);color:#fff;width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center">1</div></div>
+        <div style="flex:1;text-align:center"><div style="background:var(--purple2);color:#fff;width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center">2</div></div>
+        <div style="flex:1;text-align:center"><div style="background:var(--purple2);color:#fff;width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center">3</div></div>
+        <div style="flex:1;text-align:center"><div style="background:var(--purple2);color:#fff;width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center">4</div></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:var(--purple-l);border-radius:10px;border-left:4px solid var(--purple2)">
+        <div style="background:var(--purple2);color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:var(--g800)">📊 Supervisão — Estado de Todas as Lojas</div>
+          <div style="font-size:12px;color:var(--g600);margin-top:2px">Lista de todas as lojas com semáforo (verde/amarelo/vermelho) e percentagem de cumprimento. As lojas com problemas aparecem no topo. <strong>Primeiro ecrã após login SA.</strong></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:var(--g50);border-radius:10px;border-left:4px solid var(--g400)">
+        <div style="background:var(--g500);color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:var(--g800)">📋 Lista — Registos de Todas as Lojas</div>
+          <div style="font-size:12px;color:var(--g600);margin-top:2px">Todos os depósitos de todas as lojas. Filtrar por loja e mês para ver o detalhe de cada uma.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:#f0fdf4;border-radius:10px;border-left:4px solid #0891b2">
+        <div style="background:#0891b2;color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:var(--g800)">🗓️ Mapa — Calendário de Qualquer Loja</div>
+          <div style="font-size:12px;color:var(--g600);margin-top:2px">Selecionar qualquer loja e ver o calendário completo do mês. Imprimir PDF para arquivo.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:#fef2f2;border-radius:10px;border-left:4px solid var(--red)">
+        <div style="background:var(--red);color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:var(--g800)">📧 E-mail — Alerta Formal à Loja</div>
+          <div style="font-size:12px;color:var(--g600);margin-top:2px">Envia um email formal à loja listando as irregularidades e pedindo justificação. Prazo de resposta automático de 3 dias. <strong>Usar quando uma loja tem o semáforo vermelho.</strong></div>
+        </div>
+      </div>
+    </div>
+    <div style="background:#fff;border:1.5px solid #ddd6fe;border-radius:10px;padding:12px 14px;margin-top:16px">
+      <div style="font-size:12px;font-weight:800;color:var(--purple2);margin-bottom:6px">⚡ Diferença entre conta Loja e conta Super Admin</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px">
+        <div>
+          <div style="font-weight:700;color:var(--blue2);margin-bottom:4px">🏪 Conta Loja</div>
+          <div style="color:var(--g600);line-height:1.8">Vê só os seus dados<br>Pode registar depósitos<br>Envia email à contabilidade<br>5 separadores no menu</div>
+        </div>
+        <div>
+          <div style="font-weight:700;color:var(--purple2);margin-bottom:4px">⚡ Conta Super Admin</div>
+          <div style="color:var(--g600);line-height:1.8">Vê todas as lojas<br>Não regista — só supervisiona<br>Envia alertas às lojas<br>4 separadores no menu</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 1. ACESSO ════ -->
+<div class="page chapter" id="acesso">
+  <div class="chapter-title loja">
+    <div class="num">Capítulo 1</div>
+    <h2>🔐 Acesso e Login</h2>
+    <p>Como entrar na aplicação em computador ou telemóvel</p>
+  </div>
+  <div class="section">
+    <span class="device-badge">💻 Computador</span><span class="device-badge">📱 Telemóvel</span>
+    <p>O acesso é feito pelo browser (Chrome, Safari, Firefox). Não é necessário instalar nada.</p>
     <h3>Passos para entrar</h3>
     <ol class="step-list">
-      <li><span>Abra o browser e aceda a <strong>https://auditoria-25b.pages.dev/depositos</strong></span></li>
+      <li><span>Abra o browser e aceda a <strong>auditoria-25b.pages.dev/depositos</strong></span></li>
       <li><span>Introduza o seu <strong>email</strong> e <strong>password</strong> fornecidos pela Despomar</span></li>
       <li><span>Clique em <strong>"Entrar"</strong></span></li>
     </ol>
-
-    <!-- MOCKUP LOGIN -->
     <div class="mockup" style="max-width:320px;margin:20px auto">
       <div class="mockup-bar">
-        <div>
-          <div class="title">Controlo de Depósitos</div>
-          <div class="sub">Despomar · Grupo 58 Surf</div>
-        </div>
-        <svg width="28" height="28" viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="12" fill="rgba(255,255,255,.15)"/><circle cx="32" cy="27" r="12" stroke="white" stroke-width="2" fill="rgba(255,255,255,.1)"/><line x1="24" y1="26" x2="34" y2="26" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="24" y1="29" x2="34" y2="29" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="32" y1="43" x2="32" y2="51" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round"/><polyline points="28,48 32,52 36,48" fill="none" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div><div class="title">Controlo de Depósitos</div><div class="sub">Despomar · Grupo 58 Surf</div></div>
       </div>
       <div style="padding:20px;background:var(--g50)">
         <div style="text-align:center;margin-bottom:16px">
           <div style="font-size:14px;font-weight:800;color:var(--g800)">Bem-vindo</div>
-          <div style="font-size:11px;color:var(--g500)">Introduza as suas credenciais</div>
+          <div style="font-size:11px;color:var(--g500)">Acesso restrito a colaboradores Despomar</div>
         </div>
-        <div class="mock-field">
-          <label>Email</label>
-          <div class="mock-input filled">loja@empresa.pt</div>
-        </div>
-        <div class="mock-field">
-          <label>Password</label>
-          <div class="mock-input filled">••••••••••</div>
-        </div>
-        <div class="mock-btn">Entrar</div>
+        <div class="mock-field"><label>Email</label><div class="mock-input filled">loja@empresa.pt</div></div>
+        <div class="mock-field"><label>Password</label><div class="mock-input filled">••••••••••</div></div>
+        <div class="mock-btn" style="margin-top:4px">Entrar</div>
+        <div style="text-align:center;margin-top:10px;font-size:10px;color:var(--blue2)">Esqueceu a password?</div>
       </div>
     </div>
-
-    <div class="important"><b>⚠️ Credenciais individuais:</b> Cada loja tem o seu próprio email e password. Não partilhe o acesso com outras lojas.</div>
-    <div class="tip"><b>💡 Guardar no telemóvel:</b> No iPhone, carregue em <em>Partilhar → Adicionar ao Ecrã de Início</em> para aceder como se fosse uma app. No Android, carregue em <em>Menu → Adicionar ao ecrã inicial</em>.</div>
+    <div class="important"><b>⚠️ Credenciais individuais:</b> Cada loja tem o seu próprio email e password. Não partilhe o acesso.</div>
+    <div class="tip"><b>💡 Guardar no telemóvel como app:</b> iPhone: Safari → ⬆️ Partilhar → "Adicionar ao Ecrã de Início". Android: Chrome → ⋮ → "Adicionar ao ecrã inicial".</div>
   </div>
 </div>
 
-<!-- ════════════════ 2. CONFIGURAÇÕES ════════════════ -->
+<!-- ════ 2. CONFIGURAÇÕES ════ -->
 <div class="page chapter" id="configuracoes">
-  <div class="chapter-title">
+  <div class="chapter-title loja">
     <div class="num">Capítulo 2</div>
     <h2>⚙️ Configurações da Loja</h2>
-    <p>Passo obrigatório antes de começar a utilizar — configurar uma vez, fica guardado</p>
+    <p>Passo obrigatório antes de começar — configurar uma vez, fica guardado</p>
   </div>
-
-  <div class="important"><b>🔴 OBRIGATÓRIO:</b> Antes de registar qualquer depósito, a loja DEVE preencher as configurações. Sem elas, os prazos não são calculados corretamente e os emails não chegam à contabilidade.</div>
-
+  <div class="important"><b>🔴 OBRIGATÓRIO:</b> Antes de registar qualquer depósito, a loja DEVE configurar os dados. Sem configuração, os prazos não são calculados e os emails não chegam à contabilidade.</div>
   <div class="section">
     <h3>Como aceder às Configurações</h3>
     <ol class="step-list">
       <li><span>Após o login, toque no ícone <strong>⚙️</strong> no canto superior direito da barra azul</span></li>
-      <li><span>Abre-se a página de Configurações da sua loja</span></li>
     </ol>
-
-    <!-- MOCKUP TOPBAR -->
-    <div class="mockup" style="max-width:360px;margin:12px auto">
+    <div class="mockup" style="max-width:380px;margin:12px auto">
       <div class="mockup-bar" style="justify-content:space-between">
-        <div style="display:flex;align-items:center;gap:10px">
-          <svg width="24" height="24" viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="10" fill="rgba(255,255,255,.15)"/><circle cx="32" cy="27" r="12" stroke="white" stroke-width="2" fill="rgba(255,255,255,.1)"/><line x1="25" y1="26" x2="35" y2="26" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="25" y1="29" x2="35" y2="29" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="32" y1="43" x2="32" y2="51" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round"/><polyline points="28,48 32,52 36,48" fill="none" stroke="#93c5fd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <div>
-            <div class="title">📊 Dashboard</div>
-            <div class="sub">ESS Guia</div>
-          </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:11px;font-weight:700">📊 Dashboard</div>
         </div>
-        <div style="display:flex;gap:8px">
-          <div style="background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:7px 11px;font-size:12px">🗑</div>
-          <div style="background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:7px 11px;font-size:12px">⚙️</div>
+        <div style="display:flex;gap:6px">
+          <div style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:5px 9px;font-size:12px">🚪</div>
+          <div style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:5px 9px;font-size:12px">⚙️</div>
         </div>
       </div>
+      <div style="padding:12px;background:var(--g50)">
+        <div style="font-size:11px;color:var(--g500);text-align:center">← Toque no ⚙️ para ir às Configurações</div>
+      </div>
     </div>
-
-    <h3>Campos a preencher</h3>
+    <h3>O que configurar</h3>
     <table>
       <thead><tr><th>Campo</th><th>O que preencher</th><th>Exemplo</th></tr></thead>
       <tbody>
-        <tr><td><strong>Empresa</strong></td><td>Nome da loja ou empresa</td><td>ESS Guia</td></tr>
-        <tr><td><strong>NIF</strong></td><td>Número de identificação fiscal</td><td>508 123 456</td></tr>
+        <tr><td><strong>Empresa</strong></td><td>Nome da loja</td><td>ESS Guia</td></tr>
         <tr><td><strong>Email Contabilidade</strong></td><td>Para onde vai a folha de depósitos</td><td>contab@empresa.pt</td></tr>
-        <tr><td><strong>CC Adicional</strong></td><td>Email extra em cópia (opcional)</td><td>gerente@empresa.pt</td></tr>
-        <tr><td><strong>Lojas</strong></td><td>Nome(s) da(s) loja(s) que vai controlar</td><td>ESS Guia</td></tr>
-        <tr><td><strong>Responsáveis</strong></td><td>Quem faz os depósitos na loja</td><td>Tiago, André</td></tr>
-        <tr><td><strong>Dia Prosegur</strong></td><td>Dia da semana em que a Prosegur passa</td><td>Terça-feira</td></tr>
-        <tr><td><strong>Dia Lomis</strong></td><td>Dia da semana em que a Lomis passa</td><td>Quinta-feira</td></tr>
-        <tr><td><strong>Dia Câmbio</strong></td><td>Se não usa — deixar em branco</td><td>—</td></tr>
+        <tr><td><strong>CC fixo</strong></td><td>Email sempre em cópia (ex: gestão)</td><td>ivo@despomar.com</td></tr>
+        <tr><td><strong>Lojas</strong></td><td>Nome(s) das lojas a controlar</td><td>ESS Guia, ESS Faro</td></tr>
+        <tr><td><strong>Responsáveis</strong></td><td>Quem faz os depósitos</td><td>Tiago, André</td></tr>
+        <tr><td><strong>Prosegur — Dia</strong></td><td>Dia da semana que a Prosegur passa</td><td>Terça-feira</td></tr>
+        <tr><td><strong>Lomis — Dia</strong></td><td>Dia da semana que a Lomis passa</td><td>Quinta-feira</td></tr>
+        <tr><td><strong>Câmbio — Dia</strong></td><td>Dia do câmbio semanal (se aplicável)</td><td>—</td></tr>
+        <tr><td><strong>Depósito Direto</strong></td><td>Activar se a loja deposita directamente no banco</td><td>✓ Activo</td></tr>
+        <tr><td><strong>Métricas desde</strong></td><td>Mês de arranque do sistema (ex: Junho 2026)</td><td>2026-06</td></tr>
       </tbody>
     </table>
-
-    <!-- MOCKUP SETTINGS -->
-    <div class="mockup" style="max-width:360px;margin:16px auto">
-      <div class="mockup-bar"><div class="title">⚙️ Configurações</div><div class="sub">ESS Guia</div></div>
-      <div style="padding:14px;background:var(--g50)">
-        <div class="mock-card">
-          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Dados da Empresa</div>
-          <div class="mock-field"><label>Empresa</label><div class="mock-input filled">ESS Guia</div></div>
-          <div class="mock-field"><label>NIF</label><div class="mock-input filled">508 123 456</div></div>
-          <div class="mock-field"><label>Email Contabilidade (Para:)</label><div class="mock-input filled">contabilidade@empresa.pt</div></div>
-        </div>
-        <div class="mock-card">
-          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Dia de Levantamento Semanal</div>
-          <div class="mock-field"><label>Prosegur</label><div class="mock-input filled" style="color:var(--green)">Terça-feira ✓</div></div>
-          <div class="mock-field"><label>Lomis</label><div class="mock-input" style="color:var(--g400)">— Esta loja não usa Lomis —</div></div>
-          <div class="mock-field"><label>Câmbio</label><div class="mock-input" style="color:var(--g400)">— Esta loja não usa Câmbio —</div></div>
-        </div>
-        <div class="mock-btn green" style="margin-top:4px">✓ Guardar Configurações</div>
-      </div>
-    </div>
-
-    <div class="warning"><b>⚠️ Dia de levantamento — porquê é crítico:</b> O sistema usa este dia para calcular automaticamente se os depósitos estão dentro do prazo. Se a Prosegur passa à Terça e não configurar esse dia, o sistema não sabe quando esperar o levantamento e não emite os alertas correctos.</div>
-
-    <div class="success"><b>✅ Fica guardado na nuvem.</b> Depois de configurar uma vez, os dados ficam guardados automaticamente. Não precisa de repetir em cada acesso, nem se usar outro dispositivo.</div>
+    <div class="warning"><b>⚠️ Dia de levantamento — porquê é crítico:</b> O sistema usa este dia para calcular automaticamente se os depósitos estão dentro do prazo. Se não configurar, os alertas de atraso não funcionam corretamente.</div>
+    <div class="success"><b>✅ Fica guardado na nuvem.</b> Depois de configurar uma vez não precisa repetir, mesmo que mude de dispositivo.</div>
   </div>
 </div>
 
-<!-- ════════════════ 3. NOVO DEPÓSITO ════════════════ -->
+<!-- ════ 3. NOVO DEPÓSITO ════ -->
 <div class="page chapter" id="novo">
-  <div class="chapter-title">
+  <div class="chapter-title loja">
     <div class="num">Capítulo 3</div>
     <h2>➕ Registar um Novo Depósito</h2>
     <p>Como registar as sessões de caixa e o depósito correspondente</p>
   </div>
-
   <div class="section">
-    <p style="margin-bottom:16px;color:var(--g600)">Cada <strong>registo de depósito</strong> pode conter uma ou mais sessões de caixa. Registe as sessões que estão a ser depositadas juntas.</p>
-
+    <p>Cada <strong>registo de depósito</strong> pode conter uma ou mais sessões de caixa. Registe as sessões que estão a ser depositadas juntas.</p>
     <h3>Passos</h3>
     <ol class="step-list">
-      <li><span>Toque no separador <strong>➕</strong> na barra de navegação inferior</span></li>
+      <li><span>Toque em <strong>Novo</strong> na barra de navegação inferior</span></li>
       <li><span>Selecione a <strong>Loja</strong> e o <strong>Tipo de Serviço</strong> (Prosegur, Depósito Direto, etc.)</span></li>
-      <li><span>Para cada sessão de caixa que vai depositar, clique em <strong>"Adicionar Sessão"</strong> e preencha: data de vendas, número de sessão e valor</span></li>
+      <li><span>Clique em <strong>"Adicionar Sessão"</strong> para cada sessão de caixa e preencha: data de vendas, número de sessão e valor</span></li>
       <li><span>Preencha a <strong>Data do Depósito</strong> e o <strong>Nº Talão / Referência</strong></span></li>
       <li><span>Selecione o <strong>Responsável</strong> que fez o depósito</span></li>
       <li><span>Opcionalmente, tire <strong>foto do talão</strong> com a câmara</span></li>
       <li><span>Toque em <strong>"Guardar Registo"</strong></span></li>
     </ol>
-
-    <!-- MOCKUP NOVO FORM -->
     <div class="mockup" style="max-width:360px;margin:16px auto">
       <div class="mockup-bar"><div class="title">➕ Novo Depósito</div></div>
       <div style="padding:14px;background:var(--g50)">
@@ -367,23 +517,23 @@ td code{background:var(--g100);padding:1px 6px;border-radius:4px;font-family:mon
             <div class="mock-ses-num">1</div>
             <div style="flex:1">
               <div class="mock-grid2">
-                <div><div style="font-size:9px;color:var(--g500);margin-bottom:2px">DATA VENDAS</div><div style="font-size:11px;font-weight:700">08/06/2026</div></div>
-                <div><div style="font-size:9px;color:var(--g500);margin-bottom:2px">Nº SESSÃO</div><div style="font-size:11px;font-weight:700">6290</div></div>
+                <div><div style="font-size:8px;color:var(--g500)">DATA VENDAS</div><div style="font-size:11px;font-weight:700">08/06/2026</div></div>
+                <div><div style="font-size:8px;color:var(--g500)">Nº SESSÃO</div><div style="font-size:11px;font-weight:700">6290</div></div>
               </div>
-              <div style="margin-top:4px"><div style="font-size:9px;color:var(--g500);margin-bottom:2px">VALOR</div><div style="font-size:12px;font-weight:800;color:var(--blue2)">€ 635,85</div></div>
+              <div style="margin-top:4px"><div style="font-size:8px;color:var(--g500)">VALOR</div><div style="font-size:12px;font-weight:800;color:var(--blue2)">€ 635,85</div></div>
             </div>
           </div>
           <div class="mock-ses-row">
             <div class="mock-ses-num">2</div>
             <div style="flex:1">
               <div class="mock-grid2">
-                <div><div style="font-size:9px;color:var(--g500);margin-bottom:2px">DATA VENDAS</div><div style="font-size:11px;font-weight:700">09/06/2026</div></div>
-                <div><div style="font-size:9px;color:var(--g500);margin-bottom:2px">Nº SESSÃO</div><div style="font-size:11px;font-weight:700">6291</div></div>
+                <div><div style="font-size:8px;color:var(--g500)">DATA VENDAS</div><div style="font-size:11px;font-weight:700">09/06/2026</div></div>
+                <div><div style="font-size:8px;color:var(--g500)">Nº SESSÃO</div><div style="font-size:11px;font-weight:700">6291</div></div>
               </div>
-              <div style="margin-top:4px"><div style="font-size:9px;color:var(--g500);margin-bottom:2px">VALOR</div><div style="font-size:12px;font-weight:800;color:var(--blue2)">€ 412,20</div></div>
+              <div style="margin-top:4px"><div style="font-size:8px;color:var(--g500)">VALOR</div><div style="font-size:12px;font-weight:800;color:var(--blue2)">€ 412,20</div></div>
             </div>
           </div>
-          <div style="border:1.5px dashed var(--g200);border-radius:8px;padding:8px;text-align:center;color:var(--blue2);font-size:11px;font-weight:700;cursor:pointer">+ Adicionar Sessão</div>
+          <div style="border:1.5px dashed var(--g200);border-radius:8px;padding:8px;text-align:center;color:var(--blue2);font-size:11px;font-weight:700">+ Adicionar Sessão</div>
         </div>
         <div class="mock-card">
           <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Depósito</div>
@@ -392,280 +542,312 @@ td code{background:var(--g100);padding:1px 6px;border-radius:4px;font-family:mon
             <div class="mock-field"><label>Nº Talão</label><div class="mock-input filled">26802134E</div></div>
           </div>
           <div class="mock-field"><label>Responsável *</label><div class="mock-input filled">Tiago Rufino</div></div>
+          <div class="mock-field" style="margin-top:8px"><label>📷 Foto do Talão</label><div style="border:1.5px dashed var(--g200);border-radius:8px;padding:12px;text-align:center;color:var(--g400);font-size:11px">📷 Tirar foto / Escolher imagem</div></div>
         </div>
-        <div class="mock-btn green" style="opacity:.5">Guardar Registo</div>
+        <div class="mock-btn green">✓ Guardar Registo</div>
       </div>
     </div>
-
-    <h3>Tipos de serviço disponíveis</h3>
+    <h3>Tipos de serviço</h3>
     <table>
       <thead><tr><th>Tipo</th><th>Quando usar</th><th>Prazo</th></tr></thead>
       <tbody>
-        <tr><td><strong>🔒 Prosegur</strong></td><td>Quando a Prosegur levanta o dinheiro na loja</td><td>Semanal (dia configurado)</td></tr>
-        <tr><td><strong>🚚 Lomis</strong></td><td>Quando a Lomis levanta o dinheiro na loja</td><td>Semanal (dia configurado)</td></tr>
+        <tr><td><strong>🔒 Prosegur</strong></td><td>Quando a Prosegur levanta na loja</td><td>Semanal (dia configurado)</td></tr>
+        <tr><td><strong>🚚 Lomis</strong></td><td>Quando a Lomis levanta na loja</td><td>Semanal (dia configurado)</td></tr>
         <tr><td><strong>💱 Câmbio</strong></td><td>Depósito em câmbio / bureau de change</td><td>Semanal (dia configurado)</td></tr>
-        <tr><td><strong>🏦 Depósito Direto</strong></td><td>Depósito feito diretamente no banco (quando o serviço não passa)</td><td>2 dias</td></tr>
+        <tr><td><strong>🏦 Depósito Direto</strong></td><td>Depósito direto no banco</td><td>2 dias</td></tr>
       </tbody>
     </table>
-
-    <div class="tip"><b>💡 Serviço que não passou?</b> Se a Prosegur não veio na terça, use <strong>Depósito Direto</strong> e registe o depósito que foi feito manualmente ao banco. O sistema aceita sempre todos os tipos.</div>
-    <div class="warning"><b>⚠️ Depósito Direto — limite de sessões:</b> Não deve agrupar mais de 3 sessões de caixa num único depósito direto. Se o fizer, o sistema pede uma justificação obrigatória e marca o registo como tardio.</div>
+    <div class="tip"><b>💡 Sem talão ainda?</b> Pode guardar o registo sem talão — fica como pendente. Edite mais tarde para adicionar o número.</div>
   </div>
 </div>
 
-<!-- ════════════════ 4. DASHBOARD ════════════════ -->
+<!-- ════ 4. DASHBOARD ════ -->
 <div class="page chapter" id="dashboard">
-  <div class="chapter-title">
+  <div class="chapter-title loja">
     <div class="num">Capítulo 4</div>
     <h2>📊 Dashboard — Resumo do Mês</h2>
-    <p>Visão geral dos depósitos e alertas do mês selecionado</p>
+    <p>Visão geral dos depósitos, alertas e estado do mês selecionado</p>
   </div>
-
   <div class="section">
-    <h3>O que vê no Dashboard</h3>
-
-    <!-- MOCKUP DASHBOARD -->
-    <div class="mockup" style="max-width:400px;margin:16px auto">
-      <div class="mockup-bar"><div class="title">📊 Dashboard</div><div class="sub">junho 2026 · Todas</div></div>
+    <p>O Dashboard é o ecrã inicial após login. Mostra os indicadores do mês e a lista de registos da loja.</p>
+    <div class="mockup" style="max-width:420px;margin:16px auto">
+      <div class="mockup-bar"><div class="title">📊 Dashboard</div><div class="sub">junho 2026 · ESS Guia</div></div>
       <div class="mockup-nav">
         <div class="nav-tab active"><div class="icon">📊</div>DASHBOARD</div>
         <div class="nav-tab"><div class="icon">➕</div>NOVO</div>
         <div class="nav-tab"><div class="icon">📋</div>LISTA</div>
-        <div class="nav-tab"><div class="icon">📤</div>EXPORTAR</div>
+        <div class="nav-tab"><div class="icon">🗓️</div>MAPA</div>
+        <div class="nav-tab"><div class="icon">📧</div>E-MAIL</div>
       </div>
       <div class="mockup-body">
         <div class="mockup-kpi">
-          <div class="kpi blue"><div class="kl">Total Mês</div><div class="kv">€24.451</div><div style="font-size:9px;color:var(--g400);margin-top:2px">5 dep. · 31 sessões</div></div>
+          <div class="kpi blue"><div class="kl">Total Mês</div><div class="kv">€24.451</div><div style="font-size:9px;color:var(--g400);margin-top:2px">5 dep. · 12 sessões</div></div>
           <div class="kpi green"><div class="kl">✅ Depositado</div><div class="kv">€24.451</div></div>
           <div class="kpi orange"><div class="kl">⏳ Por Depositar</div><div class="kv">€0</div></div>
-          <div class="kpi red"><div class="kl">🔴 Em Atraso/Falta</div><div class="kv">0</div><div style="font-size:9px;color:var(--g400);margin-top:2px">✅ Tudo em ordem</div></div>
+          <div class="kpi purple"><div class="kl">Cumprimento</div><div class="kv">87%</div><div style="font-size:9px;color:var(--g400);margin-top:2px">deste mês</div></div>
         </div>
         <div style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:8px;padding:8px 10px;margin-bottom:8px">
-          <div style="font-size:9px;font-weight:800;color:#92400e;margin-bottom:4px">📅 3 DIAS SEM SESSÃO REGISTADA:</div>
+          <div style="font-size:9px;font-weight:800;color:#92400e;margin-bottom:4px">📅 2 DIAS SEM SESSÃO REGISTADA</div>
           <div style="display:flex;gap:4px">
             <span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:700">15/06</span>
             <span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:700">16/06</span>
-            <span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:700">17/06</span>
           </div>
         </div>
-        <div style="background:#fff;border-radius:8px;padding:6px 10px;border:1px solid var(--g100)">
+        <div style="background:#fff;border-radius:8px;padding:8px 10px;border:1px solid var(--g100)">
           <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;margin-bottom:6px">ESS Guia</div>
           <div class="mock-row" style="font-size:10px">
             <div class="mock-dot ok"></div>
-            <div style="flex:1"><div style="font-weight:700">01/06 → 07/06</div><div style="color:var(--g500)">Sess.6280 · Sess.6281 · Sess.6282</div><div style="color:var(--g500)">Talão: 26443160E · Dep: 05/06</div></div>
-            <div style="font-weight:800;color:var(--blue2)">€4.886</div>
+            <div style="flex:1"><div style="font-weight:700">01/06 → 07/06</div><div style="color:var(--g500)">Sess.6280·6281·6282 · Talão: 26443160E · Dep: 05/06</div></div>
+            <div><div style="font-weight:800;color:var(--blue2)">€4.886</div><div class="mock-badge ok">OK</div></div>
           </div>
           <div class="mock-row" style="font-size:10px">
             <div class="mock-dot ok"></div>
-            <div style="flex:1"><div style="font-weight:700">08/06 → 14/06</div><div style="color:var(--g500)">Sess.6290 · Sess.6291</div><div style="color:var(--g500)">Talão: 26802134E · Dep: 12/06</div></div>
-            <div style="font-weight:800;color:var(--blue2)">€4.451</div>
+            <div style="flex:1"><div style="font-weight:700">08/06 → 12/06</div><div style="color:var(--g500)">Sess.6290·6291 · Talão: 26802134E · Dep: 12/06</div></div>
+            <div><div style="font-weight:800;color:var(--blue2)">€4.451</div><div class="mock-badge ok">OK</div></div>
           </div>
         </div>
       </div>
     </div>
-
-    <h3>Funcionalidades interativas</h3>
+    <h3>Funcionalidades interativas do Dashboard</h3>
     <table>
-      <thead><tr><th>Elemento</th><th>Ação ao tocar / clicar</th></tr></thead>
+      <thead><tr><th>Elemento</th><th>O que faz</th></tr></thead>
       <tbody>
-        <tr><td><span class="pill ok">1 ✅ OK</span> <span class="pill warn">2 ⚠️ Aviso</span></td><td>Filtra a Lista para mostrar apenas esses registos</td></tr>
-        <tr><td>Chips de dias em falta <span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700">01/06</span></td><td>Abre o formulário Novo com a data já preenchida</td></tr>
-        <tr><td>Card de um depósito</td><td>Abre o detalhe completo com opção de editar/apagar</td></tr>
-        <tr><td>Seletor de mês / loja (topo)</td><td>Filtra o dashboard para o período ou loja escolhidos</td></tr>
+        <tr><td>Seletor de mês / loja (topo)</td><td>Filtra tudo para o período ou loja escolhidos</td></tr>
+        <tr><td>Chip amarelo de dia em falta (ex: <span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700">15/06</span>)</td><td>Abre o formulário Novo com essa data já preenchida</td></tr>
+        <tr><td>Card de um depósito</td><td>Abre detalhe completo com opção de editar/apagar</td></tr>
+        <tr><td>Indicador Cumprimento %</td><td>Percentagem de conformidade do mês — quanto maior melhor</td></tr>
       </tbody>
     </table>
-    <div class="tip"><b>💡 Dias em falta:</b> Toque num chip amarelo (ex: 15/06) para abrir o registo novo com essa data já preenchida — poupa tempo.</div>
   </div>
 </div>
 
-<!-- ════════════════ 5. LISTA ════════════════ -->
+<!-- ════ 5. LISTA ════ -->
 <div class="page chapter" id="lista">
-  <div class="chapter-title">
+  <div class="chapter-title loja">
     <div class="num">Capítulo 5</div>
     <h2>📋 Lista de Registos e Edição</h2>
     <p>Consultar, editar ou apagar registos existentes</p>
   </div>
-
   <div class="section">
     <h3>Como aceder</h3>
-    <p style="margin-bottom:12px;color:var(--g600)">Toque no separador <strong>📋</strong> na barra de navegação inferior.</p>
-
+    <p>Toque em <strong>Lista</strong> na barra de navegação inferior.</p>
     <h3>Filtros disponíveis</h3>
     <table>
       <thead><tr><th>Filtro</th><th>Opções</th></tr></thead>
       <tbody>
-        <tr><td><strong>Mês</strong></td><td>Selecionar mês específico ou "Todos os meses"</td></tr>
-        <tr><td><strong>Loja</strong></td><td>Filtrar por loja específica ou "Todas"</td></tr>
-        <tr><td><strong>Estado</strong></td><td>Todos · ✅ OK · ⚠️ Aviso · 🔴 Erro · 📅 Prog.</td></tr>
+        <tr><td><strong>Mês</strong></td><td>Mês específico ou "Todos os meses"</td></tr>
+        <tr><td><strong>Loja</strong></td><td>Loja específica ou "Todas"</td></tr>
+        <tr><td><strong>Estado</strong></td><td><span class="pill ok">✅ OK</span> · <span class="pill warn">⚠️ Aviso</span> · <span class="pill err">🔴 Erro</span> · <span class="pill prog">📅 Prog.</span></td></tr>
       </tbody>
     </table>
-
     <h3>Editar um registo</h3>
     <ol class="step-list">
-      <li><span>Localize o registo na lista</span></li>
-      <li><span>Toque no botão <strong>✏️</strong> à direita</span></li>
+      <li><span>Localize o registo na lista e toque no botão <strong>✏️</strong></span></li>
       <li><span>Altere os dados pretendidos</span></li>
       <li><span>Toque em <strong>"Guardar Registo"</strong></span></li>
     </ol>
-
     <h3>Apagar um registo</h3>
     <ol class="step-list">
-      <li><span>Toque na linha do registo (não no ✏️)</span></li>
-      <li><span>Abre o painel de detalhe</span></li>
-      <li><span>Toque em <strong>"🗑 Eliminar"</strong></span></li>
-      <li><span>Confirme a eliminação</span></li>
+      <li><span>Toque na linha do registo (não no ✏️) para abrir o detalhe</span></li>
+      <li><span>Toque em <strong>"🗑 Eliminar"</strong> e confirme</span></li>
     </ol>
-    <div class="important"><b>⚠️ A eliminação é permanente.</b> Não é possível recuperar um registo apagado. Confirme sempre antes de eliminar.</div>
+    <div class="important"><b>⚠️ A eliminação é permanente.</b> Não é possível recuperar um registo apagado.</div>
   </div>
 </div>
 
-<!-- ════════════════ 6. EXPORTAR ════════════════ -->
-<div class="page chapter" id="exportar">
-  <div class="chapter-title">
+<!-- ════ 6. MAPA ════ -->
+<div class="page chapter" id="mapa">
+  <div class="chapter-title loja">
     <div class="num">Capítulo 6</div>
-    <h2>📤 Exportar e Enviar para Contabilidade</h2>
-    <p>Gerar a folha mensal e enviá-la por email ao departamento de contabilidade</p>
+    <h2>🗓️ Mapa de Depósitos</h2>
+    <p>Calendário completo do mês — todos os dias, com e sem registo</p>
   </div>
-
   <div class="section">
-    <h3>Enviar por email</h3>
+    <p>O Mapa mostra uma tabela calendário com <strong>todos os dias do mês</strong>. Os dias com depósito aparecem com os dados completos; os dias sem nenhum registo aparecem como linha em branco, permitindo identificar facilmente lacunas.</p>
+    <h3>Como aceder</h3>
     <ol class="step-list">
-      <li><span>Toque no separador <strong>📤</strong> na barra de navegação</span></li>
-      <li><span>Selecione o <strong>mês</strong> e a <strong>loja</strong> que pretende exportar</span></li>
-      <li><span>Escolha o formato <strong>Email</strong></span></li>
-      <li><span>Verifique o resumo da pré-visualização</span></li>
-      <li><span>Toque em <strong>"✉️ Enviar Email"</strong></span></li>
-      <li><span>O sistema descarrega automaticamente um ficheiro para anexar</span></li>
-      <li><span>O seu cliente de email abre com o destinatário, assunto e corpo já preenchidos — adicione o ficheiro descarregado como anexo e envie</span></li>
+      <li><span>Toque em <strong>Mapa</strong> na barra de navegação inferior</span></li>
+      <li><span>Selecione a <strong>loja</strong> e o <strong>mês</strong> pretendidos nos seletores no topo</span></li>
+      <li><span>O sistema apresenta KPIs resumo e a tabela calendário completa</span></li>
+      <li><span>Para imprimir ou guardar em PDF, clique em <strong>🖨️ PDF</strong></span></li>
     </ol>
-
-    <!-- MOCKUP EMAIL PREVIEW -->
-    <div class="mockup" style="max-width:360px;margin:16px auto">
-      <div class="mockup-bar"><div class="title">📤 Exportar</div></div>
-      <div style="padding:14px;background:var(--g50)">
-        <div class="mock-grid2" style="margin-bottom:10px">
-          <div class="mock-field"><label>Mês</label><div class="mock-input filled">junho 2026</div></div>
-          <div class="mock-field"><label>Loja</label><div class="mock-input filled">ESS Guia</div></div>
+    <div class="mockup" style="max-width:460px;margin:16px auto">
+      <div class="mockup-bar"><div class="title">🗓️ Mapa de Depósitos</div><div class="sub">junho 2026 · ESS Guia</div></div>
+      <div class="mockup-nav">
+        <div class="nav-tab"><div class="icon">📊</div>DASHBOARD</div>
+        <div class="nav-tab"><div class="icon">➕</div>NOVO</div>
+        <div class="nav-tab"><div class="icon">📋</div>LISTA</div>
+        <div class="nav-tab active"><div class="icon">🗓️</div>MAPA</div>
+        <div class="nav-tab"><div class="icon">📧</div>E-MAIL</div>
+      </div>
+      <div class="mockup-body">
+        <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
+          <div class="mock-input filled" style="flex:1;padding:5px 8px;font-size:10px">ESS Guia</div>
+          <div class="mock-input filled" style="flex:1;padding:5px 8px;font-size:10px">junho 2026</div>
+          <div style="background:#0f172a;color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:700;white-space:nowrap">🖨️ PDF</div>
         </div>
-        <div style="display:flex;gap:6px;margin-bottom:12px">
-          <div style="flex:1;background:#fff;border:2px solid var(--blue2);border-radius:8px;padding:7px;text-align:center;font-size:11px;font-weight:700;color:var(--blue2)">✉️ Email</div>
-          <div style="flex:1;background:#fff;border:1.5px solid var(--g200);border-radius:8px;padding:7px;text-align:center;font-size:11px;font-weight:700;color:var(--g500)">🖨️ PDF</div>
-          <div style="flex:1;background:#fff;border:1.5px solid var(--g200);border-radius:8px;padding:7px;text-align:center;font-size:11px;font-weight:700;color:var(--g500)">📊 Excel</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+          <div class="kpi green" style="padding:7px"><div class="kl">Depósitos</div><div class="kv" style="font-size:14px">5</div></div>
+          <div class="kpi blue" style="padding:7px"><div class="kl">Depositado</div><div class="kv" style="font-size:14px">€24k</div></div>
+          <div class="kpi orange" style="padding:7px"><div class="kl">Dias s/ Reg.</div><div class="kv" style="font-size:14px">2</div></div>
         </div>
-        <div style="background:#fff;border:1.5px solid var(--g200);border-radius:10px;padding:12px;margin-bottom:10px">
-          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;margin-bottom:8px">Pré-visualização</div>
-          <div style="font-size:10px;color:var(--g500)"><b>Para:</b> contabilidade@empresa.pt</div>
-          <div style="font-size:10px;color:var(--g500)"><b>Assunto:</b> Folha Depósitos – ESS Guia – junho 2026</div>
-          <div class="mock-divider"></div>
-          <div style="font-size:9px;color:var(--g600);line-height:1.7">
-            Total: €24.451,91<br>
-            Depositado: €24.451,91<br>
-            Por depositar: €0,00<br>
-            N.º depósitos: 5<br>
-            Estado: ✅ Sem problemas
+        <div style="background:#fff;border-radius:8px;border:1px solid var(--g100);overflow:hidden">
+          <div style="display:grid;grid-template-columns:60px 1fr 70px 60px;background:var(--g800);color:#fff;padding:5px 8px;font-size:8px;font-weight:700;text-transform:uppercase;gap:4px">
+            <div>Período</div><div>Tipo / Serviço</div><div>Valor</div><div>Estado</div>
+          </div>
+          <div style="display:grid;grid-template-columns:60px 1fr 70px 60px;padding:5px 8px;font-size:9px;gap:4px;background:#f0fdf4;border-bottom:1px solid var(--g100)">
+            <div style="font-weight:700">01/06→07/06</div><div style="color:var(--g600)">Prosegur · Dep: 05/06 · T: 26443E</div><div style="font-weight:700;color:var(--blue2)">€4.886</div><div><span class="mock-badge ok">OK</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:60px 1fr 70px 60px;padding:5px 8px;font-size:9px;gap:4px;background:#f0fdf4;border-bottom:1px solid var(--g100)">
+            <div style="font-weight:700">08/06→12/06</div><div style="color:var(--g600)">Prosegur · Dep: 12/06 · T: 26802E</div><div style="font-weight:700;color:var(--blue2)">€4.451</div><div><span class="mock-badge ok">OK</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:60px 1fr 70px 60px;padding:5px 8px;font-size:9px;gap:4px;background:var(--g50);border-bottom:1px solid var(--g100)">
+            <div style="color:var(--g400);font-style:italic">Seg 13/06</div><div style="color:var(--g300);font-style:italic">sem registo</div><div></div><div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:60px 1fr 70px 60px;padding:5px 8px;font-size:9px;gap:4px;background:var(--g50);border-bottom:1px solid var(--g100)">
+            <div style="color:var(--g400);font-style:italic">Ter 14/06</div><div style="color:var(--g300);font-style:italic">sem registo</div><div></div><div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:60px 1fr 70px 60px;padding:5px 8px;font-size:9px;gap:4px;background:#f0fdf4">
+            <div style="font-weight:700">15/06→21/06</div><div style="color:var(--g600)">Prosegur · Dep: 19/06 · T: 27102E</div><div style="font-weight:700;color:var(--blue2)">€5.210</div><div><span class="mock-badge ok">OK</span></div>
           </div>
         </div>
-        <div style="display:flex;gap:6px">
-          <div class="mock-btn" style="flex:1;margin-top:0;font-size:11px">✉️ Enviar Email</div>
-          <div style="background:var(--g100);color:var(--g600);border-radius:9px;padding:10px 12px;font-size:11px;font-weight:700;text-align:center;cursor:pointer">📋</div>
+        <div style="font-size:9px;color:var(--g400);margin-top:6px;text-align:center">Linhas cinzentas = dias sem qualquer registo de sessão de caixa</div>
+      </div>
+    </div>
+    <h3>Como ler o Mapa</h3>
+    <table>
+      <thead><tr><th>Linha</th><th>Significado</th></tr></thead>
+      <tbody>
+        <tr><td style="background:#f0fdf4">Fundo verde claro</td><td>Dia com depósito registado (aparece o período, tipo, valor e estado)</td></tr>
+        <tr><td style="background:#fef2f2">Fundo vermelho claro</td><td>Depósito em atraso — prazo ultrapassado sem talão</td></tr>
+        <tr><td style="background:#fffbeb">Fundo amarelo claro</td><td>Depósito feito mas com aviso (ex: falta foto do talão)</td></tr>
+        <tr><td style="background:var(--g50)"><em style="color:var(--g400)">sem registo</em></td><td>Dia sem nenhuma sessão de caixa registada — verificar se é feriado/encerramento</td></tr>
+      </tbody>
+    </table>
+    <div class="tip"><b>💡 PDF como registo mensal:</b> O botão 🖨️ PDF gera um documento com o título "Registo de Depósitos — [Mês]" e todos os dias, ideal para arquivo físico ou digital.</div>
+  </div>
+</div>
+
+<!-- ════ 7. E-MAIL ════ -->
+<div class="page chapter" id="email">
+  <div class="chapter-title loja">
+    <div class="num">Capítulo 7</div>
+    <h2>📧 Enviar E-mail à Contabilidade</h2>
+    <p>Comunicar os depósitos efectuados ao departamento de contabilidade</p>
+  </div>
+  <div class="section">
+    <p>Esta função prepara e envia um email à contabilidade com a lista de todos os depósitos realizados até à data, referentes ao mês selecionado.</p>
+    <h3>Passos</h3>
+    <ol class="step-list">
+      <li><span>Toque em <strong>E-mail</strong> na barra de navegação inferior</span></li>
+      <li><span>Selecione a <strong>loja</strong> e o <strong>mês</strong></span></li>
+      <li><span>O sistema mostra uma pré-visualização: destinatário, assunto e corpo do email</span></li>
+      <li><span>Toque em <strong>"✉️ Enviar Email"</strong></span></li>
+      <li><span>O seu cliente de email abre com todos os campos pré-preenchidos — confirme e envie</span></li>
+    </ol>
+    <div class="mockup" style="max-width:400px;margin:16px auto">
+      <div class="mockup-bar"><div class="title">📧 Enviar E-mail</div><div class="sub">à Contabilidade</div></div>
+      <div class="mockup-nav">
+        <div class="nav-tab"><div class="icon">📊</div>DASHBOARD</div>
+        <div class="nav-tab"><div class="icon">➕</div>NOVO</div>
+        <div class="nav-tab"><div class="icon">📋</div>LISTA</div>
+        <div class="nav-tab"><div class="icon">🗓️</div>MAPA</div>
+        <div class="nav-tab active"><div class="icon">📧</div>E-MAIL</div>
+      </div>
+      <div class="mockup-body">
+        <div class="mock-card">
+          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;margin-bottom:10px">📧 Enviar E-mail à Contabilidade</div>
+          <div class="mock-field"><label>Loja</label><div class="mock-input filled">ESS Guia</div></div>
+          <div class="mock-field"><label>Mês</label><div class="mock-input filled">junho 2026</div></div>
+          <div class="mock-btn" style="margin-top:4px;font-size:11px">📧 Enviar Email</div>
         </div>
-        <div style="background:#eff6ff;border-radius:8px;padding:8px 10px;margin-top:8px;font-size:10px;color:var(--blue)">
-          📎 O relatório é guardado nos Downloads — adicione como anexo no email!
+        <div class="mock-card">
+          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;margin-bottom:8px">📧 Email que será enviado</div>
+          <div style="font-size:10px;color:var(--g600);margin-bottom:3px"><b>Para:</b> contabilidade@empresa.pt</div>
+          <div style="font-size:10px;color:var(--g600);margin-bottom:3px"><b>CC:</b> ivo@despomar.com</div>
+          <div style="font-size:10px;color:var(--g600);margin-bottom:8px"><b>Assunto:</b> Depósitos junho 2026 — ESS Guia — até 12/06</div>
+          <div style="background:var(--g50);border-radius:7px;padding:8px;font-size:9px;color:var(--g600);line-height:1.7;font-family:monospace">
+            Exma. Contabilidade,<br>
+            Seguem os depósitos bancários efectuados<br>
+            até ao dia de hoje, 12/06/2026, referentes<br>
+            ao mês de junho — ESS Guia.<br><br>
+            DEPÓSITOS REALIZADOS — JUNHO 2026<br>
+            01/06→07/06 · Prosegur · €4.886<br>
+            08/06→12/06 · Prosegur · €4.451<br><br>
+            TOTAL DEPOSITADO: €9.337,05
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <div class="mock-btn" style="flex:1;margin-top:0;font-size:10px">✉️ Enviar Email</div>
+            <div style="background:var(--g100);color:var(--g600);border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700">📋</div>
+          </div>
         </div>
       </div>
     </div>
-
-    <h3>Imprimir em PDF</h3>
-    <ol class="step-list">
-      <li><span>No separador Exportar, escolha o formato <strong>PDF</strong></span></li>
-      <li><span>Toque em <strong>"🖨️ Imprimir / Guardar PDF"</strong></span></li>
-      <li><span>O relatório abre numa nova janela — use a opção de impressão do browser (<kbd>Ctrl+P</kbd> ou <kbd>⌘P</kbd>) e selecione <em>"Guardar como PDF"</em></span></li>
-    </ol>
-
-    <div class="tip"><b>💡 Envio mensal:</b> O ideal é enviar a folha de depósitos à contabilidade no início do mês seguinte, referente ao mês que fechou.</div>
-    <div class="warning"><b>⚠️ Verifique antes de enviar:</b> Confirme que não há registos com estado 🔴 Erro ou ⚠️ DUPLICADO antes de enviar à contabilidade.</div>
+    <div class="tip"><b>💡 Envio parcial:</b> Pode enviar a qualquer momento do mês — o email indica "depósitos efectuados até ao dia de hoje". Pode enviar novamente no final do mês com o total completo.</div>
+    <div class="warning"><b>⚠️ Email não configurado?</b> Se aparecer aviso a vermelho, vá às Configurações (⚙️) e preencha o "Email Contabilidade".</div>
   </div>
 </div>
 
-<!-- ════════════════ 7. ESTADOS ════════════════ -->
+<!-- ════ 8. ESTADOS ════ -->
 <div class="page chapter" id="estados">
-  <div class="chapter-title">
-    <div class="num">Capítulo 7</div>
+  <div class="chapter-title loja">
+    <div class="num">Capítulo 8</div>
     <h2>🚦 Significado dos Estados</h2>
     <p>O que significa cada cor e ícone na aplicação</p>
   </div>
-
   <div class="section">
     <table>
       <thead><tr><th>Estado</th><th>Significa</th><th>O que fazer</th></tr></thead>
       <tbody>
-        <tr>
-          <td><span class="pill ok">✅ OK</span></td>
-          <td>Depósito feito dentro do prazo, com talão e data preenchidos</td>
-          <td>Nada — está em ordem</td>
-        </tr>
-        <tr>
-          <td><span class="pill warn">⚠️ OK, mas tardio</span></td>
-          <td>Depósito feito, mas fora do prazo (Prosegur semanal ou direto em 2 dias)</td>
-          <td>Registo aceite, mas deve evitar no futuro</td>
-        </tr>
-        <tr>
-          <td><span class="pill err">🔴 Em atraso</span></td>
-          <td>Passou o prazo e ainda não há talão ou data de depósito</td>
-          <td><strong>Depositar urgentemente</strong> e registar o talão</td>
-        </tr>
-        <tr>
-          <td><span class="pill err">🔴 Dados incompletos</span></td>
-          <td>Falta o número de sessão ou o valor numa sessão</td>
-          <td>Editar o registo e preencher os campos em falta</td>
-        </tr>
-        <tr>
-          <td><span class="pill prog">📅 Programado</span></td>
-          <td>A data de venda é futura (sessão ainda não encerrada)</td>
-          <td>Normal — aparecerá como OK quando a data chegar</td>
-        </tr>
-        <tr>
-          <td><span style="background:#fee2e2;color:#991b1b;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px">⚠️ DUPLICADO</span></td>
-          <td>Sessão com o mesmo número e data já existe noutro registo</td>
-          <td><strong>Verificar e apagar</strong> o registo duplicado</td>
-        </tr>
+        <tr><td><span class="pill ok">✅ OK</span></td><td>Depósito feito dentro do prazo, com talão</td><td>Nada — está em ordem</td></tr>
+        <tr><td><span class="pill warn">⚠️ Aviso</span></td><td>Depósito feito mas falta foto do talão</td><td>Editar e adicionar foto</td></tr>
+        <tr><td><span class="pill err">🔴 Em Atraso</span></td><td>Passou o prazo e não há talão registado</td><td><strong>Depositar urgentemente</strong> e registar</td></tr>
+        <tr><td><span class="pill prog">📅 Em Progresso</span></td><td>Dentro do prazo — depósito ainda não venceu</td><td>Normal — aguardar data de levantamento</td></tr>
       </tbody>
     </table>
-
+    <h3>Indicador de Cumprimento %</h3>
+    <p>O <strong>Cumprimento %</strong> resume a qualidade dos depósitos do mês:</p>
+    <table>
+      <thead><tr><th>Percentagem</th><th>Interpretação</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pct-high">90–100%</span></td><td>Excelente — todos os depósitos em ordem e no prazo</td></tr>
+        <tr><td><span class="pct-mid">70–89%</span></td><td>Bom — alguns avisos ou pequenos atrasos</td></tr>
+        <tr><td><span class="pct-low">&lt; 70%</span></td><td>Atenção — depósitos em atraso ou dias sem registo</td></tr>
+      </tbody>
+    </table>
     <h3>Prazos por tipo de serviço</h3>
     <table>
       <thead><tr><th>Tipo</th><th>Prazo</th><th>Como é calculado</th></tr></thead>
       <tbody>
-        <tr><td><strong>Prosegur / Lomis / Câmbio</strong></td><td>Semanal</td><td>Baseado no dia configurado nas Configurações</td></tr>
-        <tr><td><strong>Depósito Direto</strong></td><td>2 dias</td><td>A contar da data de venda mais antiga nas sessões</td></tr>
+        <tr><td><strong>Prosegur / Lomis / Câmbio</strong></td><td>Semanal</td><td>Baseado no dia configurado em Configurações</td></tr>
+        <tr><td><strong>Depósito Direto</strong></td><td>2 dias</td><td>A partir da data de venda mais antiga</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- ════════════════ 8. MOBILE ════════════════ -->
+<!-- ════ 9. MOBILE ════ -->
 <div class="page chapter" id="mobile">
-  <div class="chapter-title">
-    <div class="num">Capítulo 8</div>
+  <div class="chapter-title loja">
+    <div class="num">Capítulo 9</div>
     <h2>📱 Utilização no Telemóvel</h2>
     <p>A aplicação funciona totalmente no telemóvel — iOS e Android</p>
   </div>
-
   <div class="section">
     <h3>Adicionar ao ecrã inicial (recomendado)</h3>
     <div class="mock-grid2" style="gap:20px;margin:16px 0">
       <div>
-        <div style="font-size:12px;font-weight:700;color:var(--g700);margin-bottom:8px;text-align:center">🍎 iPhone (iOS / Safari)</div>
-        <ol class="step-list" style="font-size:12px">
-          <li><span>Abra Safari e vá a <code style="font-size:10px">auditoria-25b.pages.dev/depositos</code></span></li>
-          <li><span>Toque no ícone <strong>⬆️ Partilhar</strong> (barra inferior)</span></li>
-          <li><span>Deslize e toque em <strong>"Adicionar ao Ecrã de Início"</strong></span></li>
+        <div style="font-size:12px;font-weight:700;color:var(--g700);margin-bottom:8px;text-align:center">🍎 iPhone (Safari)</div>
+        <ol class="step-list">
+          <li><span>Abra Safari em <code style="font-size:10px">auditoria-25b.pages.dev/depositos</code></span></li>
+          <li><span>Toque em <strong>⬆️ Partilhar</strong> (barra inferior)</span></li>
+          <li><span>Toque em <strong>"Adicionar ao Ecrã de Início"</strong></span></li>
           <li><span>Toque em <strong>"Adicionar"</strong></span></li>
         </ol>
       </div>
       <div>
         <div style="font-size:12px;font-weight:700;color:var(--g700);margin-bottom:8px;text-align:center">🤖 Android (Chrome)</div>
-        <ol class="step-list" style="font-size:12px">
+        <ol class="step-list">
           <li><span>Abra Chrome e vá ao endereço da aplicação</span></li>
           <li><span>Toque nos <strong>⋮ três pontos</strong> (canto superior direito)</span></li>
           <li><span>Toque em <strong>"Adicionar ao ecrã inicial"</strong></span></li>
@@ -673,140 +855,330 @@ td code{background:var(--g100);padding:1px 6px;border-radius:4px;font-family:mon
         </ol>
       </div>
     </div>
-
-    <!-- PHONE MOCKUP -->
     <div class="phone-wrap">
       <div>
-        <div class="phone-frame">
-          <div class="phone-screen">
-            <div class="phone-notch"></div>
-            <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:8px 10px;color:#fff">
-              <div style="font-size:9px;font-weight:700">📊 Dashboard</div>
-              <div style="font-size:8px;opacity:.7">ESS Guia · junho 2026</div>
+        <div class="phone-frame"><div class="phone-screen">
+          <div class="phone-notch"></div>
+          <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:8px 10px;color:#fff">
+            <div style="font-size:9px;font-weight:700">📊 Dashboard</div>
+            <div style="font-size:8px;opacity:.7">ESS Guia · junho 2026</div>
+          </div>
+          <div style="padding:8px;background:var(--g50)">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px">
+              <div style="background:#fff;border-radius:7px;padding:6px 8px;border:1px solid var(--g100)"><div style="font-size:7px;color:var(--g400);font-weight:700">TOTAL</div><div style="font-size:12px;font-weight:800;color:var(--blue2)">€24.4k</div></div>
+              <div style="background:#fff;border-radius:7px;padding:6px 8px;border:1px solid var(--g100)"><div style="font-size:7px;color:var(--g400);font-weight:700">CUMPRIMENTO</div><div style="font-size:12px;font-weight:800;color:var(--green)">87%</div></div>
             </div>
-            <div style="padding:8px;background:var(--g50)">
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px">
-                <div style="background:#fff;border-radius:7px;padding:6px 8px;border:1px solid var(--g100)"><div style="font-size:7px;color:var(--g400);font-weight:700">TOTAL MÊS</div><div style="font-size:12px;font-weight:800;color:var(--blue2)">€24.4k</div></div>
-                <div style="background:#fff;border-radius:7px;padding:6px 8px;border:1px solid var(--g100)"><div style="font-size:7px;color:var(--g400);font-weight:700">DEPOSITADO</div><div style="font-size:12px;font-weight:800;color:var(--green)">€24.4k</div></div>
-              </div>
-              <div style="background:#fff;border-radius:7px;padding:6px 8px;border:1px solid var(--g100);font-size:8px">
-                <div style="font-weight:800;color:var(--g700);margin-bottom:3px">ESS Guia</div>
-                <div style="color:var(--g500);margin-bottom:2px">01/06→07/06 · Sess.6280 · €4.886</div>
-                <div style="color:var(--g500)">08/06→14/06 · Sess.6290 · €4.451</div>
-              </div>
-            </div>
-            <div style="display:flex;border-top:1px solid var(--g100);background:#fff">
-              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--blue2);font-size:7px;font-weight:700;border-bottom:2px solid var(--blue2)">📊<br>DASH</div>
-              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">➕<br>NOVO</div>
-              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📋<br>LISTA</div>
-              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📤<br>EXP.</div>
+            <div style="background:#fff;border-radius:7px;padding:6px 8px;border:1px solid var(--g100);font-size:8px">
+              <div style="font-weight:800;color:var(--g700);margin-bottom:3px">ESS Guia</div>
+              <div style="color:var(--g500)">01→07/06 · Prosegur · €4.886</div>
+              <div style="color:var(--g500)">08→12/06 · Prosegur · €4.451</div>
             </div>
           </div>
-        </div>
-        <div class="phone-label">Dashboard</div>
+          <div style="display:flex;border-top:1px solid var(--g100);background:#fff">
+            <div style="flex:1;padding:5px 2px;text-align:center;color:var(--blue2);font-size:7px;font-weight:700;border-bottom:2px solid var(--blue2)">📊<br>DASH</div>
+            <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">➕<br>NOVO</div>
+            <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📋<br>LISTA</div>
+            <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">🗓️<br>MAPA</div>
+            <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📧<br>E-MAIL</div>
+          </div>
+        </div></div>
+        <div class="phone-label">Vista Loja</div>
       </div>
       <div>
-        <div class="phone-frame">
-          <div class="phone-screen">
-            <div class="phone-notch"></div>
-            <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:8px 10px;color:#fff">
-              <div style="font-size:9px;font-weight:700">➕ Novo Depósito</div>
-            </div>
-            <div style="padding:8px;background:var(--g50)">
-              <div style="background:#fff;border-radius:7px;padding:8px;border:1px solid var(--g100);margin-bottom:5px">
-                <div style="font-size:7px;color:var(--g400);font-weight:700;margin-bottom:5px">LOJA &amp; TIPO</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
-                  <div style="border:1px solid var(--blue2);border-radius:5px;padding:4px 6px;font-size:8px;font-weight:700;color:var(--blue2)">ESS Guia</div>
-                  <div style="border:1px solid var(--blue2);border-radius:5px;padding:4px 6px;font-size:8px;font-weight:700;color:var(--blue2)">Prosegur</div>
-                </div>
-              </div>
-              <div style="background:#fff;border-radius:7px;padding:8px;border:1px solid var(--g100);margin-bottom:5px">
-                <div style="font-size:7px;color:var(--g400);font-weight:700;margin-bottom:5px">SESSÃO 1</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:8px">
-                  <div><div style="color:var(--g400);font-size:7px">DATA</div><div style="font-weight:700">08/06/2026</div></div>
-                  <div><div style="color:var(--g400);font-size:7px">Nº SESSÃO</div><div style="font-weight:700">6290</div></div>
-                </div>
-                <div style="margin-top:3px;font-size:8px"><div style="color:var(--g400);font-size:7px">VALOR</div><div style="font-weight:800;color:var(--blue2)">€ 635,85</div></div>
-              </div>
-              <div style="background:linear-gradient(135deg,#047857,#059669);border-radius:7px;padding:7px;text-align:center;color:#fff;font-size:9px;font-weight:700">Guardar Registo</div>
-            </div>
-            <div style="display:flex;border-top:1px solid var(--g100);background:#fff">
-              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📊<br>DASH</div>
-              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--blue2);font-size:7px;font-weight:700;border-bottom:2px solid var(--blue2)">➕<br>NOVO</div>
-              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📋<br>LISTA</div>
-              <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📤<br>EXP.</div>
-            </div>
+        <div class="phone-frame"><div class="phone-screen">
+          <div class="phone-notch"></div>
+          <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:8px 10px;color:#fff">
+            <div style="font-size:9px;font-weight:700">➕ Novo Depósito</div>
           </div>
-        </div>
+          <div style="padding:8px;background:var(--g50)">
+            <div style="background:#fff;border-radius:7px;padding:8px;border:1px solid var(--g100);margin-bottom:5px">
+              <div style="font-size:7px;color:var(--g400);font-weight:700;margin-bottom:5px">LOJA &amp; TIPO</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+                <div style="border:1px solid var(--blue2);border-radius:5px;padding:4px 6px;font-size:8px;font-weight:700;color:var(--blue2)">ESS Guia</div>
+                <div style="border:1px solid var(--blue2);border-radius:5px;padding:4px 6px;font-size:8px;font-weight:700;color:var(--blue2)">Prosegur</div>
+              </div>
+            </div>
+            <div style="background:#fff;border-radius:7px;padding:8px;border:1px solid var(--g100);margin-bottom:5px">
+              <div style="font-size:7px;color:var(--g400);font-weight:700;margin-bottom:4px">SESSÃO 1</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:8px">
+                <div><div style="color:var(--g400);font-size:7px">DATA</div><div style="font-weight:700">08/06/2026</div></div>
+                <div><div style="color:var(--g400);font-size:7px">Nº</div><div style="font-weight:700">6290</div></div>
+              </div>
+              <div style="margin-top:3px"><div style="color:var(--g400);font-size:7px">VALOR</div><div style="font-weight:800;color:var(--blue2);font-size:11px">€ 635,85</div></div>
+            </div>
+            <div style="background:linear-gradient(135deg,#047857,#059669);border-radius:7px;padding:7px;text-align:center;color:#fff;font-size:9px;font-weight:700">✓ Guardar Registo</div>
+          </div>
+          <div style="display:flex;border-top:1px solid var(--g100);background:#fff">
+            <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📊<br>DASH</div>
+            <div style="flex:1;padding:5px 2px;text-align:center;color:var(--blue2);font-size:7px;font-weight:700;border-bottom:2px solid var(--blue2)">➕<br>NOVO</div>
+            <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📋<br>LISTA</div>
+            <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">🗓️<br>MAPA</div>
+            <div style="flex:1;padding:5px 2px;text-align:center;color:var(--g400);font-size:7px;font-weight:700">📧<br>E-MAIL</div>
+          </div>
+        </div></div>
         <div class="phone-label">Novo Depósito</div>
       </div>
     </div>
-
-    <div class="success"><b>✅ Otimizado para telemóvel.</b> Todos os botões têm tamanho mínimo de 44px para facilitar o toque. A câmara pode ser usada diretamente para fotografar o talão de depósito.</div>
+    <div class="success"><b>✅ Optimizado para telemóvel.</b> Todos os botões têm tamanho mínimo de 44px para facilitar o toque. A câmara pode ser usada diretamente para fotografar o talão.</div>
   </div>
 </div>
 
-<!-- ════════════════ 9. FAQ ════════════════ -->
+<!-- ════ 10. SUPER ADMIN ════ -->
+<div class="page chapter" id="superadmin">
+  <div class="chapter-title sa">
+    <div class="num">Capítulo 10 — Uso Exclusivo Despomar</div>
+    <h2>⚡ Super Admin — Controlo Global</h2>
+    <p>Visão de todas as lojas em simultâneo · Supervisão · Alertas · Histórico</p>
+  </div>
+  <div class="sa-note"><b>⚡ Este capítulo é exclusivo para a gestão Despomar (Ivo Casimiro).</b> A conta Super Admin tem acesso a todas as lojas em simultâneo e pode enviar alertas formais às lojas.</div>
+  <div class="section">
+    <h3 class="sa-h">O que o Super Admin vê</h3>
+    <p>Com a conta Super Admin, em vez do dashboard de uma loja vê-se:</p>
+    <table>
+      <thead><tr><th>Separador</th><th>O que mostra</th></tr></thead>
+      <tbody>
+        <tr><td><strong>📊 Supervisão</strong></td><td>Todas as lojas com semáforo de estado, Cumprimento % e contagem de problemas</td></tr>
+        <tr><td><strong>📋 Lista</strong></td><td>Todos os registos de todas as lojas (filtráveis por loja e mês)</td></tr>
+        <tr><td><strong>🗓️ Mapa</strong></td><td>Calendário de qualquer loja selecionada</td></tr>
+        <tr><td><strong>📧 E-mail</strong></td><td>Enviar alerta formal a uma loja com as irregularidades detetadas</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="section">
+    <h3 class="sa-h">Supervisão — Visão Geral de Todas as Lojas</h3>
+    <p>Após login como Super Admin, o ecrã inicial é a <strong>Supervisão</strong>. Mostra todas as lojas ordenadas por Cumprimento % (pior primeiro) para identificar imediatamente quem precisa de atenção.</p>
+    <div class="mockup" style="max-width:480px;margin:16px auto">
+      <div class="mockup-bar sa"><div class="title">📊 Supervisão Geral</div><div class="sub">junho 2026 · Todas as Lojas</div></div>
+      <div class="mockup-nav">
+        <div class="nav-tab active sa"><div class="icon">📊</div>SUPERV.</div>
+        <div class="nav-tab"><div class="icon">📋</div>LISTA</div>
+        <div class="nav-tab"><div class="icon">🗓️</div>MAPA</div>
+        <div class="nav-tab"><div class="icon">📧</div>E-MAIL</div>
+      </div>
+      <div class="mockup-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:12px">
+          <div class="kpi green"><div class="kl">✅ OK</div><div class="kv">3</div></div>
+          <div class="kpi orange"><div class="kl">⚠️ Aviso</div><div class="kv">2</div></div>
+          <div class="kpi red"><div class="kl">🔴 Erro</div><div class="kv">1</div></div>
+          <div class="kpi purple"><div class="kl">Média</div><div class="kv">74%</div></div>
+        </div>
+
+        <!-- store rows -->
+        <div style="background:#fff;border-radius:10px;border:1px solid var(--g100);overflow:hidden">
+          <div style="background:var(--g50);padding:5px 10px;font-size:8px;font-weight:700;color:var(--g500);text-transform:uppercase;display:grid;grid-template-columns:1fr 50px 90px;gap:4px">
+            <div>Loja</div><div>Cum.</div><div>Problemas</div>
+          </div>
+          <div style="padding:8px 10px;display:grid;grid-template-columns:1fr 50px 90px;gap:4px;align-items:center;border-bottom:1px solid var(--g100)">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="width:10px;height:10px;border-radius:50%;background:#ef4444;flex-shrink:0"></div>
+              <div><div style="font-size:11px;font-weight:700">58 Surf Peniche</div><div style="font-size:9px;color:var(--g400)">1 erro · 2 dias s/reg.</div></div>
+            </div>
+            <div><span class="pct-low">42%</span></div>
+            <div style="font-size:9px;color:var(--red)">🔴 1 em atraso</div>
+          </div>
+          <div style="padding:8px 10px;display:grid;grid-template-columns:1fr 50px 90px;gap:4px;align-items:center;border-bottom:1px solid var(--g100)">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;flex-shrink:0"></div>
+              <div><div style="font-size:11px;font-weight:700">ESS Faro</div><div style="font-size:9px;color:var(--g400)">2 avisos · 1 dia s/reg.</div></div>
+            </div>
+            <div><span class="pct-mid">68%</span></div>
+            <div style="font-size:9px;color:var(--orange)">⚠️ 2 avisos</div>
+          </div>
+          <div style="padding:8px 10px;display:grid;grid-template-columns:1fr 50px 90px;gap:4px;align-items:center;border-bottom:1px solid var(--g100)">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;flex-shrink:0"></div>
+              <div><div style="font-size:11px;font-weight:700">ESS Portimão</div><div style="font-size:9px;color:var(--g400)">1 aviso</div></div>
+            </div>
+            <div><span class="pct-mid">78%</span></div>
+            <div style="font-size:9px;color:var(--orange)">⚠️ 1 aviso</div>
+          </div>
+          <div style="padding:8px 10px;display:grid;grid-template-columns:1fr 50px 90px;gap:4px;align-items:center;border-bottom:1px solid var(--g100)">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="width:10px;height:10px;border-radius:50%;background:#22c55e;flex-shrink:0"></div>
+              <div><div style="font-size:11px;font-weight:700">ESS Guia</div><div style="font-size:9px;color:var(--g400)">tudo em ordem</div></div>
+            </div>
+            <div><span class="pct-high">87%</span></div>
+            <div style="font-size:9px;color:var(--green)">✅ Sem problemas</div>
+          </div>
+          <div style="padding:8px 10px;display:grid;grid-template-columns:1fr 50px 90px;gap:4px;align-items:center;border-bottom:1px solid var(--g100)">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="width:10px;height:10px;border-radius:50%;background:#22c55e;flex-shrink:0"></div>
+              <div><div style="font-size:11px;font-weight:700">ESS Albufeira</div><div style="font-size:9px;color:var(--g400)">tudo em ordem</div></div>
+            </div>
+            <div><span class="pct-high">92%</span></div>
+            <div style="font-size:9px;color:var(--green)">✅ Sem problemas</div>
+          </div>
+          <div style="padding:8px 10px;display:grid;grid-template-columns:1fr 50px 90px;gap:4px;align-items:center">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="width:10px;height:10px;border-radius:50%;background:#22c55e;flex-shrink:0"></div>
+              <div><div style="font-size:11px;font-weight:700">ESS Lagos</div><div style="font-size:9px;color:var(--g400)">tudo em ordem</div></div>
+            </div>
+            <div><span class="pct-high">95%</span></div>
+            <div style="font-size:9px;color:var(--green)">✅ Sem problemas</div>
+          </div>
+        </div>
+        <div style="font-size:9px;color:var(--g400);margin-top:6px;text-align:center">Ordenado por Cumprimento % — pior primeiro</div>
+      </div>
+    </div>
+    <h3 class="sa-h">Como interpretar o semáforo</h3>
+    <table>
+      <thead><tr><th>Cor</th><th>Significado</th><th>Ação recomendada</th></tr></thead>
+      <tbody>
+        <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#22c55e;vertical-align:middle;margin-right:4px"></span>Verde</td><td>Todos os depósitos em ordem</td><td>Nenhuma</td></tr>
+        <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#f59e0b;vertical-align:middle;margin-right:4px"></span>Amarelo</td><td>Depósitos feitos mas com avisos (ex: falta foto)</td><td>Pedir à loja que complete os registos</td></tr>
+        <tr><td><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#ef4444;vertical-align:middle;margin-right:4px"></span>Vermelho</td><td>Depósitos em atraso ou irregularidades graves</td><td>Enviar e-mail de supervisão imediatamente</td></tr>
+      </tbody>
+    </table>
+    <div class="sa-note"><b>💡 Ordenação automática:</b> A lista está sempre ordenada do pior Cumprimento % para o melhor — as lojas que precisam de atenção estão sempre no topo.</div>
+  </div>
+
+  <div class="section">
+    <h3 class="sa-h">Histórico 6 Meses — Comparativo entre Lojas</h3>
+    <p>A tabela histórica mostra o Cumprimento % de cada loja nos últimos 6 meses, com uma coluna de Média, permitindo identificar tendências e problemas recorrentes.</p>
+    <div class="mockup" style="max-width:560px;margin:16px auto">
+      <div class="mockup-bar sa"><div class="title">📈 Histórico 6 Meses</div><div class="sub">até junho 2026</div></div>
+      <div class="mockup-body">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+          <div style="background:#059669;color:#fff;border-radius:7px;padding:5px 10px;font-size:10px;font-weight:700">📊 Exportar Excel/CSV</div>
+        </div>
+        <div style="background:#fff;border-radius:8px;border:1px solid var(--g100);overflow:hidden">
+          <table style="margin:0;font-size:9px">
+            <thead>
+              <tr>
+                <th style="text-align:left;width:120px">Loja</th>
+                <th style="text-align:center">Jan</th>
+                <th style="text-align:center">Fev</th>
+                <th style="text-align:center">Mar</th>
+                <th style="text-align:center">Abr</th>
+                <th style="text-align:center">Mai</th>
+                <th style="text-align:center">Jun</th>
+                <th style="text-align:center;background:#334155;border-left:2px solid #475569">Média</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="font-weight:700">ESS Lagos</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center"><span class="pct-high">95%</span></td><td style="text-align:center;border-left:2px solid #e2e8f0"><span class="pct-high">95%</span></td></tr>
+              <tr><td style="font-weight:700">ESS Albufeira</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center"><span class="pct-high">92%</span></td><td style="text-align:center;border-left:2px solid #e2e8f0"><span class="pct-high">92%</span></td></tr>
+              <tr><td style="font-weight:700">ESS Guia</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center"><span class="pct-high">87%</span></td><td style="text-align:center;border-left:2px solid #e2e8f0"><span class="pct-high">87%</span></td></tr>
+              <tr><td style="font-weight:700">ESS Portimão</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center"><span class="pct-mid">78%</span></td><td style="text-align:center;border-left:2px solid #e2e8f0"><span class="pct-mid">78%</span></td></tr>
+              <tr><td style="font-weight:700">ESS Faro</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center"><span class="pct-mid">68%</span></td><td style="text-align:center;border-left:2px solid #e2e8f0"><span class="pct-mid">68%</span></td></tr>
+              <tr><td style="font-weight:700">58 S. Peniche</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center"><span class="pct-low">42%</span></td><td style="text-align:center;border-left:2px solid #e2e8f0"><span class="pct-low">42%</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:9px;color:var(--g400);margin-top:6px">— = meses anteriores ao arranque do sistema (Jun 2026). Ordenado por média, maior→menor.</div>
+      </div>
+    </div>
+    <h3 class="sa-h">Exportar para Excel</h3>
+    <ol class="step-list sa">
+      <li><span>No separador <strong>Supervisão</strong>, desça até à tabela histórica</span></li>
+      <li><span>Clique em <strong>"📊 Exportar Excel/CSV"</strong></span></li>
+      <li><span>Abre-se um ficheiro .csv compatível com Excel e Google Sheets</span></li>
+    </ol>
+    <div class="tip"><b>💡 Crescimento da tabela:</b> À medida que os meses passam, a coluna de Média vai reflectindo o histórico real de cada loja, tornando-se o principal indicador de performance a longo prazo.</div>
+  </div>
+
+  <div class="section">
+    <h3 class="sa-h">Enviar E-mail de Supervisão a uma Loja</h3>
+    <p>Quando uma loja tem irregularidades (depósitos em atraso, saltos, dias sem registo), o Super Admin pode enviar um email formal a pedir justificação, com prazo de resposta de 3 dias.</p>
+    <div class="mockup" style="max-width:480px;margin:16px auto">
+      <div class="mockup-bar sa"><div class="title">📧 E-mail Supervisão</div><div class="sub">Super Admin → Loja</div></div>
+      <div class="mockup-nav">
+        <div class="nav-tab"><div class="icon">📊</div>SUPERV.</div>
+        <div class="nav-tab"><div class="icon">📋</div>LISTA</div>
+        <div class="nav-tab"><div class="icon">🗓️</div>MAPA</div>
+        <div class="nav-tab active sa"><div class="icon">📧</div>E-MAIL</div>
+      </div>
+      <div class="mockup-body">
+        <div class="mock-card">
+          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;margin-bottom:10px">Selecionar Loja</div>
+          <div class="mock-field"><label>Loja</label><div class="mock-input filled" style="border-color:var(--purple2)">58 Surf Peniche</div></div>
+          <div class="mock-field"><label>Mês</label><div class="mock-input filled" style="border-color:var(--purple2)">junho 2026</div></div>
+          <div class="mock-btn purple" style="margin-top:4px;font-size:11px">📧 Gerar e Enviar Alerta</div>
+        </div>
+        <div class="mock-card">
+          <div style="font-size:9px;font-weight:800;color:#4c1d95;text-transform:uppercase;margin-bottom:8px">📧 Email de Supervisão</div>
+          <div style="font-size:10px;color:var(--g600);margin-bottom:2px"><b>Para:</b> responsavel@58surfpeniche.pt</div>
+          <div style="font-size:10px;color:var(--g600);margin-bottom:8px"><b>Assunto:</b> Depósitos junho 2026 - Irregularidades - 58 Surf Peniche</div>
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:7px;padding:8px;font-size:9px;color:#7f1d1d;line-height:1.7;font-family:monospace">
+            Exmo(a) Responsável de 58 Surf Peniche,<br><br>
+            Na análise dos registos de junho foram<br>
+            identificadas irregularidades:<br><br>
+            IRREGULARIDADES DETETADAS<br>
+            • 1 DEPÓSITO EM ATRASO sem data de<br>
+              depósito registada (prazo ultrapassado)<br>
+            • 2 DIA(S) SEM REGISTO de sessão<br><br>
+            TODOS OS DEPÓSITOS — JUNHO 2026<br>
+            ([!] = em atraso  [?] = incompleto)<br>
+            01→07/06 · Prosegur [!] · PENDENTE<br>
+            08→12/06 · Prosegur · Dep: 12/06 · T: 268E<br><br>
+            Solicito resposta/regularização até 15/06.<br>
+            Ivo Casimiro | Gestão Despomar
+          </div>
+        </div>
+      </div>
+    </div>
+    <h3 class="sa-h">O que o email de supervisão contém</h3>
+    <table>
+      <thead><tr><th>Secção</th><th>Conteúdo</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Saudação formal</strong></td><td>Dirigida ao responsável da loja</td></tr>
+        <tr><td><strong>Irregularidades detectadas</strong></td><td>Lista de problemas: depósitos em atraso, saltos de depósito, dias sem registo</td></tr>
+        <tr><td><strong>Tabela completa de depósitos</strong></td><td>Todos os registos do mês com marcadores [!] atraso e [?] incompleto</td></tr>
+        <tr><td><strong>Total e prazo de resposta</strong></td><td>Total depositado vs. pendente, prazo de resposta automático (3 dias)</td></tr>
+        <tr><td><strong>Assinatura</strong></td><td>Ivo Casimiro | Gestão Despomar</td></tr>
+      </tbody>
+    </table>
+    <div class="sa-note"><b>⚡ Quando enviar:</b> Sempre que uma loja tiver o indicador vermelho na Supervisão ou quando a análise mensal identificar irregularidades. O email tem um tom formal mas construtivo, pedindo justificação ou regularização.</div>
+  </div>
+
+  <div class="section">
+    <h3 class="sa-h">Fluxo mensal recomendado para o Super Admin</h3>
+    <ol class="step-list sa">
+      <li><span>No início do mês, abrir a <strong>Supervisão</strong> e verificar o estado de todas as lojas</span></li>
+      <li><span>Para cada loja com indicador vermelho ou amarelo, analisar o <strong>Mapa</strong> da loja para identificar os dias problemáticos</span></li>
+      <li><span>Enviar <strong>E-mail de Supervisão</strong> às lojas com irregularidades, pedindo regularização</span></li>
+      <li><span>Aguardar resposta/regularização (prazo 3 dias úteis)</span></li>
+      <li><span>Verificar o <strong>Histórico 6 Meses</strong> para identificar lojas com problemas recorrentes</span></li>
+      <li><span>Exportar a tabela histórica para <strong>Excel</strong> para arquivo ou reuniões de gestão</span></li>
+    </ol>
+  </div>
+</div>
+
+<!-- ════ 11. FAQ ════ -->
 <div class="page chapter" id="faq">
-  <div class="chapter-title">
-    <div class="num">Capítulo 9</div>
+  <div class="chapter-title neutral">
+    <div class="num">Capítulo 11</div>
     <h2>❓ Perguntas Frequentes</h2>
     <p>Respostas às dúvidas mais comuns</p>
   </div>
-
   <div class="section">
     <table>
       <thead><tr><th>Pergunta</th><th>Resposta</th></tr></thead>
       <tbody>
-        <tr>
-          <td><strong>Esqueci-me da password. O que faço?</strong></td>
-          <td>Contacte a Despomar: <code>ivo@despomar.com</code></td>
-        </tr>
-        <tr>
-          <td><strong>A Prosegur não veio hoje. Como registo?</strong></td>
-          <td>Se foi ao banco depositar, use <strong>Depósito Direto</strong>. Se ainda não depositou, não registe ainda — registe quando depositar.</td>
-        </tr>
-        <tr>
-          <td><strong>Posso registar sem o talão?</strong></td>
-          <td>Sim. Pode guardar o registo sem talão (fica como pendente), e preencher o nº do talão depois ao editar.</td>
-        </tr>
-        <tr>
-          <td><strong>Como corrijo um valor errado?</strong></td>
-          <td>Vá à <strong>Lista</strong>, toque em ✏️ no registo e edite o valor da sessão.</td>
-        </tr>
-        <tr>
-          <td><strong>Vi "DUPLICADO" numa sessão. O que faço?</strong></td>
-          <td>Significa que registou a mesma sessão duas vezes. Vá à Lista, encontre os dois registos e apague o duplicado.</td>
-        </tr>
-        <tr>
-          <td><strong>Posso ver os registos de meses anteriores?</strong></td>
-          <td>Sim. No Dashboard e na Lista, use o filtro de mês para ver qualquer mês anterior.</td>
-        </tr>
-        <tr>
-          <td><strong>A aplicação funciona sem internet?</strong></td>
-          <td>Não. Necessita de ligação à internet para guardar e consultar dados. Os dados ficam na nuvem.</td>
-        </tr>
-        <tr>
-          <td><strong>Quando devo enviar o email à contabilidade?</strong></td>
-          <td>No início do mês seguinte, referente ao mês que fechou. Ex: enviar os dados de junho no início de julho.</td>
-        </tr>
-        <tr>
-          <td><strong>Os meus dados são partilhados com outras lojas?</strong></td>
-          <td>Não. Cada loja só vê os seus próprios registos. Só a administração Despomar tem visão global.</td>
-        </tr>
+        <tr><td><strong>Esqueci-me da password. O que faço?</strong></td><td>Na página de login, clique em "Esqueceu a password?" e introduza o email para receber o link de recuperação. Ou contacte <code>ivo@despomar.com</code>.</td></tr>
+        <tr><td><strong>A Prosegur não veio hoje. Como registo?</strong></td><td>Se foi ao banco depositar, use <strong>Depósito Direto</strong>. Se ainda não depositou, não registe — registe quando depositar.</td></tr>
+        <tr><td><strong>Posso registar sem o talão?</strong></td><td>Sim. Guarde sem talão (fica como pendente) e edite mais tarde para adicionar o número.</td></tr>
+        <tr><td><strong>Como corrijo um valor errado?</strong></td><td>Vá à <strong>Lista</strong>, toque em ✏️ no registo e edite o valor da sessão.</td></tr>
+        <tr><td><strong>O que são os "dias sem registo" amarelos?</strong></td><td>Dias do mês em que não há nenhuma sessão de caixa lançada. Pode ser feriado, encerramento ou simplesmente falta de lançamento. O sistema alerta para verificar.</td></tr>
+        <tr><td><strong>Quando enviar o email à contabilidade?</strong></td><td>Pode enviar a qualquer momento. O email diz "depósitos efectuados até hoje". Envie no final do mês com o total completo, ou quando necessário.</td></tr>
+        <tr><td><strong>O Mapa é diferente do Dashboard?</strong></td><td>Sim. O Dashboard mostra os registos do mês por ordem de criação. O Mapa mostra um calendário completo com todos os dias, incluindo os sem registo.</td></tr>
+        <tr><td><strong>O que significa o Cumprimento %?</strong></td><td>É um indicador de qualidade dos depósitos: depósitos feitos no prazo valem mais; depósitos em atraso ou sem registo penalizam. 100% = tudo perfeito.</td></tr>
+        <tr><td><strong>Os meus dados são partilhados com outras lojas?</strong></td><td>Não. Cada loja só vê os seus próprios registos. Só o Super Admin tem visão global.</td></tr>
+        <tr><td><strong>A aplicação funciona sem internet?</strong></td><td>Não. Necessita de ligação à internet para guardar e consultar dados.</td></tr>
+        <tr><td><strong>Como faço backup dos dados?</strong></td><td>Vá às Configurações (⚙️) → Dados → "📥 Exportar Backup (.json)". Guarde o ficheiro regularmente.</td></tr>
       </tbody>
     </table>
-
-    <div class="tip" style="margin-top:24px"><b>💬 Suporte:</b> Para qualquer dúvida ou problema, contacte Ivo Casimiro em <strong>ivo@despomar.com</strong> ou pelo WhatsApp do grupo.</div>
+    <div class="tip" style="margin-top:24px"><b>💬 Suporte:</b> Para qualquer dúvida ou problema, contacte Ivo Casimiro em <strong>ivo@despomar.com</strong>.</div>
   </div>
 
-  <!-- FOOTER -->
   <div class="doc-footer" style="margin-top:40px">
     <div style="font-size:16px;font-weight:800;letter-spacing:-.3px">Controlo de Depósitos · Despomar</div>
-    <p>Manual de Utilização · Junho 2026 · https://auditoria-25b.pages.dev/depositos</p>
-    <p style="margin-top:8px">Suporte: ivo@despomar.com</p>
+    <p>Manual de Utilização · Versão Junho 2026</p>
+    <p>auditoria-25b.pages.dev/depositos · Suporte: ivo@despomar.com</p>
   </div>
 </div>
+
+<button class="no-print" onclick="window.print()" style="position:fixed;bottom:24px;right:24px;background:#2563eb;color:#fff;border:none;border-radius:50%;width:52px;height:52px;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(37,99,235,.4);z-index:999" title="Imprimir / Guardar PDF">🖨️</button>
 
 </body>
 </html>
