@@ -1158,7 +1158,7 @@ function sp(name){
     window.scrollTo(0,0);
     if(name==='dash')rDash();
     if(name==='supervisao'){popSupSel();rSASupervision();}
-    if(name==='novo'){resetNovoForm();popSel();}
+    if(name==='novo'){if(!editingId)resetNovoForm();popSel();}
     if(name==='lista')rLista();
     if(name==='mapa')rMapa();
     if(name==='exp'){seExp('email');rExpSel();}
