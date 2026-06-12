@@ -889,15 +889,16 @@ async function sbSaveCfgSB(){
 async function sbSyncLojasAll(){
   if(!isSA)return;
   try{
-    const{data:all}=await SB.from('dep_config').select('store_id,lojas,resps');
+    // Only sync resps — never overwrite each store's own lojas list
+    const{data:all}=await SB.from('dep_config').select('store_id,resps');
     if(!all?.length)return;
     for(const sc of all){
-      const mL=[...new Set([...(sc.lojas||[]),...cfg.lojas])].filter(Boolean);
+      if(sc.store_id==='super')continue;
       const mR=[...new Set([...(sc.resps||[]),...cfg.resps])].filter(Boolean);
-      const same=JSON.stringify(mL)===JSON.stringify(sc.lojas||[])&&JSON.stringify(mR)===JSON.stringify(sc.resps||[]);
-      if(!same)await SB.from('dep_config').upsert({store_id:sc.store_id,lojas:mL,resps:mR});
+      const same=JSON.stringify(mR)===JSON.stringify(sc.resps||[]);
+      if(!same)await SB.from('dep_config').update({resps:mR}).eq('store_id',sc.store_id);
     }
-    toast('✓ Lojas/Responsáveis sincronizados em todas as lojas');
+    toast('✓ Responsáveis sincronizados em todas as lojas');
   }catch(e){console.warn('syncAll:',e);}
 }
 async function doLogin(){
@@ -2143,7 +2144,8 @@ function rSASupervision(){
     const prog=storeRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='prog').length;
     const total=storeRegs.length;
     // Cumprimento ponderado: ok=100 warn=60 errCompl=30 errNoDep/missing=0 (3× peso no den)
-    const storeLojas2=cfg2?.lojas||[...new Set(storeRegs.map(r=>r.loja).filter(Boolean))];
+    // Derive lojas from actual records (ground truth) — avoids corrupted cfg.lojas
+    const storeLojas2=[...new Set(regs.filter(r=>r.store_id===sid).map(r=>r.loja).filter(Boolean))];
     const storeMissingArr=[...new Set(storeLojas2.flatMap(l=>getMissingDays(mes,l)||[]))];
     const storeMissingCount=storeMissingArr.length;
     const _todayCStr=new Date().toISOString().split('T')[0];
@@ -2197,7 +2199,7 @@ function rSASupervision(){
       ...gapExistingRecs.map(r=>fd(getRefDate(r)).slice(0,5)),
       ...gapMissingDays.map(d=>fd(d).slice(0,5))
     ].sort().join(', ');
-    const displayName=(storeLojas2&&storeLojas2.length)?storeLojas2.join(' / '):empName;
+    const displayName=empName;
     const dowNames=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const servicos=[];
     if(normCfg?.prosegurDay!==''&&normCfg?.prosegurDay!==null&&normCfg?.prosegurDay!==undefined)
