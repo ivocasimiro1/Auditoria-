@@ -2665,61 +2665,91 @@ function rDash(){
     const ld=data.filter(r=>r.loja===loja).sort((a,b)=>{const da=getRefDate(a);const db=getRefDate(b);return da<db?-1:da>db?1:0});
     if(!ld.length)return'';
     const lt=ld.reduce((s,r)=>s+totalValor(r),0);
-    const ldep=ld.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
     const lok=ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='ok').length;
     const lwarn=ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='warn').length;
     const lerr=ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
     const lprog=ld.filter(r=>calcEstado(r,getRecordCfg(r)).s==='prog').length;
-    // Detect duplicate sessions — two passes so BOTH records are flagged
-    const _seen=new Set(),_dupKeys=new Set(),_dupRecs=new Set();
-    ld.forEach(r=>r.sessoes.forEach(s=>{
-      const k=`${s.dataVendas||''}|${(s.sessao||'').trim()}`;
-      if(s.sessao&&k.length>1){if(_seen.has(k))_dupKeys.add(k);else _seen.add(k);}
-    }));
-    ld.forEach(r=>{if(r.sessoes.some(s=>_dupKeys.has(`${s.dataVendas||''}|${(s.sessao||'').trim()}`)))_dupRecs.add(r.id);});
-    const rows=ld.map(r=>{
-      const est=calcEstado(r,getRecordCfg(r));
-      const tv=totalValor(r);
-      const ns=r.sessoes.length;
-      const sortedSess=r.sessoes.map(s=>s).sort((a,b)=>(a.dataVendas||'')<(b.dataVendas||'')?-1:1);
-      const ml=sortedSess.map(s=>s.dataVendas).filter(Boolean);
-      const dateRange=ml.length>1?`${fd(ml[0])} → ${fd(ml[ml.length-1])}`:ml.length===1?fd(ml[0]):'—';
-      const isDup=_dupRecs.has(r.id);
-      const dupBadge=isDup?` <span style="font-size:10px;color:#fff;background:#dc2626;border-radius:4px;padding:1px 6px;font-weight:700">⚠️ DUPLICADO</span>`:'';
-      const rowStyle=isDup?'border-left:3px solid #dc2626;background:#fff5f5':'';
-      const sessDetail=sortedSess.map(s=>{
-        const sIsDup=s.sessao&&_dupKeys.has(`${s.dataVendas||''}|${(s.sessao||'').trim()}`);
-        const sc=sIsDup?'color:#dc2626;font-weight:800':'color:var(--g500)';
-        return`<span style="font-size:10px;${sc};white-space:nowrap">${fd(s.dataVendas)||'—'} <b>Sess.${s.sessao||'?'}</b></span>`;
-      }).join('<span style="color:var(--g300);margin:0 3px">·</span>');
-      return`<div class="dep-row" onclick="openDetail('${r.id}')" style="${rowStyle}">
-        <div class="dep-dot ${est.s}"></div>
-        <div class="dep-info">
-          <div class="dep-date">${dateRange} <span style="font-size:10px;font-weight:600;color:var(--g400)">${r.tipo||''}</span>${dupBadge}</div>
-          <div style="margin-top:3px;margin-bottom:3px;display:flex;flex-wrap:wrap;gap:3px;align-items:center">${sessDetail}</div>
-          <div class="dep-detail">Talão: ${r.talao||'—'} ${r.dataDeposito?'· Dep: '+fd(r.dataDeposito):''}</div>
-          <div style="margin-top:3px">${estBadge(est)}</div>
-        </div>
-        <div class="dep-val">${fmt(tv)}</div>
-      </div>`;
-    }).join('');
-    // Missing days for this loja in selected month
-    const missing=getMissingDays(mes,loja);
-    const missingHtml=missing.length?`<div style="padding:8px 12px;border-bottom:1px solid var(--g100);background:#fffbeb">
-      <div style="font-size:10px;font-weight:800;color:var(--orange-dark);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">📅 ${missing.length} dia${missing.length!==1?'s':''} sem sessão registada${mes===curMesStr()?' (até hoje)':''}:</div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px">${missing.map(d=>`<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer" onclick="abrirNovoComDia('${d}')" title="Registar ${fd(d)}">${fd(d).split('/').slice(0,2).join('/')}</span>`).join('')}</div>
+    const ltotal=ld.length;
+    // Gap detection (same logic as SA supervision)
+    const lojaMissing=getMissingDays(mes,loja)||[];
+    const todayStrD=new Date().toISOString().split('T')[0];
+    const lojaNewestDep=ld.filter(r=>r.dataDeposito).map(r=>getRefDate(r)).sort().pop()||'';
+    const lojaGapRecs=ld.filter(r=>{if(r.dataDeposito)return false;return lojaNewestDep&&getRefDate(r)<lojaNewestDep;});
+    const lojaGapMissing=lojaMissing.filter(d=>d<lojaNewestDep&&d<todayStrD);
+    const lojaGaps=lojaGapRecs.length+lojaGapMissing.length;
+    const lojaGapDates=[...lojaGapRecs.map(r=>fd(getRefDate(r)).slice(0,5)),...lojaGapMissing.map(d=>fd(d).slice(0,5))].sort().join(', ');
+    // Sem comprovativo
+    const lSemFoto=ld.filter(r=>!r.foto).length;
+    // Compliance
+    const lojaAllDays=ltotal+lojaMissing.length;
+    const lojaComp=lojaAllDays>0?Math.round((lok+lprog)*100/lojaAllDays):null;
+    // Cycle
+    const cycleVals=ld.filter(r=>r.dataDeposito).map(r=>{const o=maisAntigaData(r);if(!o)return null;return Math.max(0,Math.floor((new Date(r.dataDeposito)-o)/86400000));}).filter(v=>v!==null);
+    const lojaCycle=cycleVals.length?Math.round(cycleVals.reduce((a,b)=>a+b,0)/cycleVals.length):null;
+    // Card state
+    const hasGap=lojaGaps>0;
+    const isCrit=lerr>0||(lojaComp!==null&&lojaComp<50);
+    const isWarn=!isCrit&&(lwarn>0||(lojaComp!==null&&lojaComp<80));
+    const bg=hasGap?'#fff1f2':isCrit?'#fef2f2':isWarn?'#fffbeb':'#f0fdf4';
+    const border=hasGap?'#f43f5e':isCrit?'#fca5a5':isWarn?'#fcd34d':'#86efac';
+    const bw=hasGap?'4px':'3px';
+    const icon=hasGap?'⛔':isCrit?'🔴':isWarn?'⚠️':'✅';
+    // Compliance badge
+    const compBadge=lojaComp===null?''
+      :lojaComp>=80?`<span style="background:#dcfce7;color:#166534;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600">✓ ${lojaComp}%</span>`
+      :lojaComp>=50?`<span style="background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600">⚠ ${lojaComp}%</span>`
+      :`<span style="background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600">✗ ${lojaComp}%</span>`;
+    // Indicator bar
+    const barOk=ltotal>0?Math.round((lok/ltotal)*100):0;
+    const barWn=ltotal>0?Math.round((lwarn/ltotal)*100):0;
+    const barEr=ltotal>0?Math.round((lerr/ltotal)*100):0;
+    const barW2=Math.max(barOk+barWn+barEr,1);
+    const indicBar=ltotal>0?`<div style="display:flex;height:5px;border-radius:3px;overflow:hidden;margin-top:5px;gap:1px">
+      ${barOk>0?`<div style="flex:${barOk};background:#16a34a;border-radius:2px"></div>`:''}
+      ${barWn>0?`<div style="flex:${barWn};background:#f59e0b;border-radius:2px"></div>`:''}
+      ${barEr>0?`<div style="flex:${barEr};background:#dc2626;border-radius:2px"></div>`:''}
+      ${barW2<100?`<div style="flex:${100-barW2};background:#e2e8f0;border-radius:2px"></div>`:''}
     </div>`:'';
-    return`<div class="loja-hdr"><span class="name">${loja}</span><span class="total">${fmt(lt)}</span></div>
-    <div class="loja-body">
-      <div class="loja-summary">
-        ${lok?`<span class="ls green" style="cursor:pointer" onclick="filterLista('${loja}','ok')" title="Ver registos OK">${lok} ✅ OK</span>`:''}
-        ${lwarn?`<span class="ls orange" style="cursor:pointer" onclick="filterLista('${loja}','warn')" title="Ver avisos">${lwarn} ⚠️ Aviso</span>`:''}
-        ${lerr?`<span class="ls red" style="cursor:pointer" onclick="filterLista('${loja}','err')" title="Ver erros">${lerr} 🔴 Erro</span>`:''}
-        ${lprog?`<span class="ls blue" style="cursor:pointer" onclick="filterLista('${loja}','prog')" title="Ver programados">${lprog} 📅 Prog.</span>`:''}
-        <span class="ls gray">Dep: ${fmt(ldep)}</span>
+    // Indicator labels
+    const cycleIndic=lojaCycle!==null?`<span style="font-size:10px;color:${lojaCycle<=2?'#16a34a':lojaCycle<=4?'#d97706':'#dc2626'};font-weight:600">⌛ ${lojaCycle}d/dep</span>`:'';
+    const indicLabels=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+      ${lok>0?`<span style="font-size:10px;color:#16a34a;font-weight:600">✓ ${lok} ok</span>`:''}
+      ${lwarn>0?`<span style="font-size:10px;color:#d97706;font-weight:600">⏱ ${lwarn} tardio${lwarn!==1?'s':''}</span>`:''}
+      ${hasGap?`<span style="font-size:10px;color:#e11d48;font-weight:800">⛔ ${lojaGaps} salto${lojaGaps!==1?'s':''}</span>`:''}
+      ${lSemFoto>0?`<span style="font-size:10px;color:#ea580c;font-weight:600">📷 ${lSemFoto} s/comp.</span>`:''}
+      ${lojaMissing.length>0?`<span style="font-size:10px;color:#64748b">📋 ${lojaMissing.length} s/reg.</span>`:''}
+      ${cycleIndic}
+    </div>`;
+    // Gap alert block
+    const gapAlert=hasGap?`<div style="background:#fff1f2;border:2px solid #f43f5e;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:800;color:#be123c;margin-top:7px">
+      ⛔ SALTO DE DEPÓSITO — ${lojaGaps} registo${lojaGaps!==1?'s':''} mais antigo${lojaGaps!==1?'s':''} por depositar enquanto há depósitos mais recentes<br>
+      <span style="font-size:10px;font-weight:600;opacity:.85">Datas em falta: ${lojaGapDates}</span>
+    </div>`:'';
+    // Missing days (compact, clickable)
+    const missingBlock=lojaMissing.length?`<div style="margin-top:7px;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:8px;padding:6px 10px">
+      <div style="font-size:10px;font-weight:800;color:#b45309;margin-bottom:4px">📋 ${lojaMissing.length} dia${lojaMissing.length!==1?'s':''} sem sessão registada</div>
+      <div style="display:flex;flex-wrap:wrap;gap:3px">${lojaMissing.slice(0,6).map(d=>`<button onclick="event.stopPropagation();abrirNovoComDia('${d}')" style="background:#fff;border:1.5px solid #fcd34d;border-radius:6px;padding:2px 7px;font-size:10px;font-weight:600;color:#b45309;cursor:pointer;touch-action:manipulation">${fd(d).split('/').slice(0,2).join('/')}</button>`).join('')}${lojaMissing.length>6?`<span style="font-size:10px;color:#b45309;margin-left:2px">+${lojaMissing.length-6}</span>`:''}</div>
+    </div>`:'';
+    return`<div style="background:${bg};border-left:${bw} solid ${border};border-radius:12px;margin-bottom:10px;overflow:hidden;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.07);transition:box-shadow .15s" onclick="filterLista('${loja}','')">
+      <div style="padding:11px 14px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:800;color:${hasGap?'#881337':isCrit?'#7f1d1d':isWarn?'#78350f':'#1e293b'}">${icon} ${loja}</div>
+            <div style="display:flex;gap:4px;align-items:center;margin-top:4px">${compBadge}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:17px;font-weight:800;color:#1e293b">${fmt(lt)}</div>
+            <div style="font-size:9px;color:#64748b;margin-top:1px">${ltotal} dep.</div>
+          </div>
+        </div>
+        ${indicLabels}${indicBar}${gapAlert}${missingBlock}
       </div>
-      ${missingHtml}
-      ${rows}
+      <div style="border-top:1px solid ${border};padding:6px 14px;display:flex;gap:5px;flex-wrap:wrap;align-items:center;background:${bg}">
+        ${lerr>0?`<button onclick="event.stopPropagation();filterLista('${loja}','err')" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">🔴 ${lerr} em atraso</button>`:''}
+        ${lSemFoto>0&&!lerr?`<button onclick="event.stopPropagation();filterLista('${loja}','warn')" style="background:#fff7ed;color:#92400e;border:1px solid #fed7aa;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">📷 ${lSemFoto} s/comp.</button>`:''}
+        ${lprog>0&&!lerr&&!lwarn?`<button onclick="event.stopPropagation();filterLista('${loja}','prog')" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation">📅 ${lprog} programado${lprog!==1?'s':''}</button>`:''}
+        <button onclick="event.stopPropagation();rptStorePdf('${loja}','${mes}')" style="background:#0f172a;color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation;margin-left:auto">📄 PDF</button>
+      </div>
     </div>`;
   }).join('');
 }
