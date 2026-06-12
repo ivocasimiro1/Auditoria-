@@ -2213,7 +2213,9 @@ function rSASupervision(){
     const allSidRegs=regs.filter(r=>r.store_id===sid);
     if(allSidRegs.some(r=>r.tipo==='Depósito Direto'))servicos.push('Dep. Direto');
     const servicoStr=servicos.join(' · ')||'';
-    storeList.push({sid,empName,displayName,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl,servicoStr,semFoto,semTalao,tardios,gaps,gapDates});
+    // Best available loja label: records → cfg.lojas → store_id formatted
+    const lojaLabel=storeLojas2.length?storeLojas2.join(' · '):(sid.replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.toUpperCase()));
+    storeList.push({sid,empName,displayName,lojaLabel,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl,servicoStr,semFoto,semTalao,tardios,gaps,gapDates});
   });
   // Sort: stores with data first (worst-to-best), then no-data alphabetically
   const severity=s=>{
@@ -2403,8 +2405,8 @@ function rSASupervision(){
       return`<div data-ok="0" data-tardios="0" data-gaps="0" style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:#f8fafc;border-left:3px solid #cbd5e1;border-bottom:1px solid #f1f5f9;flex-wrap:wrap;opacity:.75">
         <div style="background:#94a3b8;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">${idx+1}</div>
         <div style="flex:1;min-width:100px">
-          <div style="font-size:12px;font-weight:700;color:#475569">${s.storeLojas2&&s.storeLojas2.length?s.storeLojas2.join(' · '):s.displayName}</div>
-          ${s.storeLojas2&&s.storeLojas2.length?`<div style="font-size:10px;color:#94a3b8">${s.displayName}</div>`:''}
+          <div style="font-size:12px;font-weight:700;color:#475569">${s.lojaLabel}</div>
+          ${s.lojaLabel!==s.displayName?`<div style="font-size:10px;color:#94a3b8">${s.displayName}</div>`:''}
           ${s.servicoStr?`<div style="font-size:10px;color:#94a3b8;margin-top:1px">🚚 ${s.servicoStr}</div>`:''}
           <div style="font-size:10px;color:#94a3b8;margin-top:1px">⚫ Sem registos em ${mesLabelStr}</div>
         </div>
@@ -2454,8 +2456,8 @@ function rSASupervision(){
       return`<div data-ok="0" data-tardios="${s.tardios>0?1:0}" data-gaps="${s.gaps>0?1:0}" style="background:${bg};border-left:4px solid ${border};border-bottom:2px solid #e2e8f0;padding:12px 14px">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
           <div style="flex:1;min-width:120px">
-            <div style="font-size:13px;font-weight:800;color:${titleCol}">${icon} ${s.storeLojas2&&s.storeLojas2.length?s.storeLojas2.join(' · '):s.displayName}</div>
-            ${s.storeLojas2&&s.storeLojas2.length?`<div style="font-size:10px;color:${subCol};margin-top:1px">${s.displayName}</div>`:''}
+            <div style="font-size:13px;font-weight:800;color:${titleCol}">${icon} ${s.lojaLabel}</div>
+            ${s.lojaLabel!==s.displayName?`<div style="font-size:10px;color:${subCol};margin-top:1px">${s.displayName}</div>`:''}
             ${s.servicoStr?`<div style="font-size:10px;color:${subCol};opacity:.8;margin-top:1px">🚚 ${s.servicoStr}</div>`:''}
             <div style="display:flex;gap:4px;align-items:center;margin-top:4px">${badge}${trendStr?`<span style="margin-left:3px">${trendStr}</span>`:''}</div>
           </div>
@@ -2474,8 +2476,8 @@ function rSASupervision(){
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <div style="background:${rankBg};color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">${idx+1}</div>
         <div style="flex:1;min-width:100px">
-          <div style="font-size:12px;font-weight:700;color:#1e293b">${s.storeLojas2&&s.storeLojas2.length?s.storeLojas2.join(' · '):s.displayName}</div>
-          ${s.storeLojas2&&s.storeLojas2.length?`<div style="font-size:10px;color:#94a3b8;margin-bottom:1px">${s.displayName}</div>`:''}
+          <div style="font-size:12px;font-weight:700;color:#1e293b">${s.lojaLabel}</div>
+          ${s.lojaLabel!==s.displayName?`<div style="font-size:10px;color:#94a3b8;margin-bottom:1px">${s.displayName}</div>`:''}
           ${s.servicoStr?`<div style="font-size:10px;color:#64748b;margin-bottom:1px">🚚 ${s.servicoStr}</div>`:''}
           <div style="display:flex;gap:4px;align-items:center;margin-top:1px">${badge}${trendStr?`<span style="margin-left:3px">${trendStr}</span>`:''}</div>
         </div>
