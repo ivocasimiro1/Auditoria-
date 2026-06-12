@@ -1722,10 +1722,13 @@ function prevMonthStr(mes){
   const[y,m]=mes.split('-').map(Number);
   return m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`;
 }
-function calcCumprimento(ok,warn,errCompl,errNoDep,pastMissing){
-  // ok=100pts warn=60pts errCompl(admin)=30pts errNoDep/missing=0pts mas 3× no den
-  const num=ok*100+warn*60+errCompl*30;
-  const den=ok+warn+errCompl+errNoDep*3+pastMissing*3;
+function calcCumprimento(depFeito,depIncompl,semDep,pastMissing){
+  // depFeito = depositado e completo (ok ou warn com dataDeposito) → 100pts
+  // depIncompl = depositado mas incompleto (err com dataDeposito, ex: falta foto) → 90pts
+  // semDep = prazo vencido sem depósito → 0pts mas 3× no denominador
+  // pastMissing = dias em falta já passados → idem
+  const num=depFeito*100+depIncompl*90;
+  const den=depFeito+depIncompl+semDep*3+pastMissing*3;
   return den>0?Math.round(num/den):null;
 }
 function storeComplianceMes(sid,mes){
@@ -1738,12 +1741,11 @@ function storeComplianceMes(sid,mes){
   const pastMissing=allMissing.filter(d=>d<todayS).length;
   const dueRecs=mr.filter(r=>calcEstado(r,normCfg).s!=='prog');
   if(!dueRecs.length&&!pastMissing)return null;
-  const ok=dueRecs.filter(r=>calcEstado(r,normCfg).s==='ok').length;
-  const warn=dueRecs.filter(r=>calcEstado(r,normCfg).s==='warn').length;
-  const errR=dueRecs.filter(r=>calcEstado(r,normCfg).s==='err');
-  const errCompl=errR.filter(r=>r.dataDeposito).length;
-  const errNoDep=errR.filter(r=>!r.dataDeposito).length;
-  return calcCumprimento(ok,warn,errCompl,errNoDep,pastMissing);
+  const withDep=dueRecs.filter(r=>r.dataDeposito);
+  const depFeito=withDep.filter(r=>calcEstado(r,normCfg).s!=='err').length;
+  const depIncompl=withDep.filter(r=>calcEstado(r,normCfg).s==='err').length;
+  const semDep=dueRecs.filter(r=>!r.dataDeposito).length;
+  return calcCumprimento(depFeito,depIncompl,semDep,pastMissing);
 }
 function avgCycleDays(storeRegs){
   const confirmed=storeRegs.filter(r=>r.talao&&r.dataDeposito);
@@ -1783,10 +1785,12 @@ async function _buildPdfAsync(pw,loja,mes){
   const prog=lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==='prog').length;
   const todayStrExp=new Date().toISOString().split('T')[0];
   const pastMissingExp=missingArr.filter(d=>d<todayStrExp).length;
-  const errRecsExp=lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==='err');
-  const errComplExp=errRecsExp.filter(r=>r.dataDeposito).length;
-  const errNoDepExp=errRecsExp.filter(r=>!r.dataDeposito).length;
-  const compPct=calcCumprimento(ok,warn,errComplExp,errNoDepExp,pastMissingExp)??0;
+  const dueRecsExp=lojaRegs.filter(r=>calcEstado(r,storeCfg2).s!=='prog');
+  const withDepExp=dueRecsExp.filter(r=>r.dataDeposito);
+  const depFeitoExp=withDepExp.filter(r=>calcEstado(r,storeCfg2).s!=='err').length;
+  const depIncomplExp=withDepExp.filter(r=>calcEstado(r,storeCfg2).s==='err').length;
+  const semDepExp=dueRecsExp.filter(r=>!r.dataDeposito).length;
+  const compPct=calcCumprimento(depFeitoExp,depIncomplExp,semDepExp,pastMissingExp)??0;
   const compColor=compPct>=80?'#166534':compPct>=50?'#92400e':'#991b1b';
   const compBg=compPct>=80?'#dcfce7':compPct>=50?'#fef3c7':'#fee2e2';
   const hoje=new Date();
@@ -2057,10 +2061,12 @@ function rSASupervision(){
     const storeMissingCount=storeMissingArr.length;
     const _todayCStr=new Date().toISOString().split('T')[0];
     const pastMissingCount=storeMissingArr.filter(d=>d<_todayCStr).length;
-    const errRecs=storeRegs.filter(r=>calcEstado(r,normCfg).s==='err');
-    const errCompl=errRecs.filter(r=>r.dataDeposito).length;
-    const errNoDep=errRecs.filter(r=>!r.dataDeposito).length;
-    const compliant=calcCumprimento(ok,warn,errCompl,errNoDep,pastMissingCount);
+    const dueRecsC=storeRegs.filter(r=>calcEstado(r,normCfg).s!=='prog');
+    const withDepC=dueRecsC.filter(r=>r.dataDeposito);
+    const depFeitoC=withDepC.filter(r=>calcEstado(r,normCfg).s!=='err').length;
+    const depIncomplC=withDepC.filter(r=>calcEstado(r,normCfg).s==='err').length;
+    const semDepC=dueRecsC.filter(r=>!r.dataDeposito).length;
+    const compliant=calcCumprimento(depFeitoC,depIncomplC,semDepC,pastMissingCount);
     const lastCompliant=storeComplianceMes(sid,lastMes);
     const today=new Date();
     let delaySum=0,delayCount=0;
@@ -2654,10 +2660,12 @@ function rDash(){
   const missingCount=missingArr.length;
   const todayStrDash=new Date().toISOString().split('T')[0];
   const pastMissingDash=missingArr.filter(d=>d<todayStrDash).length;
-  const errRecsDash=data.filter(r=>calcEstado(r,cfg).s==='err');
-  const errComplDash=errRecsDash.filter(r=>r.dataDeposito).length;
-  const errNoDepDash=errRecsDash.filter(r=>!r.dataDeposito).length;
-  const complPct=calcCumprimento(okRegs.length,warnRegs.length,errComplDash,errNoDepDash,pastMissingDash);
+  const dueRecsDash=data.filter(r=>calcEstado(r,cfg).s!=='prog');
+  const withDepDash=dueRecsDash.filter(r=>r.dataDeposito);
+  const depFeitoDash=withDepDash.filter(r=>calcEstado(r,cfg).s!=='err').length;
+  const depIncomplDash=withDepDash.filter(r=>calcEstado(r,cfg).s==='err').length;
+  const semDepDash=dueRecsDash.filter(r=>!r.dataDeposito).length;
+  const complPct=calcCumprimento(depFeitoDash,depIncomplDash,semDepDash,pastMissingDash);
   const kpiCompCls=complPct===null?'blue':complPct>=80?'green':complPct>=50?'orange':'red';
   const alertsCount=getOverdueAlerts(lojaFil).length;
   const errTotal=erros+alertsCount+missingCount;
