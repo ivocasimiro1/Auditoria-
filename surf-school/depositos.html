@@ -847,8 +847,31 @@ async function sbLoad(silent=false){
 }
 async function sbSave(r){
   const row=regToRow(r);
-  if(sbUser){const{error}=await SB.from('dep_registos').upsert(row);if(error){toast('⚠️ Erro ao guardar: '+error.message);return false;}return true;}
-  const{error}=await sfetch('UPSERT','dep_registos','',row);if(error){toast('⚠️ Erro ao guardar: '+error.message);return false;}return true;
+  // Never overwrite existing foto with null — only include foto when saving a new photo
+  const hasFoto=row.foto&&typeof row.foto==='string';
+  const rowNoFoto={...row};delete rowNoFoto.foto;
+  if(sbUser){
+    // Check if record already exists in DB
+    const{data:existing}=await SB.from('dep_registos').select('id').eq('id',row.id).maybeSingle();
+    if(existing){
+      // Update: only include foto column if there's a new photo to save
+      const{error}=await SB.from('dep_registos').update(hasFoto?row:rowNoFoto).eq('id',row.id);
+      if(error){toast('⚠️ Erro ao guardar: '+error.message);return false;}
+    }else{
+      const{error}=await SB.from('dep_registos').insert(row);
+      if(error){toast('⚠️ Erro ao guardar: '+error.message);return false;}
+    }
+    return true;
+  }
+  // sfetch fallback: PATCH existing, POST new
+  const qs='id=eq.'+encodeURIComponent(row.id);
+  const{data:fex}=await sfetch('GET','dep_registos',qs);
+  const exists=Array.isArray(fex)&&fex.length>0;
+  const{error}=exists
+    ?await sfetch('PATCH','dep_registos',qs,hasFoto?row:rowNoFoto)
+    :await sfetch('POST','dep_registos','',row);
+  if(error){toast('⚠️ Erro ao guardar: '+error.message);return false;}
+  return true;
 }
 async function sbDel(id){
   if(sbUser){const{error}=await SB.from('dep_registos').delete().eq('id',id);if(error){toast('⚠️ Erro: '+error.message);return false;}return true;}
