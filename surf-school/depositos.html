@@ -1860,32 +1860,34 @@ async function _buildPdfAsync(pw,loja,mes){
     pdfRecBlocks.push('');
   });
   const pdfMissingTxt=missingArr.length?`DIAS SEM REGISTO (${missingArr.length}):\n${missingArr.map(d=>fd(d).slice(0,5)).join(', ')}`:'Todos os dias registados.';
+  const depFeitos=lojaRegs.filter(r=>r.dataDeposito).sort((a,b)=>a.dataDeposito<b.dataDeposito?-1:1);
+  const depPendentes=lojaRegs.filter(r=>!r.dataDeposito&&calcEstado(r,storeCfg2).s!=='prog');
+  const depLine=r=>{
+    const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
+    const period=sm.length>1?fd(sm[0]).slice(0,5)+'-'+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
+    return`  ${fd(r.dataDeposito).slice(0,5).padEnd(6)} | ${(r.tipo||'--').padEnd(16)} | ${pdfEur(totalValor(r)).padStart(9)}${r.talao?' | Talão: '+r.talao:''}${!r.foto?' | SEM FOTO':''}`;
+  };
   const pdfEmailBody=[
-    '===================================',
-    'CONFORMIDADE DE DEPOSITOS',
-    `${loja} | ${mesNome}`,
-    '===================================',
-    '',
-    estadoTxtPdf,
-    `Compliance: ${compPct}%`,
-    '',
-    '--- RESUMO ---',
-    `Total do mes:   ${pdfEur(totalVal)}`,
-    `Depositado:     ${pdfEur(depVal)}`,
-    `Por depositar:  ${pdfEur(totalVal-depVal)}`,
-    `Dias s/ registo: ${missingArr.length}`,
-    '',
-    ...(lojaRegs.length>0?['===================================','DEPOSITOS DO MES','===================================',...pdfRecBlocks]:[]),
-    '- - - - - - - - - - - - - - - - - -',
-    pdfMissingTxt,
-    '- - - - - - - - - - - - - - - - - -',
-    '',
-    'Aceda ao sistema:',
-    'auditoria-25b.pages.dev/depositos',
-    '',
-    'Cumprimentos,',
-    'Ivo Casimiro | Despomar',
-    '==================================='
+    `Exma. Contabilidade,`,
+    ``,
+    `Envio os registos de depósitos bancários de ${mesNome} — ${loja}.`,
+    ``,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `DEPÓSITOS REALIZADOS — ${mesNome.toUpperCase()}`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    ...(depFeitos.length>0
+      ?[`  DATA   | SERVIÇO          | VALOR     | OBS`,...depFeitos.map(depLine)]
+      :['  (sem depósitos realizados neste mês)']),
+    ``,
+    `TOTAL DEPOSITADO: ${pdfEur(depVal)}`,
+    ...(depPendentes.length>0?[`Por regularizar: ${depPendentes.length} registo(s) — ${pdfEur(depPendentes.reduce((s,r)=>s+totalValor(r),0))}`]:[]),
+    ``,
+    `Qualquer questão estou disponível.`,
+    ``,
+    `Cumprimentos,`,
+    `${empName}`,
+    `────────────────────────────────────`,
+    `Referência: ${loja} | ${mesNome} | Gerado em ${dataRel}`
   ].join('\n');
   // SVG inline do logo Despomar
   const LOGO_SVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 110" width="224" height="44">
@@ -2214,74 +2216,54 @@ function rSASupervision(){
       recBlocks.push('');
     });
     const saMissing=allMissing.length?`DIAS SEM REGISTO (${allMissing.length}):\n${allMissing.map(d=>fd(d).slice(0,5)).join(', ')}`:'Todos os dias registados.';
+    // Irregularidades detetadas para o email
+    const saErrNoDep=storeRecs.filter(r=>!r.dataDeposito&&calcEstado(r,getRecordCfg(r)).s==='err');
+    const saErrSemFoto=storeRecs.filter(r=>r.dataDeposito&&!r.foto&&calcEstado(r,getRecordCfg(r)).s==='err');
+    const saWarnSemFoto=storeRecs.filter(r=>!r.foto&&(r.talao||r.dataDeposito)&&calcEstado(r,getRecordCfg(r)).s==='warn');
+    const saIssues=[];
+    if(saHasGap)saIssues.push(`• SALTO DE DEPÓSITO: foram processados depósitos mais recentes enquanto registos mais antigos ficaram por depositar. O dinheiro desses dias foi entregue?`);
+    if(saGapMissingDays.length>0)saIssues.push(`• DIAS SEM REGISTO no período com salto: ${saGapMissingDays.map(d=>fd(d).slice(0,5)).join(', ')}`);
+    if(saErrNoDep.length>0)saIssues.push(`• ${saErrNoDep.length} DEPÓSITO(S) EM ATRASO sem data de depósito registada (prazo ultrapassado)`);
+    if(saErrSemFoto.length>0)saIssues.push(`• ${saErrSemFoto.length} depósito(s) realizados sem COMPROVATIVO (foto) associado`);
+    if(saWarnSemFoto.length>0)saIssues.push(`• ${saWarnSemFoto.length} registo(s) com depósito mas sem foto de comprovativo`);
+    if(allMissing.filter(d=>d<new Date().toISOString().split('T')[0]).length>0)saIssues.push(`• ${allMissing.filter(d=>d<new Date().toISOString().split('T')[0]).length} DIA(S) SEM REGISTO de sessão de caixa`);
+    const prazoResp=new Date();prazoResp.setDate(prazoResp.getDate()+3);
+    const prazoRespStr=prazoResp.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'});
+    const saRecLine=r=>{
+      const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
+      const period=sm.length>1?fd(sm[0]).slice(0,5)+'-'+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
+      const estR=calcEstado(r,getRecordCfg(r));
+      const flag=estR.s==='err'?' [!]':estR.s==='warn'?' [?]':'';
+      return`  ${period} | ${(r.tipo||'--').padEnd(14)} | ${saEur(totalValor(r)).padStart(9)} | Dep: ${r.dataDeposito?fd(r.dataDeposito).slice(0,5):'PENDENTE'}${r.talao?' | T:'+r.talao:''}${!r.foto?' | SEM FOTO':''}${flag}`;
+    };
     const body=[
-      '===================================',
-      'CONFORMIDADE DE DEPOSITOS',
-      `${s.empName} | ${mesNomeEmail}`,
-      '===================================',
-      '',
-      estadoLabel2,
-      `Compliance: ${s.compliant??0}%`,
-      '',
-      ...(saHasGap?[
-        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
-        '!!! ALERTA CRITICO: SALTO DE     !!!',
-        '!!!         DEPOSITO             !!!',
-        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
-        'Depositos processados enquanto dias',
-        'mais antigos ficaram sem registo.',
-        'Situacao INACEITAVEL.',
-        '',
-        ...(saGapMissingDays.length>0?[
-          `DIAS SEM REGISTO (${saGapMissingDays.length}):`,
-          ...saGapMissingDays.map(d=>`  ${fd(d).slice(0,5)} | SEM REGISTO`),
-          ''
-        ]:[]),
-        ...(saGapRecs.length>0?[
-          `REGISTOS POR DEPOSITAR (${saGapRecs.length}):`,
-          ...saGapRecs.map(r=>{
-            const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
-            const period=sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
-            return`  ${period} | ${r.tipo||'--'} | ${saEur(totalValor(r))}`;
-          }),
-          ''
-        ]:[]),
-        ...(saDepAhead.length>0?[
-          `DEPOSITOS PASSADOS A FRENTE (${saDepAhead.length}):`,
-          ...saDepAhead.map((r,i)=>{
-            const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
-            const period=sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
-            return[`  [${i+1}] ${period} | ${r.tipo||'--'}`,`      ${saEur(totalValor(r))} | Dep: ${fd(r.dataDeposito)}`].join('\n');
-          }),
-          ''
-        ]:[]),
-        'VERIFICACAO OBRIGATORIA:',
-        'O dinheiro dos dias sem registo',
-        'foi realmente entregue?',
-        'Regularizar ANTES de qualquer',
-        'novo deposito.',
-        '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
-        ''
-      ]:[]),
-      '--- RESUMO ---',
-      `Total do mes:   ${saEur(totalVal2)}`,
-      `Depositado:     ${saEur(depVal2)}`,
-      `Dias s/ registo: ${allMissing.length}`,
-      '',
-      ...(storeRecs.length>0?['===================================','DEPOSITOS DO MES','===================================',...recBlocks]:[]),
-      '- - - - - - - - - - - - - - - - - -',
-      saMissing,
-      '- - - - - - - - - - - - - - - - - -',
-      '',
-      'Aceda ao sistema para regularizar:',
-      'auditoria-25b.pages.dev/depositos',
-      '',
-      'Cumprimentos,',
-      'Ivo Casimiro | Gestao Despomar',
-      '==================================='
+      `Exmo(a) Responsável de ${s.empName},`,
+      ``,
+      `Na análise dos registos de depósitos de ${mesNomeEmail} foram identificadas irregularidades que requerem a sua atenção e justificação.`,
+      ``,
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+      `IRREGULARIDADES DETETADAS`,
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+      ...(saIssues.length>0?saIssues:['  Sem irregularidades neste mês.']),
+      ``,
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+      `TODOS OS DEPÓSITOS — ${mesNomeEmail.toUpperCase()}`,
+      `  ([!] = em atraso  [?] = incompleto)`,
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+      ...(storeRecs.length>0?storeRecs.map(saRecLine):['  (sem registos este mês)']),
+      ``,
+      `TOTAL DO MÊS: ${saEur(totalVal2)}  |  DEPOSITADO: ${saEur(depVal2)}`,
+      ...(allMissing.length>0?[``,`DIAS SEM REGISTO: ${allMissing.map(d=>fd(d).slice(0,5)).join(', ')}`]:[]),
+      ``,
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+      `Solicito resposta/regularização até ${prazoRespStr}.`,
+      `Acesso ao sistema: auditoria-25b.pages.dev/depositos`,
+      ``,
+      `Cumprimentos,`,
+      `Ivo Casimiro | Gestão Despomar`
     ].join('\n');
     // Colocar body no URL — ASCII apenas, URL curto, funciona em iOS/Android
-    const subject=encodeURIComponent('Depositos '+mesNomeEmail+' - '+s.empName);
+    const subject=encodeURIComponent('Depositos '+mesNomeEmail+' - Irregularidades - '+s.empName);
     const mailtoSA=`mailto:${destEmail}?subject=${subject}&body=${encodeURIComponent(body)}`;
     if(mailtoSA.length>3800){
       // Fallback clipboard se a loja tiver muitos registos
