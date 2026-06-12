@@ -546,20 +546,12 @@ select{
 <!-- ═══ EXPORTAR ═══ -->
 <div class="page" id="page-exp">
   <div class="card">
-    <div class="ct">Exportar</div>
-    <div class="fg"><label>Loja</label><select id="e-loja" onchange="updPrev();if(expFmt==='email')updEmailPrev()"></select></div>
-    <div class="fg"><label>Mês</label><select id="e-mes" onchange="updPrev();if(expFmt==='email')updEmailPrev()"></select></div>
-    <div class="eo sel" id="opt-print" onclick="seExp('print')" style="margin-top:8px">
-      <div class="ei" style="background:#dbeafe"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#1a56db" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg></div>
-      <div><strong style="display:block;font-size:14px;font-weight:700">📄 PDF / Imprimir</strong><span style="font-size:12px;color:var(--g500)">Abre janela de impressão — guardar como PDF</span></div>
-    </div>
-    <div class="eo" id="opt-email" onclick="seExp('email')">
-      <div class="ei" style="background:var(--bl)"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#1a56db" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
-      <div><strong style="display:block;font-size:14px;font-weight:700">📧 Email para Contabilidade</strong><span style="font-size:12px;color:var(--g500)">Abre email pré-preenchido (Para/CC/Assunto/Corpo)</span></div>
-    </div>
+    <div class="ct">📧 Enviar E-mail à Contabilidade</div>
+    <div class="fg"><label>Loja</label><select id="e-loja" onchange="updEmailPrev()"></select></div>
+    <div class="fg"><label>Mês</label><select id="e-mes" onchange="updEmailPrev()"></select></div>
     <button class="btn bs" id="exp-btn" onclick="doExp()" style="margin-top:12px">
-      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-      <span id="exp-btn-lbl">Exportar PDF</span>
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+      <span id="exp-btn-lbl">Enviar Email</span>
     </button>
   </div>
   <div id="email-prev-card" class="card" style="display:none">
@@ -585,6 +577,19 @@ select{
       <div class="preview-scroll"><table class="ptbl" id="prev-tbl"></table></div>
     </div>
   </div>
+</div>
+
+<!-- ═══ MAPA DE DEPÓSITOS ═══ -->
+<div class="page" id="page-mapa">
+  <div class="card" style="padding:12px 14px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <select id="mapa-loja" onchange="rMapa()" style="flex:1;min-width:120px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;color:#1e293b"></select>
+      <select id="mapa-mes" onchange="rMapa()" style="flex:1;min-width:120px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;color:#1e293b"></select>
+      <button onclick="(()=>{const l=document.getElementById('mapa-loja')?.value||cfg.lojas[0]||'';const m=document.getElementById('mapa-mes')?.value||curMesStr();rptStorePdf(l,m);})()" style="padding:8px 14px;background:#0f172a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;touch-action:manipulation">🖨️ PDF</button>
+    </div>
+    <div id="mapa-kpis" style="margin-top:10px"></div>
+  </div>
+  <div id="mapa-table" style="margin-top:0"></div>
 </div>
 
 <!-- ═══ SETTINGS ═══ -->
@@ -718,9 +723,13 @@ select{
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
     Lista
   </button>
+  <button class="nb" id="nb-mapa" onclick="sp('mapa')">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    Mapa
+  </button>
   <button class="nb" id="nb-exp" onclick="sp('exp')">
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-    Exportar
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+    E-mail
   </button>
 </nav>
 
@@ -1108,7 +1117,7 @@ function sp(name){
     const pg=document.getElementById('page-'+name);
     if(pg)pg.classList.add('active');
     const nb=document.getElementById('nb-'+name);if(nb)nb.classList.add('active');
-    const T={dash:'📊 Dashboard',supervisao:'🔍 Supervisão Global',novo:'➕ Novo Depósito',lista:'📋 Lista / Editar',exp:'📤 Exportar',settings:'⚙️ Configurações'};
+    const T={dash:'📊 Dashboard',supervisao:'🔍 Supervisão Global',novo:'➕ Novo Depósito',lista:'📋 Lista / Editar',mapa:'🗓️ Mapa de Depósitos',exp:'📧 Enviar E-mail',settings:'⚙️ Configurações'};
     document.getElementById('ttitle').textContent=T[name]||'📦 Depósitos';
     // Back button: páginas "home" não têm voltar; home do SA = supervisão
     const bb=document.getElementById('back-btn');
@@ -1122,7 +1131,8 @@ function sp(name){
     if(name==='supervisao'){popSupSel();rSASupervision();}
     if(name==='novo')popSel();
     if(name==='lista')rLista();
-    if(name==='exp')rExpSel();
+    if(name==='mapa')rMapa();
+    if(name==='exp'){seExp('email');rExpSel();}
     if(name==='settings')rSettings();
   }catch(e){console.error('sp error:',e)}
 }
@@ -1148,7 +1158,7 @@ function popTipo(){
 }
 function popSel(){
   popTipo();
-  ['f-loja','fl-loj','e-loja','dash-loja'].forEach(id=>{
+  ['f-loja','fl-loj','e-loja','dash-loja','mapa-loja'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const v=el.value;
     if(id==='f-loja')el.innerHTML='<option value="">Selecionar loja...</option>';
@@ -1158,9 +1168,9 @@ function popSel(){
     // SA: also show lojas from records that aren't in cfg.lojas
     if(isSA){const extra=[...new Set(regs.map(r=>r.loja).filter(l=>l&&!cfg.lojas.includes(l)))];extra.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l+' ★';el.appendChild(o)});}
     if(v)el.value=v;
-    else if(cfg.lojas.length&&(id==='e-loja'||(id==='f-loja'&&!isSA)||(id==='dash-loja'&&!isSA)))el.value=cfg.lojas[0];
+    else if(cfg.lojas.length&&(id==='e-loja'||(id==='f-loja'&&!isSA)||(id==='dash-loja'&&!isSA)||(id==='mapa-loja'&&!isSA)))el.value=cfg.lojas[0];
   });
-  ['dash-mes','fl-mes','e-mes'].forEach(id=>{
+  ['dash-mes','fl-mes','e-mes','mapa-mes'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const v=el.value;
     const prefix=id==='fl-mes'?'<option value="">Todos os meses</option>':'';
@@ -2668,6 +2678,111 @@ function rSASupervision(){
   </div>`;
   const navBadge=document.getElementById('nav-overdue-badge');
   if(navBadge){navBadge.textContent=overdueStores.length||'';navBadge.style.display=overdueStores.length?'flex':'none';}
+}
+
+function rMapa(){
+  popSel();
+  const mes=document.getElementById('mapa-mes')?.value||curMesStr();
+  const lojaFil=document.getElementById('mapa-loja')?.value||'';
+  const data=regs.filter(r=>{
+    const ref=getRefDate(r);
+    if(!ref.startsWith(mes))return false;
+    if(lojaFil&&r.loja!==lojaFil)return false;
+    return true;
+  }).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
+  const totalVal=data.reduce((s,r)=>s+totalValor(r),0);
+  const depVal=data.filter(r=>r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
+  const missingDays=(getMissingDays(mes,lojaFil||null)||[]).filter(d=>d<new Date().toISOString().split('T')[0]);
+  const [_yr,_mn]=mes.split('-').map(Number);
+  const _today=new Date();_today.setHours(0,0,0,0);
+  const _isCurrentMes=mes===curMesStr();
+  const _lastDay=_isCurrentMes?_today.getDate():new Date(_yr,_mn,0).getDate();
+  const _coveredDays=new Set();
+  data.forEach(r=>(r.sessoes||[]).forEach(s=>{if(s.dataVendas)_coveredDays.add(s.dataVendas);}));
+  const _recsByDay={};const _noSessRecs=[];
+  data.forEach(r=>{
+    const fs=(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort()[0];
+    if(fs){if(!_recsByDay[fs])_recsByDay[fs]=[];_recsByDay[fs].push(r);}
+    else _noSessRecs.push(r);
+  });
+  const dowPT=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const rows=[];
+  for(let d=1;d<=_lastDay;d++){
+    const ds=`${_yr}-${String(_mn).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const recs=_recsByDay[ds]||[];
+    if(recs.length>0){
+      recs.forEach(r=>{
+        const est=calcEstado(r,getRecordCfg(r));
+        const sessMin=(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort()[0]||'';
+        const sessMax=(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort().at(-1)||'';
+        const dr=sessMin===sessMax?fd(sessMin):(sessMin&&sessMax?fd(sessMin)+' – '+fd(sessMax):'—');
+        const sc=est.s==='ok'?'#16a34a':est.s==='warn'?'#92400e':est.s==='err'?'#dc2626':'#3b82f6';
+        const sb=est.s==='ok'?'#f0fdf4':est.s==='warn'?'#fef3c7':est.s==='err'?'#fef2f2':'#eff6ff';
+        rows.push(`<tr style="border-bottom:1px solid #f1f5f9">
+          <td style="padding:7px 8px;font-size:12px;white-space:nowrap">${dr}</td>
+          <td style="padding:7px 8px;font-size:12px">${r.tipo||'—'}</td>
+          <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:700">${fmt(totalValor(r))}</td>
+          <td style="padding:7px 8px;font-size:12px">${r.dataDeposito?fd(r.dataDeposito):'—'}</td>
+          <td style="padding:7px 8px;font-size:11px;color:#64748b">${r.talao||'—'}</td>
+          <td style="padding:7px 8px;text-align:center;font-size:11px">${(r.sessoes||[]).length}</td>
+          <td style="padding:7px 8px"><span style="font-size:10px;font-weight:700;color:${sc};background:${sb};padding:2px 8px;border-radius:10px;white-space:nowrap">${est.label.replace(/[📅✅⚠️🔴📷]/gu,'').trim()}</span></td>
+        </tr>`);
+      });
+    } else if(!_coveredDays.has(ds)){
+      const _dt=new Date(ds);_dt.setHours(0,0,0,0);
+      const dow=dowPT[_dt.getDay()];
+      rows.push(`<tr style="background:#fafafa;border-bottom:1px solid #f1f5f9">
+        <td style="padding:6px 8px;font-size:11px;color:#94a3b8;font-style:italic">${dow} ${fd(ds).slice(0,5)}</td>
+        <td colspan="5"></td>
+        <td style="padding:6px 8px;font-size:10px;color:#d1d5db;font-style:italic">sem registo</td>
+      </tr>`);
+    }
+  }
+  _noSessRecs.forEach(r=>{
+    const est=calcEstado(r,getRecordCfg(r));
+    const sc=est.s==='ok'?'#16a34a':est.s==='warn'?'#92400e':est.s==='err'?'#dc2626':'#3b82f6';
+    const sb=est.s==='ok'?'#f0fdf4':est.s==='warn'?'#fef3c7':est.s==='err'?'#fef2f2':'#eff6ff';
+    rows.push(`<tr style="border-bottom:1px solid #f1f5f9">
+      <td style="padding:7px 8px;font-size:12px;color:#94a3b8">—</td>
+      <td style="padding:7px 8px;font-size:12px">${r.tipo||'—'}</td>
+      <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:700">${fmt(totalValor(r))}</td>
+      <td style="padding:7px 8px;font-size:12px">${r.dataDeposito?fd(r.dataDeposito):'—'}</td>
+      <td style="padding:7px 8px;font-size:11px;color:#64748b">${r.talao||'—'}</td>
+      <td style="padding:7px 8px;text-align:center;font-size:11px">0</td>
+      <td style="padding:7px 8px"><span style="font-size:10px;font-weight:700;color:${sc};background:${sb};padding:2px 8px;border-radius:10px">${est.label.replace(/[📅✅⚠️🔴📷]/gu,'').trim()}</span></td>
+    </tr>`);
+  });
+  const kHtml=`<div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div style="flex:1;min-width:90px;background:#eff6ff;border-radius:8px;padding:9px 10px;text-align:center">
+      <div style="font-size:18px;font-weight:800;color:#1d4ed8">${data.length}</div>
+      <div style="font-size:9px;color:#64748b;text-transform:uppercase;margin-top:1px">Depósitos</div>
+    </div>
+    <div style="flex:1;min-width:90px;background:#f0fdf4;border-radius:8px;padding:9px 10px;text-align:center">
+      <div style="font-size:15px;font-weight:800;color:#16a34a">${fmt(depVal)}</div>
+      <div style="font-size:9px;color:#64748b;text-transform:uppercase;margin-top:1px">Depositado</div>
+    </div>
+    <div style="flex:1;min-width:90px;background:${missingDays.length?'#fef2f2':'#f8fafc'};border-radius:8px;padding:9px 10px;text-align:center">
+      <div style="font-size:18px;font-weight:800;color:${missingDays.length?'#dc2626':'#94a3b8'}">${missingDays.length}</div>
+      <div style="font-size:9px;color:#64748b;text-transform:uppercase;margin-top:1px">Dias s/ Reg.</div>
+    </div>
+  </div>`;
+  const thStyle='padding:7px 8px;text-align:left;font-size:9px;color:#475569;font-weight:700;text-transform:uppercase;background:#f1f5f9;border-bottom:2px solid #e2e8f0';
+  const tHtml=`<div style="overflow-x:auto;background:#fff;border-radius:0 0 12px 12px">
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr>
+        <th style="${thStyle}">Data Sessão</th>
+        <th style="${thStyle}">Tipo</th>
+        <th style="${thStyle};text-align:right">Valor</th>
+        <th style="${thStyle}">Dep.</th>
+        <th style="${thStyle}">Talão</th>
+        <th style="${thStyle};text-align:center">S.</th>
+        <th style="${thStyle}">Estado</th>
+      </tr></thead>
+      <tbody>${rows.length?rows.join(''):`<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px;font-style:italic">Sem registos para ${mesLabel(mes)}${lojaFil?' — '+lojaFil:''}</td></tr>`}</tbody>
+    </table>
+  </div>`;
+  document.getElementById('mapa-kpis').innerHTML=kHtml;
+  document.getElementById('mapa-table').innerHTML=tHtml;
 }
 
 function rDash(){
