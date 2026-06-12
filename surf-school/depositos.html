@@ -2221,12 +2221,13 @@ function rSASupervision(){
     const saErrSemFoto=storeRecs.filter(r=>r.dataDeposito&&!r.foto&&calcEstado(r,getRecordCfg(r)).s==='err');
     const saWarnSemFoto=storeRecs.filter(r=>!r.foto&&(r.talao||r.dataDeposito)&&calcEstado(r,getRecordCfg(r)).s==='warn');
     const saIssues=[];
+    const pastMissingPast=allMissing.filter(d=>d<saTodayStr);
     if(saHasGap)saIssues.push(`• SALTO DE DEPÓSITO: foram processados depósitos mais recentes enquanto registos mais antigos ficaram por depositar. O dinheiro desses dias foi entregue?`);
     if(saGapMissingDays.length>0)saIssues.push(`• DIAS SEM REGISTO no período com salto: ${saGapMissingDays.map(d=>fd(d).slice(0,5)).join(', ')}`);
     if(saErrNoDep.length>0)saIssues.push(`• ${saErrNoDep.length} DEPÓSITO(S) EM ATRASO sem data de depósito registada (prazo ultrapassado)`);
     if(saErrSemFoto.length>0)saIssues.push(`• ${saErrSemFoto.length} depósito(s) realizados sem COMPROVATIVO (foto) associado`);
     if(saWarnSemFoto.length>0)saIssues.push(`• ${saWarnSemFoto.length} registo(s) com depósito mas sem foto de comprovativo`);
-    if(allMissing.filter(d=>d<new Date().toISOString().split('T')[0]).length>0)saIssues.push(`• ${allMissing.filter(d=>d<new Date().toISOString().split('T')[0]).length} DIA(S) SEM REGISTO de sessão de caixa`);
+    if(pastMissingPast.length>0)saIssues.push(`• ${pastMissingPast.length} DIA(S) SEM REGISTO de sessão de caixa`);
     const prazoResp=new Date();prazoResp.setDate(prazoResp.getDate()+3);
     const prazoRespStr=prazoResp.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'});
     const saRecLine=r=>{
@@ -2527,7 +2528,7 @@ function rSASupervision(){
     if(a.warn!==b.warn)return a.warn-b.warn;
     const ca=a.cycle!==null?a.cycle:99,cb=b.cycle!==null?b.cycle:99;
     if(ca!==cb)return ca-cb;
-    return (b.compliant||0)-(a.compliant||0);
+    return (b.compliant??-1)-(a.compliant??-1);
   });
   const rankingRows=rankingStores.map((s,i)=>{
     const hasErr=s.err>0,hasGap=s.gaps>0,hasWarn=s.warn>0;
@@ -3641,8 +3642,8 @@ function exportHistCSV(){
   const header=['Loja',...histMonths.map(m=>monthAbbr(m)),'Média'];
   const rows=[];
   knownSids.forEach(sid=>{
-    const sc=allStoreConfigs.find(c=>c.store_id===sid);
-    const name=sc?.emp||sid;
+    const _sc=allStoreConfigs.find(c=>c.store_id===sid);
+    const name=_sc?.emp||sid;
     const vals=histMonths.map(m=>storeComplianceMes(sid,m));
     const nonNull=vals.filter(v=>v!==null);
     if(!nonNull.length)return;
