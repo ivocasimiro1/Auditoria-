@@ -3222,14 +3222,16 @@ async function updEmailPrev(){
   if(epSendBtn)epSendBtn.disabled=true;
   const mes=document.getElementById('e-mes').value||curMesStr();
   const loja=document.getElementById('e-loja').value||'Todas as Lojas';
+  // Reset exportCfg immediately so stale config from previous store never leaks
+  exportCfg=null;
   // Super-admin: load config from the selected store, not from 'super'
   if(isSA){
     const storeIds=[...new Set(data.map(r=>r.store_id).filter(Boolean))];
     if(storeIds.length===1){
       const{data:sc}=await SB.from('dep_config').select('*').eq('store_id',storeIds[0]).maybeSingle();
       exportCfg=sc?{emp:sc.emp||cfg.emp,email:sc.email||cfg.email||'',emailCC:sc.email_cc||cfg.emailCC||'',emailCC2:sc.email_cc2||cfg.emailCC2||'',nif:sc.nif||cfg.nif}:null;
-    }else{exportCfg=null;}
-  }else{exportCfg=null;}
+    }
+  }
   const activeCfg=exportCfg||cfg;
   const empresa=activeCfg.emp||'Empresa';
   const nif=activeCfg.nif||'';
