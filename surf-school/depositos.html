@@ -1874,7 +1874,7 @@ async function _buildPdfAsync(pw,loja,mes){
   </svg>`;
 
   const html=`<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
-<title>Relatório Compliance — ${loja} — ${mesNome}</title>
+<title>Relatório Cumprimento — ${loja} — ${mesNome}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;color:#1e293b;background:#fff;padding:0}
@@ -1938,12 +1938,12 @@ tr:last-child td{border-bottom:none}
     <div class="estado-icon">${estadoGeral.icon}</div>
     <div class="estado-text">
       <div class="label">${estadoGeral.label}</div>
-      <div class="desc">Loja ${loja} · Compliance de ${compPct}% em ${mesNome}${missingArr.length>0?` · ${missingArr.length} dia(s) sem registo`:''}</div>
+      <div class="desc">Loja ${loja} · Cumprimento ${compPct}% em ${mesNome}${missingArr.length>0?` · ${missingArr.length} dia(s) sem registo`:''}</div>
     </div>
   </div>
 
   <div class="kpi-grid">
-    <div class="kpi comp"><div class="val">${compPct}%</div><div class="lbl">Compliance</div></div>
+    <div class="kpi comp"><div class="val">${compPct}%</div><div class="lbl">Cumprimento</div></div>
     <div class="kpi"><div class="val">${fmt(totalVal)}</div><div class="lbl">Total Mês</div></div>
     <div class="kpi"><div class="val">${fmt(depVal)}</div><div class="lbl">Depositado</div></div>
     <div class="kpi"><div class="val" style="color:${missingArr.length>0?'#991b1b':'#16a34a'}">${missingArr.length}</div><div class="lbl">Dias s/ Registo</div></div>
@@ -2266,10 +2266,20 @@ function rSASupervision(){
   const compColor=kpiColor(avgCompliance,80,50);
   // Month abbreviations for history table
   const monthAbbr=m=>{const[y,mo]=m.split('-');const names=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];return names[parseInt(mo)-1]+(m!==mes?'':' ◀');};
-  const tableRows=storeList.map((s,idx)=>{
+  // Sort table: active+errors first (most urgent), then gaps, then warns, then ok, then inactive
+  const tableStoreSorted=[...storeList].sort((a,b)=>{
+    const aInactive=a.total===0,bInactive=b.total===0;
+    if(aInactive!==bInactive)return aInactive?1:-1;
+    if(a.err!==b.err)return b.err-a.err;
+    if(a.gaps!==b.gaps)return b.gaps-a.gaps;
+    if(a.warn!==b.warn)return b.warn-a.warn;
+    const ca=a.cycle!==null?a.cycle:99,cb=b.cycle!==null?b.cycle:99;
+    return cb-ca;
+  });
+  const tableRows=tableStoreSorted.map((s,idx)=>{
     const rowColor=s.err>0?'#fef2f2':s.warn>0?'#fffbeb':s.total===0?'#f8fafc':'#f0fdf4';
     const borderColor=s.err>0?'#fca5a5':s.warn>0?'#fcd34d':s.total===0?'#e2e8f0':'#86efac';
-    const rankBg=idx===0&&s.err>0?'#dc2626':idx<=1&&s.err>0?'#ef4444':'#94a3b8';
+    const rankBg=s.err>0?'#dc2626':s.warn>0?'#d97706':s.total===0?'#94a3b8':'#16a34a';
     const badge=s.total===0
       ?`<span style="background:#e2e8f0;color:#64748b;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600">—</span>`
       :s.compliant>=80?`<span style="background:#dcfce7;color:#166534;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:600">✓ ${s.compliant}%</span>`
@@ -2529,7 +2539,7 @@ function rSASupervision(){
         </div>
         <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
           <div style="font-size:20px;font-weight:800;color:${avgCompliance>=80?'#86efac':avgCompliance>=50?'#fde68a':'#fca5a5'}">${avgCompliance}%</div>
-          <div style="font-size:9px;color:#bfdbfe">Compliance</div>
+          <div style="font-size:9px;color:#bfdbfe">Cumprimento</div>
         </div>
         <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
           <div style="font-size:20px;font-weight:800;color:${avgCycleGlobal!==null&&avgCycleGlobal<=2?'#86efac':avgCycleGlobal!==null&&avgCycleGlobal<=4?'#fde68a':'#fca5a5'}">${avgCycleGlobal!==null?avgCycleGlobal+'d':'—'}</div>
@@ -2555,7 +2565,7 @@ function rSASupervision(){
     </div>
     <details style="border-top:1px solid #e2e8f0">
       <summary style="padding:10px 14px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
-        <span>📅</span> Histórico 6 meses (compliance %)
+        <span>📅</span> Histórico 6 meses (% cumprimento)
         <span style="margin-left:auto;font-size:10px;color:#94a3b8">Verde ≥80% · Amarelo ≥50% · Vermelho &lt;50%</span>
       </summary>
       <div style="overflow-x:auto;padding:8px 14px 14px">
@@ -2577,7 +2587,7 @@ function rSASupervision(){
     <details style="border-top:1px solid #e2e8f0">
       <summary style="padding:10px 14px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
         <span>🏆</span> Ranking de Performance
-        <span style="margin-left:auto;font-size:10px;color:#94a3b8">Melhor → Pior · compliance</span>
+        <span style="margin-left:auto;font-size:10px;color:#94a3b8">Melhor → Pior · cumprimento</span>
       </summary>
       <div style="padding:0 0 8px">
         ${rankingRows||'<div style="padding:12px 14px;color:#94a3b8;font-size:12px">Sem dados suficientes para ranking</div>'}
