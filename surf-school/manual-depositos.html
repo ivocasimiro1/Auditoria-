@@ -574,6 +574,30 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
       </tbody>
     </table>
     <div class="important"><b>📷 Foto do talão obrigatória.</b> Sempre que depositar, tire foto ao talão e anexe ao registo. Sem foto, o registo fica marcado como incompleto (⚠️ Aviso).</div>
+    <h3>Ecrã de confirmação</h3>
+    <p>Após tocar em "✓ Guardar Registo", o sistema guarda o registo na nuvem e mostra a confirmação com o resumo completo do que foi registado.</p>
+    <div class="mockup" style="max-width:340px;margin:16px auto">
+      <div class="mockup-bar" style="background:linear-gradient(135deg,#065f46,#059669)">
+        <div class="title">✅ Guardado com sucesso</div>
+      </div>
+      <div style="padding:20px 16px;background:#fff;text-align:center">
+        <div style="width:60px;height:60px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 14px">✅</div>
+        <div style="font-size:15px;font-weight:800;color:#065f46;margin-bottom:4px">Registo guardado!</div>
+        <div style="font-size:12px;color:var(--g500);margin-bottom:16px">Prosegur · 2 sessões · <strong style="color:var(--blue2)">€1.048,05</strong></div>
+        <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 14px;text-align:left;font-size:11px;color:#065f46;line-height:2;margin-bottom:16px">
+          <div>📅 <strong>08/06/2026</strong> — Sessão 6290 — €635,85</div>
+          <div>📅 <strong>09/06/2026</strong> — Sessão 6291 — €412,20</div>
+          <div style="margin-top:4px;padding-top:6px;border-top:1px solid #bbf7d0">🏦 Depositado em: <strong>12/06/2026</strong></div>
+          <div>📎 Talão: <strong>26802134E</strong></div>
+          <div>👤 Responsável: <strong>Tiago Rufino</strong></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:var(--g100);color:var(--g700);border-radius:9px;padding:10px;font-size:12px;font-weight:700;text-align:center">➕ Novo</div>
+          <div style="background:var(--blue2);color:#fff;border-radius:9px;padding:10px;font-size:12px;font-weight:700;text-align:center">📊 Dashboard</div>
+        </div>
+      </div>
+    </div>
+    <div class="success"><b>✅ Guardado na nuvem.</b> O registo fica imediatamente visível no Dashboard, Lista e Mapa — em qualquer dispositivo onde a loja faça login.</div>
   </div>
 </div>
 
@@ -728,6 +752,103 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
         <tr><td><strong>Estado</strong></td><td><span class="pill ok">✅ OK</span> · <span class="pill warn">⚠️ Aviso</span> · <span class="pill err">🔴 Erro</span> · <span class="pill prog">📅 Prog.</span></td></tr>
       </tbody>
     </table>
+    <h3>Aspecto da lista</h3>
+    <div class="mockup" style="max-width:460px;margin:16px auto">
+      <div class="mockup-bar"><div class="title">📋 Lista de Registos</div><div class="sub">junho 2026 · ESS Guia</div></div>
+      <div class="mockup-nav">
+        <div class="nav-tab"><div class="icon">📊</div>DASHBOARD</div>
+        <div class="nav-tab"><div class="icon">➕</div>NOVO</div>
+        <div class="nav-tab active"><div class="icon">📋</div>LISTA</div>
+        <div class="nav-tab"><div class="icon">🗓️</div>MAPA</div>
+        <div class="nav-tab"><div class="icon">📧</div>E-MAIL</div>
+      </div>
+      <div class="mockup-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+          <div class="mock-input filled" style="font-size:10px;padding:5px 8px">ESS Guia</div>
+          <div class="mock-input filled" style="font-size:10px;padding:5px 8px">junho 2026</div>
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap">
+          <span style="background:var(--g800);color:#fff;border-radius:20px;padding:3px 10px;font-size:9px;font-weight:700">Todos</span>
+          <span class="mock-badge ok" style="padding:3px 10px;font-size:9px">✅ OK</span>
+          <span class="mock-badge warn" style="padding:3px 10px;font-size:9px">⚠️ Aviso</span>
+          <span class="mock-badge err" style="padding:3px 10px;font-size:9px">🔴 Erro</span>
+          <span class="mock-badge prog" style="padding:3px 10px;font-size:9px">📅 Prog.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <!-- OK -->
+          <div style="background:#fff;border-radius:10px;border:1.5px solid #bbf7d0;padding:10px 12px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="flex:1">
+                <div style="font-size:9px;color:var(--g400);font-weight:700;text-transform:uppercase;margin-bottom:3px">01/06 → 07/06 · Prosegur</div>
+                <div style="font-size:11px;font-weight:700;color:var(--g700)">Dep: 05/06 &nbsp;·&nbsp; Talão: 26443E</div>
+                <div style="font-size:9px;color:var(--g500);margin-top:2px">3 sessões &nbsp;·&nbsp; Maria Costa</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;margin-left:8px">
+                <div style="font-size:14px;font-weight:800;color:var(--blue2)">€4.886</div>
+                <span class="mock-badge ok" style="margin-top:3px;display:inline-block">✅ OK</span>
+              </div>
+            </div>
+          </div>
+          <!-- OK -->
+          <div style="background:#fff;border-radius:10px;border:1.5px solid #bbf7d0;padding:10px 12px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="flex:1">
+                <div style="font-size:9px;color:var(--g400);font-weight:700;text-transform:uppercase;margin-bottom:3px">08/06 → 12/06 · Prosegur</div>
+                <div style="font-size:11px;font-weight:700;color:var(--g700)">Dep: 12/06 &nbsp;·&nbsp; Talão: 26802E</div>
+                <div style="font-size:9px;color:var(--g500);margin-top:2px">2 sessões &nbsp;·&nbsp; Tiago Rufino</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;margin-left:8px">
+                <div style="font-size:14px;font-weight:800;color:var(--blue2)">€4.451</div>
+                <span class="mock-badge ok" style="margin-top:3px;display:inline-block">✅ OK</span>
+              </div>
+            </div>
+          </div>
+          <!-- AVISO -->
+          <div style="background:#fff;border-radius:10px;border:1.5px solid #fde68a;padding:10px 12px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="flex:1">
+                <div style="font-size:9px;color:var(--g400);font-weight:700;text-transform:uppercase;margin-bottom:3px">15/06 → 18/06 · Dep. Direto</div>
+                <div style="font-size:11px;font-weight:700;color:var(--orange)">Dep: 18/06 &nbsp;·&nbsp; ⚠️ SEM TALÃO</div>
+                <div style="font-size:9px;color:var(--g500);margin-top:2px">2 sessões &nbsp;·&nbsp; Tiago Rufino</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;margin-left:8px">
+                <div style="font-size:14px;font-weight:800;color:var(--blue2)">€3.210</div>
+                <span class="mock-badge warn" style="margin-top:3px;display:inline-block">⚠️ Aviso</span>
+              </div>
+            </div>
+          </div>
+          <!-- ERRO -->
+          <div style="background:#fff;border-radius:10px;border:1.5px solid #fca5a5;padding:10px 12px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="flex:1">
+                <div style="font-size:9px;color:var(--g400);font-weight:700;text-transform:uppercase;margin-bottom:3px">19/06 → 21/06 · Câmbio</div>
+                <div style="font-size:11px;font-weight:700;color:var(--red)">🔴 EM ATRASO — Ainda pendente</div>
+                <div style="font-size:9px;color:var(--g500);margin-top:2px">2 sessões &nbsp;·&nbsp; prazo ultrapassado</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;margin-left:8px">
+                <div style="font-size:14px;font-weight:800;color:var(--blue2)">€2.100</div>
+                <span class="mock-badge err" style="margin-top:3px;display:inline-block">🔴 Erro</span>
+              </div>
+            </div>
+          </div>
+          <!-- PROGRAMADO -->
+          <div style="background:#fff;border-radius:10px;border:1.5px solid #bfdbfe;padding:10px 12px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="flex:1">
+                <div style="font-size:9px;color:var(--g400);font-weight:700;text-transform:uppercase;margin-bottom:3px">22/06 → 26/06 · Prosegur</div>
+                <div style="font-size:11px;font-weight:700;color:var(--blue)">📅 Programado: 28/06 (sábado)</div>
+                <div style="font-size:9px;color:var(--g500);margin-top:2px">3 sessões &nbsp;·&nbsp; Maria Costa</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;margin-left:8px">
+                <div style="font-size:14px;font-weight:800;color:var(--blue2)">€4.987</div>
+                <span class="mock-badge prog" style="margin-top:3px;display:inline-block">📅 Prog.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:9px;color:var(--g400);margin-top:8px;text-align:center">Toque em ✏️ para editar &nbsp;·&nbsp; Toque no registo para ver o detalhe completo</div>
+      </div>
+    </div>
     <h3>Editar um registo</h3>
     <ol class="step-list">
       <li><span>Localize o registo na lista e toque no botão <strong>✏️</strong></span></li>
@@ -850,29 +971,65 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
           <div class="mock-btn" style="margin-top:4px;font-size:11px">📧 Enviar Email</div>
         </div>
         <div class="mock-card">
-          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;margin-bottom:8px">📧 Email que será enviado</div>
-          <div style="font-size:10px;color:var(--g600);margin-bottom:3px"><b>Para:</b> contabilidade@empresa.pt</div>
-          <div style="font-size:10px;color:var(--g600);margin-bottom:3px"><b>CC:</b> ivo@despomar.com</div>
-          <div style="font-size:10px;color:var(--g600);margin-bottom:8px"><b>Assunto:</b> Depósitos junho 2026 — ESS Guia — até 12/06</div>
-          <div style="background:var(--g50);border-radius:7px;padding:8px;font-size:9px;color:var(--g600);line-height:1.7;font-family:monospace">
-            Exma. Contabilidade,<br>
-            Seguem os depósitos bancários efectuados<br>
-            até ao dia de hoje, 12/06/2026, referentes<br>
-            ao mês de junho — ESS Guia.<br><br>
-            DEPÓSITOS REALIZADOS — JUNHO 2026<br>
-            01/06→07/06 · Prosegur · €4.886<br>
-            08/06→12/06 · Prosegur · €4.451<br><br>
-            TOTAL DEPOSITADO: €9.337,05
+          <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;margin-bottom:8px">📧 Pré-visualização do Email</div>
+          <div style="font-size:10px;color:var(--g600);margin-bottom:2px"><b>Para:</b> ines.lopes@despomar.com</div>
+          <div style="font-size:10px;color:var(--g600);margin-bottom:2px"><b>CC:</b> gerente.guia@ericeirasurfskate.pt</div>
+          <div style="font-size:10px;color:var(--g600);margin-bottom:8px"><b>Assunto:</b> Depósitos – ESS Guia – junho 2026 – até 12/06/2026</div>
+          <!-- Pré-visualização HTML do email -->
+          <div style="border:1px solid var(--g200);border-radius:9px;overflow:hidden;margin-bottom:8px">
+            <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:10px 12px;color:#fff">
+              <div style="font-size:11px;font-weight:800">ESS Guia — Ericeira Surf &amp; Skate</div>
+              <div style="font-size:9px;opacity:.8;margin-top:2px">Folha de Depósitos · junho 2026 · até 12/06/2026</div>
+            </div>
+            <div style="padding:10px 12px;background:#f8fafc">
+              <!-- KPIs -->
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px">
+                <div style="background:#eff6ff;border-radius:7px;padding:6px;text-align:center;border:1px solid #bfdbfe"><div style="font-size:7px;color:#1e40af;font-weight:800;text-transform:uppercase">Total Vendas</div><div style="font-size:12px;font-weight:800;color:#1e3a8a">€19.634</div></div>
+                <div style="background:#f0fdf4;border-radius:7px;padding:6px;text-align:center;border:1px solid #bbf7d0"><div style="font-size:7px;color:#166534;font-weight:800;text-transform:uppercase">Depositado</div><div style="font-size:12px;font-weight:800;color:#166534">€9.337</div></div>
+                <div style="background:#fffbeb;border-radius:7px;padding:6px;text-align:center;border:1px solid #fde68a"><div style="font-size:7px;color:#854d0e;font-weight:800;text-transform:uppercase">Por Dep.</div><div style="font-size:12px;font-weight:800;color:#92400e">€10.297</div></div>
+              </div>
+              <!-- Dep 1 -->
+              <div style="background:#fff;border:1.5px solid #bbf7d0;border-radius:9px;padding:9px 10px;margin-bottom:6px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                  <div><div style="font-size:8px;color:var(--g400);font-weight:700;text-transform:uppercase">Depósito 1</div><div style="font-size:12px;font-weight:800;color:#0f172a">05/06/2026</div></div>
+                  <div style="text-align:right"><div style="font-size:13px;font-weight:800;color:#1d4ed8">€4.886,05</div><div style="font-size:8px;color:var(--g400)">3 sessões</div></div>
+                </div>
+                <div style="background:#f8fafc;border-radius:6px;padding:5px 8px;font-size:9px;color:var(--g600);font-family:monospace;margin-bottom:5px">📎 26443E</div>
+                <div style="background:#dcfce7;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;color:#166534;display:inline-block;margin-bottom:5px">✅ OK</div>
+                <div style="border-top:1px solid var(--g100);padding-top:5px">
+                  <div style="font-size:8px;font-weight:700;color:var(--g400);text-transform:uppercase;margin-bottom:3px">Sessões</div>
+                  <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0;border-bottom:1px solid #f1f5f9"><span style="color:var(--g500)">01/06 &nbsp; Sess. <b>6280</b></span><span style="font-weight:700;color:#1d4ed8">€1.635,80</span></div>
+                  <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0;border-bottom:1px solid #f1f5f9"><span style="color:var(--g500)">03/06 &nbsp; Sess. <b>6283</b></span><span style="font-weight:700;color:#1d4ed8">€1.850,00</span></div>
+                  <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0"><span style="color:var(--g500)">05/06 &nbsp; Sess. <b>6285</b></span><span style="font-weight:700;color:#1d4ed8">€1.400,25</span></div>
+                </div>
+              </div>
+              <!-- Dep 2 -->
+              <div style="background:#fff;border:1.5px solid #fde68a;border-radius:9px;padding:9px 10px;margin-bottom:6px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                  <div><div style="font-size:8px;color:var(--g400);font-weight:700;text-transform:uppercase">Depósito 2</div><div style="font-size:12px;font-weight:800;color:#0f172a">12/06/2026</div></div>
+                  <div style="text-align:right"><div style="font-size:13px;font-weight:800;color:#1d4ed8">€4.451,00</div><div style="font-size:8px;color:var(--g400)">2 sessões</div></div>
+                </div>
+                <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:5px 8px;font-size:9px;font-weight:800;color:#991b1b;margin-bottom:5px">⚠️ SEM COMPROVATIVO — Talão em falta!</div>
+                <div style="background:#fef9c3;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;color:#854d0e;display:inline-block;margin-bottom:5px">⚠️ Aviso</div>
+                <div style="border-top:1px solid var(--g100);padding-top:5px">
+                  <div style="font-size:8px;font-weight:700;color:var(--g400);text-transform:uppercase;margin-bottom:3px">Sessões</div>
+                  <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0;border-bottom:1px solid #f1f5f9"><span style="color:var(--g500)">08/06 &nbsp; Sess. <b>6290</b></span><span style="font-weight:700;color:#1d4ed8">€2.235,50</span></div>
+                  <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0"><span style="color:var(--g500)">10/06 &nbsp; Sess. <b>6291</b></span><span style="font-weight:700;color:#1d4ed8">€2.215,50</span></div>
+                </div>
+              </div>
+              <div style="font-size:9px;color:var(--g400);padding-top:6px;border-top:1px solid var(--g200)">Com os melhores cumprimentos,<br><strong style="color:var(--g700)">ESS Guia — Ericeira Surf &amp; Skate</strong></div>
+            </div>
           </div>
-          <div style="display:flex;gap:6px;margin-top:8px">
+          <div style="display:flex;gap:6px">
             <div class="mock-btn" style="flex:1;margin-top:0;font-size:10px">✉️ Enviar Email</div>
             <div style="background:var(--g100);color:var(--g600);border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700">📋</div>
           </div>
         </div>
       </div>
     </div>
-    <div class="tip"><b>💡 Envio parcial:</b> Pode enviar a qualquer momento do mês — o email indica "depósitos efectuados até ao dia de hoje". Pode enviar novamente no final do mês com o total completo.</div>
-    <div class="warning"><b>⚠️ Email não configurado?</b> Se aparecer aviso a vermelho, vá às Configurações (⚙️) e preencha o "Email Contabilidade".</div>
+    <div class="tip"><b>💡 Envio parcial:</b> Pode enviar a qualquer momento do mês — o assunto indica "até DD/MM/YYYY". Pode enviar novamente no final do mês com o total completo.</div>
+    <div class="warning"><b>⚠️ Email não configurado?</b> Se aparecer aviso a vermelho no campo "Para:", vá às Configurações (⚙️) e preencha o "Email Contabilidade".</div>
+    <div class="important"><b>⚠️ Talão em falta?</b> Se um depósito aparecer com aviso vermelho "SEM COMPROVATIVO", edite o registo na Lista e adicione o número de talão antes de enviar o email.</div>
   </div>
 </div>
 
