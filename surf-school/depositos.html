@@ -2460,7 +2460,14 @@ function rSASupervision(){
         overdueMap[r.store_id]={dias:diasDesde,prazo};
     }
   });
-  const overdueStores=storeList.filter(s=>overdueMap[s.sid]);
+  // Build overdueStores from ALL stores (ignore loja filter — global alert)
+  const overdueStores=Object.keys(overdueMap).map(sid=>{
+    const sc2=allStoreConfigs.find(c=>c.store_id===sid);
+    const displayName=sc2?.emp||sid;
+    const lojaTypes=[...new Set(regs.filter(r=>r.store_id===sid&&!r.dataDeposito).map(r=>r.tipo).filter(Boolean))];
+    const servicoStr=lojaTypes.filter(t=>t!=='Depósito Direto').join(', ');
+    return{sid,displayName,servicoStr};
+  }).sort((a,b)=>overdueMap[b.sid].dias-overdueMap[a.sid].dias);
   const overdueHtml=overdueStores.length?`
 <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px;border:2px solid #fb923c">
   <div style="background:linear-gradient(90deg,#fff7ed,#ffedd5);padding:10px 14px;border-bottom:1px solid #fed7aa;display:flex;align-items:center;gap:8px">
