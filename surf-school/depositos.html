@@ -1722,13 +1722,13 @@ function prevMonthStr(mes){
   const[y,m]=mes.split('-').map(Number);
   return m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,'0')}`;
 }
-function calcCumprimento(depFeito,depIncompl,semDep,pastMissing){
-  // depFeito = depositado e completo (ok ou warn com dataDeposito) → 100pts
-  // depIncompl = depositado mas incompleto (err com dataDeposito, ex: falta foto) → 90pts
-  // semDep = prazo vencido sem depósito → 0pts mas 3× no denominador
-  // pastMissing = dias em falta já passados → idem
-  const num=depFeito*100+depIncompl*90;
-  const den=depFeito+depIncompl+semDep*3+pastMissing*3;
+function calcCumprimento(depFeito,depIncompl,semDep,pastMissingFrac){
+  // depFeito  = depositado + completo (ok ou warn com deposit) → 100pts
+  // depIncompl= depositado mas incompleto (err com deposit, ex: falta foto) → 60pts
+  // semDep    = vencido sem depósito → 0pts, peso 3× no denominador
+  // pastMissingFrac = dias em falta / prazo do serviço (7 para Prosegur/Lomis, 2 para Dep.Direto)
+  const num=depFeito*100+depIncompl*60;
+  const den=depFeito+depIncompl+semDep*3+pastMissingFrac;
   return den>0?Math.round(num/den):null;
 }
 function storeComplianceMes(sid,mes){
@@ -1745,7 +1745,9 @@ function storeComplianceMes(sid,mes){
   const depFeito=withDep.filter(r=>calcEstado(r,normCfg).s!=='err').length;
   const depIncompl=withDep.filter(r=>calcEstado(r,normCfg).s==='err').length;
   const semDep=dueRecs.filter(r=>!r.dataDeposito).length;
-  return calcCumprimento(depFeito,depIncompl,semDep,pastMissing);
+  const _hasWeeklyS=(normCfg?.prosegurDay||'')!==''||(normCfg?.lomisDay||'')!==''||(normCfg?.cambioDia||'')!=='';
+  const _prazoS=_hasWeeklyS?7:2;
+  return calcCumprimento(depFeito,depIncompl,semDep,pastMissing/_prazoS);
 }
 function avgCycleDays(storeRegs){
   const confirmed=storeRegs.filter(r=>r.talao&&r.dataDeposito);
@@ -1790,7 +1792,9 @@ async function _buildPdfAsync(pw,loja,mes){
   const depFeitoExp=withDepExp.filter(r=>calcEstado(r,storeCfg2).s!=='err').length;
   const depIncomplExp=withDepExp.filter(r=>calcEstado(r,storeCfg2).s==='err').length;
   const semDepExp=dueRecsExp.filter(r=>!r.dataDeposito).length;
-  const compPct=calcCumprimento(depFeitoExp,depIncomplExp,semDepExp,pastMissingExp)??0;
+  const _hasWeeklyExp=(storeCfg2?.prosegurDay||'')!==''||(storeCfg2?.lomisDay||'')!==''||(storeCfg2?.cambioDia||'')!=='';
+  const _prazoExp=_hasWeeklyExp?7:2;
+  const compPct=calcCumprimento(depFeitoExp,depIncomplExp,semDepExp,pastMissingExp/_prazoExp)??0;
   const compColor=compPct>=80?'#166534':compPct>=50?'#92400e':'#991b1b';
   const compBg=compPct>=80?'#dcfce7':compPct>=50?'#fef3c7':'#fee2e2';
   const hoje=new Date();
@@ -2066,7 +2070,9 @@ function rSASupervision(){
     const depFeitoC=withDepC.filter(r=>calcEstado(r,normCfg).s!=='err').length;
     const depIncomplC=withDepC.filter(r=>calcEstado(r,normCfg).s==='err').length;
     const semDepC=dueRecsC.filter(r=>!r.dataDeposito).length;
-    const compliant=calcCumprimento(depFeitoC,depIncomplC,semDepC,pastMissingCount);
+    const _hasWeeklyC=(normCfg?.prosegurDay||'')!==''||(normCfg?.lomisDay||'')!==''||(normCfg?.cambioDia||'')!=='';
+    const _prazoC=_hasWeeklyC?7:2;
+    const compliant=calcCumprimento(depFeitoC,depIncomplC,semDepC,pastMissingCount/_prazoC);
     const lastCompliant=storeComplianceMes(sid,lastMes);
     const today=new Date();
     let delaySum=0,delayCount=0;
@@ -2660,12 +2666,15 @@ function rDash(){
   const missingCount=missingArr.length;
   const todayStrDash=new Date().toISOString().split('T')[0];
   const pastMissingDash=missingArr.filter(d=>d<todayStrDash).length;
-  const dueRecsDash=data.filter(r=>calcEstado(r,cfg).s!=='prog');
+  const dueRecsDash=data.filter(r=>calcEstado(r,getCfg(r)).s!=='prog');
   const withDepDash=dueRecsDash.filter(r=>r.dataDeposito);
-  const depFeitoDash=withDepDash.filter(r=>calcEstado(r,cfg).s!=='err').length;
-  const depIncomplDash=withDepDash.filter(r=>calcEstado(r,cfg).s==='err').length;
+  const depFeitoDash=withDepDash.filter(r=>calcEstado(r,getCfg(r)).s!=='err').length;
+  const depIncomplDash=withDepDash.filter(r=>calcEstado(r,getCfg(r)).s==='err').length;
   const semDepDash=dueRecsDash.filter(r=>!r.dataDeposito).length;
-  const complPct=calcCumprimento(depFeitoDash,depIncomplDash,semDepDash,pastMissingDash);
+  const _dashCfgRef=isSA&&lojaFil?allStoreConfigs.find(c=>(c.lojas||[]).includes(lojaFil)):(!isSA?{prosegur_day:cfg?.prosegurDay||'',lomis_day:cfg?.lomisDay||'',cambio_dia:cfg?.cambioDia||''}:null);
+  const _hasWeeklyDash=(_dashCfgRef?.prosegur_day||_dashCfgRef?.prosegurDay||'')!==''||(_dashCfgRef?.lomis_day||_dashCfgRef?.lomisDay||'')!==''||(_dashCfgRef?.cambio_dia||_dashCfgRef?.cambioDia||'')!=='';
+  const _prazoDash=_hasWeeklyDash?7:2;
+  const complPct=calcCumprimento(depFeitoDash,depIncomplDash,semDepDash,pastMissingDash/_prazoDash);
   const kpiCompCls=complPct===null?'blue':complPct>=80?'green':complPct>=50?'orange':'red';
   const alertsCount=getOverdueAlerts(lojaFil).length;
   const errTotal=erros+alertsCount+missingCount;
