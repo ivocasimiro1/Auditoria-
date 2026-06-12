@@ -3235,13 +3235,27 @@ function updPrev(){
   const total=data.reduce((s,r)=>s+totalValor(r),0);
   document.getElementById('prev-tbl').innerHTML=`<thead><tr>${hs.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}<tr class="tr"><td colspan="6">TOTAL</td><td style="text-align:right">${fmt(total)}</td><td colspan="3">${data.length} reg.</td></tr></tbody>`;
 }
-function doExp(){
+async function doExp(){
   const loja=document.getElementById('e-loja').value;
   if(!loja){toast('⚠️ Selecciona uma loja específica para exportar');return;}
   const data=getFiltExp();
   if(!data.length){toast('⚠️ Sem dados para esta loja/mês');return;}
-  if(expFmt==='email')expEmail();
-  else expPrint(data);
+  if(expFmt==='email'){expEmail();return;}
+  // SA: sentinels foto=true need to be resolved — open popup first (sync) to avoid popup blocker
+  if(isSA&&data.some(r=>r.foto===true)){
+    const pw=window.open('about:blank','_blank');
+    if(!pw){toast('⚠️ Popup bloqueado — permite popups para esta página.');return;}
+    pw.document.write(`<!DOCTYPE html><html><body style="font-family:-apple-system,sans-serif;padding:32px;color:#374151;text-align:center"><div style="font-size:18px;margin-bottom:8px">📷 A carregar fotos...</div><div style="font-size:13px;color:#9ca3af">Por favor aguarda</div></body></html>`);
+    for(const r of data){
+      if(r.foto===true){
+        try{const{data:d}=await SB.from('dep_registos').select('foto').eq('id',r.id).maybeSingle();r.foto=d?.foto||null;}
+        catch(e){r.foto=null;}
+      }
+    }
+    expPrint(data,false,pw);
+  }else{
+    expPrint(data);
+  }
 }
 
 
@@ -3272,7 +3286,7 @@ function expEmail(){
 }
 
 
-function expPrint(data, asDownload=false){
+function expPrint(data, asDownload=false, existingPw=null){
   const mes=document.getElementById('e-mes').value||curMesStr();
   const loja=document.getElementById('e-loja').value||cfg.lojas[0]||'Loja';
   const pCfg=exportCfg||cfg;
@@ -3453,18 +3467,15 @@ function saveImg(){
 </body></html>`;
 
   if(asDownload){
-    // Abre em nova janela e aciona impressão → utilizador guarda como PDF
-    const pw=window.open('about:blank','_blank');
+    const pw=existingPw||window.open('about:blank','_blank');
     if(!pw){toast('⚠️ Popup bloqueado — permite popups para esta página.');return '';}
-    pw.document.write(html);
-    pw.document.close();
+    pw.document.write(html);pw.document.close();
     setTimeout(()=>{pw.focus();pw.print();},400);
     return 'PDF';
   }
-  const pw=window.open('about:blank','_blank');
+  const pw=existingPw||window.open('about:blank','_blank');
   if(!pw){toast('⚠️ Popup bloqueado — permite popups para esta página.');return;}
-  pw.document.write(html);
-  pw.document.close();
+  pw.document.write(html);pw.document.close();
   setTimeout(()=>{pw.focus();pw.print();},400);
 }
 
