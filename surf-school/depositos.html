@@ -1920,7 +1920,7 @@ async function _buildPdfAsync(pw,loja,mes){
   const pdfEmailBody=[
     `Exma. Contabilidade,`,
     ``,
-    `Envio os registos de depósitos bancários de ${mesNome} — ${loja}.`,
+    `Seguem os depósitos bancários efectuados até ao dia de hoje, ${dataRel}, referentes ao mês de ${mesNome} — ${loja}.`,
     ``,
     `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
     `DEPÓSITOS REALIZADOS — ${mesNome.toUpperCase()}`,
@@ -1991,8 +1991,8 @@ tr:last-child td{border-bottom:none}
     <div>
       ${LOGO_SVG}
       <div style="margin-top:10px">
-        <div class="doc-title">Relatório de Conformidade de Depósitos</div>
-        <div style="font-size:12px;color:#475569;margin-top:2px"><strong>${loja}</strong> · ${mesNome}</div>
+        <div class="doc-title">Registo de Depósitos — ${mesNome}</div>
+        <div style="font-size:12px;color:#475569;margin-top:2px"><strong>${loja}</strong> · Depósitos efectuados até ${dataRel}</div>
       </div>
     </div>
     <div class="doc-info">
@@ -2032,11 +2032,6 @@ tr:last-child td{border-bottom:none}
     </table>
   </div>
 
-  <div class="section">
-    <h3>Recomendações</h3>
-    <ul class="recoms" style="padding-left:16px">${recoms.join('')}</ul>
-  </div>
-
   <div class="footer">
     <div>Despomar · Sistema de Controlo de Depósitos · auditoria-25b.pages.dev</div>
     <div>${dataRel}</div>
@@ -2044,7 +2039,7 @@ tr:last-child td{border-bottom:none}
 </div>
 <script>
 var _eTo=${JSON.stringify(storeEmail||'')};
-var _eSubj=${JSON.stringify('Relatorio Conformidade Depositos - '+loja+' - '+mesNome)};
+var _eSubj=${JSON.stringify('Depósitos '+mesNome+' — '+loja+' — até '+dataRel)};
 var _eBody=${JSON.stringify(pdfEmailBody)};
 function sendEmailReport(){
   var base='mailto:'+_eTo+'?cc=ivo@despomar.com&subject='+encodeURIComponent(_eSubj);
