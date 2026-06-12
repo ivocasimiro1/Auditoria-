@@ -1243,7 +1243,9 @@ function onTipoChange(){
   const existing=getSesSionsData();
   document.getElementById('ses-list').innerHTML='';
   sesCount=0;
-  if(existing.length>0){existing.forEach(s=>addSes(s));}
+  // If sessions are pristine (no session number, no value), replace with fresh suggestion
+  const pristine=existing.every(s=>!s.sessao&&s.valor===0);
+  if(existing.length>0&&!pristine){existing.forEach(s=>addSes(s));}
   else{addSes();}
   checkSesAlert();
   checkPendingSuggestion();
