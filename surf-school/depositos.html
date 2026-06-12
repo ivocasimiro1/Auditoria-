@@ -1263,10 +1263,35 @@ function getSesSionsData(){
   });
 }
 
+function getNextSesDefaults(){
+  // If form already has sessions, base next on the last form row
+  const formSes=getSesSionsData().filter(s=>s.dataVendas||s.sessao);
+  if(formSes.length){
+    const last=formSes[formSes.length-1];
+    const nd=last.dataVendas?new Date(new Date(last.dataVendas+'T12:00:00').getTime()+86400000).toISOString().split('T')[0]:new Date().toISOString().split('T')[0];
+    return{dataVendas:nd,sessao:last.sessao?(parseInt(last.sessao)+1).toString():''};
+  }
+  // Otherwise find last session in existing records for same loja+tipo
+  const loja=document.getElementById('f-loja')?.value;
+  const tipo=document.getElementById('f-tipo')?.value;
+  const today=new Date().toISOString().split('T')[0];
+  if(!loja||!tipo)return{dataVendas:today,sessao:''};
+  const rel=regs.filter(r=>r.loja===loja&&r.tipo===tipo);
+  if(!rel.length)return{dataVendas:today,sessao:''};
+  let lastDate='',lastNum=0;
+  rel.forEach(r=>(r.sessoes||[]).forEach(s=>{
+    if(s.dataVendas&&s.dataVendas>lastDate)lastDate=s.dataVendas;
+    const n=parseInt(s.sessao);if(!isNaN(n)&&n>lastNum)lastNum=n;
+  }));
+  const nd=lastDate?new Date(new Date(lastDate+'T12:00:00').getTime()+86400000).toISOString().split('T')[0]:today;
+  return{dataVendas:nd,sessao:lastNum?String(lastNum+1):''};
+}
+
 function addSes(data){
   const tipo=document.getElementById('f-tipo').value;
   const showCB=(tipo==='Prosegur'||tipo==='Lomis'||tipo==='Câmbio');
   const idx=++sesCount;
+  const def=data?null:getNextSesDefaults();
   const div=document.createElement('div');
   div.className='ses-row'+(showCB?' has-cb':'');
   div.dataset.idx=idx;
@@ -1276,8 +1301,8 @@ function addSes(data){
       <button class="ses-del" onclick="removeSes(this)" type="button">×</button>
     </div>
     <div class="grid2">
-      <div class="fg"><label style="font-size:11px">Data de Vendas *</label><input type="date" id="sv-${idx}" value="${data?.dataVendas||new Date().toISOString().split('T')[0]}" oninput="updSesTotal()"></div>
-      <div class="fg"><label style="font-size:11px">Nº Sessão de Caixa *</label><input type="number" id="ss-${idx}" value="${data?.sessao||''}" placeholder="6255" inputmode="numeric"></div>
+      <div class="fg"><label style="font-size:11px">Data de Vendas *</label><input type="date" id="sv-${idx}" value="${data?.dataVendas||(def?.dataVendas||new Date().toISOString().split('T')[0])}" oninput="updSesTotal()"></div>
+      <div class="fg"><label style="font-size:11px">Nº Sessão de Caixa *</label><input type="number" id="ss-${idx}" value="${data?.sessao||(def?.sessao||'')}" placeholder="6255" inputmode="numeric"></div>
     </div>
     <div class="${showCB?'grid2':''}">
       <div class="fg"><label style="font-size:11px">Valor (€) *</label><div class="im"><input type="number" id="svl-${idx}" value="${data?.valor||''}" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="updSesTotal()"></div></div>
