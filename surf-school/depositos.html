@@ -1158,7 +1158,7 @@ function sp(name){
     window.scrollTo(0,0);
     if(name==='dash')rDash();
     if(name==='supervisao'){popSupSel();rSASupervision();}
-    if(name==='novo')popSel();
+    if(name==='novo'){resetNovoForm();popSel();}
     if(name==='lista')rLista();
     if(name==='mapa')rMapa();
     if(name==='exp'){seExp('email');rExpSel();}
@@ -1198,6 +1198,8 @@ function popSel(){
     if(isSA){const extra=[...new Set(regs.map(r=>r.loja).filter(l=>l&&!cfg.lojas.includes(l)))];extra.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l+' ★';el.appendChild(o)});}
     if(v)el.value=v;
     else if(cfg.lojas.length&&(id==='e-loja'||(id==='f-loja'&&!isSA)||(id==='dash-loja'&&!isSA)||(id==='mapa-loja'&&!isSA)))el.value=cfg.lojas[0];
+    // loja users: lock e-loja — cannot change store filter on email page
+    if(!isSA&&id==='e-loja'){el.disabled=true;el.style.opacity='.65';el.title='Filtrado à sua loja';}
   });
   ['dash-mes','fl-mes','e-mes','mapa-mes'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
