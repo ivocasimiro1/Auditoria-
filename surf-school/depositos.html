@@ -853,11 +853,11 @@ async function sbDel(id){
   const{error}=await sfetch('DELETE','dep_registos','id=eq.'+id);if(error){toast('⚠️ Erro: '+error.message);return false;}return true;
 }
 async function sbSaveCfgSB(){
-  if(!sbProfile)return;
+  if(!sbProfile)return false;
   const sid=isSA?'super':sbProfile.store_id;
   const body={store_id:sid,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',mes_inicio:cfg.mesInicio||'',lojas:cfg.lojas||[],resps:cfg.resps||[]};
-  if(sbUser){const{error}=await SB.from('dep_config').upsert(body);if(error)console.warn('sbSaveCfgSB:',error.message);return;}
-  const{error}=await sfetch('UPSERT','dep_config','',body);if(error)console.warn('sbSaveCfgSB:',error.message);
+  if(sbUser){const{error}=await SB.from('dep_config').upsert(body,{onConflict:'store_id'});if(error){toast('⚠️ Erro ao guardar configurações: '+error.message);console.warn('sbSaveCfgSB:',error.message);return false;}return true;}
+  const{error}=await sfetch('UPSERT','dep_config','',body);if(error){toast('⚠️ Erro ao guardar configurações: '+error.message);console.warn('sbSaveCfgSB:',error.message);return false;}return true;
 }
 async function sbSyncLojasAll(){
   if(!isSA)return;
@@ -3508,15 +3508,16 @@ async function doExp(){
 function expEmail(){
   // Synchronous — keeps mailto: in the direct click gesture so browsers don't block it
   const dest=(document.getElementById('ep-to')?.textContent||'').trim();
+  const subjRaw=document.getElementById('ep-sub')?.textContent||'';
+  const bodyRaw=document.getElementById('ep-body')?.dataset.body||'';
+  // Loading state — preview not yet ready
+  if(dest==='A carregar...'||subjRaw==='A carregar...'||!bodyRaw){
+    toast('⏳ A preparar email — aguarde um momento e tente novamente');
+    return;
+  }
   if(!dest||dest==='(não configurado)'||dest==='—'||!dest.includes('@')){
     toast('⚠️ Configure o email de contabilidade nas Configurações');
     sp('settings');
-    return;
-  }
-  const subjRaw=document.getElementById('ep-sub')?.textContent||'';
-  const bodyRaw=document.getElementById('ep-body')?.dataset.body||'';
-  if(!bodyRaw||subjRaw==='—'){
-    toast('⚠️ A pré-visualização ainda está a carregar — aguarde um momento');
     return;
   }
   const ccRaw=(document.getElementById('ep-cc')?.textContent||'').trim();
@@ -3766,7 +3767,14 @@ function rSettings(){
   document.getElementById('ltags').innerHTML=cfg.lojas.map(l=>`<span class="tag">${l}<button onclick="remL('${l.replace(/'/g,"\\'")}')">×</button></span>`).join('');
   document.getElementById('rtags').innerHTML=cfg.resps.map(r=>`<span class="tag" style="background:var(--gl);color:var(--green)">${r}<button onclick="remR('${r.replace(/'/g,"\\'")}')">×</button></span>`).join('');
 }
-async function scBtn(){sc();await sbSaveCfgSB();toast('✓ Configurações guardadas!');}
+async function scBtn(){
+  const btn=document.querySelector('#page-settings .btn.bs');
+  if(btn){btn.disabled=true;btn.textContent='A guardar...';}
+  sc();
+  const ok=await sbSaveCfgSB();
+  if(btn){btn.disabled=false;btn.textContent='✓ Guardar Configurações';}
+  if(ok!==false)toast('✓ Configurações guardadas na nuvem!');
+}
 async function doChangePass(){
   const npEl=document.getElementById('cp-new');
   const ncEl=document.getElementById('cp-conf');
