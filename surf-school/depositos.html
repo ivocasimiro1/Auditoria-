@@ -2145,8 +2145,9 @@ function rSASupervision(){
     const prog=storeRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='prog').length;
     const total=storeRegs.length;
     // Cumprimento ponderado: ok=100 warn=60 errCompl=30 errNoDep/missing=0 (3× peso no den)
-    // Derive lojas from actual records (ground truth) — avoids corrupted cfg.lojas
-    const storeLojas2=[...new Set(regs.filter(r=>r.store_id===sid).map(r=>r.loja).filter(Boolean))];
+    // Derive lojas from records; fall back to cfg2.lojas for stores with no records yet
+    const _lojas2Rec=[...new Set(regs.filter(r=>r.store_id===sid).map(r=>r.loja).filter(Boolean))];
+    const storeLojas2=_lojas2Rec.length?_lojas2Rec:(cfg2?.lojas||[]);
     const storeMissingArr=[...new Set(storeLojas2.flatMap(l=>getMissingDays(mes,l)||[]))];
     const storeMissingCount=storeMissingArr.length;
     const _todayCStr=new Date().toISOString().split('T')[0];
