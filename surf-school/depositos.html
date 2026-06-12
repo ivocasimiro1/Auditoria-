@@ -1183,10 +1183,15 @@ function popSel(){
     if(id==='f-loja')el.innerHTML='<option value="">Selecionar loja...</option>';
     else if(id==='e-loja')el.innerHTML='';
     else el.innerHTML='<option value="">Todas</option>';
-    // SA on email page: use store_id as value (always set on records); label from records/config
+    // SA on email page: combine all sources — loja names from records + dep_config lojas
     if(isSA&&id==='e-loja'){
-      const sids=[...new Set([...allStoreConfigs.map(c=>c.store_id),...regs.map(r=>r.store_id).filter(Boolean)])].sort();
-      sids.forEach(sid=>{const o=document.createElement('option');o.value=sid;o.textContent=getStoreLabel(sid)||sid;el.appendChild(o)});
+      const opts=new Map();
+      regs.map(r=>r.loja).filter(Boolean).forEach(l=>{if(!opts.has(l))opts.set(l,l);});
+      allStoreConfigs.forEach(c=>{
+        if(c.lojas?.length){c.lojas.filter(Boolean).forEach(l=>{if(!opts.has(l))opts.set(l,l);});}
+        else if(c.store_id&&!opts.has(c.store_id)){opts.set(c.store_id,c.emp||c.store_id);}
+      });
+      [...opts.entries()].sort((a,b)=>a[1].localeCompare(b[1])).forEach(([val,lbl])=>{const o=document.createElement('option');o.value=val;o.textContent=lbl;el.appendChild(o);});
     } else {
       cfg.lojas.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;el.appendChild(o)});
       if(isSA){const extra=[...new Set(regs.map(r=>r.loja).filter(l=>l&&!cfg.lojas.includes(l)))];extra.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l+' ★';el.appendChild(o)});}
@@ -3652,8 +3657,8 @@ function getFiltExp(){
   const mes=document.getElementById('e-mes').value;
   return regs.filter(r=>{
     if(sel){
-      // SA: e-loja value is store_id; loja users: e-loja value is loja name
-      if(isSA){if(r.store_id!==sel)return false;}
+      // SA: sel may be loja name or store_id — accept either match
+      if(isSA){if(r.store_id!==sel&&r.loja!==sel)return false;}
       else{if(r.loja!==sel)return false;}
     }
     if(mes){const ref=getRefDate(r);if(!ref.startsWith(mes))return false}
