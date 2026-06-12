@@ -538,6 +538,7 @@ select{
     <div class="chip" data-s="err">🔴 Erro</div>
     <div class="chip" data-s="prog">📅 Prog.</div>
   </div>
+  <div id="list-store-banner"></div>
   <div id="list"></div>
   <div id="list-missing"></div>
 </div>
@@ -704,9 +705,10 @@ select{
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
     Dashboard
   </button>
-  <button class="nb sa-tab" id="nb-supervisao" onclick="sp('supervisao')">
+  <button class="nb sa-tab" id="nb-supervisao" onclick="sp('supervisao')" style="position:relative">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
     Supervisão
+    <span id="nav-overdue-badge" style="display:none;position:absolute;top:5px;right:5px;background:#dc2626;color:#fff;border-radius:10px;min-width:16px;height:16px;font-size:9px;font-weight:800;line-height:16px;text-align:center;padding:0 3px;box-sizing:border-box"></span>
   </button>
   <button class="nb" id="nb-novo" onclick="sp('novo')">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -2438,7 +2440,56 @@ function rSASupervision(){
       ${inactiveStores.length?`<span style="font-size:11px;color:#64748b">⚫ ${inactiveStores.length} sem dados</span>`:''}
       <span style="font-size:10px;color:#92400e;margin-left:auto">Role para ver detalhes ↓</span>
     </div>`;
-  panel.innerHTML=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
+  // Lojas em atraso (err > 0 = records past deadline without complete deposit)
+  const overdueStores=storeList.filter(s=>s.err>0&&s.total>0);
+  const overdueHtml=overdueStores.length?`
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:10px;border:2px solid #fb923c">
+  <div style="background:linear-gradient(90deg,#fff7ed,#ffedd5);padding:10px 14px;border-bottom:1px solid #fed7aa;display:flex;align-items:center;gap:8px">
+    <div style="font-size:22px;flex-shrink:0">⏰</div>
+    <div>
+      <div style="font-size:13px;font-weight:800;color:#9a3412">${overdueStores.length} Loja${overdueStores.length!==1?'s':''} com Depósitos em Atraso</div>
+      <div style="font-size:10px;color:#c2410c;margin-top:1px">Registos vencidos por completar — requer ação urgente</div>
+    </div>
+  </div>
+  ${overdueStores.map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #fef3c7">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;color:#7c2d12">${s.displayName}</div>
+        ${s.servicoStr?`<div style="font-size:10px;color:#92400e">🚚 ${s.servicoStr}</div>`:''}
+      </div>
+      <div style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:800;flex-shrink:0">${s.err} em atraso</div>
+      <button onclick="filterListaBySid('${s.sid}','err')" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;flex-shrink:0">Ver</button>
+    </div>`).join('')}
+</div>`:'';
+  // Ranking de lojas (best-to-worst by compliance)
+  const rankingStores=[...storeList].filter(s=>s.total>0).sort((a,b)=>{
+    if((b.compliant||0)!==(a.compliant||0))return (b.compliant||0)-(a.compliant||0);
+    if(a.gaps!==b.gaps)return a.gaps-b.gaps;
+    if(a.err!==b.err)return a.err-b.err;
+    const ca=a.cycle!==null?a.cycle:99,cb=b.cycle!==null?b.cycle:99;
+    return ca-cb;
+  });
+  const rankingRows=rankingStores.map((s,i)=>{
+    const col=s.gaps>0?'#dc2626':s.err>0?'#ef4444':s.warn>0?'#d97706':'#16a34a';
+    const icon=s.gaps>0?'⛔':s.err>0?'🔴':s.warn>0?'⚠️':'✅';
+    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span style="width:18px;height:18px;border-radius:50%;background:#e2e8f0;color:#64748b;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</span>`;
+    return`<div style="display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid #f1f5f9${i%2?';background:#f8fafc':''}">
+      <div style="font-size:18px;flex-shrink:0;line-height:1">${medal}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;color:#1e293b">${icon} ${s.displayName}</div>
+        ${s.servicoStr?`<div style="font-size:10px;color:#64748b">${s.servicoStr}</div>`:''}
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:14px;font-weight:800;color:${col}">${s.compliant}%</div>
+        <div style="font-size:8px;color:#94a3b8">compliance</div>
+      </div>
+      ${s.cycle!==null?`<div style="text-align:right;flex-shrink:0;min-width:28px">
+        <div style="font-size:12px;font-weight:700;color:${s.cycle<=2?'#16a34a':s.cycle<=4?'#d97706':'#dc2626'}">${s.cycle}d</div>
+        <div style="font-size:8px;color:#94a3b8">ciclo</div>
+      </div>`:''}
+      <button onclick="filterListaBySid('${s.sid}','')" style="background:#e2e8f0;color:#475569;border:none;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:600;cursor:pointer;flex-shrink:0;touch-action:manipulation">Lista</button>
+    </div>`;
+  }).join('');
+  panel.innerHTML=overdueHtml+`<div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
     <div style="padding:12px 14px 12px;background:linear-gradient(135deg,#1e3a5f,#1e40af);border-bottom:1px solid #1d4ed8">
       <div class="ct" style="margin-bottom:8px;color:#fff;font-size:13px">📊 Supervisão Global — ${mesLabelStr}</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
@@ -2493,7 +2544,18 @@ function rSASupervision(){
         ${credRows||'<div style="color:#94a3b8;font-size:12px">Nenhuma loja registada</div>'}
       </div>
     </details>
+    <details style="border-top:1px solid #e2e8f0">
+      <summary style="padding:10px 14px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+        <span>🏆</span> Ranking de Performance
+        <span style="margin-left:auto;font-size:10px;color:#94a3b8">Melhor → Pior · compliance</span>
+      </summary>
+      <div style="padding:0 0 8px">
+        ${rankingRows||'<div style="padding:12px 14px;color:#94a3b8;font-size:12px">Sem dados suficientes para ranking</div>'}
+      </div>
+    </details>
   </div>`;
+  const navBadge=document.getElementById('nav-overdue-badge');
+  if(navBadge){navBadge.textContent=overdueStores.length||'';navBadge.style.display=overdueStores.length?'flex':'none';}
 }
 
 function rDash(){
@@ -2687,6 +2749,35 @@ function rLista(){
   document.getElementById('s-err').textContent=filtered.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
   document.getElementById('s-ok').textContent=filtered.filter(r=>calcEstado(r,getRecordCfg(r)).s==='ok').length;
   const el=document.getElementById('list');
+  // SA: store summary banner when filtered by store_id
+  const bannerEl=document.getElementById('list-store-banner');
+  if(bannerEl){
+    if(isSA&&fSid){
+      const sidCfg=allStoreConfigs.find(c=>c.store_id===fSid);
+      const sidName=sidCfg?.emp||fSid;
+      const sidAllRegs=regs.filter(r=>{if(r.store_id!==fSid)return false;if(fm){const ref=getRefDate(r);if(!ref.startsWith(fm))return false;}return true;});
+      const calcS=r=>calcEstado(r,getRecordCfg(r)).s;
+      const sidOk=sidAllRegs.filter(r=>calcS(r)==='ok').length;
+      const sidWarn=sidAllRegs.filter(r=>calcS(r)==='warn').length;
+      const sidErr=sidAllRegs.filter(r=>calcS(r)==='err').length;
+      const sidTotal=sidAllRegs.length;
+      const sidComp=sidTotal?Math.round((sidOk/sidTotal)*100):0;
+      const compCol=sidComp>=80?'#86efac':sidComp>=50?'#fde68a':'#fca5a5';
+      const mesStr=fm?mesLabel(fm):'Todos os meses';
+      bannerEl.innerHTML=`<div style="background:linear-gradient(135deg,#1e3a5f,#1e40af);color:#fff;border-radius:12px;padding:10px 14px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div><div style="font-size:13px;font-weight:800">${sidName}</div><div style="font-size:10px;opacity:.75;margin-top:1px">${mesStr} · ${sidTotal} registo${sidTotal!==1?'s':''}</div></div>
+          ${sidTotal>0?`<div style="font-size:22px;font-weight:800;color:${compCol}">${sidComp}%</div>`:''}
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">
+          ${sidOk>0?`<span style="background:rgba(255,255,255,.15);color:#86efac;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700">✓ ${sidOk} ok</span>`:''}
+          ${sidWarn>0?`<span style="background:rgba(255,255,255,.15);color:#fde68a;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700">⏱ ${sidWarn} tardio${sidWarn!==1?'s':''}</span>`:''}
+          ${sidErr>0?`<span style="background:rgba(244,63,94,.3);color:#fda4af;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:800">🔴 ${sidErr} em atraso</span>`:''}
+          <button onclick="sp('supervisao')" style="background:rgba(255,255,255,.18);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600;cursor:pointer;margin-left:auto;touch-action:manipulation">← Supervisão</button>
+        </div>
+      </div>`;
+    }else{bannerEl.innerHTML='';}
+  }
   if(!filtered.length){el.innerHTML=`<div class="empty"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>Sem registos</p></div>`;return}
   el.innerHTML=filtered.map(r=>{
     const est=calcEstado(r,getRecordCfg(r));const bc=est.s==='ok'?'bok':est.s==='warn'?'bwarn':est.s==='err'?'berr':'bprog';
@@ -3188,7 +3279,7 @@ function expPrint(data, asDownload=false){
     const fc=estEff.s==='ok'?'#166534':estEff.s==='warn'?'#854d0e':estEff.s==='err'?'#991b1b':'#64748b';
     const sessTalao=getSessTalao(r,s);
     const rowBg=isDup?'#fff0f0':n%2===0?'#f0f7ff':'#ffffff';
-    const photoCell=isFirst?(r.foto?`<td style="padding:2px;text-align:center"><img src="${r.foto}" onerror="this.style.display='none'" style="height:34px;width:46px;object-fit:cover;border-radius:3px;display:block;margin:0 auto"></td>`:`<td style="text-align:center;color:#94a3b8;font-size:8px">—</td>`):`<td></td>`;
+    const photoCell=isFirst?(r.foto&&typeof r.foto==='string'?`<td style="padding:2px;text-align:center"><img src="${r.foto}" onerror="this.style.display='none'" style="height:34px;width:46px;object-fit:cover;border-radius:3px;display:block;margin:0 auto"></td>`:`<td style="text-align:center;color:#94a3b8;font-size:8px">—</td>`):`<td></td>`;
     return`<tr style="background:${rowBg}${isDup?';border-left:3px solid #ef4444':''}${!isFirst?';border-top:1px dashed #e2e8f0':''}">
       <td style="text-align:center;color:#94a3b8;font-size:7px">${isFirst?n:''}</td>
       <td style="font-weight:700;color:${isDup?'#dc2626':'#0f172a'}">${fd(s.dataVendas)}${isDup?' ⚠️':''}</td>
