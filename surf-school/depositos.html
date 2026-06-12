@@ -2019,11 +2019,12 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
-  ${storeEmail?`<div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap">
-    <button class="email-btn" onclick="sendEmailReport()">📧 Email (texto)</button>
+  <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap">
+    <button class="email-btn" style="background:#475569" onclick="window.close()">← Voltar</button>
+    ${storeEmail?`<button class="email-btn" onclick="sendEmailReport()">📧 Email (texto)</button>`:''}
     <button class="email-btn" style="background:#0f172a" onclick="window.print()">🖨️ Imprimir / PDF</button>
-    <button class="email-btn" style="background:#059669" id="share-btn" onclick="shareRpt()" style="display:none">📤 Partilhar com Foto</button>
-  </div>`:'<div style="margin-bottom:16px"><button class="email-btn" style="background:#0f172a" onclick="window.print()">🖨️ Imprimir / PDF</button></div>'}
+    ${storeEmail?`<button class="email-btn" style="background:#059669" id="share-btn" onclick="shareRpt()">📤 Partilhar com Foto</button>`:''}
+  </div>
 
   <div class="estado-box">
     <div class="estado-icon">${estadoGeral.icon}</div>
