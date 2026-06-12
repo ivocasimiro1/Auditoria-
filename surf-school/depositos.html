@@ -2266,12 +2266,12 @@ function rSASupervision(){
   const compColor=kpiColor(avgCompliance,80,50);
   // Month abbreviations for history table
   const monthAbbr=m=>{const[y,mo]=m.split('-');const names=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];return names[parseInt(mo)-1]+(m!==mes?'':' ◀');};
-  // Sort table: active+errors first (most urgent), then gaps, then warns, then ok, then inactive
+  // Sort table: active stores — most gaps first, then most errs, then warns, then ok; inactive last
   const tableStoreSorted=[...storeList].sort((a,b)=>{
     const aInactive=a.total===0,bInactive=b.total===0;
     if(aInactive!==bInactive)return aInactive?1:-1;
-    if(a.err!==b.err)return b.err-a.err;
     if(a.gaps!==b.gaps)return b.gaps-a.gaps;
+    if(a.err!==b.err)return b.err-a.err;
     if(a.warn!==b.warn)return b.warn-a.warn;
     const ca=a.cycle!==null?a.cycle:99,cb=b.cycle!==null?b.cycle:99;
     return cb-ca;
@@ -2496,10 +2496,11 @@ function rSASupervision(){
       <button onclick="filterListaBySid('${s.sid}','')" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;flex-shrink:0">Ver</button>
     </div>`).join('')}
 </div>`:'';
-  // Ranking de lojas: err → gaps → warn → cycle → compliant (tiebreak)
+  // Ranking de lojas: gaps → err → warn → cycle → compliant (tiebreak)
+  // Saltos (dinheiro saltado) são mais graves que erros administrativos (ex: foto em falta)
   const rankingStores=[...storeList].filter(s=>s.total>0).sort((a,b)=>{
-    if(a.err!==b.err)return a.err-b.err;
     if(a.gaps!==b.gaps)return a.gaps-b.gaps;
+    if(a.err!==b.err)return a.err-b.err;
     if(a.warn!==b.warn)return a.warn-b.warn;
     const ca=a.cycle!==null?a.cycle:99,cb=b.cycle!==null?b.cycle:99;
     if(ca!==cb)return ca-cb;
