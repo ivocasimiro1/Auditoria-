@@ -2152,10 +2152,11 @@ function rSASupervision(){
   const totalGaps=storeList.reduce((s,x)=>s+x.gaps,0);
   const totalSemComp=storeList.reduce((s,x)=>s+x.semFoto,0);
   const avgCycleGlobal=cycleScores.length?Math.round(cycleScores.reduce((a,b)=>a+b,0)/cycleScores.length):null;
-  // Build 6-month history for each store
+  // Build 6-month history for each store — only months from implementation start onwards
+  const _implStart=cfg.mesInicio||'2026-06';
   const histMonths=[];
   let hm=mes;
-  for(let i=0;i<6;i++){histMonths.unshift(hm);hm=prevMonthStr(hm);}
+  for(let i=0;i<6;i++){if(hm>=_implStart)histMonths.unshift(hm);hm=prevMonthStr(hm);}
   // Alert tiers (only stores with data — inactive excluded)
   const criticalStores=storeList.filter(s=>s.total>0&&(s.err>0||(s.compliant!==null&&s.compliant<50)));
   const warnStores=storeList.filter(s=>s.total>0&&!criticalStores.includes(s)&&(s.warn>0||(s.compliant!==null&&s.compliant<80)));
@@ -2464,15 +2465,21 @@ function rSASupervision(){
   const histRows=[...storeList].filter(s=>s.total>0||histMonths.some(m=>storeComplianceMes(s.sid,m)!==null))
     .sort((a,b)=>{const ca=a.compliant??-1,cb=b.compliant??-1;return cb-ca;})
     .map(s=>{
-    const cells=histMonths.map(m=>{
-      const c=storeComplianceMes(s.sid,m);
+    const vals=histMonths.map(m=>storeComplianceMes(s.sid,m));
+    const cells=histMonths.map((m,i)=>{
+      const c=vals[i];
       if(c===null)return`<td style="padding:4px 6px;text-align:center;font-size:10px;color:#d1d5db;background:#f8fafc">—</td>`;
       const bg=c>=80?'#dcfce7':c>=50?'#fef3c7':'#fee2e2';
       const col=c>=80?'#166534':c>=50?'#92400e':'#991b1b';
       const isCurr=m===mes;
       return`<td style="padding:4px 6px;text-align:center;font-size:10px;font-weight:700;background:${bg};color:${col};${isCurr?'border:1.5px solid #3b82f6;':''}">${c}%</td>`;
     }).join('');
-    return`<tr><td style="padding:4px 8px;font-size:11px;font-weight:600;color:#1e293b;white-space:nowrap;border-right:1px solid #e2e8f0">${s.displayName}</td>${cells}</tr>`;
+    const nonNull=vals.filter(v=>v!==null);
+    const avg=nonNull.length?Math.round(nonNull.reduce((a,b)=>a+b,0)/nonNull.length):null;
+    const avgBg=avg===null?'#f8fafc':avg>=80?'#dcfce7':avg>=50?'#fef3c7':'#fee2e2';
+    const avgCol=avg===null?'#d1d5db':avg>=80?'#166534':avg>=50?'#92400e':'#991b1b';
+    const avgCell=`<td style="padding:4px 6px;text-align:center;font-size:10px;font-weight:800;background:${avgBg};color:${avgCol};border-left:2px solid #e2e8f0">${avg!==null?avg+'%':'—'}</td>`;
+    return`<tr><td style="padding:4px 8px;font-size:11px;font-weight:600;color:#1e293b;white-space:nowrap;border-right:1px solid #e2e8f0">${s.displayName}</td>${cells}${avgCell}</tr>`;
   }).join('');
   const totalAlerts=criticalStores.length+warnStores.length;
   const critHtml=totalAlerts===0
@@ -2604,7 +2611,7 @@ function rSASupervision(){
       </summary>
       <div style="overflow-x:auto;padding:8px 14px 14px">
         ${histRows?`<table style="border-collapse:collapse;width:100%;font-size:11px">
-          <thead><tr><th style="padding:4px 8px;text-align:left;font-size:9px;color:#64748b;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">LOJA</th>${histMonths.map(m=>`<th style="padding:4px 6px;text-align:center;font-size:9px;color:#64748b;border-bottom:1px solid #e2e8f0">${monthAbbr(m)}</th>`).join('')}</tr></thead>
+          <thead><tr><th style="padding:4px 8px;text-align:left;font-size:9px;color:#64748b;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">LOJA</th>${histMonths.map(m=>`<th style="padding:4px 6px;text-align:center;font-size:9px;color:#64748b;border-bottom:1px solid #e2e8f0">${monthAbbr(m)}</th>`).join('')}<th style="padding:4px 6px;text-align:center;font-size:9px;color:#3b82f6;font-weight:800;border-bottom:1px solid #e2e8f0;border-left:2px solid #e2e8f0">MÉD.</th></tr></thead>
           <tbody>${histRows}</tbody>
         </table>`:'<div style="color:#94a3b8;font-size:12px">Sem dados suficientes</div>'}
       </div>
