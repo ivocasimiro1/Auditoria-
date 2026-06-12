@@ -1727,12 +1727,14 @@ function storeComplianceMes(sid,mes){
   const cfg2=allStoreConfigs.find(c=>c.store_id===sid);
   const normCfg=cfg2?{prosegurDay:cfg2.prosegur_day||'',lomisDay:cfg2.lomis_day||'',cambioDia:cfg2.cambio_dia||''}:null;
   const lojas=cfg2?.lojas||[...new Set(mr.map(r=>r.loja).filter(Boolean))];
-  const missing=[...new Set(lojas.flatMap(l=>getMissingDays(mes,l)||[]))].length;
-  const total=mr.length+missing;
+  const allMissing=[...new Set(lojas.flatMap(l=>getMissingDays(mes,l)||[]))];
+  const todayS=new Date().toISOString().split('T')[0];
+  const pastMissing=allMissing.filter(d=>d<todayS).length;
+  const dueRecs=mr.filter(r=>calcEstado(r,normCfg).s!=='prog');
+  const total=dueRecs.length+pastMissing;
   if(!total)return null;
-  const ok=mr.filter(r=>calcEstado(r,normCfg).s==='ok').length;
-  const prog=mr.filter(r=>calcEstado(r,normCfg).s==='prog').length;
-  return Math.round((ok+prog)*100/total);
+  const ok=dueRecs.filter(r=>calcEstado(r,normCfg).s==='ok').length;
+  return Math.round(ok*100/total);
 }
 function avgCycleDays(storeRegs){
   const confirmed=storeRegs.filter(r=>r.talao&&r.dataDeposito);
@@ -1770,8 +1772,11 @@ async function _buildPdfAsync(pw,loja,mes){
   const warn=lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==='warn').length;
   const err=lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==='err').length;
   const prog=lojaRegs.filter(r=>calcEstado(r,storeCfg2).s==='prog').length;
-  const totalAdj=lojaRegs.length+missingArr.length;
-  const compPct=totalAdj>0?Math.round((ok+prog)*100/totalAdj):0;
+  const todayStrExp=new Date().toISOString().split('T')[0];
+  const pastMissingExp=missingArr.filter(d=>d<todayStrExp).length;
+  const dueRecsExp=lojaRegs.filter(r=>calcEstado(r,storeCfg2).s!=='prog');
+  const totalAdj=dueRecsExp.length+pastMissingExp;
+  const compPct=totalAdj>0?Math.round(ok*100/totalAdj):0;
   const compColor=compPct>=80?'#166534':compPct>=50?'#92400e':'#991b1b';
   const compBg=compPct>=80?'#dcfce7':compPct>=50?'#fef3c7':'#fee2e2';
   const hoje=new Date();
@@ -2036,12 +2041,15 @@ function rSASupervision(){
     const err=storeRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
     const prog=storeRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='prog').length;
     const total=storeRegs.length;
-    // Compliance must account for missing days (days with no records count against score)
+    // Cumprimento: só conta registos já vencidos (não prog) + dias em falta já passados
     const storeLojas2=cfg2?.lojas||[...new Set(storeRegs.map(r=>r.loja).filter(Boolean))];
     const storeMissingArr=[...new Set(storeLojas2.flatMap(l=>getMissingDays(mes,l)||[]))];
     const storeMissingCount=storeMissingArr.length;
-    const totalAdj=total+storeMissingCount;
-    const compliant=totalAdj>0?Math.round((ok+prog)*100/totalAdj):null;
+    const _todayCStr=new Date().toISOString().split('T')[0];
+    const pastMissingCount=storeMissingArr.filter(d=>d<_todayCStr).length;
+    const dueRecs=storeRegs.filter(r=>calcEstado(r,normCfg).s!=='prog');
+    const totalAdj=dueRecs.length+pastMissingCount;
+    const compliant=totalAdj>0?Math.round(ok*100/totalAdj):null;
     const lastCompliant=storeComplianceMes(sid,lastMes);
     const today=new Date();
     let delaySum=0,delayCount=0;
@@ -2633,8 +2641,11 @@ function rDash(){
   const lojasList=lojaFil?[lojaFil]:(isSA?[...new Set(data.map(r=>r.loja).filter(Boolean))]:cfg.lojas);
   const missingArr=[...new Set(lojasList.flatMap(l=>getMissingDays(mes,l)||[]))];
   const missingCount=missingArr.length;
-  const totalAdj=data.length+missingCount;
-  const complPct=totalAdj>0?Math.round((okRegs.length+progRegs.length)*100/totalAdj):null;
+  const todayStrDash=new Date().toISOString().split('T')[0];
+  const pastMissingDash=missingArr.filter(d=>d<todayStrDash).length;
+  const dueRecsDash=data.filter(r=>calcEstado(r,cfg).s!=='prog');
+  const totalAdj=dueRecsDash.length+pastMissingDash;
+  const complPct=totalAdj>0?Math.round(okRegs.length*100/totalAdj):null;
   const kpiCompCls=complPct===null?'blue':complPct>=80?'green':complPct>=50?'orange':'red';
   const alertsCount=getOverdueAlerts(lojaFil).length;
   const errTotal=erros+alertsCount+missingCount;
