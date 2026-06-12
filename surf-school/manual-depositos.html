@@ -807,16 +807,90 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
         <tr><td><span class="pill prog">📅 Em Progresso</span></td><td>Dentro do prazo — depósito ainda não venceu</td><td>Normal — aguardar data de levantamento</td></tr>
       </tbody>
     </table>
-    <h3>Indicador de Cumprimento %</h3>
-    <p>O <strong>Cumprimento %</strong> resume a qualidade dos depósitos do mês:</p>
+    <h3>Indicador de Cumprimento % — Como é Avaliado</h3>
+    <p>O <strong>Cumprimento %</strong> é calculado automaticamente com base em 4 factores. Quanto maior a percentagem, melhor a loja está a cumprir as obrigações de depósito.</p>
+
+    <!-- What's evaluated -->
+    <div style="display:flex;flex-direction:column;gap:8px;margin:16px 0">
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f0fdf4;border-radius:10px;border-left:4px solid var(--green)">
+        <div style="font-size:22px;flex-shrink:0">✅</div>
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--g800)">Depósito feito no prazo com foto do talão</div>
+          <div style="font-size:12px;color:var(--g600);margin-top:2px">Vale <strong>100 pontos</strong>. É o comportamento ideal — depositar a tempo e com comprovativo.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#fffbeb;border-radius:10px;border-left:4px solid var(--orange)">
+        <div style="font-size:22px;flex-shrink:0">⚠️</div>
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--g800)">Depósito feito mas incompleto (falta foto)</div>
+          <div style="font-size:12px;color:var(--g600);margin-top:2px">Vale <strong>60 pontos</strong>. O depósito foi feito mas sem foto do talão — penaliza parcialmente.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#fef2f2;border-radius:10px;border-left:4px solid var(--red)">
+        <div style="font-size:22px;flex-shrink:0">🔴</div>
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--g800)">Depósito em atraso — prazo ultrapassado sem depósito</div>
+          <div style="font-size:12px;color:var(--g600);margin-top:2px">Vale <strong>0 pontos e tem peso triplo</strong> no denominador. É a penalização mais grave — quando o prazo passou e não há depósito registado.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:var(--g50);border-radius:10px;border-left:4px solid var(--g400)">
+        <div style="font-size:22px;flex-shrink:0">📅</div>
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--g800)">Dias sem registo de sessão de caixa</div>
+          <div style="font-size:12px;color:var(--g600);margin-top:2px">Dias passados sem nenhuma sessão lançada também penalizam — quanto mais dias em falta, menor o cumprimento.</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Escala de Avaliação</h3>
     <table>
-      <thead><tr><th>Percentagem</th><th>Interpretação</th></tr></thead>
+      <thead><tr><th>Resultado</th><th>Interpretação</th><th>O que costuma significar</th></tr></thead>
       <tbody>
-        <tr><td><span class="pct-high">90–100%</span></td><td>Excelente — todos os depósitos em ordem e no prazo</td></tr>
-        <tr><td><span class="pct-mid">70–89%</span></td><td>Bom — alguns avisos ou pequenos atrasos</td></tr>
-        <tr><td><span class="pct-low">&lt; 70%</span></td><td>Atenção — depósitos em atraso ou dias sem registo</td></tr>
+        <tr><td><span class="pct-high">90–100%</span></td><td>Excelente</td><td>Todos os depósitos no prazo e com foto</td></tr>
+        <tr><td><span class="pct-mid">70–89%</span></td><td>Bom</td><td>Maioria em ordem — alguns avisos ou ligeiros atrasos</td></tr>
+        <tr><td><span class="pct-low">50–69%</span></td><td>Atenção</td><td>Depósitos em atraso ou vários dias sem registo</td></tr>
+        <tr><td><span class="pct-low">&lt; 50%</span></td><td>Crítico</td><td>Falhas graves — depósitos em atraso e dias sem registo acumulados</td></tr>
       </tbody>
     </table>
+
+    <h3>Ranking entre Lojas (Super Admin)</h3>
+    <p>No painel de Supervisão, as lojas aparecem ordenadas do <strong>pior para o melhor</strong> cumprimento. Isto permite ao Super Admin identificar imediatamente quais as lojas com problemas, sem ter de analisar uma a uma.</p>
+    <div style="background:#fff;border:1.5px solid #ddd6fe;border-radius:12px;padding:14px 16px;margin:12px 0">
+      <div style="font-size:11px;font-weight:800;color:var(--purple2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Exemplo de Ranking — junho 2026</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 8px;background:#fef2f2;border-radius:8px">
+          <div style="font-size:14px">🥇</div>
+          <div style="font-size:11px;font-weight:700;flex:1;color:var(--red)">58 Surf Peniche</div>
+          <span class="pct-low">42%</span>
+          <div style="font-size:10px;color:var(--red)">← aparece 1.º (pior)</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 8px;background:#fffbeb;border-radius:8px">
+          <div style="font-size:14px">🥈</div>
+          <div style="font-size:11px;font-weight:700;flex:1;color:var(--orange)">ESS Faro</div>
+          <span class="pct-mid">68%</span>
+          <div style="font-size:10px;color:var(--g500)"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 8px;background:#fffbeb;border-radius:8px">
+          <div style="font-size:14px">🥉</div>
+          <div style="font-size:11px;font-weight:700;flex:1;color:var(--orange)">ESS Portimão</div>
+          <span class="pct-mid">78%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 8px;background:#f0fdf4;border-radius:8px">
+          <div style="font-size:14px">4.</div>
+          <div style="font-size:11px;font-weight:700;flex:1;color:var(--green)">ESS Guia</div>
+          <span class="pct-high">87%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 8px;background:#f0fdf4;border-radius:8px">
+          <div style="font-size:14px">5.</div>
+          <div style="font-size:11px;font-weight:700;flex:1;color:var(--green)">ESS Lagos</div>
+          <span class="pct-high">95%</span>
+          <div style="font-size:10px;color:var(--green)">← aparece último (melhor)</div>
+        </div>
+      </div>
+    </div>
+    <p>A tabela do <strong>Histórico 6 Meses</strong> acumula este ranking mês a mês e mostra a <strong>Média</strong> de cada loja — o principal indicador de performance a longo prazo.</p>
+    <div class="tip"><b>💡 Objectivo:</b> Todas as lojas acima de <strong>90%</strong>. Uma loja abaixo de 70% deve receber imediatamente um email de supervisão a pedir regularização.</div>
+
     <h3>Prazos por tipo de serviço</h3>
     <table>
       <thead><tr><th>Tipo</th><th>Prazo</th><th>Como é calculado</th></tr></thead>
