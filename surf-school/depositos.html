@@ -1183,15 +1183,10 @@ function popSel(){
     if(id==='f-loja')el.innerHTML='<option value="">Selecionar loja...</option>';
     else if(id==='e-loja')el.innerHTML='';
     else el.innerHTML='<option value="">Todas</option>';
-    // SA on email page: combine all sources — loja names from records + dep_config lojas
+    // SA on email page: union of cfg.lojas + all loja names from records
     if(isSA&&id==='e-loja'){
-      const opts=new Map();
-      regs.map(r=>r.loja).filter(Boolean).forEach(l=>{if(!opts.has(l))opts.set(l,l);});
-      allStoreConfigs.forEach(c=>{
-        if(c.lojas?.length){c.lojas.filter(Boolean).forEach(l=>{if(!opts.has(l))opts.set(l,l);});}
-        else if(c.store_id&&!opts.has(c.store_id)){opts.set(c.store_id,c.emp||c.store_id);}
-      });
-      [...opts.entries()].sort((a,b)=>a[1].localeCompare(b[1])).forEach(([val,lbl])=>{const o=document.createElement('option');o.value=val;o.textContent=lbl;el.appendChild(o);});
+      const allL=[...new Set([...cfg.lojas,...regs.map(r=>r.loja).filter(Boolean)])].sort((a,b)=>a.localeCompare(b));
+      allL.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;el.appendChild(o)});
     } else {
       cfg.lojas.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;el.appendChild(o)});
       if(isSA){const extra=[...new Set(regs.map(r=>r.loja).filter(l=>l&&!cfg.lojas.includes(l)))];extra.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l+' ★';el.appendChild(o)});}
@@ -3305,8 +3300,7 @@ async function updEmailPrev(){
   if(epSub)epSub.textContent='A carregar...';
   if(epSendBtn)epSendBtn.disabled=true;
   const mes=document.getElementById('e-mes').value||curMesStr();
-  const _eLojaVal=document.getElementById('e-loja').value;
-  const loja=isSA?(getStoreLabel(_eLojaVal)||_eLojaVal||'Todas as Lojas'):(_eLojaVal||'Todas as Lojas');
+  const loja=document.getElementById('e-loja').value||'Todas as Lojas';
   // Reset exportCfg immediately so stale config from previous store never leaks
   exportCfg=null;
   // Super-admin: load config from the selected store, not from 'super'
@@ -3653,14 +3647,10 @@ function epCopyFallback(text){
   document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✓ Texto copiado!');
 }
 function getFiltExp(){
-  const sel=document.getElementById('e-loja').value;
+  const loja=document.getElementById('e-loja').value;
   const mes=document.getElementById('e-mes').value;
   return regs.filter(r=>{
-    if(sel){
-      // SA: sel may be loja name or store_id — accept either match
-      if(isSA){if(r.store_id!==sel&&r.loja!==sel)return false;}
-      else{if(r.loja!==sel)return false;}
-    }
+    if(loja&&r.loja!==loja)return false;
     if(mes){const ref=getRefDate(r);if(!ref.startsWith(mes))return false}
     return true;
   });
@@ -3739,8 +3729,7 @@ function expEmail(){
 
 function expPrint(data, asDownload=false, existingPw=null){
   const mes=document.getElementById('e-mes').value||curMesStr();
-  const _sv=document.getElementById('e-loja').value||cfg.lojas[0]||'Loja';
-  const loja=isSA?(getStoreLabel(_sv)||_sv):_sv;
+  const loja=document.getElementById('e-loja').value||cfg.lojas[0]||'Loja';
   const pCfg=exportCfg||cfg;
   const empresa=pCfg.emp||'Empresa'; const nif=pCfg.nif||'';
   const expDate=new Date().toISOString().split('T')[0];
