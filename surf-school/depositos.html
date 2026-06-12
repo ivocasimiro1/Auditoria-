@@ -1183,9 +1183,14 @@ function popSel(){
     if(id==='f-loja')el.innerHTML='<option value="">Selecionar loja...</option>';
     else if(id==='e-loja')el.innerHTML='';
     else el.innerHTML='<option value="">Todas</option>';
-    cfg.lojas.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;el.appendChild(o)});
-    // SA: also show lojas from records that aren't in cfg.lojas
-    if(isSA){const extra=[...new Set(regs.map(r=>r.loja).filter(l=>l&&!cfg.lojas.includes(l)))];extra.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l+' ★';el.appendChild(o)});}
+    // SA on email page: derive lojas from actual records (reliable, no ★ clutter)
+    if(isSA&&id==='e-loja'){
+      const allL=[...new Set(regs.map(r=>r.loja).filter(Boolean))].sort();
+      allL.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;el.appendChild(o)});
+    } else {
+      cfg.lojas.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;el.appendChild(o)});
+      if(isSA){const extra=[...new Set(regs.map(r=>r.loja).filter(l=>l&&!cfg.lojas.includes(l)))];extra.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l+' ★';el.appendChild(o)});}
+    }
     if(v)el.value=v;
     else if(cfg.lojas.length&&(id==='e-loja'||(id==='f-loja'&&!isSA)||(id==='dash-loja'&&!isSA)||(id==='mapa-loja'&&!isSA)))el.value=cfg.lojas[0];
     // loja users: lock e-loja — cannot change store filter on email page
