@@ -2440,15 +2440,34 @@ function rSASupervision(){
       ${inactiveStores.length?`<span style="font-size:11px;color:#64748b">⚫ ${inactiveStores.length} sem dados</span>`:''}
       <span style="font-size:10px;color:#92400e;margin-left:auto">Role para ver detalhes ↓</span>
     </div>`;
-  // Lojas em atraso (err > 0 = records past deadline without complete deposit)
-  const overdueStores=storeList.filter(s=>s.err>0&&s.total>0);
+  // Truly overdue: records with no deposit date (cash not deposited) past their deadline
+  const _todayOD=new Date();_todayOD.setHours(0,0,0,0);
+  const overdueMap={};
+  regs.filter(r=>!r.dataDeposito&&r.store_id&&r.store_id!=='super'&&(r.sessoes||[]).length>0).forEach(r=>{
+    const mr=maisRecenteData(r);if(!mr||mr>=_todayOD)return;
+    const tv=totalValor(r);if(tv===0)return;
+    const ma=maisAntigaData(r);if(!ma)return;
+    const sc=getRecordCfg(r);
+    let prazo=r.tipo==='Depósito Direto'?2:7;
+    if(r.tipo!=='Depósito Direto'&&sc){
+      const dStr=({Prosegur:sc.prosegurDay??sc.prosegur_day,Lomis:sc.lomisDay??sc.lomis_day,'Câmbio':sc.cambioDia??sc.cambio_dia})[r.tipo];
+      if(dStr!==undefined&&dStr!==''&&dStr!==null){const dow=parseInt(dStr);if(!isNaN(dow)){const mrDow=mr.getDay();let dist=(dow-mrDow+7)%7;if(dist===0)dist=7;prazo=dist;}}
+    }
+    const diasDesde=Math.floor((_todayOD-ma)/86400000);
+    const span=Math.floor((mr-ma)/86400000);
+    if(diasDesde>prazo||span>prazo){
+      if(!overdueMap[r.store_id]||diasDesde>overdueMap[r.store_id].dias)
+        overdueMap[r.store_id]={dias:diasDesde,prazo};
+    }
+  });
+  const overdueStores=storeList.filter(s=>overdueMap[s.sid]);
   const overdueHtml=overdueStores.length?`
 <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px;border:2px solid #fb923c">
   <div style="background:linear-gradient(90deg,#fff7ed,#ffedd5);padding:10px 14px;border-bottom:1px solid #fed7aa;display:flex;align-items:center;gap:8px">
     <div style="font-size:22px;flex-shrink:0">⏰</div>
     <div>
-      <div style="font-size:13px;font-weight:800;color:#9a3412">${overdueStores.length} Loja${overdueStores.length!==1?'s':''} com Depósitos em Atraso</div>
-      <div style="font-size:10px;color:#c2410c;margin-top:1px">Registos vencidos por completar — requer ação urgente</div>
+      <div style="font-size:13px;font-weight:800;color:#9a3412">${overdueStores.length} Loja${overdueStores.length!==1?'s':''} sem Depósito em Banco</div>
+      <div style="font-size:10px;color:#c2410c;margin-top:1px">Dinheiro em caixa por depositar — requer ação urgente</div>
     </div>
   </div>
   ${overdueStores.map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #fef3c7">
@@ -2456,8 +2475,8 @@ function rSASupervision(){
         <div style="font-size:12px;font-weight:700;color:#7c2d12">${s.displayName}</div>
         ${s.servicoStr?`<div style="font-size:10px;color:#92400e">🚚 ${s.servicoStr}</div>`:''}
       </div>
-      <div style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:800;flex-shrink:0">${s.err} em atraso</div>
-      <button onclick="filterListaBySid('${s.sid}','err')" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;flex-shrink:0">Ver</button>
+      <div style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:800;flex-shrink:0">há ${overdueMap[s.sid].dias}d</div>
+      <button onclick="filterListaBySid('${s.sid}','')" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;flex-shrink:0">Ver</button>
     </div>`).join('')}
 </div>`:'';
   // Ranking de lojas (best-to-worst by compliance)
