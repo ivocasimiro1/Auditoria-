@@ -856,14 +856,35 @@ async function sbDel(id){
 async function sbSaveCfgSB(){
   if(!sbProfile){toast('⚠️ Sessão não activa — faça login novamente');return false;}
   const sid=isSA?'super':sbProfile.store_id;
+  if(!sid){toast('⚠️ ID da loja em falta — contacte o suporte');return false;}
   const body={store_id:sid,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',mes_inicio:cfg.mesInicio||'',lojas:cfg.lojas||[],resps:cfg.resps||[]};
-  // SELECT first to decide INSERT vs UPDATE (avoids onConflict constraint requirements)
-  const{data:ex}=await SB.from('dep_config').select('store_id').eq('store_id',sid).maybeSingle();
-  const{error}=ex
-    ?await SB.from('dep_config').update(body).eq('store_id',sid)
-    :await SB.from('dep_config').insert(body);
-  if(error){toast('⚠️ Erro ao guardar configurações: '+error.message);console.warn('sbSaveCfgSB:',error.message);return false;}
-  return true;
+  try{
+    // Try SB SDK first (SELECT→UPDATE/INSERT avoids onConflict constraint)
+    const{data:ex,error:selErr}=await SB.from('dep_config').select('store_id').eq('store_id',sid).maybeSingle();
+    if(!selErr){
+      const{error}=ex
+        ?await SB.from('dep_config').update(body).eq('store_id',sid)
+        :await SB.from('dep_config').insert(body);
+      if(!error)return true;
+      console.warn('sbSaveCfgSB SDK write error:',error.message);
+    }else{
+      console.warn('sbSaveCfgSB SDK select error:',selErr.message);
+    }
+    // Fallback: sfetch direct REST (anon key, auth-session-independent)
+    const qs='store_id=eq.'+encodeURIComponent(sid);
+    const{data:fex,error:fselErr}=await sfetch('GET','dep_config',qs);
+    if(fselErr){toast('⚠️ Erro ao guardar: '+fselErr.message);return false;}
+    const exists=Array.isArray(fex)&&fex.length>0;
+    const{error:fe}=exists
+      ?await sfetch('PATCH','dep_config',qs,body)
+      :await sfetch('POST','dep_config','',body);
+    if(fe){toast('⚠️ Erro ao guardar: '+fe.message);return false;}
+    return true;
+  }catch(e){
+    toast('⚠️ Erro inesperado: '+(e.message||'verifique a rede'));
+    console.error('sbSaveCfgSB:',e);
+    return false;
+  }
 }
 async function sbSyncLojasAll(){
   if(!isSA)return;
@@ -3888,10 +3909,16 @@ function rSettings(){
 async function scBtn(){
   const btn=document.querySelector('#page-settings .btn.bs');
   if(btn){btn.disabled=true;btn.textContent='A guardar...';}
-  sc();
-  const ok=await sbSaveCfgSB();
-  if(btn){btn.disabled=false;btn.textContent='✓ Guardar Configurações';}
-  if(ok!==false)toast('✓ Configurações guardadas na nuvem!');
+  try{
+    sc();
+    const ok=await sbSaveCfgSB();
+    if(ok!==false)toast('✓ Configurações guardadas na nuvem!');
+  }catch(e){
+    toast('⚠️ Erro ao guardar: '+(e.message||'verifique a rede'));
+    console.error('scBtn:',e);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='✓ Guardar Configurações';}
+  }
 }
 async function doChangePass(){
   const npEl=document.getElementById('cp-new');
