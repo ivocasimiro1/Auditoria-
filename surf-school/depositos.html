@@ -2790,10 +2790,12 @@ function rMapa(){
         const sessMin=(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort()[0]||'';
         const sessMax=(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort().at(-1)||'';
         const dr=sessMin===sessMax?fd(sessMin):(sessMin&&sessMax?fd(sessMin)+' – '+fd(sessMax):'—');
+        const _nums=(r.sessoes||[]).map(s=>parseInt(s.sessao)).filter(n=>!isNaN(n)).sort((a,b)=>a-b);
+        const _nLabel=_nums.length===1?`#${_nums[0]}`:_nums.length>1?`#${_nums[0]}–${_nums[_nums.length-1]}`:'';
         const sc=est.s==='ok'?'#16a34a':est.s==='warn'?'#92400e':est.s==='err'?'#dc2626':'#3b82f6';
         const sb=est.s==='ok'?'#f0fdf4':est.s==='warn'?'#fef3c7':est.s==='err'?'#fef2f2':'#eff6ff';
         rows.push(`<tr style="border-bottom:1px solid #f1f5f9">
-          <td style="padding:7px 8px;font-size:12px;white-space:nowrap">${dr}</td>
+          <td style="padding:7px 8px;font-size:12px;white-space:nowrap">${dr}${_nLabel?`<br><span style="font-size:11px;color:#64748b">${_nLabel}</span>`:''}</td>
           <td style="padding:7px 8px;font-size:12px">${r.tipo||'—'}</td>
           <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:700">${fmt(totalValor(r))}</td>
           <td style="padding:7px 8px;font-size:12px">${r.dataDeposito?fd(r.dataDeposito):'—'}</td>
