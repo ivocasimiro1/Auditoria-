@@ -2721,10 +2721,10 @@ function rMapa(){
   const mes=document.getElementById('mapa-mes')?.value||curMesStr();
   const lojaFil=document.getElementById('mapa-loja')?.value||'';
   const data=regs.filter(r=>{
-    const ref=getRefDate(r);
-    if(!ref.startsWith(mes))return false;
     if(lojaFil&&r.loja!==lojaFil)return false;
-    return true;
+    const mesYM=mes.slice(0,7);
+    // Include if any session falls in this month, or ref date is in this month
+    return (r.sessoes||[]).some(s=>s.dataVendas&&s.dataVendas.startsWith(mesYM))||getRefDate(r).startsWith(mesYM);
   }).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
   const totalVal=data.reduce((s,r)=>s+totalValor(r),0);
   const depVal=data.filter(r=>r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
@@ -2733,11 +2733,15 @@ function rMapa(){
   const _today=new Date();_today.setHours(0,0,0,0);
   const _isCurrentMes=mes===curMesStr();
   const _lastDay=_isCurrentMes?_today.getDate():new Date(_yr,_mn,0).getDate();
+  const mesYM=mes.slice(0,7);
   const _coveredDays=new Set();
-  data.forEach(r=>(r.sessoes||[]).forEach(s=>{if(s.dataVendas)_coveredDays.add(s.dataVendas);}));
+  // Only mark days in this month as covered
+  data.forEach(r=>(r.sessoes||[]).forEach(s=>{if(s.dataVendas&&s.dataVendas.startsWith(mesYM))_coveredDays.add(s.dataVendas);}));
   const _recsByDay={};const _noSessRecs=[];
   data.forEach(r=>{
-    const fs=(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort()[0];
+    // Key by first session IN this month; fall back to overall first session
+    const sessInMes=(r.sessoes||[]).map(s=>s.dataVendas).filter(s=>s&&s.startsWith(mesYM)).sort();
+    const fs=sessInMes[0]||((r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort()[0]);
     if(fs){if(!_recsByDay[fs])_recsByDay[fs]=[];_recsByDay[fs].push(r);}
     else _noSessRecs.push(r);
   });
