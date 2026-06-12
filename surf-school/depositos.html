@@ -1814,22 +1814,72 @@ async function _buildPdfAsync(pw,loja,mes){
       catch(e){r.foto=null;}
     }
   }
-  const regRows=lojaRegs.map(r=>{
-    const sessMin=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort()[0]||'';
-    const sessMax=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort().at(-1)||'';
-    const dateRange=sessMin===sessMax?fd(sessMin):(sessMin&&sessMax?fd(sessMin)+' a '+fd(sessMax):'—');
-    const nsess=r.sessoes.length;
+  // Build calendar-style merged table: every day of the month, records + blank empty days
+  const [_yr,_mn]=mes.split('-').map(Number);
+  const _todayCal=new Date();_todayCal.setHours(0,0,0,0);
+  const _isCurrentMes=mes===curMesStr();
+  const _lastDay=_isCurrentMes?_todayCal.getDate():new Date(_yr,_mn,0).getDate();
+  // Build coverage set: all days touched by any session
+  const _coveredDays=new Set();
+  lojaRegs.forEach(r=>(r.sessoes||[]).forEach(s=>{if(s.dataVendas)_coveredDays.add(s.dataVendas);}));
+  // Index records by their first session day
+  const _recsByDay={};
+  const _noSessRecs=[];
+  lojaRegs.forEach(r=>{
+    const fs=(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort()[0];
+    if(fs){if(!_recsByDay[fs])_recsByDay[fs]=[];_recsByDay[fs].push(r);}
+    else _noSessRecs.push(r);
+  });
+  const _dowPT=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const calRows=[];
+  for(let d=1;d<=_lastDay;d++){
+    const ds=`${_yr}-${String(_mn).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const recs=_recsByDay[ds]||[];
+    if(recs.length>0){
+      recs.forEach(r=>{
+        const sessMin=(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort()[0]||'';
+        const sessMax=(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort().at(-1)||'';
+        const dateRange=sessMin===sessMax?fd(sessMin):(sessMin&&sessMax?fd(sessMin)+' – '+fd(sessMax):'—');
+        const nsess=(r.sessoes||[]).length;
+        const fotoRow=r.foto&&typeof r.foto==='string'?`<tr><td colspan="7" style="padding:2px 10px 10px;text-align:center;background:#f8fafc"><img src="${r.foto}" style="max-width:240px;max-height:130px;border-radius:8px;object-fit:contain;border:1px solid #e2e8f0" title="Comprovativo"></td></tr>`:'';
+        calRows.push(`<tr>
+          <td>${dateRange}</td>
+          <td>${r.tipo||'—'}</td>
+          <td style="text-align:right;font-weight:600">${fmt(totalValor(r))}</td>
+          <td>${r.dataDeposito?fd(r.dataDeposito):'—'}</td>
+          <td>${r.talao||'—'}</td>
+          <td style="text-align:center">${nsess}</td>
+          <td>${statusBadge(r)}</td>
+        </tr>${fotoRow}`);
+      });
+    } else if(!_coveredDays.has(ds)){
+      // Empty day row — not covered by any record
+      const _dt=new Date(ds);_dt.setHours(0,0,0,0);
+      const dow=_dowPT[_dt.getDay()];
+      calRows.push(`<tr style="background:#fafafa">
+        <td style="color:#94a3b8;font-size:11px">${dow} ${fd(ds).slice(0,5)}</td>
+        <td style="color:#e2e8f0">—</td>
+        <td style="color:#e2e8f0;text-align:right">—</td>
+        <td style="color:#e2e8f0">—</td>
+        <td style="color:#e2e8f0">—</td>
+        <td style="text-align:center;color:#e2e8f0">—</td>
+        <td style="color:#cbd5e1;font-size:11px;font-style:italic">sem registo</td>
+      </tr>`);
+    }
+    // Days covered mid-record (not first day) → skip (shown in the record's date range)
+  }
+  _noSessRecs.forEach(r=>{
     const fotoRow=r.foto&&typeof r.foto==='string'?`<tr><td colspan="7" style="padding:2px 10px 10px;text-align:center;background:#f8fafc"><img src="${r.foto}" style="max-width:240px;max-height:130px;border-radius:8px;object-fit:contain;border:1px solid #e2e8f0" title="Comprovativo"></td></tr>`:'';
-    return`<tr>
-      <td>${dateRange}</td>
-      <td>${r.tipo||'—'}</td>
+    calRows.push(`<tr>
+      <td>—</td><td>${r.tipo||'—'}</td>
       <td style="text-align:right;font-weight:600">${fmt(totalValor(r))}</td>
       <td>${r.dataDeposito?fd(r.dataDeposito):'—'}</td>
       <td>${r.talao||'—'}</td>
-      <td style="text-align:center">${nsess}</td>
+      <td style="text-align:center">0</td>
       <td>${statusBadge(r)}</td>
-    </tr>${fotoRow}`;
-  }).join('');
+    </tr>${fotoRow}`);
+  });
+  const regRows=calRows.join('');
   const missingHtml=missingArr.length?`
     <div class="section">
       <h3>Dias Sem Registo de Sessão (${missingArr.length} dia${missingArr.length!==1?'s':''})</h3>
@@ -1975,14 +2025,12 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <div class="section">
-    <h3>Registos do Mês — ${lojaRegs.length} depósito(s)</h3>
-    ${lojaRegs.length?`<table>
-      <thead><tr><th>Data(s) Sessão</th><th>Tipo</th><th style="text-align:right">Valor</th><th>Data Depósito</th><th>Talão</th><th style="text-align:center">Sessões</th><th>Estado</th></tr></thead>
-      <tbody>${regRows}</tbody>
-    </table>`:`<div class="no-records">Nenhum depósito registado para ${mesNome}.</div>`}
+    <h3>Registo Mensal — ${mesNome} (${lojaRegs.length} depósito${lojaRegs.length!==1?'s':''}${missingArr.length>0?` · ${missingArr.length} dia${missingArr.length!==1?'s':''} sem registo`:''})</h3>
+    <table>
+      <thead><tr><th>Data(s) Sessão</th><th>Tipo</th><th style="text-align:right">Valor</th><th>Data Depósito</th><th>Talão</th><th style="text-align:center">Sess.</th><th>Estado</th></tr></thead>
+      <tbody>${regRows||`<tr><td colspan="7" class="no-records">Nenhum registo para ${mesNome}.</td></tr>`}</tbody>
+    </table>
   </div>
-
-  ${missingHtml}
 
   <div class="section">
     <h3>Recomendações</h3>
