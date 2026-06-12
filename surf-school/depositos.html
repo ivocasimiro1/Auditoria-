@@ -1620,6 +1620,21 @@ function filterListaBySid(sid,status){
   document.querySelectorAll('#fc .chip').forEach(c=>c.classList.toggle('active',c.dataset.s===status));
   rLista();
 }
+// KPI filter for SA supervision panel — toggle show/hide store cards by metric
+window._saActiveKpiFilter=null;
+window._saSuperFilter=function(metric){
+  const f=window._saActiveKpiFilter===metric?null:metric;
+  window._saActiveKpiFilter=f;
+  document.querySelectorAll('#sa-store-rows>[data-ok]').forEach(function(c){
+    c.style.display=(!f||c.dataset[f]==='1')?'':'none';
+  });
+  document.querySelectorAll('[data-kpi]').forEach(function(k){
+    const on=k.dataset.kpi===f;
+    k.style.outline=on?'2px solid rgba(255,255,255,.9)':'none';
+    k.style.opacity=(!f||on)?'1':'0.4';
+    k.style.transform=on?'scale(1.05)':'scale(1)';
+  });
+};
 function abrirNovoComDia(date){
   sp('novo');
   const sl=document.getElementById('ses-list');
@@ -2273,7 +2288,7 @@ function rSASupervision(){
     const hasProblem=isCritical||isWarning;
     // INACTIVE: grey compact row
     if(isInactive){
-      return`<div style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:#f8fafc;border-left:3px solid #cbd5e1;border-bottom:1px solid #f1f5f9;flex-wrap:wrap;opacity:.75">
+      return`<div data-ok="0" data-tardios="0" data-gaps="0" style="display:flex;align-items:center;gap:6px;padding:7px 12px;background:#f8fafc;border-left:3px solid #cbd5e1;border-bottom:1px solid #f1f5f9;flex-wrap:wrap;opacity:.75">
         <div style="background:#94a3b8;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">${idx+1}</div>
         <div style="flex:1;min-width:100px">
           <div style="font-size:12px;font-weight:700;color:#475569">${s.displayName}</div>
@@ -2324,7 +2339,7 @@ function rSASupervision(){
       </div>`);
       if(s.err>0)subBadges.push(`<button onclick="filterListaBySid('${s.sid}','err')" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">🔴 ${s.err} em atraso</button>`);
       if(s.semFoto>0)subBadges.push(`<button onclick="filterListaBySid('${s.sid}','')" style="background:#fff7ed;color:#92400e;border:1px solid #fed7aa;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">📷 ${s.semFoto} sem comprovativo</button>`);
-      return`<div style="background:${bg};border-left:4px solid ${border};border-bottom:2px solid #e2e8f0;padding:12px 14px">
+      return`<div data-ok="0" data-tardios="${s.tardios>0?1:0}" data-gaps="${s.gaps>0?1:0}" style="background:${bg};border-left:4px solid ${border};border-bottom:2px solid #e2e8f0;padding:12px 14px">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
           <div style="flex:1;min-width:120px">
             <div style="font-size:13px;font-weight:800;color:${titleCol}">${icon} ${s.displayName}</div>
@@ -2343,7 +2358,7 @@ function rSASupervision(){
       </div>`;
     }
     // OK active store: green compact row
-    return`<div style="padding:9px 12px;background:${rowColor};border-left:3px solid ${borderColor};border-bottom:1px solid #f1f5f9">
+    return`<div data-ok="1" data-tardios="0" data-gaps="0" style="padding:9px 12px;background:${rowColor};border-left:3px solid ${borderColor};border-bottom:1px solid #f1f5f9">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <div style="background:${rankBg};color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">${idx+1}</div>
         <div style="flex:1;min-width:100px">
@@ -2439,22 +2454,22 @@ function rSASupervision(){
           <div style="font-size:20px;font-weight:800;color:${avgCycleGlobal!==null&&avgCycleGlobal<=2?'#86efac':avgCycleGlobal!==null&&avgCycleGlobal<=4?'#fde68a':'#fca5a5'}">${avgCycleGlobal!==null?avgCycleGlobal+'d':'—'}</div>
           <div style="font-size:9px;color:#bfdbfe">Ciclo médio</div>
         </div>
-        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
+        <div data-kpi="ok" onclick="window._saSuperFilter('ok')" style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center;cursor:pointer;transition:outline .15s,opacity .15s">
           <div style="font-size:20px;font-weight:800;color:${totalOk>0?'#86efac':'#94a3b8'}">${totalOk}</div>
           <div style="font-size:9px;color:#bfdbfe">✓ OK</div>
         </div>
-        <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center">
+        <div data-kpi="tardios" onclick="window._saSuperFilter('tardios')" style="background:rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;text-align:center;cursor:pointer;transition:outline .15s,opacity .15s">
           <div style="font-size:20px;font-weight:800;color:${totalTardios>0?'#fde68a':'#86efac'}">${totalTardios}</div>
           <div style="font-size:9px;color:#bfdbfe">⏱ Tardios</div>
         </div>
-        <div style="background:${totalGaps>0?'rgba(244,63,94,.25)':'rgba(255,255,255,.12)'};border-radius:8px;padding:7px 10px;text-align:center${totalGaps>0?';border:1px solid rgba(244,63,94,.5)':''}">
+        <div data-kpi="gaps" onclick="window._saSuperFilter('gaps')" style="background:${totalGaps>0?'rgba(244,63,94,.25)':'rgba(255,255,255,.12)'};border-radius:8px;padding:7px 10px;text-align:center;cursor:pointer;transition:outline .15s,opacity .15s${totalGaps>0?';border:1px solid rgba(244,63,94,.5)':''}">
           <div style="font-size:20px;font-weight:800;color:${totalGaps>0?'#fda4af':'#86efac'}">${totalGaps}</div>
           <div style="font-size:9px;color:#bfdbfe">⛔ Saltos</div>
         </div>
       </div>
     </div>
     ${critHtml}
-    <div style="padding:0">
+    <div id="sa-store-rows" style="padding:0">
       ${tableRows||'<div style="padding:16px;text-align:center;color:#94a3b8;font-size:12px">Nenhuma loja registada</div>'}
     </div>
     <details style="border-top:1px solid #e2e8f0">
@@ -2679,7 +2694,7 @@ function rLista(){
     const ml=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
     const dateRange=ml.length>1?`${fd(ml[0])} → ${fd(ml[ml.length-1])}`:fd(ml[0]||'');
     const thumbHtml=r.foto&&typeof r.foto==='string'
-      ?`<img class="foto-thumb" src="${r.foto}" onclick="event.stopPropagation();openFoto('${r.id}')" title="Ver comprovativo" alt="📷">`
+      ?`<img class="foto-thumb" src="${r.foto}" onerror="this.style.display='none'" onclick="event.stopPropagation();openFoto('${r.id}')" title="Ver comprovativo" alt="📷">`
       :r.foto===true
         ?`<div onclick="event.stopPropagation();openDetail('${r.id}')" style="width:48px;height:48px;border-radius:8px;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:2px solid #93c5fd;cursor:pointer;touch-action:manipulation" title="Ver comprovativo">📷</div>`
         :`<div style="width:48px;height:48px;border-radius:8px;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:2px dashed var(--g200)">📷</div>`;
@@ -3173,7 +3188,7 @@ function expPrint(data, asDownload=false){
     const fc=estEff.s==='ok'?'#166534':estEff.s==='warn'?'#854d0e':estEff.s==='err'?'#991b1b':'#64748b';
     const sessTalao=getSessTalao(r,s);
     const rowBg=isDup?'#fff0f0':n%2===0?'#f0f7ff':'#ffffff';
-    const photoCell=isFirst?(r.foto?`<td style="padding:2px;text-align:center"><img src="${r.foto}" style="height:34px;width:46px;object-fit:cover;border-radius:3px;display:block;margin:0 auto"></td>`:`<td style="text-align:center;color:#94a3b8;font-size:8px">—</td>`):`<td></td>`;
+    const photoCell=isFirst?(r.foto?`<td style="padding:2px;text-align:center"><img src="${r.foto}" onerror="this.style.display='none'" style="height:34px;width:46px;object-fit:cover;border-radius:3px;display:block;margin:0 auto"></td>`:`<td style="text-align:center;color:#94a3b8;font-size:8px">—</td>`):`<td></td>`;
     return`<tr style="background:${rowBg}${isDup?';border-left:3px solid #ef4444':''}${!isFirst?';border-top:1px dashed #e2e8f0':''}">
       <td style="text-align:center;color:#94a3b8;font-size:7px">${isFirst?n:''}</td>
       <td style="font-weight:700;color:${isDup?'#dc2626':'#0f172a'}">${fd(s.dataVendas)}${isDup?' ⚠️':''}</td>
