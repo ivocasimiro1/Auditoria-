@@ -805,14 +805,14 @@ async function sbLoad(silent=false){
           prosegurDay:saRow.prosegur_day||cfg.prosegurDay||'',
           lomisDay:saRow.lomis_day||cfg.lomisDay||'',
           mesInicio:saRow.mes_inicio||cfg.mesInicio||'2026-06',
-          lojas:cfg.lojas,resps:cfg.resps
+          lojas:cfg.lojas,resps:saRow.resps||cfg.resps
         };
       }
       if(cs?.length){
         allStoreConfigs=cs.filter(c=>c.store_id&&c.store_id!=='super');
         const aL=[...new Set(cs.flatMap(c=>c.lojas||[]))];
-        const aR=[...new Set(cs.flatMap(c=>c.resps||[]))];
-        if(aL.length)cfg.lojas=aL;if(aR.length)cfg.resps=aR;
+        if(aL.length)cfg.lojas=aL;
+        // resps NOT merged — each store keeps its own independent list
       }
     }
     if(isSA){
@@ -890,19 +890,7 @@ async function sbSaveCfgSB(){
   }
 }
 async function sbSyncLojasAll(){
-  if(!isSA)return;
-  try{
-    // Only sync resps — never overwrite each store's own lojas list
-    const{data:all}=await SB.from('dep_config').select('store_id,resps');
-    if(!all?.length)return;
-    for(const sc of all){
-      if(sc.store_id==='super')continue;
-      const mR=[...new Set([...(sc.resps||[]),...cfg.resps])].filter(Boolean);
-      const same=JSON.stringify(mR)===JSON.stringify(sc.resps||[]);
-      if(!same)await SB.from('dep_config').update({resps:mR}).eq('store_id',sc.store_id);
-    }
-    toast('✓ Responsáveis sincronizados em todas as lojas');
-  }catch(e){console.warn('syncAll:',e);}
+  // Each store manages its own resps — no cross-store sync
 }
 async function doLogin(){
   const email=document.getElementById('auth-email').value.trim();
@@ -3920,10 +3908,10 @@ function saveImg(){
 }
 
 // ─── SETTINGS ────────────────────────────────────────
-function addL(){const i=document.getElementById('nl');const n=i.value.trim();if(!n)return;if(cfg.lojas.includes(n)){toast('Já existe');return}cfg.lojas.push(n);saveCfg();if(isSA)sbSyncLojasAll();else sbSaveCfgSB();i.value='';popSel();rSettings();toast('Loja adicionada ✓')}
-function remL(n){if(!confirm(`Remover loja "${n}"?`))return;cfg.lojas=cfg.lojas.filter(x=>x!==n);saveCfg();if(isSA)sbSyncLojasAll();else sbSaveCfgSB();popSel();rSettings()}
-function addR(){const i=document.getElementById('nr');const n=i.value.trim();if(!n)return;if(cfg.resps.includes(n)){toast('Já existe');return}cfg.resps.push(n);saveCfg();if(isSA)sbSyncLojasAll();else sbSaveCfgSB();i.value='';popSel();rSettings();toast('Responsável adicionado ✓')}
-function remR(n){cfg.resps=cfg.resps.filter(x=>x!==n);saveCfg();if(isSA)sbSyncLojasAll();else sbSaveCfgSB();popSel();rSettings()}
+function addL(){const i=document.getElementById('nl');const n=i.value.trim();if(!n)return;if(cfg.lojas.includes(n)){toast('Já existe');return}cfg.lojas.push(n);saveCfg();sbSaveCfgSB();i.value='';popSel();rSettings();toast('Loja adicionada ✓')}
+function remL(n){if(!confirm(`Remover loja "${n}"?`))return;cfg.lojas=cfg.lojas.filter(x=>x!==n);saveCfg();sbSaveCfgSB();popSel();rSettings()}
+function addR(){const i=document.getElementById('nr');const n=i.value.trim();if(!n)return;if(cfg.resps.includes(n)){toast('Já existe');return}cfg.resps.push(n);saveCfg();sbSaveCfgSB();i.value='';popSel();rSettings();toast('Responsável adicionado ✓')}
+function remR(n){cfg.resps=cfg.resps.filter(x=>x!==n);saveCfg();sbSaveCfgSB();popSel();rSettings()}
 function rSettings(){
   document.getElementById('c-emp').value=cfg.emp||'';
   document.getElementById('c-email').value=cfg.email||'';
