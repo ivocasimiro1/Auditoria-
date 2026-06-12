@@ -1417,9 +1417,16 @@ async function guardar(){
       for(const er of existingLoja){
         const dup2=er.sessoes.find(es=>es.dataVendas===s.dataVendas&&es.sessao&&s.sessao&&es.sessao.trim()===s.sessao.trim());
         if(dup2){
-          const continuar=confirm('⚠️ Sessão '+s.sessao+' de '+fd(s.dataVendas)+' já está registada noutro depósito.\n\nContinuar e guardar mesmo assim?\n\n(Cancelar para ver o registo existente)');
-          if(continuar){guardar._skipDupCheck=true;guardar();return;}
-          else{openDetail(er.id);}
+          // Custom modal — avoids Android async issues with confirm()
+          const _erId=er.id,_ss=s.sessao,_sd=fd(s.dataVendas);
+          document.querySelector('.mh').textContent='⚠️ Sessão duplicada';
+          document.getElementById('mod-t').innerHTML='';
+          document.getElementById('mod-c').innerHTML=`<p style="margin:0 0 12px">Sessão <strong>${_ss}</strong> de <strong>${_sd}</strong> já está registada noutro depósito.</p><p style="margin:0;color:#64748b;font-size:13px">Continuar e guardar mesmo assim?</p>`;
+          const ma=document.getElementById('mod-a');
+          ma.innerHTML=`<button class="btn" style="flex:1;background:#e2e8f0;color:#1e293b" id="_dup-ver">Ver registo</button><button class="btn bp" style="flex:1" id="_dup-ok">Guardar mesmo assim</button>`;
+          document.getElementById('_dup-ver').onclick=()=>{cm();openDetail(_erId);};
+          document.getElementById('_dup-ok').onclick=()=>{cm();guardar._skipDupCheck=true;guardar();};
+          document.getElementById('mod').classList.add('open');
           return;
         }
       }
