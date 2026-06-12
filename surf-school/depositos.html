@@ -2460,8 +2460,10 @@ function rSASupervision(){
       </div>
     </div>`;
   }).join('');
-  // 6-month history table
-  const histRows=storeList.filter(s=>s.total>0||histMonths.some(m=>storeComplianceMes(s.sid,m)!==null)).map(s=>{
+  // 6-month history table — sorted by current month compliance, highest first
+  const histRows=[...storeList].filter(s=>s.total>0||histMonths.some(m=>storeComplianceMes(s.sid,m)!==null))
+    .sort((a,b)=>{const ca=a.compliant??-1,cb=b.compliant??-1;return cb-ca;})
+    .map(s=>{
     const cells=histMonths.map(m=>{
       const c=storeComplianceMes(s.sid,m);
       if(c===null)return`<td style="padding:4px 6px;text-align:center;font-size:10px;color:#d1d5db;background:#f8fafc">—</td>`;
