@@ -2486,33 +2486,37 @@ function rSASupervision(){
       <button onclick="filterListaBySid('${s.sid}','')" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;flex-shrink:0">Ver</button>
     </div>`).join('')}
 </div>`:'';
-  // Ranking de lojas (best-to-worst by compliance)
+  // Ranking de lojas: err → gaps → warn → cycle → compliant (tiebreak)
   const rankingStores=[...storeList].filter(s=>s.total>0).sort((a,b)=>{
-    if((b.compliant||0)!==(a.compliant||0))return (b.compliant||0)-(a.compliant||0);
-    if(a.gaps!==b.gaps)return a.gaps-b.gaps;
     if(a.err!==b.err)return a.err-b.err;
+    if(a.gaps!==b.gaps)return a.gaps-b.gaps;
+    if(a.warn!==b.warn)return a.warn-b.warn;
     const ca=a.cycle!==null?a.cycle:99,cb=b.cycle!==null?b.cycle:99;
-    return ca-cb;
+    if(ca!==cb)return ca-cb;
+    return (b.compliant||0)-(a.compliant||0);
   });
   const rankingRows=rankingStores.map((s,i)=>{
-    const col=s.gaps>0?'#dc2626':s.err>0?'#ef4444':s.warn>0?'#d97706':'#16a34a';
-    const icon=s.gaps>0?'⛔':s.err>0?'🔴':s.warn>0?'⚠️':'✅';
+    const hasErr=s.err>0,hasGap=s.gaps>0,hasWarn=s.warn>0;
+    const icon=hasErr?'🔴':hasGap?'⛔':hasWarn?'⚠️':'✅';
     const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span style="width:18px;height:18px;border-radius:50%;background:#e2e8f0;color:#64748b;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</span>`;
-    return`<div style="display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid #f1f5f9${i%2?';background:#f8fafc':''}">
+    const statusPill=hasErr
+      ?`<span style="background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:800">${s.err} erro${s.err!==1?'s':''}</span>`
+      :hasGap
+      ?`<span style="background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700">${s.gaps} salto${s.gaps!==1?'s':''}</span>`
+      :hasWarn
+      ?`<span style="background:#fef9c3;color:#a16207;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700">${s.warn} aviso${s.warn!==1?'s':''}</span>`
+      :`<span style="background:#dcfce7;color:#166534;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700">✓ Conforme</span>`;
+    const cyclePill=s.cycle!==null
+      ?`<span style="background:${s.cycle<=2?'#dcfce7':s.cycle<=5?'#fef9c3':'#fee2e2'};color:${s.cycle<=2?'#166534':s.cycle<=5?'#a16207':'#991b1b'};padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700">${s.cycle}d ciclo</span>`
+      :'';
+    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #f1f5f9${i%2?';background:#f8fafc':''}">
       <div style="font-size:18px;flex-shrink:0;line-height:1">${medal}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700;color:#1e293b">${icon} ${s.displayName}</div>
-        ${s.servicoStr?`<div style="font-size:10px;color:#64748b">${s.servicoStr}</div>`:''}
+        ${s.servicoStr?`<div style="font-size:10px;color:#64748b;margin-top:1px">${s.servicoStr}</div>`:''}
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">${statusPill}${cyclePill}</div>
       </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:14px;font-weight:800;color:${col}">${s.compliant}%</div>
-        <div style="font-size:8px;color:#94a3b8">compliance</div>
-      </div>
-      ${s.cycle!==null?`<div style="text-align:right;flex-shrink:0;min-width:28px">
-        <div style="font-size:12px;font-weight:700;color:${s.cycle<=2?'#16a34a':s.cycle<=4?'#d97706':'#dc2626'}">${s.cycle}d</div>
-        <div style="font-size:8px;color:#94a3b8">ciclo</div>
-      </div>`:''}
-      <button onclick="filterListaBySid('${s.sid}','')" style="background:#e2e8f0;color:#475569;border:none;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:600;cursor:pointer;flex-shrink:0;touch-action:manipulation">Lista</button>
+      <button onclick="filterListaBySid('${s.sid}','')" style="background:#e2e8f0;color:#475569;border:none;border-radius:5px;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;flex-shrink:0;touch-action:manipulation">Lista</button>
     </div>`;
   }).join('');
   panel.innerHTML=overdueHtml+`<div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
