@@ -80,12 +80,13 @@
   --sh-sm:0 1px 2px rgba(0,0,0,.05);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%}
+html,body{height:100%;overscroll-behavior:none;-webkit-overflow-scrolling:touch}
 body{
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   background:var(--g100);color:var(--g800);
   padding-top:calc(var(--nav-h) + 52px + 4px);
   font-size:16px;
+  -webkit-text-size-adjust:100%;
 }
 .topbar{
   background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;
@@ -853,11 +854,16 @@ async function sbDel(id){
   const{error}=await sfetch('DELETE','dep_registos','id=eq.'+id);if(error){toast('⚠️ Erro: '+error.message);return false;}return true;
 }
 async function sbSaveCfgSB(){
-  if(!sbProfile)return false;
+  if(!sbProfile){toast('⚠️ Sessão não activa — faça login novamente');return false;}
   const sid=isSA?'super':sbProfile.store_id;
   const body={store_id:sid,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',mes_inicio:cfg.mesInicio||'',lojas:cfg.lojas||[],resps:cfg.resps||[]};
-  if(sbUser){const{error}=await SB.from('dep_config').upsert(body,{onConflict:'store_id'});if(error){toast('⚠️ Erro ao guardar configurações: '+error.message);console.warn('sbSaveCfgSB:',error.message);return false;}return true;}
-  const{error}=await sfetch('UPSERT','dep_config','',body);if(error){toast('⚠️ Erro ao guardar configurações: '+error.message);console.warn('sbSaveCfgSB:',error.message);return false;}return true;
+  // SELECT first to decide INSERT vs UPDATE (avoids onConflict constraint requirements)
+  const{data:ex}=await SB.from('dep_config').select('store_id').eq('store_id',sid).maybeSingle();
+  const{error}=ex
+    ?await SB.from('dep_config').update(body).eq('store_id',sid)
+    :await SB.from('dep_config').insert(body);
+  if(error){toast('⚠️ Erro ao guardar configurações: '+error.message);console.warn('sbSaveCfgSB:',error.message);return false;}
+  return true;
 }
 async function sbSyncLojasAll(){
   if(!isSA)return;
@@ -3244,70 +3250,110 @@ async function updEmailPrev(){
   const totalDep=data.filter(r=>r.talao&&r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
   const erros=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
   const avisos=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='warn').length;
-  const subj=`Depósitos – ${loja} – ${ml}`;
-  // ── LOJA: email simples — apenas lista de depósitos ──
+  const todayStr=new Date().toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const subj=`Depósitos – ${loja} – ${ml} – até ${todayStr}`;
+  // ── LOJA: email com depósitos detalhados + sessões + estado ──
   if(!isSA){
-    const deposited=data.filter(r=>r.dataDeposito).sort((a,b)=>a.dataDeposito<b.dataDeposito?-1:1);
-    const pending=data.filter(r=>!r.dataDeposito);
     const eur=v=>fmt(v).replace('€','EUR');
-    const simpleLines=[
-      `DEPOSITOS – ${loja} – ${ml}`,
+    const sorted=[...data].sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
+    const semComp=sorted.filter(r=>!r.talao).length;
+    const pending=sorted.filter(r=>!r.dataDeposito);
+    // ── Texto simples (para mailto body) ──
+    const lines=[
+      `DEPOSITOS — ${loja} — ${ml}`,
+      `(ate ${todayStr})`,
       empresa,
       nif?`NIF ${nif}`:'',
       '',
-      'Data dep.  | Valor      | Talao/Ref',
-      '-------------------------------------',
-      ...deposited.map(r=>`${fd(r.dataDeposito).slice(0,5)}       | ${eur(totalValor(r)).padStart(10)} | ${r.talao||'—'}`),
-      '-------------------------------------',
-      `Total dep: ${eur(totalDep)}`,
-      ...(pending.length?[
-        '',
-        `Por depositar (${pending.length} registo${pending.length!==1?'s':''}): ${eur(pending.reduce((s,r)=>s+totalValor(r),0))}`,
-        ...pending.flatMap(r=>(r.sessoes||[]).map(s=>`  ${fd(s.dataVendas||'').slice(0,5)} Sess.${s.sessao||'?'} | ${eur(s.valor||0)}`))
-      ]:['','Todos os registos depositados.']),
-      '',
-      'Com os melhores cumprimentos,',
-      loja
-    ].filter(l=>l!=null).join('\n');
-    const depRowsHtml=deposited.map(r=>`<tr style="border-bottom:1px solid #e5e7eb">
-      <td style="padding:6px 8px;font-size:12px">${fd(r.dataDeposito)}</td>
-      <td style="padding:6px 8px;font-size:13px;font-weight:700;color:#1d4ed8;text-align:right">${fmt(totalValor(r))}</td>
-      <td style="padding:6px 8px;font-size:11px;color:#475569;font-family:monospace">${r.talao||'—'}</td>
-    </tr>`).join('');
-    const pendHtml=pending.length
-      ?`<div style="margin-top:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 11px;font-size:12px;color:#854d0e;font-weight:600">⏳ ${pending.length} registo${pending.length!==1?'s':''} por depositar: <strong>${fmt(pending.reduce((s,r)=>s+totalValor(r),0))}</strong></div>`
-      :`<div style="margin-top:8px;font-size:12px;color:#166534;font-weight:700">✅ Todos os registos depositados</div>`;
-    document.getElementById('ep-body').innerHTML=`
-      <div style="border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
-        <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:14px 16px;color:#fff">
-          <div style="font-size:14px;font-weight:800">${loja}${empresa?' — '+empresa:''}</div>
-          <div style="font-size:11px;opacity:.8;margin-top:2px">Depósitos · ${ml}${nif?' · NIF '+nif:''}</div>
+    ];
+    sorted.forEach((r,i)=>{
+      const est=calcEstado(r,getRecordCfg(r));
+      const estTxt=est.s==='ok'?'OK':est.s==='warn'?'AVISO — '+est.label.replace(/[📅✅⚠️🔴]/gu,'').trim():est.s==='err'?'EM ATRASO — '+est.label.replace(/[📅✅⚠️🔴]/gu,'').trim():'Pendente';
+      lines.push(`[DEP.${i+1}] ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'} | ${eur(totalValor(r))} | Talao: ${r.talao||'*** SEM COMPROVATIVO ***'}`);
+      lines.push(`  Estado: ${estTxt}`);
+      lines.push(`  Sessoes de caixa:`);
+      (r.sessoes||[]).forEach(s=>{lines.push(`    ${fd(s.dataVendas||'').slice(0,5)}  Sess.${s.sessao||'?'}  ${eur(s.valor||0)}`);});
+      lines.push('');
+    });
+    lines.push('─────────────────────────────────────');
+    lines.push(`TOTAL VENDAS:     ${eur(total)}`);
+    lines.push(`TOTAL DEPOSITADO: ${eur(totalDep)}`);
+    if(total-totalDep>0)lines.push(`POR DEPOSITAR:    ${eur(total-totalDep)}`);
+    if(semComp)lines.push(`SEM COMPROVATIVO: ${semComp} deposito${semComp!==1?'s':''}`);
+    lines.push('');
+    lines.push('Com os melhores cumprimentos,');
+    lines.push(loja+(empresa?' — '+empresa:''));
+    if(nif)lines.push(`NIF ${nif}`);
+    const lojaBody=lines.filter(l=>l!=null).join('\n');
+    // ── HTML preview ──
+    const depBlocksHtml=sorted.map((r,i)=>{
+      const est=calcEstado(r,getRecordCfg(r));
+      const noTalao=!r.talao;
+      const estColor=est.s==='ok'?'#166534':est.s==='warn'?'#854d0e':est.s==='err'?'#991b1b':'#475569';
+      const estBg=est.s==='ok'?'#dcfce7':est.s==='warn'?'#fef9c3':est.s==='err'?'#fee2e2':'#f1f5f9';
+      const estLabel=est.s==='ok'?'✅ OK':est.s==='warn'?'⚠️ '+est.label.replace(/[📅✅⚠️🔴]/gu,'').trim():est.s==='err'?'🔴 '+est.label.replace(/[📅✅⚠️🔴]/gu,'').trim():'📅 Pendente';
+      const sessHtml=(r.sessoes||[]).map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9">
+        <span style="font-size:12px;color:#475569">${fd(s.dataVendas||'')} &nbsp; <strong>Sessão ${s.sessao||'?'}</strong></span>
+        <span style="font-size:13px;font-weight:700;color:#1d4ed8">${fmt(s.valor||0)}</span>
+      </div>`).join('');
+      return`<div style="background:#fff;border:2px solid ${est.s==='err'?'#fca5a5':est.s==='warn'?'#fde68a':noTalao?'#fde68a':'#e2e8f0'};border-radius:14px;padding:16px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+          <div>
+            <div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Depósito ${i+1}</div>
+            <div style="font-size:16px;font-weight:800;color:#0f172a">${r.dataDeposito?fd(r.dataDeposito):'<span style="color:#ef4444">PENDENTE</span>'}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:18px;font-weight:800;color:#1d4ed8">${fmt(totalValor(r))}</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px">${(r.sessoes||[]).length} sessão${(r.sessoes||[]).length!==1?'ões':''}</div>
+          </div>
         </div>
-        <div style="padding:14px 16px;background:#fff">
-          <table style="width:100%;border-collapse:collapse;margin-bottom:10px">
-            <thead><tr style="background:#f8fafc">
-              <th style="padding:6px 8px;font-size:11px;font-weight:700;color:#475569;text-align:left;border-bottom:2px solid #e2e8f0">Data dep.</th>
-              <th style="padding:6px 8px;font-size:11px;font-weight:700;color:#475569;text-align:right;border-bottom:2px solid #e2e8f0">Valor</th>
-              <th style="padding:6px 8px;font-size:11px;font-weight:700;color:#475569;text-align:left;border-bottom:2px solid #e2e8f0">Talão/Ref</th>
-            </tr></thead>
-            <tbody>${depRowsHtml||'<tr><td colspan="3" style="padding:10px;text-align:center;color:#94a3b8;font-size:12px">Sem depósitos registados</td></tr>'}</tbody>
-            <tfoot><tr style="background:#f8fafc;border-top:2px solid #e2e8f0">
-              <td style="padding:7px 8px;font-size:12px;font-weight:800;color:#1e293b">Total</td>
-              <td style="padding:7px 8px;font-size:13px;font-weight:800;color:#1d4ed8;text-align:right">${fmt(totalDep)}</td>
-              <td></td>
-            </tr></tfoot>
-          </table>
-          ${pendHtml}
-          <div style="font-size:11px;color:#94a3b8;margin-top:12px;padding-top:10px;border-top:1px solid #f1f5f9">
+        ${noTalao
+          ?`<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:9px;padding:9px 12px;font-size:13px;font-weight:800;color:#991b1b;margin-bottom:12px">⚠️ SEM COMPROVATIVO — Talão em falta!</div>`
+          :`<div style="background:#f8fafc;border-radius:9px;padding:9px 12px;font-size:12px;color:#475569;margin-bottom:12px;font-family:monospace;word-break:break-all">📎 ${r.talao}</div>`}
+        <div style="background:${estBg};border-radius:7px;padding:6px 11px;font-size:12px;font-weight:700;color:${estColor};margin-bottom:14px;display:inline-block">${estLabel}</div>
+        <div style="border-top:2px solid #f1f5f9;padding-top:12px">
+          <div style="font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Sessões de caixa</div>
+          ${sessHtml||'<span style="font-size:12px;color:#94a3b8">Sem sessões registadas</span>'}
+        </div>
+      </div>`;
+    }).join('');
+    const alertsHtml=[
+      pending.length?`<div style="background:#fef2f2;border:2px solid #fca5a5;border-radius:11px;padding:12px 15px;font-size:13px;font-weight:700;color:#991b1b;margin-bottom:14px">🔴 ${pending.length} registo${pending.length!==1?'s':''} por depositar: <strong>${fmt(pending.reduce((s,r)=>s+totalValor(r),0))}</strong></div>`:'',
+      semComp?`<div style="background:#fffbeb;border:2px solid #fde68a;border-radius:11px;padding:12px 15px;font-size:13px;font-weight:700;color:#854d0e;margin-bottom:14px">⚠️ ${semComp} depósito${semComp!==1?'s':''} sem comprovativo/talão</div>`:'',
+    ].filter(Boolean).join('');
+    document.getElementById('ep-body').innerHTML=`
+      <div style="border-radius:14px;overflow:hidden;border:1px solid #e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+        <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:18px 20px;color:#fff">
+          <div style="font-size:16px;font-weight:800">${loja}${empresa?' — '+empresa:''}</div>
+          <div style="font-size:12px;opacity:.8;margin-top:4px">Folha de Depósitos · ${ml} · até ${todayStr}${nif?' · NIF '+nif:''}</div>
+        </div>
+        <div style="padding:18px 18px;background:#f8fafc">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+            <div style="background:#eff6ff;border-radius:10px;padding:11px 10px;text-align:center;border:1px solid #bfdbfe">
+              <div style="font-size:9px;color:#1e40af;font-weight:800;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Total Vendas</div>
+              <div style="font-size:16px;font-weight:800;color:#1e3a8a">${fmt(total)}</div>
+            </div>
+            <div style="background:#f0fdf4;border-radius:10px;padding:11px 10px;text-align:center;border:1px solid #bbf7d0">
+              <div style="font-size:9px;color:#166534;font-weight:800;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Depositado</div>
+              <div style="font-size:16px;font-weight:800;color:#166534">${fmt(totalDep)}</div>
+            </div>
+            <div style="background:${total-totalDep>0?'#fffbeb':'#f0fdf4'};border-radius:10px;padding:11px 10px;text-align:center;border:1px solid ${total-totalDep>0?'#fde68a':'#bbf7d0'}">
+              <div style="font-size:9px;color:${total-totalDep>0?'#854d0e':'#166534'};font-weight:800;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Por dep.</div>
+              <div style="font-size:16px;font-weight:800;color:${total-totalDep>0?'#92400e':'#166534'}">${fmt(total-totalDep)}</div>
+            </div>
+          </div>
+          ${alertsHtml}
+          ${depBlocksHtml}
+          <div style="font-size:12px;color:#94a3b8;margin-top:6px;padding-top:12px;border-top:1px solid #e2e8f0">
             Com os melhores cumprimentos,<br>
-            <strong style="color:#334155">${loja}${empresa?' — '+empresa:''}</strong>
+            <strong style="color:#334155">${loja}${empresa?' — '+empresa:''}</strong>${nif?'<br><span style="font-size:11px">NIF '+nif+'</span>':''}
           </div>
         </div>
       </div>`;
     document.getElementById('ep-to').textContent=dest||'(não configurado)';
     document.getElementById('ep-cc').textContent=cc;
     document.getElementById('ep-sub').textContent=subj;
-    document.getElementById('ep-body').dataset.body=simpleLines;
+    document.getElementById('ep-body').dataset.body=lojaBody;
     document.getElementById('ep-body').dataset.subj=subj;
     if(epSendBtn)epSendBtn.disabled=false;
     const isMob=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -3398,9 +3444,9 @@ async function updEmailPrev(){
     empresa,
     '===================================',
     '',
-    'Exmo(a). Departamento de Contabilidade,',
+    `Caro/a gerente${loja&&loja!=='Todas as Lojas'?' — '+loja:''},`,
     '',
-    `Segue a folha de depositos de ${ml}.`,
+    `Segue o relatorio de depositos referente a ${ml} (ate ${todayStr}).`,
     '',
     ...(emailHasGap?[
       '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
@@ -3478,8 +3524,8 @@ async function updEmailPrev(){
         <div style="font-size:11px;opacity:.8;margin-top:3px">Folha de Depósitos · ${loja} · ${ml}${nif?' · NIF '+nif:''}</div>
       </div>
       <div style="padding:16px 18px;background:#fff">
-        <div style="font-size:12.5px;color:#374151;line-height:1.6;margin-bottom:14px">Exmo(a). Departamento de Contabilidade,<br>
-        Enviamos em anexo a folha de depósitos da loja <strong>${loja}</strong> referente a <strong>${ml}</strong>. O detalhe completo por sessão de caixa encontra-se no corpo deste email.</div>
+        <div style="font-size:12.5px;color:#374151;line-height:1.6;margin-bottom:14px">Caro/a gerente${loja&&loja!=='Todas as Lojas'?' — <strong>'+loja+'</strong>':''},<br>
+        Segue o relatório de depósitos referente a <strong>${ml}</strong> (até ${todayStr}). O detalhe completo por sessão de caixa encontra-se no corpo deste email.</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
           <div style="background:#eff6ff;border-radius:9px;padding:9px 10px;text-align:center;border:1px solid #bfdbfe">
             <div style="font-size:9px;color:#1e40af;font-weight:800;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Total</div>
