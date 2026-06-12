@@ -3213,6 +3213,13 @@ async function updEmailPrev(){
   const epc=document.getElementById('email-prev-card');
   if(!data.length){epc.style.display='none';return;}
   epc.style.display='block';
+  // Mark loading state so expEmail() rejects clicks before preview is ready
+  const epTo=document.getElementById('ep-to');
+  const epSub=document.getElementById('ep-sub');
+  const epSendBtn=document.querySelector('#email-prev-card .btn');
+  if(epTo)epTo.textContent='A carregar...';
+  if(epSub)epSub.textContent='A carregar...';
+  if(epSendBtn)epSendBtn.disabled=true;
   const mes=document.getElementById('e-mes').value||curMesStr();
   const loja=document.getElementById('e-loja').value||'Todas as Lojas';
   // Super-admin: load config from the selected store, not from 'super'
@@ -3427,9 +3434,10 @@ async function updEmailPrev(){
         </div>
       </div>
     </div>`;
-  // Store plain text for copy + mailto
+  // Store plain text for copy + mailto; re-enable send button
   document.getElementById('ep-body').dataset.body=shortBody;
   document.getElementById('ep-body').dataset.subj=subj;
+  if(epSendBtn)epSendBtn.disabled=false;
   // Mobile vs desktop hint
   const isMobile=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
   document.getElementById('ep-mobile-note').style.display=isMobile?'block':'none';
@@ -3498,13 +3506,17 @@ async function doExp(){
 function expEmail(){
   // Synchronous — keeps mailto: in the direct click gesture so browsers don't block it
   const dest=(document.getElementById('ep-to')?.textContent||'').trim();
-  if(!dest||dest==='(não configurado)'){
+  if(!dest||dest==='(não configurado)'||dest==='—'||!dest.includes('@')){
     toast('⚠️ Configure o email de contabilidade nas Configurações');
     sp('settings');
     return;
   }
   const subjRaw=document.getElementById('ep-sub')?.textContent||'';
   const bodyRaw=document.getElementById('ep-body')?.dataset.body||'';
+  if(!bodyRaw||subjRaw==='—'){
+    toast('⚠️ A pré-visualização ainda está a carregar — aguarde um momento');
+    return;
+  }
   const ccRaw=(document.getElementById('ep-cc')?.textContent||'').trim();
   const ccStr=(ccRaw&&ccRaw!=='—')?`&cc=${encodeURIComponent(ccRaw)}`:'';
   const encodedBody=encodeURIComponent(bodyRaw);
