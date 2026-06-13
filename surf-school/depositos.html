@@ -3323,11 +3323,18 @@ async function delR(id){if(!confirm('Eliminar este depósito?'))return;const ok=
 
 // ─── EXPORT ──────────────────────────────────────────
 let expFmt='print',exportCfg=null,_gerenteSid='',_preSelectLoja='';
-function emailFromMapa(){
-  _preSelectLoja=document.getElementById('mapa-loja')?.value||'';
-  const mes=document.getElementById('mapa-mes')?.value||'';
-  const eMes=document.getElementById('e-mes');if(eMes&&mes)eMes.value=mes;
-  sp('exp');
+async function emailFromMapa(){
+  const loja=document.getElementById('mapa-loja')?.value||'';
+  const mes=document.getElementById('mapa-mes')?.value||curMesStr();
+  // Populate e-loja / e-mes silently (page-exp hidden — no navigation needed)
+  const eLoja=document.getElementById('e-loja');
+  const eMes=document.getElementById('e-mes');
+  if(eLoja&&loja)eLoja.value=loja;
+  if(eMes&&mes)eMes.value=mes;
+  _gerenteSid=''; // force gerente email reload for this loja
+  toast('⏳ A preparar email…');
+  await updEmailPrev();
+  expEmail();
 }
 function toggleEmailsLojas(){
   const list=document.getElementById('e-emails-lojas-list');
