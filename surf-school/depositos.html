@@ -835,6 +835,11 @@ async function sbLoad(silent=false){
         if(data.length<1000)break;
       }
       regs=allRows.map(row=>{const r=rowToReg(row);r.foto=hasFoto.has(row.id)?true:null;return r;});
+      // Build comprehensive known-stores set for SA email page
+      // (combines dep_config rows + actual records — survives stores with no records yet)
+      const _scSids=new Set(allStoreConfigs.map(c=>c.store_id));
+      regs.map(r=>r.store_id).filter(Boolean).forEach(sid=>_scSids.add(sid));
+      window._saSids=[..._scSids];
       DB.set('cfg',cfg); // SA não cacheia registos — sempre carrega do Supabase
     }else{
       const{data:rows,error}=await SB.from('dep_registos').select('*').eq('store_id',sbProfile.store_id).order('criado_em',{ascending:false});
@@ -1183,11 +1188,11 @@ function popSel(){
     if(id==='f-loja')el.innerHTML='<option value="">Selecionar loja...</option>';
     else if(id==='e-loja')el.innerHTML='';
     else el.innerHTML='<option value="">Todas</option>';
-    // SA on email page: use store_id (always set) as value; display name via getStoreLabel
+    // SA on email page: all known store_ids (allStoreConfigs + records), display via getStoreLabel
     if(isSA&&id==='e-loja'){
-      const allSids=[...new Set([...regs.map(r=>r.store_id).filter(Boolean),...allStoreConfigs.map(c=>c.store_id)])];
-      allSids.sort((a,b)=>(getStoreLabel(a)||a).localeCompare(getStoreLabel(b)||b));
-      allSids.forEach(sid=>{const o=document.createElement('option');o.value=sid;o.textContent=getStoreLabel(sid)||sid;el.appendChild(o);});
+      const allSids=(window._saSids||[...new Set([...allStoreConfigs.map(c=>c.store_id),...regs.map(r=>r.store_id).filter(Boolean)])]);
+      [...allSids].sort((a,b)=>(getStoreLabel(a)||a).localeCompare(getStoreLabel(b)||b))
+        .forEach(sid=>{const o=document.createElement('option');o.value=sid;o.textContent=getStoreLabel(sid)||sid;el.appendChild(o);});
     } else {
       cfg.lojas.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;el.appendChild(o)});
       if(isSA){const extra=[...new Set(regs.map(r=>r.loja).filter(l=>l&&!cfg.lojas.includes(l)))];extra.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l+' ★';el.appendChild(o)});}
