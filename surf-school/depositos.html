@@ -3397,11 +3397,9 @@ function rExpSel(){
     if(eLoja&&[...eLoja.options].some(o=>o.value===_preSelectLoja))eLoja.value=_preSelectLoja;
     _preSelectLoja='';
   }
-  const gr=document.getElementById('e-gerente-row');if(gr)gr.style.display=isSA?'block':'none';
+  const gr=document.getElementById('e-gerente-row');if(gr)gr.style.display='none'; // SA uses auto-derived email, no manual field
   const elr=document.getElementById('e-emails-lojas-row');if(elr)elr.style.display=isSA?'block':'none';
   const ct=document.querySelector('#page-exp .ct');if(ct)ct.textContent=isSA?'📧 Enviar Relatório à Loja':'📧 Enviar E-mail à Contabilidade';
-  const cw=document.getElementById('ep-config-warn');
-  if(cw&&isSA)cw.innerHTML='⚠️ E-mail do gerente da loja não preenchido. Introduza o email no campo acima.';
   _gerenteSid='';
   seExp(expFmt);
   updPrev();
@@ -3425,22 +3423,17 @@ async function updEmailPrev(){
   const loja=_eLojaVal||'Todas as Lojas';
   // Reset exportCfg immediately so stale config from previous store never leaks
   exportCfg=null;
-  // Super-admin: find store config by loja name; load gerente email from localStorage
+  // Super-admin: derive gerente email automatically from store dep_config.email
   let dest='';
   if(isSA){
     const selectedLoja=_eLojaVal;
     const sc=allStoreConfigs.find(c=>(c.lojas||[]).includes(selectedLoja));
-    if(selectedLoja!==_gerenteSid){
-      const gerenteEl=document.getElementById('e-gerente');
-      const storeEmail=sc?.email||'';
-      // gerente.local@domain → fallback to store email directly
-      const derivedEmail=storeEmail.includes('@')?'gerente.'+storeEmail.split('@')[0]+'@'+storeEmail.split('@')[1]:'';
-      const autoEmail=derivedEmail||storeEmail;
-      // use localStorage manual override (key v2 — clears stale old values); else auto
-      if(gerenteEl)gerenteEl.value=localStorage.getItem('dep_gerente_v2_'+selectedLoja)||autoEmail;
-      _gerenteSid=selectedLoja;
-    }
-    dest=document.getElementById('e-gerente')?.value.trim()||'';
+    const storeEmail=sc?.email||'';
+    const derivedEmail=storeEmail.includes('@')?'gerente.'+storeEmail.split('@')[0]+'@'+storeEmail.split('@')[1]:'';
+    dest=derivedEmail||storeEmail;
+    // Update ep-to directly (no manual field needed for SA)
+    const epTo=document.getElementById('ep-to');if(epTo)epTo.textContent=dest||'(não configurado)';
+    const cw=document.getElementById('ep-config-warn');if(cw)cw.style.display=dest?'none':'block';
     exportCfg={
       emp:sc?.emp||selectedLoja||cfg.emp,
       email:dest,
