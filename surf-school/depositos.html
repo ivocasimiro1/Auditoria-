@@ -3429,8 +3429,16 @@ async function updEmailPrev(){
     const selectedLoja=_eLojaVal;
     const sc=allStoreConfigs.find(c=>(c.lojas||[]).includes(selectedLoja));
     const storeEmail=sc?.email||'';
-    const derivedEmail=storeEmail.includes('@')?'gerente.'+storeEmail.split('@')[0]+'@'+storeEmail.split('@')[1]:'';
-    dest=derivedEmail||storeEmail;
+    // ESS (Despomar): dep_config.email = Inês (contabilidade) — derive from loja name + @despomar.com
+    // All others (Billabong, ECO, 58 Surf): dep_config.email = store's own email — prepend gerente.
+    if(/^ess\b/i.test(selectedLoja)){
+      const key=selectedLoja.split(' ').pop().toLowerCase().replace(/[^a-z0-9]/g,'');
+      dest=key?'gerente.'+key+'@despomar.com':'';
+    } else if(storeEmail.includes('@')){
+      dest='gerente.'+storeEmail.split('@')[0]+'@'+storeEmail.split('@')[1];
+    } else {
+      dest=storeEmail;
+    }
     // Update ep-to directly (no manual field needed for SA)
     const epTo=document.getElementById('ep-to');if(epTo)epTo.textContent=dest||'(não configurado)';
     const cw=document.getElementById('ep-config-warn');if(cw)cw.style.display=dest?'none':'block';
