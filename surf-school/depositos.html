@@ -549,8 +549,8 @@ select{
 <div class="page" id="page-exp">
   <div class="card">
     <div class="ct">📧 Enviar E-mail à Contabilidade</div>
-    <div class="fg"><label>Loja</label><select id="e-loja" onchange="updEmailPrev()"></select></div>
-    <div class="fg"><label>Mês</label><select id="e-mes" onchange="updEmailPrev()"></select></div>
+    <div class="fg"><label>Loja</label><select id="e-loja" onchange="updPrev();if(expFmt==='email')updEmailPrev();"></select></div>
+    <div class="fg"><label>Mês</label><select id="e-mes" onchange="updPrev();if(expFmt==='email')updEmailPrev();"></select></div>
     <div class="fg sa-tab" id="e-gerente-row" style="display:none">
       <label>E-mail do gerente da loja</label>
       <input type="email" id="e-gerente" placeholder="gerente@loja.pt" oninput="onGerenteEmailChange()" style="width:100%;padding:10px 12px;border:1.5px solid var(--g200);border-radius:10px;font-size:15px;background:#fff;color:var(--g800)">
@@ -3346,14 +3346,14 @@ function rExpSel(){
     if(eLoja&&[...eLoja.options].some(o=>o.value===_preSelectLoja))eLoja.value=_preSelectLoja;
     _preSelectLoja='';
   }
-  document.getElementById('e-loja').addEventListener('change',()=>{updPrev();if(expFmt==='email')updEmailPrev();});
-  document.getElementById('e-mes').addEventListener('change',()=>{updPrev();if(expFmt==='email')updEmailPrev();});
   const gr=document.getElementById('e-gerente-row');if(gr)gr.style.display=isSA?'block':'none';
   const ct=document.querySelector('#page-exp .ct');if(ct)ct.textContent=isSA?'📧 Enviar Relatório à Loja':'📧 Enviar E-mail à Contabilidade';
   const cw=document.getElementById('ep-config-warn');
   if(cw&&isSA)cw.innerHTML='⚠️ E-mail do gerente da loja não preenchido. Introduza o email no campo acima.';
   _gerenteSid='';
   seExp(expFmt);
+  updPrev();
+  if(expFmt==='email')updEmailPrev();
 }
 async function updEmailPrev(){
   const data=getFiltExp();
@@ -3377,13 +3377,14 @@ async function updEmailPrev(){
   let dest='';
   if(isSA){
     const selectedLoja=_eLojaVal;
+    const sc=allStoreConfigs.find(c=>(c.lojas||[]).includes(selectedLoja));
     if(selectedLoja!==_gerenteSid){
       const gerenteEl=document.getElementById('e-gerente');
-      if(gerenteEl)gerenteEl.value=localStorage.getItem('dep_gerente_'+selectedLoja)||'';
+      // localStorage override → fallback to store's own dep_config email
+      if(gerenteEl)gerenteEl.value=localStorage.getItem('dep_gerente_'+selectedLoja)||(sc?.email||'');
       _gerenteSid=selectedLoja;
     }
     dest=document.getElementById('e-gerente')?.value.trim()||'';
-    const sc=allStoreConfigs.find(c=>(c.lojas||[]).includes(selectedLoja));
     exportCfg={
       emp:sc?.emp||selectedLoja||cfg.emp,
       email:dest,
