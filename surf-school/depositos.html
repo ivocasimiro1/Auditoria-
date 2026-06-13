@@ -554,6 +554,10 @@ select{
       <label>E-mail do gerente da loja</label>
       <input type="email" id="e-gerente" placeholder="gerente@loja.pt" oninput="onGerenteEmailChange()" style="width:100%;padding:10px 12px;border:1.5px solid var(--g200);border-radius:10px;font-size:15px;background:#fff;color:var(--g800)">
     </div>
+    <div class="sa-tab" id="e-emails-lojas-row" style="display:none;margin-bottom:14px">
+      <button onclick="toggleEmailsLojas()" style="background:none;border:none;color:var(--blue);font-size:12px;font-weight:700;cursor:pointer;padding:0;touch-action:manipulation" id="e-emails-lojas-btn">▶ Ver emails configurados por loja</button>
+      <div id="e-emails-lojas-list" style="display:none;margin-top:8px;background:#f8fafc;border:1.5px solid var(--g200);border-radius:10px;padding:10px 12px;font-size:12px"></div>
+    </div>
     <button class="btn bs" id="exp-btn" onclick="doExp()" style="margin-top:12px">
       <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
       <span id="exp-btn-lbl">Enviar Email</span>
@@ -3325,6 +3329,43 @@ function emailFromMapa(){
   const eMes=document.getElementById('e-mes');if(eMes&&mes)eMes.value=mes;
   sp('exp');
 }
+function toggleEmailsLojas(){
+  const list=document.getElementById('e-emails-lojas-list');
+  const btn=document.getElementById('e-emails-lojas-btn');
+  if(list.style.display==='none'){
+    // Build list from allStoreConfigs
+    const rows=[];
+    const seen=new Set();
+    allStoreConfigs.forEach(c=>{
+      if(!c.store_id||c.store_id==='super')return;
+      const lojas=c.lojas||[];
+      const email=c.email||'';
+      lojas.forEach(l=>{
+        if(seen.has(l))return;seen.add(l);
+        const ok=!!email;
+        rows.push(`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #e2e8f0">
+          <span style="font-weight:700;color:#1e293b">${l}</span>
+          <span style="color:${ok?'#166534':'#991b1b'};font-size:11px">${ok?email:'⚠️ sem email'}</span>
+        </div>`);
+      });
+      if(!lojas.length){
+        const l=c.emp||c.store_id;
+        if(seen.has(l))return;seen.add(l);
+        const ok=!!email;
+        rows.push(`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #e2e8f0">
+          <span style="font-weight:700;color:#1e293b">${l}</span>
+          <span style="color:${ok?'#166534':'#991b1b'};font-size:11px">${ok?email:'⚠️ sem email'}</span>
+        </div>`);
+      }
+    });
+    list.innerHTML=rows.length?rows.join(''):'<div style="color:var(--g400)">Sem lojas configuradas.</div>';
+    list.style.display='block';
+    btn.textContent='▼ Esconder emails das lojas';
+  } else {
+    list.style.display='none';
+    btn.textContent='▶ Ver emails configurados por loja';
+  }
+}
 function onGerenteEmailChange(){
   const sid=document.getElementById('e-loja')?.value||'';
   const email=document.getElementById('e-gerente')?.value.trim()||'';
@@ -3350,6 +3391,7 @@ function rExpSel(){
     _preSelectLoja='';
   }
   const gr=document.getElementById('e-gerente-row');if(gr)gr.style.display=isSA?'block':'none';
+  const elr=document.getElementById('e-emails-lojas-row');if(elr)elr.style.display=isSA?'block':'none';
   const ct=document.querySelector('#page-exp .ct');if(ct)ct.textContent=isSA?'📧 Enviar Relatório à Loja':'📧 Enviar E-mail à Contabilidade';
   const cw=document.getElementById('ep-config-warn');
   if(cw&&isSA)cw.innerHTML='⚠️ E-mail do gerente da loja não preenchido. Introduza o email no campo acima.';
