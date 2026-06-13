@@ -1515,11 +1515,13 @@ async function guardar(){
   // Notificar SA (Ivo) por email quando é um NOVO registo (não edição)
   if(isNew&&!isSA){
     const total=(reg.sessoes||[]).reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
+    const storeId=sbProfile?.store_id||'';
+    const storeName=`${cfg.emp||loja}${storeId?' ('+storeId+')':''}`;
     fetch('https://formsubmit.co/ajax/ivo@despomar.com',{
       method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
       body:JSON.stringify({
-        _subject:`📥 Novo Depósito — ${cfg.emp||loja} — ${reg.tipo||''} — ${total.toFixed(2)}€`,
-        message:`Nova entrada de depósito registada.\n\nLoja: ${cfg.emp||loja}\nTipo: ${reg.tipo||'—'}\nTotal: ${total.toFixed(2)}€\nSessões: ${(reg.sessoes||[]).length}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}\nRegistado em: ${new Date().toLocaleString('pt-PT')}`,
+        _subject:`📥 Novo Depósito — ${cfg.emp||loja} — ${loja} — ${total.toFixed(2)}€`,
+        message:`Nova entrada de depósito registada.\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nTotal: ${total.toFixed(2)}€\nSessões: ${(reg.sessoes||[]).length}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}\nRegistado em: ${new Date().toLocaleString('pt-PT')}`,
         _captcha:'false'
       })
     }).catch(()=>{});
