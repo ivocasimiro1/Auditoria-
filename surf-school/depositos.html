@@ -1498,6 +1498,7 @@ async function guardar(){
     responsavel:resp,obs,
     foto:fotoB64,criadoEm:new Date().toISOString()
   };
+  const isNew=!editingId;
   if(editingId){
     const idx=regs.findIndex(x=>x.id===editingId);
     if(idx>=0)regs[idx]={...regs[idx],...reg,id:editingId};
@@ -1511,6 +1512,18 @@ async function guardar(){
   // Sincronizar com Supabase (não bloqueia se falhar)
   const saved=await sbSave(reg);
   if(!saved){toast('⚠️ Guardado localmente. Vai a Configurações → Re-sincronizar quando tiveres ligação.');setTimeout(()=>sp('dash'),1200);return;}
+  // Notificar SA (Ivo) por email quando é um NOVO registo (não edição)
+  if(isNew&&!isSA){
+    const total=(reg.sessoes||[]).reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
+    fetch('https://formsubmit.co/ajax/ivo@despomar.com',{
+      method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({
+        _subject:`📥 Novo Depósito — ${cfg.emp||loja} — ${reg.tipo||''} — ${total.toFixed(2)}€`,
+        message:`Nova entrada de depósito registada.\n\nLoja: ${cfg.emp||loja}\nTipo: ${reg.tipo||'—'}\nTotal: ${total.toFixed(2)}€\nSessões: ${(reg.sessoes||[]).length}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}\nRegistado em: ${new Date().toLocaleString('pt-PT')}`,
+        _captcha:'false'
+      })
+    }).catch(()=>{});
+  }
   // Reset save button
   const btn=document.getElementById('guardar-btn');
   if(btn){btn.disabled=true;btn.style.opacity='.5';}
