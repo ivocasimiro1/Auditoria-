@@ -3369,7 +3369,7 @@ function toggleEmailsLojas(){
 function onGerenteEmailChange(){
   const sid=document.getElementById('e-loja')?.value||'';
   const email=document.getElementById('e-gerente')?.value.trim()||'';
-  if(sid)localStorage.setItem('dep_gerente_'+sid,email);
+  if(sid)localStorage.setItem('dep_gerente_v2_'+sid,email);
   const epTo=document.getElementById('ep-to');if(epTo)epTo.textContent=email||'(não configurado)';
   const cw=document.getElementById('ep-config-warn');if(cw)cw.style.display=email?'none':'block';
 }
@@ -3425,11 +3425,12 @@ async function updEmailPrev(){
     const sc=allStoreConfigs.find(c=>(c.lojas||[]).includes(selectedLoja));
     if(selectedLoja!==_gerenteSid){
       const gerenteEl=document.getElementById('e-gerente');
-      // Derive gerente email: "ESS Guia" → gerente.guia@<domain>
       const storeEmail=sc?.email||'';
-      const autoEmail=storeEmail.includes('@')?'gerente.'+storeEmail.split('@')[0]+'@'+storeEmail.split('@')[1]:'';
-      // localStorage override → derived gerente email
-      if(gerenteEl)gerenteEl.value=localStorage.getItem('dep_gerente_'+selectedLoja)||autoEmail;
+      // gerente.local@domain → fallback to store email directly
+      const derivedEmail=storeEmail.includes('@')?'gerente.'+storeEmail.split('@')[0]+'@'+storeEmail.split('@')[1]:'';
+      const autoEmail=derivedEmail||storeEmail;
+      // use localStorage manual override (key v2 — clears stale old values); else auto
+      if(gerenteEl)gerenteEl.value=localStorage.getItem('dep_gerente_v2_'+selectedLoja)||autoEmail;
       _gerenteSid=selectedLoja;
     }
     dest=document.getElementById('e-gerente')?.value.trim()||'';
