@@ -3383,8 +3383,11 @@ async function updEmailPrev(){
     const sc=allStoreConfigs.find(c=>(c.lojas||[]).includes(selectedLoja));
     if(selectedLoja!==_gerenteSid){
       const gerenteEl=document.getElementById('e-gerente');
-      // localStorage override → fallback to store's own dep_config email
-      if(gerenteEl)gerenteEl.value=localStorage.getItem('dep_gerente_'+selectedLoja)||(sc?.email||'');
+      // Derive gerente email: prepend "gerente." to local part of store email
+      const storeEmail=sc?.email||'';
+      const autoEmail=storeEmail.includes('@')?'gerente.'+storeEmail.split('@')[0]+'@'+storeEmail.split('@')[1]:'';
+      // localStorage override → derived gerente email → empty
+      if(gerenteEl)gerenteEl.value=localStorage.getItem('dep_gerente_'+selectedLoja)||autoEmail;
       _gerenteSid=selectedLoja;
     }
     dest=document.getElementById('e-gerente')?.value.trim()||'';
