@@ -592,6 +592,7 @@ select{
       <select id="mapa-loja" onchange="rMapa()" style="flex:1;min-width:120px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;color:#1e293b"></select>
       <select id="mapa-mes" onchange="rMapa()" style="flex:1;min-width:120px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;color:#1e293b"></select>
       <button onclick="(()=>{const l=document.getElementById('mapa-loja')?.value||cfg.lojas[0]||'';const m=document.getElementById('mapa-mes')?.value||curMesStr();rptStorePdf(l,m);})()" style="padding:8px 14px;background:#0f172a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;touch-action:manipulation">🖨️ PDF</button>
+      <button onclick="emailFromMapa()" style="padding:8px 14px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;touch-action:manipulation">✉️ Email</button>
     </div>
     <div id="mapa-kpis" style="margin-top:10px"></div>
   </div>
@@ -1200,21 +1201,11 @@ function popSel(){
     if(id==='f-loja')el.innerHTML='<option value="">Selecionar loja...</option>';
     else if(id==='e-loja')el.innerHTML='';
     else el.innerHTML='<option value="">Todas</option>';
-    // SA on email page: all known store_ids + orphan loja names (records with no store_id)
+    // SA on email page: all loja names (same logic as mapa-loja — loja names as values)
     if(isSA&&id==='e-loja'){
-      const allSids=window._saSids?.length?window._saSids:[...new Set([...allStoreConfigs.map(c=>c.store_id).filter(Boolean),...regs.map(r=>r.store_id).filter(s=>s&&s!=='super')])];
-      // Loja names already covered by a known store_id
-      const coveredLojas=new Set();
-      allSids.forEach(sid=>{
-        const sc=allStoreConfigs.find(c=>c.store_id===sid);
-        (sc?.lojas||[]).forEach(l=>coveredLojas.add(l));
-        regs.filter(r=>r.store_id===sid&&r.loja).forEach(r=>coveredLojas.add(r.loja));
-      });
-      // Orphan lojas: records with no store_id that aren't covered
-      const orphanLojas=[...new Set(regs.filter(r=>!r.store_id&&r.loja&&!coveredLojas.has(r.loja)).map(r=>r.loja))].sort();
-      [...allSids].sort((a,b)=>(getStoreLabel(a)||a).localeCompare(getStoreLabel(b)||b))
-        .forEach(sid=>{const o=document.createElement('option');o.value=sid;o.textContent=getStoreLabel(sid)||sid;el.appendChild(o);});
-      orphanLojas.forEach(l=>{const o=document.createElement('option');o.value='_lj:'+l;o.textContent=l;el.appendChild(o);});
+      const allLojas=new Set(cfg.lojas);
+      regs.forEach(r=>{if(r.loja)allLojas.add(r.loja);});
+      [...allLojas].sort().forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;el.appendChild(o);});
     } else {
       cfg.lojas.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;el.appendChild(o)});
       if(isSA){const extra=[...new Set(regs.map(r=>r.loja).filter(l=>l&&!cfg.lojas.includes(l)))];extra.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l+' ★';el.appendChild(o)});}
@@ -3324,7 +3315,13 @@ function cm(){document.getElementById('mod').classList.remove('open')}
 async function delR(id){if(!confirm('Eliminar este depósito?'))return;const ok=await sbDel(id);if(!ok)return;regs=regs.filter(x=>x.id!==id);saveR();cm();rLista();rDash();toast('Eliminado')}
 
 // ─── EXPORT ──────────────────────────────────────────
-let expFmt='print',exportCfg=null,_gerenteSid='';
+let expFmt='print',exportCfg=null,_gerenteSid='',_preSelectLoja='';
+function emailFromMapa(){
+  _preSelectLoja=document.getElementById('mapa-loja')?.value||'';
+  const mes=document.getElementById('mapa-mes')?.value||'';
+  const eMes=document.getElementById('e-mes');if(eMes&&mes)eMes.value=mes;
+  sp('exp');
+}
 function onGerenteEmailChange(){
   const sid=document.getElementById('e-loja')?.value||'';
   const email=document.getElementById('e-gerente')?.value.trim()||'';
@@ -3344,6 +3341,11 @@ function seExp(f){
 }
 function rExpSel(){
   popSel();
+  if(_preSelectLoja){
+    const eLoja=document.getElementById('e-loja');
+    if(eLoja&&[...eLoja.options].some(o=>o.value===_preSelectLoja))eLoja.value=_preSelectLoja;
+    _preSelectLoja='';
+  }
   document.getElementById('e-loja').addEventListener('change',()=>{updPrev();if(expFmt==='email')updEmailPrev();});
   document.getElementById('e-mes').addEventListener('change',()=>{updPrev();if(expFmt==='email')updEmailPrev();});
   const gr=document.getElementById('e-gerente-row');if(gr)gr.style.display=isSA?'block':'none';
@@ -3367,30 +3369,27 @@ async function updEmailPrev(){
   if(epSendBtn)epSendBtn.disabled=true;
   const mes=document.getElementById('e-mes').value||curMesStr();
   const _eLojaVal=document.getElementById('e-loja').value;
-  // Handle _lj: prefix (orphan loja names stored without store_id)
-  const _isOrphan=_eLojaVal.startsWith('_lj:');
-  const _lojaName=_isOrphan?_eLojaVal.slice(4):null;
-  const loja=isSA?(_isOrphan?_lojaName:(getStoreLabel(_eLojaVal)||_eLojaVal||'Todas as Lojas')):(_eLojaVal||'Todas as Lojas');
+  // e-loja now stores loja names (same as mapa-loja) — not store_ids
+  const loja=_eLojaVal||'Todas as Lojas';
   // Reset exportCfg immediately so stale config from previous store never leaks
   exportCfg=null;
-  // Super-admin: load config from the selected store; also load gerente email from localStorage
+  // Super-admin: find store config by loja name; load gerente email from localStorage
   let dest='';
   if(isSA){
-    const selectedSid=_eLojaVal;
-    if(selectedSid!==_gerenteSid){
+    const selectedLoja=_eLojaVal;
+    if(selectedLoja!==_gerenteSid){
       const gerenteEl=document.getElementById('e-gerente');
-      if(gerenteEl)gerenteEl.value=localStorage.getItem('dep_gerente_'+selectedSid)||'';
-      _gerenteSid=selectedSid;
+      if(gerenteEl)gerenteEl.value=localStorage.getItem('dep_gerente_'+selectedLoja)||'';
+      _gerenteSid=selectedLoja;
     }
     dest=document.getElementById('e-gerente')?.value.trim()||'';
-    const storeIds=[...new Set(data.map(r=>r.store_id).filter(Boolean))];
-    const sidToLoad=_isOrphan?null:(selectedSid||(storeIds.length===1?storeIds[0]:''));
-    if(sidToLoad){
-      const{data:sc}=await SB.from('dep_config').select('*').eq('store_id',sidToLoad).maybeSingle();
-      exportCfg=sc?{emp:sc.emp||cfg.emp,email:dest,emailCC:'',emailCC2:'',nif:sc.nif||cfg.nif}:null;
-    }
-    // Orphan loja: use loja name as display name, no emp/nif available
-    if(_isOrphan)exportCfg={emp:_lojaName||'',email:dest,emailCC:'',emailCC2:'',nif:''};
+    const sc=allStoreConfigs.find(c=>(c.lojas||[]).includes(selectedLoja));
+    exportCfg={
+      emp:sc?.emp||selectedLoja||cfg.emp,
+      email:dest,
+      emailCC:'',emailCC2:'',
+      nif:sc?.nif||cfg.nif||''
+    };
   }
   const activeCfg=exportCfg||cfg;
   const empresa=activeCfg.emp||'Empresa';
@@ -3741,10 +3740,7 @@ function getFiltExp(){
   const sel=document.getElementById('e-loja').value;
   const mes=document.getElementById('e-mes').value;
   return regs.filter(r=>{
-    if(sel){
-      if(isSA){if(!matchesLojaFilter(r,sel))return false;}
-      else{if(r.loja!==sel)return false;}
-    }
+    if(sel&&r.loja!==sel)return false;
     if(mes){const ref=getRefDate(r);if(!ref.startsWith(mes))return false}
     return true;
   });
