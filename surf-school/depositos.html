@@ -839,10 +839,13 @@ async function sbLoad(silent=false){
         if(data.length<1000)break;
       }
       regs=allRows.map(row=>{const r=rowToReg(row);r.foto=hasFoto.has(row.id)?true:null;return r;});
-      // Build comprehensive known-stores set for SA email page
-      // (combines dep_config rows + actual records — survives stores with no records yet)
-      const _scSids=new Set(allStoreConfigs.map(c=>c.store_id));
-      regs.map(r=>r.store_id).filter(Boolean).forEach(sid=>_scSids.add(sid));
+      // Only stores that have actual records — avoids empty test/demo accounts flooding the ranking
+      const _scSids=new Set(regs.map(r=>r.store_id).filter(Boolean));
+      // For records with no store_id, match to allStoreConfigs by loja name
+      regs.filter(r=>!r.store_id&&r.loja).forEach(r=>{
+        const owner=allStoreConfigs.find(c=>(c.lojas||[]).includes(r.loja));
+        if(owner?.store_id)_scSids.add(owner.store_id);
+      });
       window._saSids=[..._scSids];
       DB.set('cfg',cfg); // SA não cacheia registos — sempre carrega do Supabase
     }else{
@@ -1150,9 +1153,9 @@ function sp(name){
     const bb=document.getElementById('back-btn');
     if(bb){
       const isHome=name==='dash'||(isSA&&name==='supervisao');
-      bb.style.display='flex';
-      if(isHome){bb.title='Terminar Sessão';bb.textContent='🚪';bb.onclick=doLogout;}
-      else{bb.title='Voltar';bb.textContent='←';bb.onclick=()=>sp(isSA?'supervisao':'dash');}
+      bb.style.display=isHome?'none':'flex';
+      bb.title='Voltar';bb.textContent='←';
+      bb.onclick=()=>sp(isSA?'supervisao':'dash');
     }
     if(pg)pg.scrollTop=0;
     if(name==='dash')rDash();
@@ -1192,11 +1195,21 @@ function popSel(){
     if(id==='f-loja')el.innerHTML='<option value="">Selecionar loja...</option>';
     else if(id==='e-loja')el.innerHTML='';
     else el.innerHTML='<option value="">Todas</option>';
-    // SA on email page: all known store_ids (allStoreConfigs + records), display via getStoreLabel
+    // SA on email page: all known store_ids + orphan loja names (records with no store_id)
     if(isSA&&id==='e-loja'){
       const allSids=(window._saSids||[...new Set([...allStoreConfigs.map(c=>c.store_id),...regs.map(r=>r.store_id).filter(Boolean)])]);
+      // Loja names already covered by a known store_id
+      const coveredLojas=new Set();
+      allSids.forEach(sid=>{
+        const sc=allStoreConfigs.find(c=>c.store_id===sid);
+        (sc?.lojas||[]).forEach(l=>coveredLojas.add(l));
+        regs.filter(r=>r.store_id===sid&&r.loja).forEach(r=>coveredLojas.add(r.loja));
+      });
+      // Orphan lojas: records with no store_id that aren't covered
+      const orphanLojas=[...new Set(regs.filter(r=>!r.store_id&&r.loja&&!coveredLojas.has(r.loja)).map(r=>r.loja))].sort();
       [...allSids].sort((a,b)=>(getStoreLabel(a)||a).localeCompare(getStoreLabel(b)||b))
         .forEach(sid=>{const o=document.createElement('option');o.value=sid;o.textContent=getStoreLabel(sid)||sid;el.appendChild(o);});
+      orphanLojas.forEach(l=>{const o=document.createElement('option');o.value='_lj:'+l;o.textContent=l;el.appendChild(o);});
     } else {
       cfg.lojas.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;el.appendChild(o)});
       if(isSA){const extra=[...new Set(regs.map(r=>r.loja).filter(l=>l&&!cfg.lojas.includes(l)))];extra.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l+' ★';el.appendChild(o)});}
@@ -2168,9 +2181,17 @@ function rSASupervision(){
     regs.filter(r=>r.loja===lojaFil&&r.store_id&&r.store_id!=='super').forEach(r=>matchingSids.add(r.store_id));
     if(matchingSids.size)filterSids=matchingSids;
   }
-  // Build per-store stats from allStoreConfigs + any stores with records
-  const knownSids=new Set(allStoreConfigs.map(c=>c.store_id));
-  regs.forEach(r=>{if(r.store_id&&r.store_id!=='super')knownSids.add(r.store_id);});
+  // Only stores that have actual records — exclude empty test/demo dep_config accounts
+  const knownSids=new Set(regs.map(r=>r.store_id).filter(s=>s&&s!=='super'));
+  regs.filter(r=>!r.store_id&&r.loja).forEach(r=>{
+    const owner=allStoreConfigs.find(c=>(c.lojas||[]).includes(r.loja));
+    if(owner?.store_id)knownSids.add(owner.store_id);
+  });
+  // Orphan groups: records with loja but no store_id and no dep_config match → add as synthetic 'lj:name' key
+  const orphanLojaNames=[...new Set(regs.filter(r=>!r.store_id&&r.loja).map(r=>r.loja))].filter(l=>{
+    const owner=allStoreConfigs.find(c=>(c.lojas||[]).includes(l));
+    return !owner||!owner.store_id;
+  });
   const storeList=[];
   const lastMes=prevMonthStr(mes);
   knownSids.forEach(sid=>{
@@ -2256,6 +2277,18 @@ function rSASupervision(){
     const servicoStr=servicos.join(' · ')||'';
     const lojaLabel=getStoreLabel(sid)||sid;
     storeList.push({sid,empName,displayName,lojaLabel,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl,servicoStr,semFoto,semTalao,tardios,gaps,gapDates});
+  });
+  // Add orphan loja groups (records grouped by loja name, no store_id)
+  orphanLojaNames.sort().forEach(lojaName=>{
+    if(lojaFil&&lojaName!==lojaFil)return;
+    const allLR=regs.filter(r=>!r.store_id&&r.loja===lojaName);
+    const storeRegs=allLR.filter(r=>getRefDate(r).startsWith(mes.slice(0,7)));
+    const ok=storeRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='ok').length;
+    const warn=storeRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='warn').length;
+    const err=storeRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
+    const prog=storeRegs.filter(r=>calcEstado(r,getRecordCfg(r)).s==='prog').length;
+    const total=storeRegs.length;
+    storeList.push({sid:'_lj:'+lojaName,empName:lojaName,displayName:lojaName,lojaLabel:lojaName,email:'',total,ok,warn,err,prog,compliant:total>0?Math.round((ok/total)*100):null,lastCompliant:null,avgDelay:null,lateVal:0,cycle:null,exposure:null,maxAge:null,storeMissingCount:0,storeLojas2:[lojaName],wSemComp:storeRegs.filter(r=>!r.talao).length,wPendentes:storeRegs.filter(r=>!r.dataDeposito).length,wACompl:0,servicoStr:'',semFoto:0,semTalao:storeRegs.filter(r=>!r.talao).length,tardios:err,gaps:0,gapDates:''});
   });
   // Sort: stores with data first (worst-to-best), then no-data alphabetically
   const severity=s=>{
@@ -3327,7 +3360,10 @@ async function updEmailPrev(){
   if(epSendBtn)epSendBtn.disabled=true;
   const mes=document.getElementById('e-mes').value||curMesStr();
   const _eLojaVal=document.getElementById('e-loja').value;
-  const loja=isSA?(getStoreLabel(_eLojaVal)||_eLojaVal||'Todas as Lojas'):(_eLojaVal||'Todas as Lojas');
+  // Handle _lj: prefix (orphan loja names stored without store_id)
+  const _isOrphan=_eLojaVal.startsWith('_lj:');
+  const _lojaName=_isOrphan?_eLojaVal.slice(4):null;
+  const loja=isSA?(_isOrphan?_lojaName:(getStoreLabel(_eLojaVal)||_eLojaVal||'Todas as Lojas')):(_eLojaVal||'Todas as Lojas');
   // Reset exportCfg immediately so stale config from previous store never leaks
   exportCfg=null;
   // Super-admin: load config from the selected store; also load gerente email from localStorage
@@ -3341,11 +3377,13 @@ async function updEmailPrev(){
     }
     dest=document.getElementById('e-gerente')?.value.trim()||'';
     const storeIds=[...new Set(data.map(r=>r.store_id).filter(Boolean))];
-    const sidToLoad=selectedSid||(storeIds.length===1?storeIds[0]:'');
+    const sidToLoad=_isOrphan?null:(selectedSid||(storeIds.length===1?storeIds[0]:''));
     if(sidToLoad){
       const{data:sc}=await SB.from('dep_config').select('*').eq('store_id',sidToLoad).maybeSingle();
       exportCfg=sc?{emp:sc.emp||cfg.emp,email:dest,emailCC:'',emailCC2:'',nif:sc.nif||cfg.nif}:null;
     }
+    // Orphan loja: use loja name as display name, no emp/nif available
+    if(_isOrphan)exportCfg={emp:_lojaName||'',email:dest,emailCC:'',emailCC2:'',nif:''};
   }
   const activeCfg=exportCfg||cfg;
   const empresa=activeCfg.emp||'Empresa';
@@ -3682,12 +3720,22 @@ function epCopyFallback(text){
   const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;top:-999px;opacity:0';
   document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✓ Texto copiado!');
 }
+function matchesLojaFilter(r,sel){
+  if(!sel)return true;
+  if(sel.startsWith('_lj:'))return r.loja===sel.slice(4);
+  if(r.store_id===sel)return true;
+  if(r.store_id)return false;
+  // Old record (no store_id): match by known lojas for this store_id
+  const sc=allStoreConfigs.find(c=>c.store_id===sel);
+  const knownLojas=new Set([...(sc?.lojas||[]),...regs.filter(x=>x.store_id===sel&&x.loja).map(x=>x.loja)]);
+  return r.loja?knownLojas.has(r.loja):false;
+}
 function getFiltExp(){
   const sel=document.getElementById('e-loja').value;
   const mes=document.getElementById('e-mes').value;
   return regs.filter(r=>{
     if(sel){
-      if(isSA){if(r.store_id!==sel)return false;}
+      if(isSA){if(!matchesLojaFilter(r,sel))return false;}
       else{if(r.loja!==sel)return false;}
     }
     if(mes){const ref=getRefDate(r);if(!ref.startsWith(mes))return false}
@@ -3769,7 +3817,7 @@ function expEmail(){
 function expPrint(data, asDownload=false, existingPw=null){
   const mes=document.getElementById('e-mes').value||curMesStr();
   const _sv=document.getElementById('e-loja').value||'';
-  const loja=isSA?(getStoreLabel(_sv)||_sv||cfg.lojas[0]||'Loja'):(_sv||cfg.lojas[0]||'Loja');
+  const loja=isSA?(_sv.startsWith('_lj:')?_sv.slice(4):(getStoreLabel(_sv)||_sv||cfg.lojas[0]||'Loja')):(_sv||cfg.lojas[0]||'Loja');
   const pCfg=exportCfg||cfg;
   const empresa=pCfg.emp||'Empresa'; const nif=pCfg.nif||'';
   const expDate=new Date().toISOString().split('T')[0];
