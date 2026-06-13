@@ -794,10 +794,14 @@ async function sbLoad(silent=false){
       if(c)cfg={emp:c.emp||'Despomar',email:c.email||'',emailCC:c.email_cc||'',emailCC2:c.email_cc2||'',nif:c.nif||'',cambioDia:c.cambio_dia||'',prosegurDay:c.prosegur_day||'',lomisDay:c.lomis_day||'',mesInicio:c.mes_inicio||'2026-06',lojas:c.lojas||[],resps:c.resps||[]};
     }else{
       // SA: load personal config from 'super' row + merge lojas/resps from all stores
-      const[{data:saRow},{data:cs}]=await Promise.all([
+      const[{data:saRow},{data:cs},{data:allUsers}]=await Promise.all([
         SB.from('dep_config').select('*').eq('store_id','super').maybeSingle(),
-        SB.from('dep_config').select('*')
+        SB.from('dep_config').select('*'),
+        SB.from('dep_users').select('store_id,nome,role')
       ]);
+      // All registered store accounts (non-SA) — used for dropdown even when records have no store_id
+      window._storeUsers=(allUsers||[]).filter(u=>u.store_id&&u.role!=='super_admin');
+      window._storeUserName=Object.fromEntries(window._storeUsers.map(u=>[u.store_id,u.nome||u.store_id]));
       if(saRow){
         cfg={
           emp:saRow.emp||cfg.emp||'Despomar',
@@ -846,6 +850,8 @@ async function sbLoad(silent=false){
         const owner=allStoreConfigs.find(c=>(c.lojas||[]).includes(r.loja));
         if(owner?.store_id)_scSids.add(owner.store_id);
       });
+      // Also include all registered store users (even if they have no records yet)
+      (window._storeUsers||[]).forEach(u=>{if(u.store_id)_scSids.add(u.store_id);});
       window._saSids=[..._scSids];
       DB.set('cfg',cfg); // SA não cacheia registos — sempre carrega do Supabase
     }else{
@@ -3202,7 +3208,9 @@ function getStoreLabel(sid){
   const sc=allStoreConfigs.find(c=>c.store_id===sid);
   const fromRecs=[...new Set(regs.filter(r=>r.store_id===sid).map(r=>r.loja).filter(Boolean))];
   const lojas=fromRecs.length?fromRecs:(sc?.lojas||[]);
-  return lojas.length?lojas.join(' · '):(sc?.emp||sid);
+  // Fallback: dep_users.nome for the registered store user
+  const userName=(window._storeUserName||{})[sid];
+  return lojas.length?lojas.join(' · '):(sc?.emp||userName||sid);
 }
 
 function getRecordCfg(r){
