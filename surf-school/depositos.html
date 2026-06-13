@@ -3383,10 +3383,11 @@ async function updEmailPrev(){
     const sc=allStoreConfigs.find(c=>(c.lojas||[]).includes(selectedLoja));
     if(selectedLoja!==_gerenteSid){
       const gerenteEl=document.getElementById('e-gerente');
-      // Derive gerente email: prepend "gerente." to local part of store email
-      const storeEmail=sc?.email||'';
-      const autoEmail=storeEmail.includes('@')?'gerente.'+storeEmail.split('@')[0]+'@'+storeEmail.split('@')[1]:'';
-      // localStorage override → derived gerente email → empty
+      // Derive gerente email: "ESS Guia" → gerente.guia@<domain>
+      const lojaKey=selectedLoja.split(' ').pop().toLowerCase().replace(/[^a-z0-9]/g,'');
+      const domain=sc?.email?.split('@')[1]||cfg.email?.split('@')[1]||'despomar.com';
+      const autoEmail=lojaKey?'gerente.'+lojaKey+'@'+domain:'';
+      // localStorage override → derived gerente email
       if(gerenteEl)gerenteEl.value=localStorage.getItem('dep_gerente_'+selectedLoja)||autoEmail;
       _gerenteSid=selectedLoja;
     }
