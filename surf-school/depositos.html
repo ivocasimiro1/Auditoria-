@@ -843,14 +843,13 @@ async function sbLoad(silent=false){
         if(data.length<1000)break;
       }
       regs=allRows.map(row=>{const r=rowToReg(row);r.foto=hasFoto.has(row.id)?true:null;return r;});
-      // Only stores that have actual records — avoids empty test/demo accounts flooding the ranking
-      const _scSids=new Set(regs.map(r=>r.store_id).filter(Boolean));
-      // For records with no store_id, match to allStoreConfigs by loja name
+      // Build complete store list: dep_config rows + records + dep_users
+      const _scSids=new Set(allStoreConfigs.map(c=>c.store_id).filter(Boolean));
+      regs.map(r=>r.store_id).filter(s=>s&&s!=='super').forEach(s=>_scSids.add(s));
       regs.filter(r=>!r.store_id&&r.loja).forEach(r=>{
         const owner=allStoreConfigs.find(c=>(c.lojas||[]).includes(r.loja));
         if(owner?.store_id)_scSids.add(owner.store_id);
       });
-      // Also include all registered store users (even if they have no records yet)
       (window._storeUsers||[]).forEach(u=>{if(u.store_id)_scSids.add(u.store_id);});
       window._saSids=[..._scSids];
       DB.set('cfg',cfg); // SA não cacheia registos — sempre carrega do Supabase
@@ -1203,7 +1202,7 @@ function popSel(){
     else el.innerHTML='<option value="">Todas</option>';
     // SA on email page: all known store_ids + orphan loja names (records with no store_id)
     if(isSA&&id==='e-loja'){
-      const allSids=(window._saSids||[...new Set([...allStoreConfigs.map(c=>c.store_id),...regs.map(r=>r.store_id).filter(Boolean)])]);
+      const allSids=window._saSids?.length?window._saSids:[...new Set([...allStoreConfigs.map(c=>c.store_id).filter(Boolean),...regs.map(r=>r.store_id).filter(s=>s&&s!=='super')])];
       // Loja names already covered by a known store_id
       const coveredLojas=new Set();
       allSids.forEach(sid=>{
