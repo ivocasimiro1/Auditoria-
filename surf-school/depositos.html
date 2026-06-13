@@ -609,11 +609,15 @@ select{
     <div id="cfg-sync-note" style="display:none;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:10px 13px;margin-bottom:14px;font-size:12px;color:#1e40af;font-weight:600;line-height:1.5"></div>
     <div class="fg"><label>Nome da Empresa</label><input type="text" id="c-emp" placeholder="Despomar" oninput="sc()"></div>
     <div class="fg">
-      <label id="c-email-lbl">Email Contabilidade (Para:)</label>
-      <input type="email" id="c-email" placeholder="contab@empresa.pt" oninput="sc()">
+      <label id="c-email-lbl">📬 Email Contabilidade — obrigatório (Para:)</label>
+      <input type="email" id="c-email" placeholder="contab@empresa.pt" oninput="sc()" required>
       <div id="c-email-hint" style="display:none;font-size:11px;color:var(--g400);margin-top:4px;line-height:1.4"></div>
     </div>
-    <div class="fg"><label>CC fixo (sempre incluído)</label><input type="email" id="c-emailcc" placeholder="ivo@despomar.com" oninput="sc()"></div>
+    <div class="fg">
+      <label>👤 Email do Gerente da Loja — obrigatório</label>
+      <input type="email" id="c-emailcc" placeholder="gerente.loja@empresa.pt" oninput="sc()" required>
+      <div style="font-size:11px;color:var(--g400);margin-top:4px;line-height:1.4">O Ivo (super-admin) envia relatórios directamente para este email. É sempre incluído em CC nos emails da loja.</div>
+    </div>
     <div class="fg"><label>CC adicional da loja (opcional)</label><input type="email" id="c-emailcc2" placeholder="outro@empresa.pt" oninput="sc()"></div>
     <div class="fg"><label>NIF</label><input type="text" id="c-nif" placeholder="999999999" oninput="sc()"></div>
     <div style="font-size:11px;font-weight:700;color:var(--g500);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.4px">Serviços de depósito activos</div>
@@ -3346,22 +3350,22 @@ function toggleEmailsLojas(){
     allStoreConfigs.forEach(c=>{
       if(!c.store_id||c.store_id==='super')return;
       const lojas=c.lojas||[];
-      const email=c.email||'';
+      const emailGerente=c.email_cc||''; // email_cc = Email do Gerente
       lojas.forEach(l=>{
         if(seen.has(l))return;seen.add(l);
-        const ok=!!email;
+        const ok=!!emailGerente;
         rows.push(`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #e2e8f0">
           <span style="font-weight:700;color:#1e293b">${l}</span>
-          <span style="color:${ok?'#166534':'#991b1b'};font-size:11px">${ok?email:'⚠️ sem email'}</span>
+          <span style="color:${ok?'#166534':'#991b1b'};font-size:11px">${ok?emailGerente:'⚠️ sem email gerente'}</span>
         </div>`);
       });
       if(!lojas.length){
         const l=c.emp||c.store_id;
         if(seen.has(l))return;seen.add(l);
-        const ok=!!email;
+        const ok=!!emailGerente;
         rows.push(`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #e2e8f0">
           <span style="font-weight:700;color:#1e293b">${l}</span>
-          <span style="color:${ok?'#166534':'#991b1b'};font-size:11px">${ok?email:'⚠️ sem email'}</span>
+          <span style="color:${ok?'#166534':'#991b1b'};font-size:11px">${ok?emailGerente:'⚠️ sem email gerente'}</span>
         </div>`);
       }
     });
@@ -3423,22 +3427,13 @@ async function updEmailPrev(){
   const loja=_eLojaVal||'Todas as Lojas';
   // Reset exportCfg immediately so stale config from previous store never leaks
   exportCfg=null;
-  // Super-admin: derive gerente email automatically from store dep_config.email
+  // Super-admin: TO = gerente email stored in email_cc (the "Email do Gerente" Settings field)
   let dest='';
   if(isSA){
     const selectedLoja=_eLojaVal;
     const sc=allStoreConfigs.find(c=>(c.lojas||[]).includes(selectedLoja));
-    const storeEmail=sc?.email||'';
-    // ESS (Despomar): dep_config.email = Inês (contabilidade) — derive from loja name + @despomar.com
-    // All others (Billabong, ECO, 58 Surf): dep_config.email = store's own email — prepend gerente.
-    if(/^ess\b/i.test(selectedLoja)){
-      const key=selectedLoja.split(' ').pop().toLowerCase().replace(/[^a-z0-9]/g,'');
-      dest=key?'gerente.'+key+'@despomar.com':'';
-    } else if(storeEmail.includes('@')){
-      dest='gerente.'+storeEmail.split('@')[0]+'@'+storeEmail.split('@')[1];
-    } else {
-      dest=storeEmail;
-    }
+    // email_cc = "Email do Gerente da Loja" (renamed in Settings)
+    dest=sc?.email_cc||'';
     // Update ep-to directly (no manual field needed for SA)
     const epTo=document.getElementById('ep-to');if(epTo)epTo.textContent=dest||'(não configurado)';
     const cw=document.getElementById('ep-config-warn');if(cw)cw.style.display=dest?'none':'block';
