@@ -80,7 +80,7 @@
   --sh-sm:0 1px 2px rgba(0,0,0,.05);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overscroll-behavior:none;-webkit-overflow-scrolling:touch}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;-webkit-overflow-scrolling:touch}
 body{
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   background:var(--g100);color:var(--g800);
@@ -91,7 +91,7 @@ body{
 .topbar{
   background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;
   padding:12px 16px;display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:var(--nav-h);z-index:98;
+  position:fixed;top:var(--nav-h);left:0;right:0;z-index:98;
   box-shadow:0 2px 12px rgba(30,58,138,.35);
 }
 .topbar h1{font-size:16px;font-weight:700;letter-spacing:-.2px}
@@ -117,7 +117,7 @@ body{
 .nb.active::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:28px;height:3px;background:var(--blue);border-radius:3px 3px 0 0}
 .nb svg{width:22px;height:22px}
 .page{display:none;padding:12px 12px 20px}
-.page.active{display:block}
+.page.active{display:block;overflow-y:auto;height:100%;-webkit-overflow-scrolling:touch}
 .card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:12px}
 .ct{font-size:10px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px}
 .fg{margin-bottom:14px}
@@ -551,6 +551,10 @@ select{
     <div class="ct">📧 Enviar E-mail à Contabilidade</div>
     <div class="fg"><label>Loja</label><select id="e-loja" onchange="updEmailPrev()"></select></div>
     <div class="fg"><label>Mês</label><select id="e-mes" onchange="updEmailPrev()"></select></div>
+    <div class="fg sa-tab" id="e-gerente-row" style="display:none">
+      <label>E-mail do gerente da loja</label>
+      <input type="email" id="e-gerente" placeholder="gerente@loja.pt" oninput="onGerenteEmailChange()" style="width:100%;padding:10px 12px;border:1.5px solid var(--g200);border-radius:10px;font-size:15px;background:#fff;color:var(--g800)">
+    </div>
     <button class="btn bs" id="exp-btn" onclick="doExp()" style="margin-top:12px">
       <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
       <span id="exp-btn-lbl">Enviar Email</span>
@@ -1143,14 +1147,14 @@ function sp(name){
     const nb=document.getElementById('nb-'+name);if(nb)nb.classList.add('active');
     const T={dash:'📊 Dashboard',supervisao:'🔍 Supervisão Global',novo:'➕ Novo Depósito',lista:'📋 Lista / Editar',mapa:'🗓️ Mapa de Depósitos',exp:'📧 Enviar E-mail',settings:'⚙️ Configurações'};
     document.getElementById('ttitle').textContent=T[name]||'📦 Depósitos';
-    // Back button: páginas "home" não têm voltar; home do SA = supervisão
     const bb=document.getElementById('back-btn');
     if(bb){
       const isHome=name==='dash'||(isSA&&name==='supervisao');
-      bb.style.display=isHome?'none':'flex';
-      bb.onclick=()=>sp(isSA?'supervisao':'dash');
+      bb.style.display='flex';
+      if(isHome){bb.title='Terminar Sessão';bb.textContent='🚪';bb.onclick=doLogout;}
+      else{bb.title='Voltar';bb.textContent='←';bb.onclick=()=>sp(isSA?'supervisao':'dash');}
     }
-    window.scrollTo(0,0);
+    if(pg)pg.scrollTop=0;
     if(name==='dash')rDash();
     if(name==='supervisao'){popSupSel();rSASupervision();}
     if(name==='novo'){if(!editingId)resetNovoForm();popSel();}
@@ -2250,8 +2254,7 @@ function rSASupervision(){
     const allSidRegs=regs.filter(r=>r.store_id===sid);
     if(allSidRegs.some(r=>r.tipo==='Depósito Direto'))servicos.push('Dep. Direto');
     const servicoStr=servicos.join(' · ')||'';
-    // Best available loja label: records → cfg.lojas → store_id formatted
-    const lojaLabel=storeLojas2.length?storeLojas2.join(' · '):(sid.replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.toUpperCase()));
+    const lojaLabel=getStoreLabel(sid)||sid;
     storeList.push({sid,empName,displayName,lojaLabel,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl,servicoStr,semFoto,semTalao,tardios,gaps,gapDates});
   });
   // Sort: stores with data first (worst-to-best), then no-data alphabetically
@@ -3281,7 +3284,14 @@ function cm(){document.getElementById('mod').classList.remove('open')}
 async function delR(id){if(!confirm('Eliminar este depósito?'))return;const ok=await sbDel(id);if(!ok)return;regs=regs.filter(x=>x.id!==id);saveR();cm();rLista();rDash();toast('Eliminado')}
 
 // ─── EXPORT ──────────────────────────────────────────
-let expFmt='print',exportCfg=null;
+let expFmt='print',exportCfg=null,_gerenteSid='';
+function onGerenteEmailChange(){
+  const sid=document.getElementById('e-loja')?.value||'';
+  const email=document.getElementById('e-gerente')?.value.trim()||'';
+  if(sid)localStorage.setItem('dep_gerente_'+sid,email);
+  const epTo=document.getElementById('ep-to');if(epTo)epTo.textContent=email||'(não configurado)';
+  const cw=document.getElementById('ep-config-warn');if(cw)cw.style.display=email?'none':'block';
+}
 function seExp(f){
   expFmt=f;
   document.querySelectorAll('.eo').forEach(o=>o.classList.remove('sel'));
@@ -3292,7 +3302,17 @@ function seExp(f){
   else{epc.style.display='none';if(lbl)lbl.textContent='Exportar PDF';}
   updPrev();
 }
-function rExpSel(){popSel();document.getElementById('e-loja').addEventListener('change',()=>{updPrev();if(expFmt==='email')updEmailPrev();});document.getElementById('e-mes').addEventListener('change',()=>{updPrev();if(expFmt==='email')updEmailPrev();});seExp(expFmt);}
+function rExpSel(){
+  popSel();
+  document.getElementById('e-loja').addEventListener('change',()=>{updPrev();if(expFmt==='email')updEmailPrev();});
+  document.getElementById('e-mes').addEventListener('change',()=>{updPrev();if(expFmt==='email')updEmailPrev();});
+  const gr=document.getElementById('e-gerente-row');if(gr)gr.style.display=isSA?'block':'none';
+  const ct=document.querySelector('#page-exp .ct');if(ct)ct.textContent=isSA?'📧 Enviar Relatório à Loja':'📧 Enviar E-mail à Contabilidade';
+  const cw=document.getElementById('ep-config-warn');
+  if(cw&&isSA)cw.innerHTML='⚠️ E-mail do gerente da loja não preenchido. Introduza o email no campo acima.';
+  _gerenteSid='';
+  seExp(expFmt);
+}
 async function updEmailPrev(){
   const data=getFiltExp();
   const epc=document.getElementById('email-prev-card');
@@ -3310,19 +3330,28 @@ async function updEmailPrev(){
   const loja=isSA?(getStoreLabel(_eLojaVal)||_eLojaVal||'Todas as Lojas'):(_eLojaVal||'Todas as Lojas');
   // Reset exportCfg immediately so stale config from previous store never leaks
   exportCfg=null;
-  // Super-admin: load config from the selected store, not from 'super'
+  // Super-admin: load config from the selected store; also load gerente email from localStorage
+  let dest='';
   if(isSA){
+    const selectedSid=_eLojaVal;
+    if(selectedSid!==_gerenteSid){
+      const gerenteEl=document.getElementById('e-gerente');
+      if(gerenteEl)gerenteEl.value=localStorage.getItem('dep_gerente_'+selectedSid)||'';
+      _gerenteSid=selectedSid;
+    }
+    dest=document.getElementById('e-gerente')?.value.trim()||'';
     const storeIds=[...new Set(data.map(r=>r.store_id).filter(Boolean))];
-    if(storeIds.length===1){
-      const{data:sc}=await SB.from('dep_config').select('*').eq('store_id',storeIds[0]).maybeSingle();
-      exportCfg=sc?{emp:sc.emp||cfg.emp,email:sc.email||cfg.email||'',emailCC:sc.email_cc||cfg.emailCC||'',emailCC2:sc.email_cc2||cfg.emailCC2||'',nif:sc.nif||cfg.nif}:null;
+    const sidToLoad=selectedSid||(storeIds.length===1?storeIds[0]:'');
+    if(sidToLoad){
+      const{data:sc}=await SB.from('dep_config').select('*').eq('store_id',sidToLoad).maybeSingle();
+      exportCfg=sc?{emp:sc.emp||cfg.emp,email:dest,emailCC:'',emailCC2:'',nif:sc.nif||cfg.nif}:null;
     }
   }
   const activeCfg=exportCfg||cfg;
   const empresa=activeCfg.emp||'Empresa';
   const nif=activeCfg.nif||'';
-  const dest=activeCfg.email||'';
-  const cc=[activeCfg.emailCC,activeCfg.emailCC2].filter(Boolean).join(', ')||'—';
+  if(!isSA)dest=activeCfg.email||'';
+  const cc=isSA?'—':[activeCfg.emailCC,activeCfg.emailCC2].filter(Boolean).join(', ')||'—';
   const cw=document.getElementById('ep-config-warn');
   if(cw)cw.style.display=dest?'none':'block';
   const ml=mesLabel(mes);
