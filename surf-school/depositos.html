@@ -117,6 +117,10 @@ body{
 }
 .nb.active{color:var(--blue)}
 .nb.active::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:28px;height:3px;background:var(--blue);border-radius:3px 3px 0 0}
+#nb-novo{color:#fff;position:relative}
+#nb-novo::before{content:'';position:absolute;inset:-6px 4px -2px;background:linear-gradient(135deg,#059669,#047857);border-radius:16px;z-index:-1;box-shadow:0 4px 14px rgba(5,150,105,.45)}
+#nb-novo.active::after{display:none}
+#nb-novo svg{width:24px;height:24px;stroke-width:2.5}
 .nb svg{width:20px;height:20px}
 .nb{font-size:9px}
 .page{display:none;padding:12px 12px 20px}
@@ -900,7 +904,7 @@ select{
   </button>
   <button class="nb" id="nb-mapa" onclick="sp('mapa')">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-    Mapa
+    Mapa/Mail
   </button>
   <button class="nb" id="nb-contagem" onclick="sp('contagem')">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
