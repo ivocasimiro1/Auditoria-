@@ -117,7 +117,8 @@ body{
 }
 .nb.active{color:var(--blue)}
 .nb.active::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:28px;height:3px;background:var(--blue);border-radius:3px 3px 0 0}
-.nb svg{width:22px;height:22px}
+.nb svg{width:20px;height:20px}
+.nb{font-size:9px}
 .page{display:none;padding:12px 12px 20px}
 .page.active{display:block}
 .card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:12px}
@@ -368,6 +369,29 @@ select{
 #load-ov{display:none;position:fixed;inset:0;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);z-index:600;align-items:center;justify-content:center;flex-direction:column;gap:16px}
 .spin{width:44px;height:44px;border:3px solid var(--g100);border-top-color:var(--blue);border-radius:50%;animation:_sp .7s cubic-bezier(.6,.2,.4,.8) infinite}
 @keyframes _sp{to{transform:rotate(360deg)}}
+
+/* CONTAGEM DE DINHEIRO */
+.cnt-total-card{background:linear-gradient(135deg,#0f2460,#1d4ed8);border-radius:16px;padding:18px 18px 14px;margin-bottom:12px;color:#fff;box-shadow:0 6px 24px rgba(29,78,216,.35)}
+.cnt-total-label{font-size:11px;font-weight:800;opacity:.7;letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px}
+.cnt-total-val{font-size:44px;font-weight:800;letter-spacing:-1.5px;line-height:1;font-variant-numeric:tabular-nums}
+.cnt-total-actions{display:flex;gap:8px;margin-top:14px}
+.cnt-total-actions button{flex:1;padding:11px 10px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation;border:none}
+.cnt-btn-clear{background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.25)!important}
+.cnt-btn-use{background:rgba(255,255,255,.95);color:#1d4ed8}
+.cnt-section-title{font-size:10px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:.7px;padding:6px 0 10px;border-bottom:1px solid var(--g100);margin-bottom:2px}
+.cnt-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--g100)}
+.cnt-row:last-child{border-bottom:none;padding-bottom:2px}
+.cnt-badge{min-width:56px;padding:6px 8px;border-radius:9px;font-size:13px;font-weight:800;color:#fff;text-align:center;letter-spacing:-.3px;flex-shrink:0}
+.cnt-dec,.cnt-inc{width:38px;height:38px;border:1.5px solid var(--g200);background:var(--g50);border-radius:10px;font-size:22px;font-weight:400;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;flex-shrink:0;color:var(--g600);line-height:1;transition:background .1s}
+.cnt-dec:active,.cnt-inc:active{background:var(--g200)}
+.cnt-qty{width:56px;text-align:center;border:1.5px solid var(--g200);border-radius:10px;padding:8px 4px;font-size:18px;font-weight:800;color:var(--g800);background:#fff;-moz-appearance:textfield;min-height:38px;transition:border-color .15s}
+.cnt-qty:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);outline:none}
+.cnt-qty::-webkit-inner-spin-button,.cnt-qty::-webkit-outer-spin-button{-webkit-appearance:none}
+.cnt-sub{flex:1;text-align:right;font-size:14px;font-weight:700;color:var(--g700);min-width:72px;font-variant-numeric:tabular-nums}
+.cnt-sub.has{color:var(--g800)}
+.cnt-partial{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--g50);border-radius:10px;margin-top:8px}
+.cnt-partial span{font-size:11px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.4px}
+.cnt-partial strong{font-size:16px;font-weight:800;color:var(--g700);font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body ontouchstart="">
@@ -712,6 +736,141 @@ select{
   </div>
 </div>
 
+<!-- ═══ CONTAGEM DE DINHEIRO ═══ -->
+<div class="page" id="page-contagem">
+  <div class="cnt-total-card">
+    <div class="cnt-total-label">Total Contado</div>
+    <div class="cnt-total-val" id="cnt-total">0,00 €</div>
+    <div class="cnt-total-actions">
+      <button class="cnt-btn-clear" onclick="cntReset()">⟳ Limpar</button>
+      <button class="cnt-btn-use" onclick="cntUsar()">✓ Usar no Depósito</button>
+    </div>
+  </div>
+
+  <!-- NOTAS -->
+  <div class="card" style="padding:14px 16px">
+    <div class="cnt-section-title">💶 Notas</div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#6d28d9">500€</div>
+      <button class="cnt-dec" onclick="cntAdj(50000,-1)">−</button>
+      <input class="cnt-qty" id="cq-50000" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(50000,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(50000,1)">+</button>
+      <div class="cnt-sub" id="cs-50000">—</div>
+    </div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#d97706">200€</div>
+      <button class="cnt-dec" onclick="cntAdj(20000,-1)">−</button>
+      <input class="cnt-qty" id="cq-20000" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(20000,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(20000,1)">+</button>
+      <div class="cnt-sub" id="cs-20000">—</div>
+    </div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#059669">100€</div>
+      <button class="cnt-dec" onclick="cntAdj(10000,-1)">−</button>
+      <input class="cnt-qty" id="cq-10000" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(10000,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(10000,1)">+</button>
+      <div class="cnt-sub" id="cs-10000">—</div>
+    </div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#f59e0b">50€</div>
+      <button class="cnt-dec" onclick="cntAdj(5000,-1)">−</button>
+      <input class="cnt-qty" id="cq-5000" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(5000,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(5000,1)">+</button>
+      <div class="cnt-sub" id="cs-5000">—</div>
+    </div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#2563eb">20€</div>
+      <button class="cnt-dec" onclick="cntAdj(2000,-1)">−</button>
+      <input class="cnt-qty" id="cq-2000" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(2000,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(2000,1)">+</button>
+      <div class="cnt-sub" id="cs-2000">—</div>
+    </div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#dc2626">10€</div>
+      <button class="cnt-dec" onclick="cntAdj(1000,-1)">−</button>
+      <input class="cnt-qty" id="cq-1000" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(1000,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(1000,1)">+</button>
+      <div class="cnt-sub" id="cs-1000">—</div>
+    </div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#475569">5€</div>
+      <button class="cnt-dec" onclick="cntAdj(500,-1)">−</button>
+      <input class="cnt-qty" id="cq-500" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(500,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(500,1)">+</button>
+      <div class="cnt-sub" id="cs-500">—</div>
+    </div>
+    <div class="cnt-partial">
+      <span>Subtotal Notas</span>
+      <strong id="cnt-sub-notas">0,00 €</strong>
+    </div>
+  </div>
+
+  <!-- MOEDAS -->
+  <div class="card" style="padding:14px 16px">
+    <div class="cnt-section-title">🪙 Moedas</div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#374151">2€</div>
+      <button class="cnt-dec" onclick="cntAdj(200,-1)">−</button>
+      <input class="cnt-qty" id="cq-200" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(200,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(200,1)">+</button>
+      <div class="cnt-sub" id="cs-200">—</div>
+    </div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#374151">1€</div>
+      <button class="cnt-dec" onclick="cntAdj(100,-1)">−</button>
+      <input class="cnt-qty" id="cq-100" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(100,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(100,1)">+</button>
+      <div class="cnt-sub" id="cs-100">—</div>
+    </div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#b45309">0,50€</div>
+      <button class="cnt-dec" onclick="cntAdj(50,-1)">−</button>
+      <input class="cnt-qty" id="cq-50" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(50,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(50,1)">+</button>
+      <div class="cnt-sub" id="cs-50">—</div>
+    </div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#b45309">0,20€</div>
+      <button class="cnt-dec" onclick="cntAdj(20,-1)">−</button>
+      <input class="cnt-qty" id="cq-20" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(20,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(20,1)">+</button>
+      <div class="cnt-sub" id="cs-20">—</div>
+    </div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#b45309">0,10€</div>
+      <button class="cnt-dec" onclick="cntAdj(10,-1)">−</button>
+      <input class="cnt-qty" id="cq-10" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(10,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(10,1)">+</button>
+      <div class="cnt-sub" id="cs-10">—</div>
+    </div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#92400e">0,05€</div>
+      <button class="cnt-dec" onclick="cntAdj(5,-1)">−</button>
+      <input class="cnt-qty" id="cq-5" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(5,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(5,1)">+</button>
+      <div class="cnt-sub" id="cs-5">—</div>
+    </div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#92400e">0,02€</div>
+      <button class="cnt-dec" onclick="cntAdj(2,-1)">−</button>
+      <input class="cnt-qty" id="cq-2" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(2,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(2,1)">+</button>
+      <div class="cnt-sub" id="cs-2">—</div>
+    </div>
+    <div class="cnt-row">
+      <div class="cnt-badge" style="background:#92400e">0,01€</div>
+      <button class="cnt-dec" onclick="cntAdj(1,-1)">−</button>
+      <input class="cnt-qty" id="cq-1" type="number" min="0" value="0" inputmode="numeric" oninput="cntSet(1,this.value)">
+      <button class="cnt-inc" onclick="cntAdj(1,1)">+</button>
+      <div class="cnt-sub" id="cs-1">—</div>
+    </div>
+    <div class="cnt-partial">
+      <span>Subtotal Moedas</span>
+      <strong id="cnt-sub-moedas">0,00 €</strong>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ SUPERVISÃO (SA only) ═══ -->
 <div class="page" id="page-supervisao">
   <div class="mes-bar">
@@ -741,7 +900,11 @@ select{
   </button>
   <button class="nb" id="nb-mapa" onclick="sp('mapa')">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-    Mapa/Mail
+    Mapa
+  </button>
+  <button class="nb" id="nb-contagem" onclick="sp('contagem')">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+    Caixa
   </button>
   <button class="nb" id="nb-settings" onclick="sp('settings')">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -1163,7 +1326,7 @@ function sp(name){
     const pg=document.getElementById('page-'+name);
     if(pg)pg.classList.add('active');
     const nb=document.getElementById('nb-'+name);if(nb)nb.classList.add('active');
-    const T={dash:'📊 Dashboard',supervisao:'🔍 Supervisão Global',novo:'➕ Novo Depósito',lista:'📋 Lista / Editar',mapa:'🗓️ Mapa de Depósitos',exp:'📧 Enviar E-mail',settings:'⚙️ Configurações'};
+    const T={dash:'📊 Dashboard',supervisao:'🔍 Supervisão Global',novo:'➕ Novo Depósito',lista:'📋 Lista / Editar',mapa:'🗓️ Mapa de Depósitos',exp:'📧 Enviar E-mail',settings:'⚙️ Configurações',contagem:'💰 Contador de Caixa'};
     document.getElementById('ttitle').textContent=T[name]||'📦 Depósitos';
     const bb=document.getElementById('back-btn');
     if(bb){
@@ -3337,6 +3500,50 @@ async function saveDD(id){
 }
 function cm(){document.getElementById('mod').classList.remove('open')}
 async function delR(id){if(!confirm('Eliminar este depósito?'))return;const ok=await sbDel(id);if(!ok)return;regs=regs.filter(x=>x.id!==id);saveR();cm();rLista();rDash();toast('Eliminado')}
+
+// ─── CONTAGEM DE DINHEIRO ─────────────────────────────
+// Keys are cent values (integer) to avoid float keys: 50000=500€, 1=0.01€
+const CNT_DENOMS=[
+  {c:50000,label:'500€',note:true},{c:20000,label:'200€',note:true},{c:10000,label:'100€',note:true},
+  {c:5000,label:'50€',note:true},{c:2000,label:'20€',note:true},{c:1000,label:'10€',note:true},{c:500,label:'5€',note:true},
+  {c:200,label:'2€',note:false},{c:100,label:'1€',note:false},{c:50,label:'0,50€',note:false},
+  {c:20,label:'0,20€',note:false},{c:10,label:'0,10€',note:false},{c:5,label:'0,05€',note:false},
+  {c:2,label:'0,02€',note:false},{c:1,label:'0,01€',note:false}
+];
+const _cntQ={};
+function _cntFmt(cents){const v=cents/100;return v.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'}
+function cntAdj(k,d){_cntQ[k]=Math.max(0,(_cntQ[k]||0)+d);const el=document.getElementById('cq-'+k);if(el)el.value=_cntQ[k];cntCalc()}
+function cntSet(k,v){_cntQ[k]=Math.max(0,parseInt(v)||0);cntCalc()}
+function cntCalc(){
+  let totalNotes=0,totalCoins=0;
+  CNT_DENOMS.forEach(d=>{
+    const qty=_cntQ[d.c]||0;
+    const sub=qty*d.c;
+    if(d.note)totalNotes+=sub;else totalCoins+=sub;
+    const el=document.getElementById('cs-'+d.c);
+    if(el){el.textContent=qty>0?_cntFmt(sub):'—';el.className='cnt-sub'+(qty>0?' has':'');}
+  });
+  const total=totalNotes+totalCoins;
+  const te=document.getElementById('cnt-total');if(te)te.textContent=_cntFmt(total);
+  const ne=document.getElementById('cnt-sub-notas');if(ne)ne.textContent=_cntFmt(totalNotes);
+  const me=document.getElementById('cnt-sub-moedas');if(me)me.textContent=_cntFmt(totalCoins);
+}
+function cntReset(){
+  CNT_DENOMS.forEach(d=>{_cntQ[d.c]=0;const el=document.getElementById('cq-'+d.c);if(el)el.value=0;});
+  cntCalc();toast('Contagem limpa');
+}
+function cntUsar(){
+  const totalEl=document.getElementById('cnt-total');
+  const raw=(totalEl?.textContent||'0').replace(/[^0-9,]/g,'').replace(',','.');
+  const total=parseFloat(raw)||0;
+  if(total<=0){toast('⚠️ Contagem está em zero');return;}
+  sp('novo');
+  requestAnimationFrame(()=>{
+    const vl=document.getElementById('svl-0');
+    if(vl){vl.value=total.toFixed(2);vl.dispatchEvent(new Event('input'));updSesTotal&&updSesTotal();}
+  });
+  toast('✓ Total '+_cntFmt(total*100)+' copiado para o depósito');
+}
 
 // ─── EXPORT ──────────────────────────────────────────
 let expFmt='print',exportCfg=null,_gerenteSid='',_preSelectLoja='';
