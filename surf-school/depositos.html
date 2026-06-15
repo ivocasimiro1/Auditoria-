@@ -2930,7 +2930,8 @@ function rSASupervision(){
         ${insLoc?`<div style="font-size:8px;font-weight:700;opacity:.9;letter-spacing:.1px;line-height:1.3">${insLoc}</div>`:''}
       </div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:700;color:#1e293b">${icon} ${s.displayName}</div>
+        <div style="font-size:12px;font-weight:700;color:#1e293b;white-space:normal;word-break:break-word">${icon} ${s.displayName}</div>
+        ${s.lojaLabel&&s.lojaLabel!==s.displayName?`<div style="font-size:11px;font-weight:700;color:${insColor};margin-top:2px">📍 ${s.lojaLabel}</div>`:''}
         ${s.servicoStr?`<div style="font-size:10px;color:#64748b;margin-top:1px">${s.servicoStr}</div>`:''}
         <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">${statusPill}${cyclePill}</div>
       </div>
