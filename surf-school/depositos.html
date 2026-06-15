@@ -2492,8 +2492,8 @@ function rSASupervision(){
     if(allSidRegs.some(r=>r.tipo==='Depósito Direto'))servicos.push('Dep. Direto');
     const servicoStr=servicos.join(' · ')||'';
     const lojaLabel=getStoreLabel(sid)||sid;
-    // Só em atraso se passaram mais de 2 dias (prazo mínimo Dep. Direto)
-    const _missCutoff=new Date(+new Date(_todayCStr)-2*86400000).toISOString().split('T')[0];
+    // Respeitar prazo por tipo de serviço: 2d Dep. Direto, 7d semanais (Prosegur/Lomis/Câmbio)
+    const _missCutoff=new Date(+new Date(_todayCStr)-_prazoC*86400000).toISOString().split('T')[0];
     const pastMissingArr=storeMissingArr.filter(d=>d<_missCutoff);
     storeList.push({sid,empName,displayName,lojaLabel,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl,servicoStr,semFoto,semTalao,tardios,gaps,gapDates,pastMissingArr});
   });
