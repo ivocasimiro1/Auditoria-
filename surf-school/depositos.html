@@ -2850,7 +2850,7 @@ function rSASupervision(){
       ${inactiveStores.length?`<span style="font-size:11px;color:#64748b">⚫ ${inactiveStores.length} sem dados</span>`:''}
       <span style="font-size:10px;color:#92400e;margin-left:auto">Role para ver detalhes ↓</span>
     </div>`;
-  // Truly overdue: records with no deposit date (cash not deposited) past their deadline
+  // Depósitos em atraso — por loja, por tipo, com dias exactos
   const _todayOD=new Date();_todayOD.setHours(0,0,0,0);
   const overdueMap={};
   regs.filter(r=>!r.dataDeposito&&r.store_id&&r.store_id!=='super'&&(r.sessoes||[]).length>0).forEach(r=>{
@@ -2866,35 +2866,66 @@ function rSASupervision(){
     const diasDesde=Math.floor((_todayOD-ma)/86400000);
     const span=Math.floor((mr-ma)/86400000);
     if(diasDesde>prazo||span>prazo){
-      if(!overdueMap[r.store_id]||diasDesde>overdueMap[r.store_id].dias)
-        overdueMap[r.store_id]={dias:diasDesde,prazo};
+      const diasAtraso=Math.max(diasDesde-prazo,1);
+      const sid=r.store_id;
+      if(!overdueMap[sid])overdueMap[sid]={byTipo:{},totalValor:0};
+      overdueMap[sid].totalValor+=tv;
+      const k=r.tipo||'Outro';
+      if(!overdueMap[sid].byTipo[k]){overdueMap[sid].byTipo[k]={diasAtraso,prazo,valor:tv,count:1};}
+      else{overdueMap[sid].byTipo[k].diasAtraso=Math.max(overdueMap[sid].byTipo[k].diasAtraso,diasAtraso);overdueMap[sid].byTipo[k].valor+=tv;overdueMap[sid].byTipo[k].count++;}
     }
   });
-  // Build overdueStores from ALL stores (ignore loja filter — global alert)
   const overdueStores=Object.keys(overdueMap).map(sid=>{
     const sc2=allStoreConfigs.find(c=>c.store_id===sid);
-    const displayName=sc2?.emp||sid;
-    const lojaTypes=[...new Set(regs.filter(r=>r.store_id===sid&&!r.dataDeposito).map(r=>r.tipo).filter(Boolean))];
-    const servicoStr=lojaTypes.filter(t=>t!=='Depósito Direto').join(', ');
-    return{sid,displayName,servicoStr};
-  }).sort((a,b)=>overdueMap[b.sid].dias-overdueMap[a.sid].dias);
+    const empName=sc2?.emp||sid;
+    const lLabel=getStoreLabel(sid)||sid;
+    const insig=lojaInsignia(empName);
+    const insLoc2=lojaInsigniaLoc(empName,lLabel);
+    const insClr=lojaInsigniaColor(sid);
+    const maxAtraso=Math.max(...Object.values(overdueMap[sid].byTipo).map(t=>t.diasAtraso));
+    return{sid,empName,lLabel,insig,insLoc2,insClr,byTipo:overdueMap[sid].byTipo,totalValor:overdueMap[sid].totalValor,maxAtraso};
+  }).sort((a,b)=>b.maxAtraso-a.maxAtraso);
+  const dowLabel=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const overdueHtml=overdueStores.length?`
-<div class="card" style="padding:0;overflow:hidden;margin-bottom:10px;border:2px solid #fb923c">
-  <div style="background:linear-gradient(90deg,#fff7ed,#ffedd5);padding:10px 14px;border-bottom:1px solid #fed7aa;display:flex;align-items:center;gap:8px">
-    <div style="font-size:22px;flex-shrink:0">⏰</div>
-    <div>
-      <div style="font-size:13px;font-weight:800;color:#9a3412">${overdueStores.length} Loja${overdueStores.length!==1?'s':''} sem Depósito em Banco</div>
-      <div style="font-size:10px;color:#c2410c;margin-top:1px">Dinheiro em caixa por depositar — requer ação urgente</div>
+<div class="card" style="padding:0;overflow:hidden;margin-bottom:10px;border:2px solid #dc2626">
+  <div style="background:linear-gradient(135deg,#7f1d1d,#b91c1c);padding:11px 14px;display:flex;align-items:center;gap:10px">
+    <div style="font-size:26px;flex-shrink:0">🚨</div>
+    <div style="flex:1">
+      <div style="font-size:14px;font-weight:900;color:#fff;letter-spacing:-.2px">${overdueStores.length} Loja${overdueStores.length!==1?'s':''} com Depósito em Atraso</div>
+      <div style="font-size:10px;color:#fca5a5;margin-top:2px">Dinheiro em caixa não depositado — requer ação imediata</div>
+    </div>
+    <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:4px 10px;text-align:center;flex-shrink:0">
+      <div style="font-size:18px;font-weight:900;color:#fff">${overdueStores.reduce((s,x)=>s+x.maxAtraso,0)/overdueStores.length|0}d</div>
+      <div style="font-size:8px;color:#fca5a5;font-weight:700">méd. atraso</div>
     </div>
   </div>
-  ${overdueStores.map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #fef3c7">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:700;color:#7c2d12">${s.displayName}</div>
-        ${s.servicoStr?`<div style="font-size:10px;color:#92400e">🚚 ${s.servicoStr}</div>`:''}
+  ${overdueStores.map(s=>{
+    const tipoRows=Object.entries(s.byTipo).map(([tipo,info])=>{
+      const prazoLabel=tipo==='Depósito Direto'?'prazo 2d':`prazo ${info.prazo}d`;
+      const urgCol=info.diasAtraso>=5?'#7f1d1d':info.diasAtraso>=3?'#991b1b':'#b91c1c';
+      return`<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:4px">
+        <span style="font-size:10px;color:#92400e;font-weight:700;flex-shrink:0">${tipo}</span>
+        <span style="background:${urgCol};color:#fff;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:900;flex-shrink:0">⏱ ${info.diasAtraso}d atraso</span>
+        <span style="font-size:10px;color:#7c2d12;font-weight:700">${fmt(info.valor)}</span>
+        <span style="font-size:9px;color:#a16207;background:#fef3c7;border-radius:4px;padding:1px 5px">${prazoLabel}</span>
+      </div>`;
+    }).join('');
+    return`<div style="display:flex;align-items:flex-start;gap:8px;padding:10px 14px;border-bottom:1px solid #fecaca">
+      <div style="background:${s.insClr};color:#fff;border-radius:6px;padding:3px 5px;min-width:34px;text-align:center;flex-shrink:0;box-shadow:0 2px 6px ${s.insClr}55;margin-top:2px">
+        <div style="font-size:11px;font-weight:900;line-height:1.2">${s.insig}</div>
+        ${s.insLoc2?`<div style="font-size:8px;font-weight:700;opacity:.9;line-height:1.3">${s.insLoc2}</div>`:''}
       </div>
-      <div style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:800;flex-shrink:0">há ${overdueMap[s.sid].dias}d</div>
-      <button onclick="filterListaBySid('${s.sid}','')" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;flex-shrink:0">Ver</button>
-    </div>`).join('')}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:800;color:#7c2d12">${s.empName}</div>
+        ${s.lLabel&&s.lLabel!==s.empName?`<div style="font-size:10px;font-weight:700;color:${s.insClr}">📍 ${s.lLabel}</div>`:''}
+        ${tipoRows}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
+        <div style="background:#fee2e2;color:#7c2d12;border-radius:8px;padding:3px 8px;font-size:10px;font-weight:800;white-space:nowrap">${fmt(s.totalValor)}</div>
+        <button onclick="filterListaBySid('${s.sid}','')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">Ver</button>
+      </div>
+    </div>`;
+  }).join('')}
 </div>`:'';
   // Ranking de lojas: gaps → err → warn → cycle → compliant (tiebreak)
   // Saltos (dinheiro saltado) são mais graves que erros administrativos (ex: foto em falta)
