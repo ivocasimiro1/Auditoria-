@@ -880,6 +880,7 @@ select{
   <div class="mes-bar">
     <select id="sup-mes" onchange="rSASupervision()" style="flex:1;font-size:14px;min-height:44px"></select>
     <select id="sup-loja" onchange="rSASupervision()" style="flex:1;font-size:14px;min-height:44px"><option value="">Todas as Lojas</option></select>
+    <button id="sup-refresh-btn" onclick="(async()=>{const b=document.getElementById('sup-refresh-btn');b.disabled=true;b.textContent='⏳';await sbLoad(true);rSASupervision();b.disabled=false;b.textContent='↺';})()" style="min-width:44px;min-height:44px;font-size:20px;font-weight:700;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;color:#475569;flex-shrink:0">↺</button>
   </div>
   <div id="sa-supervision"></div>
 </div>
