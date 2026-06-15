@@ -2860,7 +2860,10 @@ function rSASupervision(){
     const avgBg=avg===null?'#f8fafc':avg>=80?'#dcfce7':avg>=50?'#fef3c7':'#fee2e2';
     const avgCol=avg===null?'#d1d5db':avg>=80?'#166534':avg>=50?'#92400e':'#991b1b';
     const avgCell=`<td style="${tdBase}font-weight:800;background:${avgBg};color:${avgCol};border-left:2px solid #cbd5e1">${avg!==null?avg+'%':'—'}</td>`;
-    return`<tr><td style="padding:4px 8px;font-size:11px;font-weight:600;color:#1e293b;white-space:nowrap;border-right:1px solid #e2e8f0;border-bottom:1px solid #f1f5f9">${s.displayName}</td>${cells}${avgCell}</tr>`;
+    const _hIns=lojaInsignia(s.empName);const _hLoc=lojaInsigniaLoc(s.empName,s.lojaLabel);const _hClr=lojaInsigniaColor(s.sid);
+    const _hBadge=`<div style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${_hClr};color:#fff;font-size:8px;font-weight:800;flex-shrink:0;margin-right:5px;vertical-align:middle">${_hIns}</div>`;
+    const _hName=`<span style="font-size:10px;font-weight:700;color:#1e293b;line-height:1.3">${s.displayName}</span>${_hLoc?`<br><span style="font-size:9px;color:#64748b;font-weight:500">${_hLoc}</span>`:''}`;
+    return`<tr><td style="padding:4px 8px;border-right:1px solid #e2e8f0;border-bottom:1px solid #f1f5f9;min-width:120px"><div style="display:flex;align-items:center">${_hBadge}<div>${_hName}</div></div></td>${cells}${avgCell}</tr>`;
   }).join('');
   const totalAlerts=criticalStores.length+warnStores.length;
   const critHtml=totalAlerts===0
