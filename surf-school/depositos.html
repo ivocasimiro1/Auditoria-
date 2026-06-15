@@ -2492,8 +2492,26 @@ function rSASupervision(){
     if(allSidRegs.some(r=>r.tipo==='Depósito Direto'))servicos.push('Dep. Direto');
     const servicoStr=servicos.join(' · ')||'';
     const lojaLabel=getStoreLabel(sid)||sid;
-    // Respeitar prazo por tipo de serviço: 2d Dep. Direto, 7d semanais (Prosegur/Lomis/Câmbio)
-    const _missCutoff=new Date(+new Date(_todayCStr)-_prazoC*86400000).toISOString().split('T')[0];
+    // Cutoff = último dia de passagem da transportadora; só os dias antes desse estão em atraso
+    let _missCutoff;
+    if(!_hasWeeklyC){
+      _missCutoff=new Date(+new Date(_todayCStr)-2*86400000).toISOString().split('T')[0];
+    }else{
+      const _tDate=new Date(_todayCStr);const _tDow=_tDate.getDay();
+      const _tDows=[];
+      if((normCfg?.prosegurDay||'')!==''){const _d=parseInt(normCfg.prosegurDay);if(!isNaN(_d))_tDows.push(_d);}
+      if((normCfg?.lomisDay||'')!==''){const _d=parseInt(normCfg.lomisDay);if(!isNaN(_d))_tDows.push(_d);}
+      if((normCfg?.cambioDia||'')!==''){const _d=parseInt(normCfg.cambioDia);if(!isNaN(_d))_tDows.push(_d);}
+      if(_tDows.length===0){
+        _missCutoff=new Date(+_tDate-7*86400000).toISOString().split('T')[0];
+      }else{
+        // Dia de passagem mais recente = mínimo de dias atrás
+        // Se hoje É o dia de passagem (_da=0), o último ciclo completo foi há 7 dias
+        let _minDaysAgo=8;
+        _tDows.forEach(_dow=>{let _da=(_tDow-_dow+7)%7;if(_da===0)_da=7;if(_da<_minDaysAgo)_minDaysAgo=_da;});
+        _missCutoff=new Date(+_tDate-_minDaysAgo*86400000).toISOString().split('T')[0];
+      }
+    }
     const pastMissingArr=storeMissingArr.filter(d=>d<_missCutoff);
     storeList.push({sid,empName,displayName,lojaLabel,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl,servicoStr,semFoto,semTalao,tardios,gaps,gapDates,pastMissingArr});
   });
