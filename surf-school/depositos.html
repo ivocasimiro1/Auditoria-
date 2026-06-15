@@ -2492,7 +2492,8 @@ function rSASupervision(){
     if(allSidRegs.some(r=>r.tipo==='Depósito Direto'))servicos.push('Dep. Direto');
     const servicoStr=servicos.join(' · ')||'';
     const lojaLabel=getStoreLabel(sid)||sid;
-    storeList.push({sid,empName,displayName,lojaLabel,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl,servicoStr,semFoto,semTalao,tardios,gaps,gapDates});
+    const pastMissingArr=storeMissingArr.filter(d=>d<_todayCStr);
+    storeList.push({sid,empName,displayName,lojaLabel,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl,servicoStr,semFoto,semTalao,tardios,gaps,gapDates,pastMissingArr});
   });
   // Add orphan loja groups (records grouped by loja name, no store_id)
   orphanLojaNames.sort().forEach(lojaName=>{
@@ -2876,16 +2877,23 @@ function rSASupervision(){
       else{overdueMap[sid].byTipo[k].diasAtraso=Math.max(overdueMap[sid].byTipo[k].diasAtraso,diasAtraso);overdueMap[sid].byTipo[k].valor+=tv;overdueMap[sid].byTipo[k].count++;rDatas.forEach(d=>overdueMap[sid].byTipo[k].datas.add(d));}
     }
   });
-  const overdueStores=Object.keys(overdueMap).map(sid=>{
+  // Incluir lojas com dias sem registo (pastMissingArr) mesmo sem overdueMap
+  const allOverdueSids=new Set([...Object.keys(overdueMap),...storeList.filter(s=>s.pastMissingArr?.length>0).map(s=>s.sid)]);
+  const overdueStores=[...allOverdueSids].map(sid=>{
     const sc2=allStoreConfigs.find(c=>c.store_id===sid);
     const empName=sc2?.emp||sid;
     const lLabel=getStoreLabel(sid)||sid;
     const insig=lojaInsignia(empName);
     const insLoc2=lojaInsigniaLoc(empName,lLabel);
     const insClr=lojaInsigniaColor(sid);
-    const maxAtraso=Math.max(...Object.values(overdueMap[sid].byTipo).map(t=>t.diasAtraso));
-    return{sid,empName,lLabel,insig,insLoc2,insClr,byTipo:overdueMap[sid].byTipo,totalValor:overdueMap[sid].totalValor,maxAtraso};
-  }).sort((a,b)=>b.maxAtraso-a.maxAtraso);
+    const byTipo=overdueMap[sid]?.byTipo||{};
+    const totalVal=overdueMap[sid]?.totalValor||0;
+    const stEntry=storeList.find(s=>s.sid===sid);
+    const pastMissingDays=(stEntry?.pastMissingArr||[]).sort();
+    const maxAtraso=Math.max(...Object.values(byTipo).map(t=>t.diasAtraso),pastMissingDays.length?1:0,0);
+    return{sid,empName,lLabel,insig,insLoc2,insClr,byTipo,totalValor:totalVal,maxAtraso,pastMissingDays};
+  }).filter(s=>Object.keys(s.byTipo).length>0||s.pastMissingDays.length>0)
+    .sort((a,b)=>b.maxAtraso-a.maxAtraso);
   const dowLabel=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const overdueHtml=overdueStores.length?`
 <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px;border:2px solid #dc2626">
@@ -2904,8 +2912,7 @@ function rSASupervision(){
     const tipoRows=Object.entries(s.byTipo).map(([tipo,info])=>{
       const prazoLabel=tipo==='Depósito Direto'?'prazo 2d':`prazo ${info.prazo}d`;
       const urgCol=info.diasAtraso>=5?'#7f1d1d':info.diasAtraso>=3?'#991b1b':'#b91c1c';
-      const datasOrd=[...info.datas].sort();
-      const datasStr=datasOrd.map(d=>fd(d).slice(0,5)).join(' · ');
+      const datasStr=[...info.datas].sort().map(d=>fd(d).slice(0,5)).join(' · ');
       return`<div style="margin-top:5px;background:#fff5f5;border-radius:8px;padding:6px 8px;border-left:3px solid ${urgCol}">
         <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
           <span style="font-size:10px;color:#7c2d12;font-weight:800">${tipo}</span>
@@ -2916,6 +2923,13 @@ function rSASupervision(){
         ${datasStr?`<div style="margin-top:4px;font-size:10px;color:#991b1b;font-weight:600;line-height:1.5">📅 ${datasStr}</div>`:''}
       </div>`;
     }).join('');
+    const missingRow=s.pastMissingDays.length?`<div style="margin-top:5px;background:#fff7ed;border-radius:8px;padding:6px 8px;border-left:3px solid #ea580c">
+      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+        <span style="font-size:10px;color:#9a3412;font-weight:800">Dias sem registo</span>
+        <span style="background:#ea580c;color:#fff;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:900">📋 ${s.pastMissingDays.length}d em falta</span>
+      </div>
+      <div style="margin-top:4px;font-size:10px;color:#c2410c;font-weight:600;line-height:1.5">📅 ${s.pastMissingDays.map(d=>fd(d).slice(0,5)).join(' · ')}</div>
+    </div>`:'';
     return`<div style="display:flex;align-items:flex-start;gap:8px;padding:10px 14px;border-bottom:1px solid #fecaca">
       <div style="background:${s.insClr};color:#fff;border-radius:6px;padding:3px 5px;min-width:34px;text-align:center;flex-shrink:0;box-shadow:0 2px 6px ${s.insClr}55;margin-top:2px">
         <div style="font-size:11px;font-weight:900;line-height:1.2">${s.insig}</div>
@@ -2924,7 +2938,7 @@ function rSASupervision(){
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:800;color:#7c2d12">${s.empName}</div>
         ${s.lLabel&&s.lLabel!==s.empName?`<div style="font-size:10px;font-weight:700;color:${s.insClr}">📍 ${s.lLabel}</div>`:''}
-        ${tipoRows}
+        ${tipoRows}${missingRow}
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
         <div style="background:#fee2e2;color:#7c2d12;border-radius:8px;padding:3px 8px;font-size:10px;font-weight:800;white-space:nowrap">${fmt(s.totalValor)}</div>
