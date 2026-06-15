@@ -2941,8 +2941,9 @@ function rSASupervision(){
         ${tipoRows}${missingRow}
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
-        <div style="background:#fee2e2;color:#7c2d12;border-radius:8px;padding:3px 8px;font-size:10px;font-weight:800;white-space:nowrap">${fmt(s.totalValor)}</div>
+        ${s.totalValor>0?`<div style="background:#fee2e2;color:#7c2d12;border-radius:8px;padding:3px 8px;font-size:10px;font-weight:800;white-space:nowrap">${fmt(s.totalValor)}</div>`:''}
         <button onclick="filterListaBySid('${s.sid}','')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation">Ver</button>
+        <button onclick="window._saAlertEmail('${s.sid}')" style="background:#1d4ed8;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation;white-space:nowrap">📧 Email</button>
       </div>
     </div>`;
   }).join('')}
