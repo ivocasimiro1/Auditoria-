@@ -1366,6 +1366,8 @@ function popTipo(){
     if(cfg.cambioDia)opts.push('Câmbio');
     if(!opts.length)opts=['Depósito Direto','Prosegur','Lomis','Câmbio']; // fallback se nada configurado
   }
+  // Ao editar, garantir que o tipo existente está sempre disponível
+  if(editingId&&cur&&!opts.includes(cur))opts.push(cur);
   el.innerHTML='<option value="">Selecionar...</option>'+opts.map(o=>`<option value="${o}">${o}</option>`).join('');
   if(cur&&opts.includes(cur))el.value=cur;
 }
@@ -3485,8 +3487,8 @@ async function editFull(id){
   checkSesAlert();
   const lbl=document.getElementById('guardar-lbl');
   if(lbl)lbl.textContent='Atualizar Registo';
-  checkGuardarBtn();
   sp('novo');
+  checkGuardarBtn();
   toast('A editar registo — altere e guarde');
 }
 
