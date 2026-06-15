@@ -2363,14 +2363,25 @@ async function shareRpt(){
 }
 
 function lojaInsignia(name){
-  if(!name)return'?';
   const skip=new Set(['de','da','do','dos','das','e','&','a','o','the']);
-  const initials=name.trim().split(/\s+/).filter(w=>!skip.has(w.toLowerCase())).map(w=>w[0]?.toUpperCase()||'').join('').slice(0,4);
-  return initials||name.slice(0,2).toUpperCase();
+  const words=name.trim().split(/\s+/).filter(w=>!skip.has(w.toLowerCase()));
+  // Se ≥4 palavras significativas, a última é localidade → exclui do acrónimo
+  const chainW=words.length>=4?words.slice(0,-1):words;
+  return chainW.map(w=>w[0]?.toUpperCase()||'').join('').slice(0,3)||'?';
 }
-function lojaInsigniaColor(name){
+function lojaInsigniaLoc(displayName,lojaLabel){
+  // 1. lojaLabel diferente → última palavra é localidade (ex: "ESS Lagos" → "Lagos")
+  if(lojaLabel&&lojaLabel!==displayName){const p=lojaLabel.trim().split(/\s+/);return p[p.length-1];}
+  // 2. Extrai do displayName
+  const skip=new Set(['de','da','do','&','e']);
+  const words=displayName.trim().split(/\s+/).filter(w=>!skip.has(w.toLowerCase()));
+  if(words.length>=4)return words[words.length-1]; // "Ericeira Surf & Skate Faro" → "Faro"
+  if(words.length===2)return words[1]; // "Billabong Lagos" → "Lagos"
+  return '';
+}
+function lojaInsigniaColor(str){
   const palette=['#1d4ed8','#7c3aed','#0891b2','#059669','#b45309','#dc2626','#9333ea','#0f766e','#c2410c','#1e40af'];
-  let h=0;for(let i=0;i<(name||'').length;i++)h=(h*31+name.charCodeAt(i))&0xffff;
+  let h=0;for(let i=0;i<(str||'').length;i++)h=(h*31+str.charCodeAt(i))&0xffff;
   return palette[h%palette.length];
 }
 function rSASupervision(){
@@ -2910,10 +2921,14 @@ function rSASupervision(){
       ?`<span style="background:${s.cycle<=2?'#dcfce7':s.cycle<=5?'#fef9c3':'#fee2e2'};color:${s.cycle<=2?'#166534':s.cycle<=5?'#a16207':'#991b1b'};padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700">${s.cycle}d ciclo</span>`
       :'';
     const insignia=lojaInsignia(s.displayName);
-    const insColor=lojaInsigniaColor(s.displayName);
+    const insLoc=lojaInsigniaLoc(s.displayName,s.lojaLabel);
+    const insColor=lojaInsigniaColor(s.sid||s.displayName);
     return`<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #f1f5f9${i%2?';background:#f8fafc':''}">
       <div style="font-size:18px;flex-shrink:0;line-height:1">${medal}</div>
-      <div style="background:${insColor};color:#fff;font-size:10px;font-weight:900;border-radius:6px;padding:3px 6px;letter-spacing:.4px;flex-shrink:0;min-width:30px;text-align:center;box-shadow:0 2px 6px ${insColor}55">${insignia}</div>
+      <div style="background:${insColor};color:#fff;border-radius:6px;padding:3px 5px;min-width:34px;text-align:center;flex-shrink:0;box-shadow:0 2px 6px ${insColor}55">
+        <div style="font-size:11px;font-weight:900;letter-spacing:.3px;line-height:1.2">${insignia}</div>
+        ${insLoc?`<div style="font-size:8px;font-weight:700;opacity:.9;letter-spacing:.1px;line-height:1.3">${insLoc}</div>`:''}
+      </div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700;color:#1e293b">${icon} ${s.displayName}</div>
         ${s.servicoStr?`<div style="font-size:10px;color:#64748b;margin-top:1px">${s.servicoStr}</div>`:''}
