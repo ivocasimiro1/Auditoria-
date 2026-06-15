@@ -1031,9 +1031,13 @@ async function sbLoad(silent=false){
       window._saSids=[..._scSids];
       DB.set('cfg',cfg); // SA não cacheia registos — sempre carrega do Supabase
     }else{
-      const{data:rows,error}=await SB.from('dep_registos').select('*').eq('store_id',sbProfile.store_id).order('criado_em',{ascending:false});
+      const storeFields='id,store_id,loja,tipo,sessoes,data_deposito,talao,responsavel,obs,criado_em';
+      const{data:rows,error}=await SB.from('dep_registos').select(storeFields).eq('store_id',sbProfile.store_id).order('criado_em',{ascending:false});
       if(error)throw error;
-      regs=(rows||[]).map(rowToReg);
+      const hasFoto=new Set();
+      const{data:fRows}=await SB.from('dep_registos').select('id').not('foto','is',null).eq('store_id',sbProfile.store_id);
+      (fRows||[]).forEach(x=>hasFoto.add(x.id));
+      regs=(rows||[]).map(row=>{const r=rowToReg(row);r.foto=hasFoto.has(row.id)?true:null;return r;});
       DB.set('regs',regs);DB.set('cfg',cfg);
     }
   }catch(e){toast('⚠️ Sem ligação — dados locais: '+e.message);}
@@ -1608,7 +1612,8 @@ function importPendingSess(){
   document.getElementById('ses-alert').style.display='none';
 }
 
-function handlePhoto(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{fotoB64=e.target.result;document.getElementById('pp').src=fotoB64;document.getElementById('pp').style.display='block';document.getElementById('pa').classList.add('has');document.getElementById('pl').textContent='✓ '+f.name};r.readAsDataURL(f)}
+function compressImg(b64,maxW=1400,q=0.78){return new Promise(res=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',q));};img.onerror=()=>res(b64);img.src=b64;})}
+function handlePhoto(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=async e=>{const c=await compressImg(e.target.result);fotoB64=c;document.getElementById('pp').src=c;document.getElementById('pp').style.display='block';document.getElementById('pa').classList.add('has');document.getElementById('pl').textContent='✓ '+f.name};r.readAsDataURL(f)}
 
 async function guardar(){
   const loja=document.getElementById('f-loja').value;
@@ -3446,16 +3451,17 @@ async function addFotoRapida(id){
   inp.type='file';inp.accept='image/*';inp.capture='environment';
   inp.onchange=async function(){
     const f=inp.files[0];if(!f)return;
-    toast('⏳ A guardar comprovativo...');
+    toast('⏳ A comprimir e guardar...');
     const reader=new FileReader();
     reader.onload=async function(e){
-      const b64=e.target.result;
-      const r=regs.find(x=>x.id===id);
-      if(r)r.foto=b64;
-      saveR();
-      const{error}=await SB.from('dep_registos').update({foto:b64}).eq('id',id);
-      if(error){toast('⚠️ Erro ao guardar: '+error.message);}
-      else{toast('✓ Comprovativo guardado');rLista();rDash();}
+      try{
+        const b64=await compressImg(e.target.result);
+        const{error}=await SB.from('dep_registos').update({foto:b64}).eq('id',id);
+        if(error){toast('⚠️ Erro ao guardar: '+error.message);return;}
+        const r=regs.find(x=>x.id===id);
+        if(r)r.foto=b64;
+        toast('✓ Comprovativo guardado');rLista();rDash();
+      }catch(err){toast('⚠️ Erro: '+(err.message||err));}
     };
     reader.readAsDataURL(f);
   };
