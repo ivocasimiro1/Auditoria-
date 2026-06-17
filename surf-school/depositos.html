@@ -1696,7 +1696,7 @@ async function guardar(){
       method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
       body:JSON.stringify({
         _subject:`📥 Novo Depósito — ${cfg.emp||loja} — ${loja} — ${total.toFixed(2)}€`,
-        message:(()=>{const sesLines=(reg.sessoes||[]).map((s,i)=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''} — ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');return`Nova entrada de depósito registada.\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nTotal: ${total.toFixed(2)}€\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}\nRegistado em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${sesLines||'  (sem sessões)'}`})(),
+        message:(()=>{const sesLines=(reg.sessoes||[]).map((s,i)=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''} — ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');return`Nova entrada de depósito registada.\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nTotal: ${total.toFixed(2)}€\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}\nRegistado em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${sesLines||'  (sem sessões)'}\n\nVer na app: https://auditoria-25b.pages.dev/depositos`})(),
         _captcha:'false'
       })
     }).catch(()=>{});
