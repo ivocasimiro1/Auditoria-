@@ -628,7 +628,8 @@ select{
       <button onclick="(()=>{const l=document.getElementById('mapa-loja')?.value||cfg.lojas[0]||'';const m=document.getElementById('mapa-mes')?.value||curMesStr();rptStorePdf(l,m);})()" style="padding:8px 14px;background:#0f172a;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;touch-action:manipulation">🖨️ PDF</button>
       <button onclick="emailFromMapa()" style="padding:8px 14px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;touch-action:manipulation">✉️ Email</button>
     </div>
-    <div id="mapa-kpis" style="margin-top:10px"></div>
+    <div id="mapa-sel-bar"></div>
+    <div id="mapa-kpis" style="margin-top:8px"></div>
   </div>
   <div id="mapa-table" style="margin-top:0"></div>
 </div>
@@ -3133,6 +3134,7 @@ function rMapa(){
         const sc=est.s==='ok'?'#16a34a':est.s==='warn'?'#92400e':est.s==='err'?'#dc2626':'#3b82f6';
         const sb=est.s==='ok'?'#f0fdf4':est.s==='warn'?'#fef3c7':est.s==='err'?'#fef2f2':'#eff6ff';
         rows.push(`<tr style="border-bottom:1px solid #f1f5f9">
+          <td style="padding:4px 6px;text-align:center"><input type="checkbox" class="mapa-row-chk" data-id="${r.id}" checked onchange="_updMapaSelBar()" style="width:16px;height:16px;accent-color:#2563eb;cursor:pointer"></td>
           <td style="padding:7px 8px;font-size:12px;white-space:nowrap">${dr}${_nLabel?`<br><span style="font-size:11px;color:#64748b">${_nLabel}</span>`:''}</td>
           <td style="padding:7px 8px;font-size:12px">${r.tipo||'—'}</td>
           <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:700">${fmt(totalValor(r))}</td>
@@ -3146,6 +3148,7 @@ function rMapa(){
       const _dt=new Date(ds);_dt.setHours(0,0,0,0);
       const dow=dowPT[_dt.getDay()];
       rows.push(`<tr style="background:#fafafa;border-bottom:1px solid #f1f5f9">
+        <td></td>
         <td style="padding:6px 8px;font-size:11px;color:#94a3b8;font-style:italic">${dow} ${fd(ds).slice(0,5)}</td>
         <td colspan="5"></td>
         <td style="padding:6px 8px;font-size:10px;color:#d1d5db;font-style:italic">sem registo</td>
@@ -3157,6 +3160,7 @@ function rMapa(){
     const sc=est.s==='ok'?'#16a34a':est.s==='warn'?'#92400e':est.s==='err'?'#dc2626':'#3b82f6';
     const sb=est.s==='ok'?'#f0fdf4':est.s==='warn'?'#fef3c7':est.s==='err'?'#fef2f2':'#eff6ff';
     rows.push(`<tr style="border-bottom:1px solid #f1f5f9">
+      <td style="padding:4px 6px;text-align:center"><input type="checkbox" class="mapa-row-chk" data-id="${r.id}" checked onchange="_updMapaSelBar()" style="width:16px;height:16px;accent-color:#2563eb;cursor:pointer"></td>
       <td style="padding:7px 8px;font-size:12px;color:#94a3b8">—</td>
       <td style="padding:7px 8px;font-size:12px">${r.tipo||'—'}</td>
       <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:700">${fmt(totalValor(r))}</td>
@@ -3184,6 +3188,7 @@ function rMapa(){
   const tHtml=`<div style="overflow-x:auto;background:#fff;border-radius:0 0 12px 12px">
     <table style="width:100%;border-collapse:collapse">
       <thead><tr>
+        <th style="${thStyle};width:28px;text-align:center">☑</th>
         <th style="${thStyle}">Data Sessão</th>
         <th style="${thStyle}">Tipo</th>
         <th style="${thStyle};text-align:right">Valor</th>
@@ -3192,11 +3197,12 @@ function rMapa(){
         <th style="${thStyle};text-align:center">S.</th>
         <th style="${thStyle}">Estado</th>
       </tr></thead>
-      <tbody>${rows.length?rows.join(''):`<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px;font-style:italic">Sem registos para ${mesLabel(mes)}${lojaFil?' — '+lojaFil:''}</td></tr>`}</tbody>
+      <tbody>${rows.length?rows.join(''):`<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;font-style:italic">Sem registos para ${mesLabel(mes)}${lojaFil?' — '+lojaFil:''}</td></tr>`}</tbody>
     </table>
   </div>`;
   document.getElementById('mapa-kpis').innerHTML=kHtml;
   document.getElementById('mapa-table').innerHTML=tHtml;
+  _updMapaSelBar();
 }
 
 function rDash(){
@@ -3686,12 +3692,28 @@ function cntUsar(){
 }
 
 // ─── EXPORT ──────────────────────────────────────────
-let expFmt='print',exportCfg=null,_gerenteSid='',_preSelectLoja='',_preSelectMes='';
-function emailFromMapa(){
-  _preSelectLoja=document.getElementById('mapa-loja')?.value||'';
-  _preSelectMes=document.getElementById('mapa-mes')?.value||curMesStr();
+let expFmt='print',exportCfg=null,_gerenteSid='',_preSelectLoja='',_preSelectMes='',_mapaSelIds=null;
+async function emailFromMapa(){
+  const loja=document.getElementById('mapa-loja')?.value||'';
+  const mes=document.getElementById('mapa-mes')?.value||curMesStr();
+  const chks=[...document.querySelectorAll('.mapa-row-chk')];
+  const checked=chks.filter(c=>c.checked).map(c=>c.dataset.id);
+  _mapaSelIds=(chks.length&&checked.length>0&&checked.length<chks.length)?new Set(checked):null;
+  const eLoja=document.getElementById('e-loja');const eMes=document.getElementById('e-mes');
+  if(eLoja&&loja)eLoja.value=loja;if(eMes&&mes)eMes.value=mes;
   _gerenteSid='';
-  sp('exp');
+  toast('⏳ A preparar email…');
+  await updEmailPrev();
+  _mapaSelIds=null;
+  expEmail();
+}
+function mapaChkAll(v){document.querySelectorAll('.mapa-row-chk').forEach(c=>c.checked=v);_updMapaSelBar();}
+function _updMapaSelBar(){
+  const chks=[...document.querySelectorAll('.mapa-row-chk')];
+  if(!chks.length){document.getElementById('mapa-sel-bar').innerHTML='';return;}
+  const n=chks.filter(c=>c.checked).length;
+  const allSel=n===chks.length;
+  document.getElementById('mapa-sel-bar').innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0 2px;font-size:12px;color:#475569"><span style="font-weight:700;color:${allSel?'#64748b':'#1d4ed8'}">${allSel?'Todos selecionados':n+' de '+chks.length+' selecionado'+(n!==1?'s':'')}</span><button onclick="mapaChkAll(true)" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;padding:2px 9px;font-size:11px;cursor:pointer;font-weight:700">Todos</button><button onclick="mapaChkAll(false)" style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:5px;padding:2px 9px;font-size:11px;cursor:pointer;font-weight:700">Nenhum</button></div>`;
 }
 function toggleEmailsLojas(){
   const list=document.getElementById('e-emails-lojas-list');
@@ -4183,6 +4205,7 @@ function _expChkChange(){_updExpSelBar();updEmailPrev();}
 function expChkAll(v){document.querySelectorAll('.exp-row-chk').forEach(c=>c.checked=v);_updExpSelBar();updEmailPrev();}
 function getExpSelection(){
   const all=getFiltExp();
+  if(_mapaSelIds)return all.filter(r=>_mapaSelIds.has(r.id));
   const chks=[...document.querySelectorAll('.exp-row-chk')];
   if(!chks.length)return all;
   const checked=new Set(chks.filter(c=>c.checked).map(c=>c.dataset.id));
