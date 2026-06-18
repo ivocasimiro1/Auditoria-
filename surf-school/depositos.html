@@ -1247,6 +1247,7 @@ saveR();
 
 // ─── ESTADO ──────────────────────────────────────────
 function totalValor(r){return(r.sessoes||[]).reduce((s,x)=>s+(parseFloat(x.valor)||0),0)}
+function _boldU(s){return s.split('').map(c=>{const cc=c.charCodeAt(0);if(cc>=65&&cc<=90)return String.fromCodePoint(0x1D400+cc-65);if(cc>=97&&cc<=122)return String.fromCodePoint(0x1D41A+cc-97);if(cc>=48&&cc<=57)return String.fromCodePoint(0x1D7CE+cc-48);return c;}).join('');}
 function maisAntigaData(r){const ds=(r.sessoes||[]).filter(x=>x.dataVendas).map(x=>new Date(x.dataVendas));return ds.length?new Date(Math.min(...ds)):null}
 
 function calcEstado(r,storeCfg){
@@ -4071,7 +4072,7 @@ async function updEmailPrev(){
       const dup=isDupSess(s);
       sessBlocks.push(`  ${dv(s.dataVendas||'')} Sess.${s.sessao||'?'}  ${eur(s.valor||0)}${dup?' *** DUPLIC.':''}`);
     });
-    sessBlocks.push(`  >> TOTAL: ${eur(totalValor(r))} <<`);
+    sessBlocks.push(`  ${_boldU('>> TOTAL: '+eur(totalValor(r))+' <<')}`);
     sessBlocks.push(`  Deposito: ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'}`);
     if(r.talao)sessBlocks.push(`  Talao/Ref: ${r.talao}`);
     sessBlocks.push(`  Estado: ${estTxt}`);
