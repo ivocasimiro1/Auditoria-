@@ -1679,14 +1679,14 @@ async function guardar(){
   const isNew=!editingId;
   // Verificar duplicados antes de guardar (só em novos registos)
   if(isNew){
-    const newSess=(reg.sessoes||[]).filter(s=>s.sessao&&s.dataVendas);
+    const newSess=(reg.sessoes||[]).filter(s=>s.dataVendas);
     if(newSess.length>0){
       const dupFound=[];
       regs.filter(r=>r.loja===reg.loja).forEach(r=>{
         (r.sessoes||[]).forEach(s=>{
-          if(!s.sessao||!s.dataVendas)return;
+          if(!s.dataVendas)return;
           newSess.forEach(ns=>{
-            if(ns.dataVendas===s.dataVendas&&String(ns.sessao).trim()===String(s.sessao).trim()&&Math.abs(parseFloat(ns.valor||0)-parseFloat(s.valor||0))<0.01){
+            if(ns.dataVendas===s.dataVendas&&String(ns.sessao||'').trim()===String(s.sessao||'').trim()&&Math.abs(parseFloat(ns.valor||0)-parseFloat(s.valor||0))<0.01){
               dupFound.push(`${fd(ns.dataVendas)} Nº${ns.sessao} ${parseFloat(ns.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`);
             }
           });
