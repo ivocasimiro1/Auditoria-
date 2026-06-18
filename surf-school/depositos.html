@@ -3704,8 +3704,36 @@ async function emailFromMapa(){
   const eLoja=document.getElementById('e-loja');const eMes=document.getElementById('e-mes');
   if(eLoja&&loja)eLoja.value=loja;if(eMes&&mes)eMes.value=mes;
   _gerenteSid='';
+  // Get selected records before updEmailPrev clears _mapaSelIds
+  const selRecs=_mapaSelIds?regs.filter(r=>_mapaSelIds.has(r.id)):getFiltExp();
   toast('⏳ A preparar email…');
   await updEmailPrev();
+  const bodyTxt=document.getElementById('ep-body')?.dataset.body||'';
+  const subj=document.getElementById('ep-body')?.dataset.subj||'';
+  // Try Web Share with photo attachments (iOS native share sheet → Mail)
+  if(selRecs.some(r=>r.foto)&&navigator.share){
+    const files=[];
+    for(const r of selRecs){
+      if(!r.foto)continue;
+      let foto=r.foto;
+      if(foto===true){
+        try{const{data:d}=await SB.from('dep_registos').select('foto').eq('id',r.id).maybeSingle();foto=d?.foto||null;if(foto)r.foto=foto;}
+        catch(e){foto=null;}
+      }
+      if(foto&&foto.startsWith('data:')){
+        try{
+          const res=await fetch(foto);const blob=await res.blob();
+          const dt=(getRefDate(r)||'').replace(/-/g,'');
+          files.push(new File([blob],`comprovativo_${(r.loja||'dep').replace(/\s+/g,'_')}_${dt}.jpg`,{type:'image/jpeg'}));
+        }catch(e){}
+      }
+    }
+    if(files.length&&(!navigator.canShare||navigator.canShare({files}))){
+      _mapaSelIds=null;
+      try{await navigator.share({files,title:subj,text:bodyTxt});return;}
+      catch(e){if(e.name==='AbortError'){_mapaSelIds=null;return;}}
+    }
+  }
   _mapaSelIds=null;
   expEmail();
 }
