@@ -3920,8 +3920,7 @@ async function updEmailPrev(){
       lines.push('');
     });
     lines.push('─────────────────────────────────────');
-    lines.push(`TOTAL VENDAS:     ${eur(total)}`);
-    lines.push(`TOTAL DEPOSITADO: ${eur(totalDep)}`);
+    lines.push(_boldU(`TOTAL DEPOSITADO: ${eur(totalDep)}`));
     if(total-totalDep>0)lines.push(`POR DEPOSITAR:    ${eur(total-totalDep)}`);
     if(semComp)lines.push(`SEM COMPROVATIVO: ${semComp} deposito${semComp!==1?'s':''}`);
     lines.push('');
@@ -4134,8 +4133,7 @@ async function updEmailPrev(){
       ''
     ]:[]),
     '--- RESUMO ---',
-    `Total vendas:   ${eur(total)}`,
-    `Depositado:     ${eur(totalDep)}`,
+    _boldU(`Depositado:     ${eur(totalDep)}`),
     `Por depositar:  ${eur(total-totalDep)}`,
     `Depositos:      ${data.length}`,
     `Sessoes caixa:  ${allSess.length}`,
