@@ -613,6 +613,7 @@ select{
   <div id="prev-wrap" style="display:none">
     <div class="card">
       <div class="ct">Pré-visualização</div>
+      <div id="exp-sel-bar"></div>
       <div class="preview-scroll"><table class="ptbl" id="prev-tbl"></table></div>
     </div>
   </div>
@@ -3769,7 +3770,7 @@ function rExpSel(){
   if(expFmt==='email')updEmailPrev();
 }
 async function updEmailPrev(){
-  const data=getFiltExp();
+  const data=getExpSelection();
   const epc=document.getElementById('email-prev-card');
   if(!data.length){epc.style.display='none';return;}
   epc.style.display='block';
@@ -4160,18 +4161,35 @@ function getFiltExp(){
 function updPrev(){
   const data=getFiltExp();
   const wrap=document.getElementById('prev-wrap');
-  if(!data.length){wrap.style.display='none';return}
+  if(!data.length){wrap.style.display='none';document.getElementById('exp-sel-bar').innerHTML='';return}
   wrap.style.display='block';
-  const hs=['#','Loja','Sessões','Data Vendas','Data Dep.','Tipo','Valor','Nº Talão','Responsável','Estado'];
+  const hs=['☑','#','Loja','Sessões','Data Vendas','Data Dep.','Tipo','Valor','Nº Talão','Responsável','Estado'];
   const rows=data.map((r,i)=>{
     const est=calcEstado(r,getRecordCfg(r));const tv=totalValor(r);
     const ml=r.sessoes.map(s=>s.dataVendas).filter(Boolean).sort();
     const dr=ml.length>1?`${fd(ml[0])}→${fd(ml[ml.length-1])}`:fd(ml[0]||'');
     const cl=est.s==='ok'?'color:#0e9f6e':est.s==='warn'?'color:#ff5a1f':est.s==='err'?'color:#e02424':'color:#6b7280';
-    return`<tr><td>${i+1}</td><td>${r.loja}</td><td>${r.sessoes.length}</td><td>${dr}</td><td>${fd(r.dataDeposito)}</td><td>${r.tipo||'—'}</td><td style="text-align:right;font-weight:700">${fmt(tv)}</td><td>${r.talao||'—'}</td><td>${r.responsavel}</td><td style="font-size:10px;font-weight:700;${cl}">${est.label}</td></tr>`;
+    return`<tr onclick="document.getElementById('exp-chk-${r.id}').click()" style="cursor:pointer"><td style="text-align:center;padding:4px"><input type="checkbox" id="exp-chk-${r.id}" class="exp-row-chk" data-id="${r.id}" checked onclick="event.stopPropagation()" onchange="_expChkChange()" style="width:16px;height:16px;cursor:pointer;accent-color:#2563eb"></td><td>${i+1}</td><td>${r.loja}</td><td>${r.sessoes.length}</td><td>${dr}</td><td>${fd(r.dataDeposito)}</td><td>${r.tipo||'—'}</td><td style="text-align:right;font-weight:700">${fmt(tv)}</td><td>${r.talao||'—'}</td><td>${r.responsavel}</td><td style="font-size:10px;font-weight:700;${cl}">${est.label}</td></tr>`;
   }).join('');
   const total=data.reduce((s,r)=>s+totalValor(r),0);
-  document.getElementById('prev-tbl').innerHTML=`<thead><tr>${hs.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}<tr class="tr"><td colspan="6">TOTAL</td><td style="text-align:right">${fmt(total)}</td><td colspan="3">${data.length} reg.</td></tr></tbody>`;
+  document.getElementById('prev-tbl').innerHTML=`<thead><tr>${hs.map((h,i)=>`<th${i===0?' style="text-align:center;width:28px"':''}>${h}</th>`).join('')}</tr></thead><tbody>${rows}<tr class="tr"><td></td><td colspan="6">TOTAL</td><td style="text-align:right">${fmt(total)}</td><td colspan="3">${data.length} reg.</td></tr></tbody>`;
+  _updExpSelBar(data.length);
+}
+function _updExpSelBar(total){
+  const n=[...document.querySelectorAll('.exp-row-chk')].filter(c=>c.checked).length;
+  const tot=total??getFiltExp().length;
+  const allSel=n===tot;
+  document.getElementById('exp-sel-bar').innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:6px 2px 8px;font-size:12px;color:#475569"><span style="font-weight:700;color:${allSel?'#64748b':'#1d4ed8'}">${allSel?'Todos selecionados':n+' de '+tot+' selecionado'+(n!==1?'s':'')}</span><button onclick="expChkAll(true)" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;padding:2px 10px;font-size:11px;cursor:pointer;font-weight:700">Todos</button><button onclick="expChkAll(false)" style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:5px;padding:2px 10px;font-size:11px;cursor:pointer;font-weight:700">Nenhum</button></div>`;
+}
+function _expChkChange(){_updExpSelBar();updEmailPrev();}
+function expChkAll(v){document.querySelectorAll('.exp-row-chk').forEach(c=>c.checked=v);_updExpSelBar();updEmailPrev();}
+function getExpSelection(){
+  const all=getFiltExp();
+  const chks=[...document.querySelectorAll('.exp-row-chk')];
+  if(!chks.length)return all;
+  const checked=new Set(chks.filter(c=>c.checked).map(c=>c.dataset.id));
+  if(checked.size===0||checked.size===chks.length)return all;
+  return all.filter(r=>checked.has(r.id));
 }
 async function doExp(){
   const loja=document.getElementById('e-loja').value;
