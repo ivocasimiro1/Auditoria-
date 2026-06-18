@@ -3913,10 +3913,11 @@ async function updEmailPrev(){
     sorted.forEach((r,i)=>{
       const est=calcEstado(r,getRecordCfg(r));
       const estTxt=est.s==='ok'?'OK':est.s==='warn'?'AVISO — '+est.label.replace(/[📅✅⚠️🔴]/gu,'').trim():est.s==='err'?'EM ATRASO — '+est.label.replace(/[📅✅⚠️🔴]/gu,'').trim():'Pendente';
-      lines.push(`[DEP.${i+1}] ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'} | ${eur(totalValor(r))} | Talao: ${r.talao||'*** SEM COMPROVATIVO ***'}`);
+      lines.push(`[DEP.${i+1}] ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'} | Comprovativo: ${r.talao||'*** SEM COMPROVATIVO ***'}`);
       lines.push(`  Estado: ${estTxt}`);
       lines.push(`  Sessoes de caixa:`);
       (r.sessoes||[]).forEach(s=>{lines.push(`    ${fd(s.dataVendas||'').slice(0,5)}  —  Sess. ${s.sessao||'?'}  —  ${eur(s.valor||0)}`);});
+      lines.push(`  ${_boldU('TOTAL: '+eur(totalValor(r)))}`);
       lines.push('');
     });
     lines.push('─────────────────────────────────────');
@@ -4073,7 +4074,7 @@ async function updEmailPrev(){
     });
     sessBlocks.push(`  ${_boldU('>> TOTAL: '+eur(totalValor(r))+' <<')}`);
     sessBlocks.push(`  Deposito: ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'}`);
-    if(r.talao)sessBlocks.push(`  Talao/Ref: ${r.talao}`);
+    if(r.talao)sessBlocks.push(`  Comprovativo: ${r.talao}`);
     sessBlocks.push(`  Estado: ${estTxt}`);
     sessBlocks.push('');
   });
