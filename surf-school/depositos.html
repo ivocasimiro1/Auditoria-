@@ -3100,7 +3100,7 @@ function rMapa(){
     return (r.sessoes||[]).some(s=>s.dataVendas&&s.dataVendas.startsWith(mesYM))||getRefDate(r).startsWith(mesYM);
   }).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
   // Pre-select only the most recently created record
-  const _lastId=data.reduce((best,r)=>(!best||(r.criado_em||'')>(best.criado_em||''))?r:best,null)?.id||'';
+  const _lastId=data.reduce((best,r)=>(!best||(r.criadoEm||'')>(best.criadoEm||''))?r:best,null)?.id||'';
   const totalVal=data.reduce((s,r)=>s+totalValor(r),0);
   const depVal=data.filter(r=>r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
   const missingDays=(getMissingDays(mes,lojaFil||null)||[]).filter(d=>d<new Date().toISOString().split('T')[0]);
