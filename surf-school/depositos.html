@@ -3099,6 +3099,8 @@ function rMapa(){
     // Include if any session falls in this month, or ref date is in this month
     return (r.sessoes||[]).some(s=>s.dataVendas&&s.dataVendas.startsWith(mesYM))||getRefDate(r).startsWith(mesYM);
   }).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
+  // Pre-select only the most recently created record
+  const _lastId=data.reduce((best,r)=>(!best||(r.criado_em||'')>(best.criado_em||''))?r:best,null)?.id||'';
   const totalVal=data.reduce((s,r)=>s+totalValor(r),0);
   const depVal=data.filter(r=>r.dataDeposito).reduce((s,r)=>s+totalValor(r),0);
   const missingDays=(getMissingDays(mes,lojaFil||null)||[]).filter(d=>d<new Date().toISOString().split('T')[0]);
@@ -3134,7 +3136,7 @@ function rMapa(){
         const sc=est.s==='ok'?'#16a34a':est.s==='warn'?'#92400e':est.s==='err'?'#dc2626':'#3b82f6';
         const sb=est.s==='ok'?'#f0fdf4':est.s==='warn'?'#fef3c7':est.s==='err'?'#fef2f2':'#eff6ff';
         rows.push(`<tr style="border-bottom:1px solid #f1f5f9">
-          <td style="padding:4px 6px;text-align:center"><button class="mapa-row-chk" data-id="${r.id}" data-sel="1" onclick="_toggleMapaRow(this)" style="width:32px;height:32px;border-radius:50%;background:#22c55e;color:#fff;border:2px solid #22c55e;font-size:18px;font-weight:900;cursor:pointer;touch-action:manipulation;padding:0;text-align:center;line-height:28px;box-sizing:border-box">✓</button></td>
+          <td style="padding:4px 6px;text-align:center"><button class="mapa-row-chk" data-id="${r.id}" data-sel="${r.id===_lastId?'1':'0'}" onclick="_toggleMapaRow(this)" style="width:32px;height:32px;border-radius:50%;background:${r.id===_lastId?'#22c55e':'transparent'};color:${r.id===_lastId?'#fff':'transparent'};border:2px solid ${r.id===_lastId?'#22c55e':'#cbd5e1'};font-size:18px;font-weight:900;cursor:pointer;touch-action:manipulation;padding:0;text-align:center;line-height:28px;box-sizing:border-box">${r.id===_lastId?'✓':''}</button></td>
           <td style="padding:7px 8px;font-size:12px;white-space:nowrap">${dr}${_nLabel?`<br><span style="font-size:11px;color:#64748b">${_nLabel}</span>`:''}</td>
           <td style="padding:7px 8px;font-size:12px">${r.tipo||'—'}</td>
           <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:700">${fmt(totalValor(r))}</td>
@@ -3160,7 +3162,7 @@ function rMapa(){
     const sc=est.s==='ok'?'#16a34a':est.s==='warn'?'#92400e':est.s==='err'?'#dc2626':'#3b82f6';
     const sb=est.s==='ok'?'#f0fdf4':est.s==='warn'?'#fef3c7':est.s==='err'?'#fef2f2':'#eff6ff';
     rows.push(`<tr style="border-bottom:1px solid #f1f5f9">
-      <td style="padding:4px 6px;text-align:center"><button class="mapa-row-chk" data-id="${r.id}" data-sel="1" onclick="_toggleMapaRow(this)" style="width:32px;height:32px;border-radius:50%;background:#22c55e;color:#fff;border:2px solid #22c55e;font-size:18px;font-weight:900;cursor:pointer;touch-action:manipulation;padding:0;text-align:center;line-height:28px;box-sizing:border-box">✓</button></td>
+      <td style="padding:4px 6px;text-align:center"><button class="mapa-row-chk" data-id="${r.id}" data-sel="${r.id===_lastId?'1':'0'}" onclick="_toggleMapaRow(this)" style="width:32px;height:32px;border-radius:50%;background:${r.id===_lastId?'#22c55e':'transparent'};color:${r.id===_lastId?'#fff':'transparent'};border:2px solid ${r.id===_lastId?'#22c55e':'#cbd5e1'};font-size:18px;font-weight:900;cursor:pointer;touch-action:manipulation;padding:0;text-align:center;line-height:28px;box-sizing:border-box">${r.id===_lastId?'✓':''}</button></td>
       <td style="padding:7px 8px;font-size:12px;color:#94a3b8">—</td>
       <td style="padding:7px 8px;font-size:12px">${r.tipo||'—'}</td>
       <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:700">${fmt(totalValor(r))}</td>
