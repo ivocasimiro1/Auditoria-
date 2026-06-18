@@ -3902,7 +3902,9 @@ async function updEmailPrev(){
   const erros=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
   const avisos=data.filter(r=>calcEstado(r,getRecordCfg(r)).s==='warn').length;
   const todayStr=new Date().toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'});
-  const subj=`Depósitos – ${loja} – ${ml} – até ${todayStr}`;
+  const _singleDep=data.length===1&&data[0].dataDeposito?fd(data[0].dataDeposito):null;
+  const dateLabelStr=_singleDep||todayStr;
+  const subj=`Depósitos – ${loja} – ${ml} – ${_singleDep?'Depósito de':'até'} ${dateLabelStr}`;
   // ── LOJA: email com depósitos detalhados + sessões + estado ──
   if(!isSA){
     const eur=v=>fmt(v).replace('€','EUR');
@@ -3912,7 +3914,7 @@ async function updEmailPrev(){
     // ── Texto simples (para mailto body) ──
     const lines=[
       `DEPOSITOS — ${loja} — ${ml}`,
-      `(ate ${todayStr})`,
+      `(${_singleDep?'Deposito de':'ate'} ${dateLabelStr})`,
       empresa,
       nif?`NIF ${nif}`:'',
       '',
