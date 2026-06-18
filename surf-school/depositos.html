@@ -1695,14 +1695,22 @@ async function guardar(){
     const total=(reg.sessoes||[]).reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
     const storeId=sbProfile?.store_id||'';
     const storeName=`${cfg.emp||loja}${storeId?' ('+storeId+')':''}`;
-    fetch('https://formsubmit.co/ajax/ivo@despomar.com',{
-      method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify({
-        _subject:`📥 Novo Depósito — ${cfg.emp||loja} — ${loja} — ${total.toFixed(2)}€`,
-        message:(()=>{const sesLines=(reg.sessoes||[]).map((s,i)=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''} — ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');return`Nova entrada de depósito registada.\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}\nRegistado em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${sesLines||'  (sem sessões)'}\n  ► TOTAL: ${total.toFixed(2)}€\n\nVer na app: https://auditoria-25b.pages.dev/depositos`})(),
-        _captcha:'false'
-      })
-    }).catch(()=>{});
+    (async()=>{
+      const _sesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''} — ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
+      const _msg=`Nova entrada de depósito registada.\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}\nRegistado em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${total.toFixed(2)}€\n\nVer na app: https://auditoria-25b.pages.dev/depositos`;
+      const frmData=new FormData();
+      frmData.append('_subject',`📥 Novo Depósito — ${cfg.emp||loja} — ${loja} — ${total.toFixed(2)}€`);
+      frmData.append('message',_msg);
+      frmData.append('_captcha','false');
+      if(reg.foto&&typeof reg.foto==='string'&&reg.foto.startsWith('data:')){
+        try{
+          const _r=await fetch(reg.foto);const _b=await _r.blob();
+          const _dt=(reg.dataDeposito||'').replace(/-/g,'')||'foto';
+          frmData.append('attachment',new File([_b],`comprovativo_${(loja||'dep').replace(/\s+/g,'_')}_${_dt}.jpg`,{type:'image/jpeg'}));
+        }catch(e){}
+      }
+      fetch('https://formsubmit.co/ajax/ivo@despomar.com',{method:'POST',headers:{'Accept':'application/json'},body:frmData}).catch(()=>{});
+    })();
   }
   // Reset save button
   const btn=document.getElementById('guardar-btn');
