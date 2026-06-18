@@ -3916,7 +3916,7 @@ async function updEmailPrev(){
       lines.push(`[DEP.${i+1}] ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'} | ${eur(totalValor(r))} | Talao: ${r.talao||'*** SEM COMPROVATIVO ***'}`);
       lines.push(`  Estado: ${estTxt}`);
       lines.push(`  Sessoes de caixa:`);
-      (r.sessoes||[]).forEach(s=>{lines.push(`    ${fd(s.dataVendas||'').slice(0,5)}  Sess.${s.sessao||'?'}  ${eur(s.valor||0)}`);});
+      (r.sessoes||[]).forEach(s=>{lines.push(`    ${fd(s.dataVendas||'').slice(0,5)}  —  Sess. ${s.sessao||'?'}  —  ${eur(s.valor||0)}`);});
       lines.push('');
     });
     lines.push('─────────────────────────────────────');
@@ -4069,7 +4069,7 @@ async function updEmailPrev(){
     sessBlocks.push(`[${depIdx}] ${period} | ${r.tipo||'--'}`);
     r.sessoes.forEach(s=>{
       const dup=isDupSess(s);
-      sessBlocks.push(`  ${dv(s.dataVendas||'')} Sess.${s.sessao||'?'}  ${eur(s.valor||0)}${dup?' *** DUPLIC.':''}`);
+      sessBlocks.push(`  ${dv(s.dataVendas||'')}  —  Sess. ${s.sessao||'?'}  —  ${eur(s.valor||0)}${dup?' *** DUPLIC.':''}`);
     });
     sessBlocks.push(`  ${_boldU('>> TOTAL: '+eur(totalValor(r))+' <<')}`);
     sessBlocks.push(`  Deposito: ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'}`);
