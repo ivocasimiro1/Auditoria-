@@ -3729,8 +3729,11 @@ async function emailFromMapa(){
       }
     }
     if(files.length&&(!navigator.canShare||navigator.canShare({files}))){
+      const dest=(document.getElementById('ep-to')?.textContent||'').trim();
+      const shareText=(dest?`Para: ${dest}\n\n`:'')+bodyTxt;
+      if(dest)toast(`📧 Envia para: ${dest}`);
       _mapaSelIds=null;
-      try{await navigator.share({files,title:subj,text:bodyTxt});return;}
+      try{await navigator.share({files,title:subj,text:shareText});return;}
       catch(e){if(e.name==='AbortError'){_mapaSelIds=null;return;}}
     }
   }
