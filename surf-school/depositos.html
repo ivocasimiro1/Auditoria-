@@ -1719,7 +1719,7 @@ async function guardar(){
     const storeName=`${cfg.emp||loja}${storeId?' ('+storeId+')':''}`;
     (async()=>{
       const _sesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''} — ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
-      const _msg=`Nova entrada de depósito registada.\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}\nRegistado em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${total.toFixed(2)}€`;
+      const _msg=`Nova entrada de depósito registada.\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}${reg.obs?'\nObservações: '+reg.obs:''}\nRegistado em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${total.toFixed(2)}€`;
       const frmData=new FormData();
       frmData.append('_subject',`📥 Novo Depósito — ${cfg.emp||loja} — ${loja} — ${total.toFixed(2)}€`);
       frmData.append('message',_msg);
@@ -3949,6 +3949,7 @@ async function updEmailPrev(){
       (r.sessoes||[]).forEach(s=>{lines.push(`    ${fd(s.dataVendas||'').slice(0,5)}  —  Sess.${String(s.sessao||'?').padStart(5)}  —  ${eur(s.valor||0).padStart(12)}`);});
       lines.push('');
       lines.push(`  ► ${_boldU('TOTAL: '+eur(totalValor(r)))}`);
+      if(r.obs)lines.push(`  Obs: ${r.obs}`);
       lines.push('');
     });
     lines.push('─────────────────────────────────────');
