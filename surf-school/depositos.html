@@ -3731,10 +3731,32 @@ async function emailFromMapa(){
     if(files.length&&(!navigator.canShare||navigator.canShare({files}))){
       const dest=(document.getElementById('ep-to')?.textContent||'').trim();
       const shareText=(dest?`Para: ${dest}\n\n`:'')+bodyTxt;
-      if(dest)toast(`📧 Envia para: ${dest}`);
       _mapaSelIds=null;
+      // Show modal with destination email + copy button before share sheet
+      if(dest){
+        await new Promise(res=>{
+          const ov=document.createElement('div');
+          ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:0 0 32px';
+          ov.innerHTML=`<div style="background:#fff;border-radius:20px;padding:22px 20px 18px;width:min(360px,92vw);box-shadow:0 8px 40px rgba(0,0,0,.25)">
+            <div style="font-size:13px;font-weight:700;color:#475569;margin-bottom:6px;text-align:center">📧 Destinatário do email</div>
+            <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:800;color:#1e40af;text-align:center;word-break:break-all;margin-bottom:14px">${dest}</div>
+            <div style="font-size:12px;color:#64748b;text-align:center;margin-bottom:14px;line-height:1.5">Copia o endereço, depois escolhe <strong>Mail</strong> no painel de partilha e cola no campo <em>Para</em></div>
+            <div style="display:flex;gap:10px">
+              <button id="_share-copy-btn" style="flex:1;background:#1d4ed8;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation">📋 Copiar</button>
+              <button id="_share-cont-btn" style="flex:1;background:#22c55e;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation">Continuar →</button>
+            </div>
+          </div>`;
+          document.body.appendChild(ov);
+          ov.querySelector('#_share-copy-btn').onclick=()=>{
+            navigator.clipboard?.writeText(dest).catch(()=>{});
+            ov.querySelector('#_share-copy-btn').textContent='✓ Copiado!';
+          };
+          ov.querySelector('#_share-cont-btn').onclick=()=>{document.body.removeChild(ov);res();};
+          ov.addEventListener('click',e=>{if(e.target===ov){document.body.removeChild(ov);res();}});
+        });
+      }
       try{await navigator.share({files,title:subj,text:shareText});return;}
-      catch(e){if(e.name==='AbortError'){_mapaSelIds=null;return;}}
+      catch(e){if(e.name==='AbortError'){return;}}
     }
   }
   _mapaSelIds=null;
