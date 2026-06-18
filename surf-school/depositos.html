@@ -3134,7 +3134,7 @@ function rMapa(){
         const sc=est.s==='ok'?'#16a34a':est.s==='warn'?'#92400e':est.s==='err'?'#dc2626':'#3b82f6';
         const sb=est.s==='ok'?'#f0fdf4':est.s==='warn'?'#fef3c7':est.s==='err'?'#fef2f2':'#eff6ff';
         rows.push(`<tr style="border-bottom:1px solid #f1f5f9">
-          <td style="padding:4px 6px;text-align:center"><input type="checkbox" class="mapa-row-chk" data-id="${r.id}" checked onchange="_updMapaSelBar()" style="width:16px;height:16px;accent-color:#2563eb;cursor:pointer"></td>
+          <td style="padding:4px 6px;text-align:center"><button class="mapa-row-chk" data-id="${r.id}" data-sel="1" onclick="_toggleMapaRow(this)" style="width:32px;height:32px;border-radius:50%;background:#22c55e;color:#fff;border:none;font-size:16px;font-weight:900;cursor:pointer;touch-action:manipulation;padding:0;line-height:1;display:flex;align-items:center;justify-content:center">✓</button></td>
           <td style="padding:7px 8px;font-size:12px;white-space:nowrap">${dr}${_nLabel?`<br><span style="font-size:11px;color:#64748b">${_nLabel}</span>`:''}</td>
           <td style="padding:7px 8px;font-size:12px">${r.tipo||'—'}</td>
           <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:700">${fmt(totalValor(r))}</td>
@@ -3160,7 +3160,7 @@ function rMapa(){
     const sc=est.s==='ok'?'#16a34a':est.s==='warn'?'#92400e':est.s==='err'?'#dc2626':'#3b82f6';
     const sb=est.s==='ok'?'#f0fdf4':est.s==='warn'?'#fef3c7':est.s==='err'?'#fef2f2':'#eff6ff';
     rows.push(`<tr style="border-bottom:1px solid #f1f5f9">
-      <td style="padding:4px 6px;text-align:center"><input type="checkbox" class="mapa-row-chk" data-id="${r.id}" checked onchange="_updMapaSelBar()" style="width:16px;height:16px;accent-color:#2563eb;cursor:pointer"></td>
+      <td style="padding:4px 6px;text-align:center"><button class="mapa-row-chk" data-id="${r.id}" data-sel="1" onclick="_toggleMapaRow(this)" style="width:32px;height:32px;border-radius:50%;background:#22c55e;color:#fff;border:none;font-size:16px;font-weight:900;cursor:pointer;touch-action:manipulation;padding:0;line-height:1;display:flex;align-items:center;justify-content:center">✓</button></td>
       <td style="padding:7px 8px;font-size:12px;color:#94a3b8">—</td>
       <td style="padding:7px 8px;font-size:12px">${r.tipo||'—'}</td>
       <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:700">${fmt(totalValor(r))}</td>
@@ -3697,7 +3697,7 @@ async function emailFromMapa(){
   const loja=document.getElementById('mapa-loja')?.value||'';
   const mes=document.getElementById('mapa-mes')?.value||curMesStr();
   const chks=[...document.querySelectorAll('.mapa-row-chk')];
-  const checked=chks.filter(c=>c.checked).map(c=>c.dataset.id);
+  const checked=chks.filter(c=>c.dataset.sel==='1').map(c=>c.dataset.id);
   _mapaSelIds=(chks.length&&checked.length>0&&checked.length<chks.length)?new Set(checked):null;
   const eLoja=document.getElementById('e-loja');const eMes=document.getElementById('e-mes');
   if(eLoja&&loja)eLoja.value=loja;if(eMes&&mes)eMes.value=mes;
@@ -3707,13 +3707,14 @@ async function emailFromMapa(){
   _mapaSelIds=null;
   expEmail();
 }
-function mapaChkAll(v){document.querySelectorAll('.mapa-row-chk').forEach(c=>c.checked=v);_updMapaSelBar();}
+function _toggleMapaRow(btn){btn.dataset.sel=btn.dataset.sel==='1'?'0':'1';const on=btn.dataset.sel==='1';btn.style.background=on?'#22c55e':'#e2e8f0';btn.style.color=on?'#fff':'#94a3b8';btn.textContent=on?'✓':'';_updMapaSelBar();}
+function mapaChkAll(v){document.querySelectorAll('.mapa-row-chk').forEach(btn=>{btn.dataset.sel=v?'1':'0';btn.style.background=v?'#22c55e':'#e2e8f0';btn.style.color=v?'#fff':'#94a3b8';btn.textContent=v?'✓':'';});_updMapaSelBar();}
 function _updMapaSelBar(){
   const chks=[...document.querySelectorAll('.mapa-row-chk')];
   if(!chks.length){document.getElementById('mapa-sel-bar').innerHTML='';return;}
-  const n=chks.filter(c=>c.checked).length;
+  const n=chks.filter(c=>c.dataset.sel==='1').length;
   const allSel=n===chks.length;
-  document.getElementById('mapa-sel-bar').innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0 2px;font-size:12px;color:#475569"><span style="font-weight:700;color:${allSel?'#64748b':'#1d4ed8'}">${allSel?'Todos selecionados':n+' de '+chks.length+' selecionado'+(n!==1?'s':'')}</span><button onclick="mapaChkAll(true)" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;padding:2px 9px;font-size:11px;cursor:pointer;font-weight:700">Todos</button><button onclick="mapaChkAll(false)" style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:5px;padding:2px 9px;font-size:11px;cursor:pointer;font-weight:700">Nenhum</button></div>`;
+  document.getElementById('mapa-sel-bar').innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0 2px;font-size:12px;color:#475569"><span style="font-weight:700;color:${allSel?'#64748b':'#1d4ed8'}">${allSel?'Todos selecionados':n+' de '+chks.length+' selecionado'+(n!==1?'s':'')}</span><button onclick="mapaChkAll(true)" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;padding:2px 9px;font-size:11px;cursor:pointer;font-weight:700;touch-action:manipulation">Todos</button><button onclick="mapaChkAll(false)" style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:5px;padding:2px 9px;font-size:11px;cursor:pointer;font-weight:700;touch-action:manipulation">Nenhum</button></div>`;
 }
 function toggleEmailsLojas(){
   const list=document.getElementById('e-emails-lojas-list');
