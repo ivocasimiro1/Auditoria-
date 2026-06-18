@@ -3738,19 +3738,26 @@ async function emailFromMapa(){
         await new Promise(res=>{
           const ov=document.createElement('div');
           ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:0 0 32px';
-          ov.innerHTML=`<div style="background:#fff;border-radius:20px;padding:22px 20px 18px;width:min(360px,92vw);box-shadow:0 8px 40px rgba(0,0,0,.25)">
-            <div style="font-size:13px;font-weight:700;color:#475569;margin-bottom:6px;text-align:center">📧 Destinatário do email</div>
-            <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:800;color:#1e40af;text-align:center;word-break:break-all;margin-bottom:14px">${dest}</div>
-            <div style="font-size:12px;color:#64748b;text-align:center;margin-bottom:14px;line-height:1.5">Copia o endereço, depois escolhe <strong>Mail</strong> no painel de partilha e cola no campo <em>Para</em></div>
-            <div style="display:flex;gap:10px">
-              <button id="_share-copy-btn" style="flex:1;background:#1d4ed8;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation">📋 Copiar</button>
-              <button id="_share-cont-btn" style="flex:1;background:#22c55e;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation">Continuar →</button>
+          ov.innerHTML=`<div style="background:#fff;border-radius:20px;padding:20px 18px 16px;width:min(360px,92vw);box-shadow:0 8px 40px rgba(0,0,0,.25)">
+            <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;text-align:center">📧 Destinatário</div>
+            <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:8px 14px;font-size:14px;font-weight:800;color:#1e40af;text-align:center;word-break:break-all;margin-bottom:10px">${dest}</div>
+            <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;text-align:center">📝 Assunto</div>
+            <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;color:#166534;text-align:center;word-break:break-all;margin-bottom:10px">${subj}</div>
+            <div style="font-size:11px;color:#64748b;text-align:center;margin-bottom:12px;line-height:1.4">Copia o endereço e o assunto antes de escolher <strong>Mail</strong></div>
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <button id="_share-copy-btn" style="flex:1;background:#1d4ed8;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">📋 Email</button>
+              <button id="_share-copy-subj" style="flex:1;background:#059669;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;touch-action:manipulation">📝 Assunto</button>
             </div>
+            <button id="_share-cont-btn" style="width:100%;background:#22c55e;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation">Continuar →</button>
           </div>`;
           document.body.appendChild(ov);
           ov.querySelector('#_share-copy-btn').onclick=()=>{
             navigator.clipboard?.writeText(dest).catch(()=>{});
             ov.querySelector('#_share-copy-btn').textContent='✓ Copiado!';
+          };
+          ov.querySelector('#_share-copy-subj').onclick=()=>{
+            navigator.clipboard?.writeText(subj).catch(()=>{});
+            ov.querySelector('#_share-copy-subj').textContent='✓ Copiado!';
           };
           ov.querySelector('#_share-cont-btn').onclick=()=>{document.body.removeChild(ov);res();};
           ov.addEventListener('click',e=>{if(e.target===ov){document.body.removeChild(ov);res();}});
@@ -3916,8 +3923,9 @@ async function updEmailPrev(){
       lines.push(`[DEP.${i+1}] ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'} | Comprovativo: ${r.talao||'*** SEM COMPROVATIVO ***'}`);
       lines.push(`  Estado: ${estTxt}`);
       lines.push(`  Sessoes de caixa:`);
-      (r.sessoes||[]).forEach(s=>{lines.push(`    ${fd(s.dataVendas||'').slice(0,5)}  —  Sess. ${s.sessao||'?'}  —  ${eur(s.valor||0)}`);});
-      lines.push(`  ${_boldU('TOTAL: '+eur(totalValor(r)))}`);
+      (r.sessoes||[]).forEach(s=>{lines.push(`    ${fd(s.dataVendas||'').slice(0,5)}  —  Sess.${String(s.sessao||'?').padStart(5)}  —  ${eur(s.valor||0).padStart(12)}`);});
+      lines.push('');
+      lines.push(`  ► ${_boldU('TOTAL: '+eur(totalValor(r)))}`);
       lines.push('');
     });
     lines.push('─────────────────────────────────────');
@@ -4070,9 +4078,10 @@ async function updEmailPrev(){
     sessBlocks.push(`[${depIdx}] ${period} | ${r.tipo||'--'}`);
     r.sessoes.forEach(s=>{
       const dup=isDupSess(s);
-      sessBlocks.push(`  ${dv(s.dataVendas||'')}  —  Sess. ${s.sessao||'?'}  —  ${eur(s.valor||0)}${dup?' *** DUPLIC.':''}`);
+      sessBlocks.push(`  ${dv(s.dataVendas||'')}  —  Sess.${String(s.sessao||'?').padStart(5)}  —  ${eur(s.valor||0).padStart(12)}${dup?' *** DUPLIC.':''}`);
     });
-    sessBlocks.push(`  ${_boldU('>> TOTAL: '+eur(totalValor(r))+' <<')}`);
+    sessBlocks.push('');
+    sessBlocks.push(`  ► ${_boldU('TOTAL: '+eur(totalValor(r)))}`);
     sessBlocks.push(`  Deposito: ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'}`);
     if(r.talao)sessBlocks.push(`  Comprovativo: ${r.talao}`);
     sessBlocks.push(`  Estado: ${estTxt}`);
@@ -4297,7 +4306,7 @@ async function doExp(){
 function expEmail(){
   // Synchronous — keeps mailto: in the direct click gesture so browsers don't block it
   const dest=(document.getElementById('ep-to')?.textContent||'').trim();
-  const subjRaw=document.getElementById('ep-sub')?.textContent||'';
+  const subjRaw=(document.getElementById('ep-sub')?.textContent||'').trim()||document.getElementById('ep-body')?.dataset.subj||'';
   const bodyRaw=document.getElementById('ep-body')?.dataset.body||'';
   // Loading state — preview not yet ready
   if(dest==='A carregar...'||subjRaw==='A carregar...'||!bodyRaw){
