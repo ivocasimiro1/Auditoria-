@@ -4071,6 +4071,7 @@ async function updEmailPrev(){
       const dup=isDupSess(s);
       sessBlocks.push(`  ${dv(s.dataVendas||'')} Sess.${s.sessao||'?'}  ${eur(s.valor||0)}${dup?' *** DUPLIC.':''}`);
     });
+    sessBlocks.push(`  >> TOTAL: ${eur(totalValor(r))} <<`);
     sessBlocks.push(`  Deposito: ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'}`);
     if(r.talao)sessBlocks.push(`  Talao/Ref: ${r.talao}`);
     sessBlocks.push(`  Estado: ${estTxt}`);
