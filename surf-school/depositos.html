@@ -1546,7 +1546,7 @@ function resetNovoForm(){
   const fi=document.getElementById('f-foto');if(fi)fi.value='';
   const btn=document.getElementById('guardar-btn');if(btn){btn.disabled=true;btn.style.opacity='.5';}
   const lbl=document.getElementById('guardar-lbl');if(lbl)lbl.textContent='Guardar Registo';
-  toast('✓ Formulário limpo');
+  if(!_cntPendingVal)toast('✓ Formulário limpo');
 }
 
 function updSesTotal(){
@@ -3717,16 +3717,18 @@ function cntUsar(){
   const raw=(totalEl?.textContent||'0').replace(/[^0-9,]/g,'').replace(',','.');
   const total=parseFloat(raw)||0;
   if(total<=0){toast('⚠️ Contagem está em zero');return;}
+  _cntPendingVal=total;
   sp('novo');
-  requestAnimationFrame(()=>{
+  setTimeout(()=>{
     const vl=document.getElementById('svl-0');
-    if(vl){vl.value=total.toFixed(2);vl.dispatchEvent(new Event('input'));updSesTotal&&updSesTotal();}
-  });
-  toast('✓ Total '+_cntFmt(total*100)+' copiado para o depósito');
+    if(vl){vl.value=total.toFixed(2);vl.dispatchEvent(new Event('input'));if(typeof updSesTotal==='function')updSesTotal();}
+    _cntPendingVal=null;
+    toast('✓ '+_cntFmt(total*100)+' preenchido no depósito');
+  },80);
 }
 
 // ─── EXPORT ──────────────────────────────────────────
-let expFmt='print',exportCfg=null,_gerenteSid='',_preSelectLoja='',_preSelectMes='',_mapaSelIds=null;
+let expFmt='print',exportCfg=null,_gerenteSid='',_preSelectLoja='',_preSelectMes='',_mapaSelIds=null,_cntPendingVal=null;
 async function emailFromMapa(){
   const loja=document.getElementById('mapa-loja')?.value||'';
   const mes=document.getElementById('mapa-mes')?.value||curMesStr();
