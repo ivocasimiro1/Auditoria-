@@ -3737,13 +3737,9 @@ function cntUsar(){
     // data do depósito → hoje
     const dd=document.getElementById('f-dd');
     if(dd&&!dd.value)dd.value=new Date().toISOString().split('T')[0];
-    // responsável → último usado nesta loja
-    const loja=document.getElementById('f-loja')?.value;
+    // responsável → só pré-selecionar se existir apenas um configurado
     const fr=document.getElementById('f-resp');
-    if(fr&&!fr.value&&loja){
-      const lastResp=[...regs].filter(r=>r.loja===loja&&r.responsavel).sort((a,b)=>new Date(b.criado_em||0)-new Date(a.criado_em||0))[0]?.responsavel;
-      if(lastResp)fr.value=lastResp;
-    }
+    if(fr&&!fr.value&&cfg.resps?.length===1)fr.value=cfg.resps[0];
     if(typeof checkGuardarBtn==='function')checkGuardarBtn();
     _cntPendingVal=null;
     toast('✓ '+_cntFmt(total*100)+' preenchido — verifique sessão e comprovativo');
