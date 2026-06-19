@@ -507,15 +507,41 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
   </div>
   <div class="section">
     <p>Cada <strong>registo de depósito</strong> pode conter uma ou mais sessões de caixa. Registe as sessões que estão a ser depositadas juntas.</p>
-    <h3>Passos</h3>
+
+    <h3>Fluxo completo — Do dinheiro ao registo</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;margin:12px 0 20px">
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f0fdf4;border-radius:10px;border-left:4px solid var(--green)">
+        <div style="font-size:20px;flex-shrink:0">1️⃣</div>
+        <div><div style="font-size:13px;font-weight:800;color:var(--g800)">Na loja — fechar a sessão de caixa</div><div style="font-size:12px;color:var(--g600);margin-top:2px">No final do turno, feche o terminal de vendas. Anote o <strong>número de sessão</strong> e o <strong>valor</strong> a depositar. Pode haver mais do que uma sessão entre depósitos.</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#eff6ff;border-radius:10px;border-left:4px solid var(--blue2)">
+        <div style="font-size:20px;flex-shrink:0">2️⃣</div>
+        <div><div style="font-size:13px;font-weight:800;color:var(--g800)">Efetuar o depósito</div><div style="font-size:12px;color:var(--g600);margin-top:2px">No banco (Depósito Direto) ou através da Prosegur/Lomis. Guarde sempre o <strong>comprovativo (talão bancário)</strong> — é a prova do depósito.</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#fff7ed;border-radius:10px;border-left:4px solid var(--orange)">
+        <div style="font-size:20px;flex-shrink:0">3️⃣</div>
+        <div><div style="font-size:13px;font-weight:800;color:var(--g800)">Abrir a aplicação — ➕ Novo</div><div style="font-size:12px;color:var(--g600);margin-top:2px">Aceda a <code style="font-size:10px">auditoria-25b.pages.dev/depositos</code>, faça login e toque em <strong>➕ Novo</strong> na barra inferior.</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#faf5ff;border-radius:10px;border-left:4px solid var(--purple2)">
+        <div style="font-size:20px;flex-shrink:0">4️⃣</div>
+        <div><div style="font-size:13px;font-weight:800;color:var(--g800)">Preencher o formulário</div><div style="font-size:12px;color:var(--g600);margin-top:2px">Adicione as sessões de caixa, a data do depósito, o número do comprovativo, o responsável, e a foto do talão bancário.</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#f0fdf4;border-radius:10px;border-left:4px solid var(--green)">
+        <div style="font-size:20px;flex-shrink:0">5️⃣</div>
+        <div><div style="font-size:13px;font-weight:800;color:var(--g800)">✓ Guardar — tudo automático!</div><div style="font-size:12px;color:var(--g600);margin-top:2px">O sistema guarda na nuvem, atualiza o Dashboard e Mapa, e envia automaticamente um email de notificação à gestão Despomar.</div></div>
+      </div>
+    </div>
+
+    <h3>Preencher o formulário — passo a passo</h3>
     <ol class="step-list">
       <li><span>Toque em <strong>Novo</strong> na barra de navegação inferior</span></li>
       <li><span>Selecione a <strong>Loja</strong> e o <strong>Tipo de Serviço</strong> (Prosegur, Depósito Direto, etc.)</span></li>
       <li><span>Clique em <strong>"Adicionar Sessão"</strong> para cada sessão de caixa e preencha: data de vendas, número de sessão e valor</span></li>
-      <li><span>Preencha a <strong>Data do Depósito</strong> e o <strong>Nº Talão / Referência</strong></span></li>
+      <li><span>Preencha a <strong>Data do Depósito</strong> e o <strong>Nº Comprovativo / Referência</strong> (número do talão bancário)</span></li>
       <li><span>Selecione o <strong>Responsável</strong> que fez o depósito</span></li>
-      <li><span>Tire <strong>foto do talão</strong> com a câmara — <strong style="color:#dc2626">obrigatório</strong></span></li>
-      <li><span>Toque em <strong>"Guardar Registo"</strong></span></li>
+      <li><span>Se necessário, escreva uma <strong>Observação</strong> — ex: "Atraso — Prosegur não veio"</span></li>
+      <li><span>Tire <strong>foto do comprovativo (talão)</strong> com a câmara — muito recomendado</span></li>
+      <li><span>Toque em <strong>"✓ Guardar Registo"</strong></span></li>
     </ol>
     <div class="mockup" style="max-width:360px;margin:16px auto">
       <div class="mockup-bar"><div class="title">➕ Novo Depósito</div></div>
@@ -555,10 +581,11 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
           <div style="font-size:9px;font-weight:800;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Depósito</div>
           <div class="mock-grid2">
             <div class="mock-field"><label>Data Depósito</label><div class="mock-input filled">12/06/2026</div></div>
-            <div class="mock-field"><label>Nº Talão</label><div class="mock-input filled">26802134E</div></div>
+            <div class="mock-field"><label>Nº Comprovativo</label><div class="mock-input filled">26802134E</div></div>
           </div>
           <div class="mock-field"><label>Responsável *</label><div class="mock-input filled">Tiago Rufino</div></div>
-          <div class="mock-field" style="margin-top:8px"><label>📷 Foto do Talão</label><div style="border:1.5px dashed var(--g200);border-radius:8px;padding:12px;text-align:center;color:var(--g400);font-size:11px">📷 Tirar foto / Escolher imagem</div></div>
+          <div class="mock-field"><label>Observações</label><div class="mock-input" style="color:var(--g400);font-style:italic;font-size:10px">opcional — ex: Prosegur não veio, fui ao banco</div></div>
+          <div class="mock-field" style="margin-top:4px"><label>📷 Foto do Comprovativo</label><div style="border:1.5px dashed var(--g200);border-radius:8px;padding:12px;text-align:center;color:var(--g400);font-size:11px">📷 Tirar foto / Escolher imagem</div></div>
         </div>
         <div class="mock-btn green">✓ Guardar Registo</div>
       </div>
@@ -573,7 +600,12 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
         <tr><td><strong>🏦 Depósito Direto</strong></td><td>Depósito direto no banco</td><td>2 dias</td></tr>
       </tbody>
     </table>
-    <div class="important"><b>📷 Foto do talão obrigatória.</b> Sempre que depositar, tire foto ao talão e anexe ao registo. Sem foto, o registo fica marcado como incompleto (⚠️ Aviso).</div>
+    <div class="warning"><b>📷 Foto do comprovativo muito recomendada.</b> Sempre que depositar, tire foto ao comprovativo (talão bancário) e anexe ao registo. Sem foto, o registo fica com estado ⚠️ Aviso, o Super Admin recebe alerta <strong>⚠️ SEM COMPROVATIVO</strong>, e o Cumprimento % fica reduzido.</div>
+
+    <div class="warning"><b>⚠️ Verificação anti-duplicados:</b> Se tentar guardar uma sessão com a mesma data, número e valor de uma já existente, o sistema avisa com "⚠️ Sessão já registada" e não guarda. Isto evita duplicados por engano.</div>
+
+    <div class="tip"><b>📧 Notificação automática à gestão:</b> Ao guardar qualquer registo novo, o sistema envia automaticamente um email a <strong>ivo@despomar.com</strong> com todos os detalhes — loja, tipo, sessões, valores e foto do comprovativo em anexo. Se não houver foto, o email inclui o aviso <strong>⚠️ SEM COMPROVATIVO</strong>. Se preencheu observações, aparecem no email. Não é preciso fazer nada extra.</div>
+
     <h3>Ecrã de confirmação</h3>
     <p>Após tocar em "✓ Guardar Registo", o sistema guarda o registo na nuvem e mostra a confirmação com o resumo completo do que foi registado.</p>
     <div class="mockup" style="max-width:340px;margin:16px auto">
@@ -934,6 +966,30 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
       </tbody>
     </table>
     <div class="tip"><b>💡 PDF como registo mensal:</b> O botão 🖨️ PDF gera um documento com o título "Registo de Depósitos — [Mês]" e todos os dias, ideal para arquivo físico ou digital.</div>
+
+    <h3>Selecionar depósitos para e-mail</h3>
+    <p>No Mapa, cada linha de depósito tem uma <strong>checkbox de seleção</strong>. Pode selecionar um ou mais depósitos para incluir no email à contabilidade — útil quando quer enviar só um depósito específico em vez do mês inteiro.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin:12px 0">
+      <div style="background:#fff;border:1.5px solid var(--g200);border-radius:10px;padding:10px 14px">
+        <div style="font-size:9px;font-weight:800;color:var(--g500);text-transform:uppercase;margin-bottom:8px">Exemplo — linha no Mapa com checkbox</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:10px;padding:6px 8px;background:#f0fdf4;border-radius:7px;border:1px solid #bbf7d0">
+          <div style="width:16px;height:16px;border:2px solid var(--blue2);border-radius:3px;background:var(--blue2);flex-shrink:0;display:flex;align-items:center;justify-content:center">
+            <span style="color:#fff;font-size:10px;font-weight:800">✓</span>
+          </div>
+          <div style="flex:1"><span style="font-weight:700">01/06→07/06</span> &nbsp;·&nbsp; Prosegur · Dep: 05/06 · T: 26443E</div>
+          <div style="font-weight:800;color:var(--blue2)">€4.886</div>
+          <span class="mock-badge ok">OK</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:10px;padding:6px 8px;background:var(--g50);border-radius:7px;border:1px solid var(--g100);margin-top:4px">
+          <div style="width:16px;height:16px;border:2px solid var(--g300);border-radius:3px;background:#fff;flex-shrink:0"></div>
+          <div style="flex:1;color:var(--g400);font-style:italic">08/06→14/06 &nbsp;·&nbsp; Prosegur · Dep: 12/06 · T: 26802E</div>
+          <div style="font-weight:800;color:var(--g400)">€4.451</div>
+          <span class="mock-badge ok">OK</span>
+        </div>
+      </div>
+    </div>
+    <div class="tip"><b>💡 Pré-seleção automática:</b> O <strong>último depósito registado</strong> é selecionado automaticamente ao entrar no Mapa. Para enviar email de um único depósito (o mais recente), basta ir ao Mapa e clicar em E-mail sem alterar a seleção. O assunto do email usa a data desse depósito específico.</div>
+    <div class="tip"><b>💡 Email de um depósito só:</b> Quando apenas um depósito está selecionado, o assunto do email usa a data do depósito (ex: <em>Depósitos – ESS Guia – junho 2026 – Depósito de 12/06/2026</em>). Quando são vários, usa "até DD/MM/YYYY".</div>
   </div>
 </div>
 
@@ -948,11 +1004,12 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
     <p>Esta função prepara e envia um email à contabilidade com a lista de todos os depósitos realizados até à data, referentes ao mês selecionado.</p>
     <h3>Passos</h3>
     <ol class="step-list">
-      <li><span>Toque em <strong>E-mail</strong> na barra de navegação inferior</span></li>
+      <li><span>Toque em <strong>E-mail</strong> na barra de navegação inferior (ou selecione depósitos no Mapa e use o botão de email aí)</span></li>
       <li><span>Selecione a <strong>loja</strong> e o <strong>mês</strong></span></li>
-      <li><span>O sistema mostra uma pré-visualização: destinatário, assunto e corpo do email</span></li>
+      <li><span>O sistema mostra a pré-visualização: destinatário, assunto e corpo do email formatado</span></li>
       <li><span>Toque em <strong>"✉️ Enviar Email"</strong></span></li>
-      <li><span>O seu cliente de email abre com todos os campos pré-preenchidos — confirme e envie</span></li>
+      <li><span><strong>Computador:</strong> Abre o cliente de email com tudo pré-preenchido — confirme e envie</span></li>
+      <li><span><strong>Telemóvel:</strong> Aparece um painel com o assunto do email — copie-o, depois toque em "Continuar →" e escolha Mail na folha de partilha</span></li>
     </ol>
     <div class="mockup" style="max-width:400px;margin:16px auto">
       <div class="mockup-bar"><div class="title">📧 Enviar E-mail</div><div class="sub">à Contabilidade</div></div>
@@ -975,50 +1032,34 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
           <div style="font-size:10px;color:var(--g600);margin-bottom:2px"><b>Para:</b> ines.lopes@despomar.com</div>
           <div style="font-size:10px;color:var(--g600);margin-bottom:2px"><b>CC:</b> gerente.guia@ericeirasurfskate.pt</div>
           <div style="font-size:10px;color:var(--g600);margin-bottom:8px"><b>Assunto:</b> Depósitos – ESS Guia – junho 2026 – até 12/06/2026</div>
-          <!-- Pré-visualização HTML do email -->
+          <!-- Pré-visualização do email — formato plain text -->
           <div style="border:1px solid var(--g200);border-radius:9px;overflow:hidden;margin-bottom:8px">
-            <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:10px 12px;color:#fff">
-              <div style="font-size:11px;font-weight:800">ESS Guia — Ericeira Surf &amp; Skate</div>
-              <div style="font-size:9px;opacity:.8;margin-top:2px">Folha de Depósitos · junho 2026 · até 12/06/2026</div>
-            </div>
-            <div style="padding:10px 12px;background:#f8fafc">
-              <!-- KPIs -->
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px">
-                <div style="background:#eff6ff;border-radius:7px;padding:6px;text-align:center;border:1px solid #bfdbfe"><div style="font-size:7px;color:#1e40af;font-weight:800;text-transform:uppercase">Total Vendas</div><div style="font-size:12px;font-weight:800;color:#1e3a8a">€19.634</div></div>
-                <div style="background:#f0fdf4;border-radius:7px;padding:6px;text-align:center;border:1px solid #bbf7d0"><div style="font-size:7px;color:#166534;font-weight:800;text-transform:uppercase">Depositado</div><div style="font-size:12px;font-weight:800;color:#166534">€9.337</div></div>
-                <div style="background:#fffbeb;border-radius:7px;padding:6px;text-align:center;border:1px solid #fde68a"><div style="font-size:7px;color:#854d0e;font-weight:800;text-transform:uppercase">Por Dep.</div><div style="font-size:12px;font-weight:800;color:#92400e">€10.297</div></div>
-              </div>
-              <!-- Dep 1 -->
-              <div style="background:#fff;border:1.5px solid #bbf7d0;border-radius:9px;padding:9px 10px;margin-bottom:6px">
-                <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-                  <div><div style="font-size:8px;color:var(--g400);font-weight:700;text-transform:uppercase">Depósito 1</div><div style="font-size:12px;font-weight:800;color:#0f172a">05/06/2026</div></div>
-                  <div style="text-align:right"><div style="font-size:13px;font-weight:800;color:#1d4ed8">€4.886,05</div><div style="font-size:8px;color:var(--g400)">3 sessões</div></div>
-                </div>
-                <div style="background:#f8fafc;border-radius:6px;padding:5px 8px;font-size:9px;color:var(--g600);font-family:monospace;margin-bottom:5px">📎 26443E</div>
-                <div style="background:#dcfce7;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;color:#166534;display:inline-block;margin-bottom:5px">✅ OK</div>
-                <div style="border-top:1px solid var(--g100);padding-top:5px">
-                  <div style="font-size:8px;font-weight:700;color:var(--g400);text-transform:uppercase;margin-bottom:3px">Sessões</div>
-                  <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0;border-bottom:1px solid #f1f5f9"><span style="color:var(--g500)">01/06 &nbsp; Sess. <b>6280</b></span><span style="font-weight:700;color:#1d4ed8">€1.635,80</span></div>
-                  <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0;border-bottom:1px solid #f1f5f9"><span style="color:var(--g500)">03/06 &nbsp; Sess. <b>6283</b></span><span style="font-weight:700;color:#1d4ed8">€1.850,00</span></div>
-                  <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0"><span style="color:var(--g500)">05/06 &nbsp; Sess. <b>6285</b></span><span style="font-weight:700;color:#1d4ed8">€1.400,25</span></div>
-                </div>
-              </div>
-              <!-- Dep 2 -->
-              <div style="background:#fff;border:1.5px solid #fde68a;border-radius:9px;padding:9px 10px;margin-bottom:6px">
-                <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-                  <div><div style="font-size:8px;color:var(--g400);font-weight:700;text-transform:uppercase">Depósito 2</div><div style="font-size:12px;font-weight:800;color:#0f172a">12/06/2026</div></div>
-                  <div style="text-align:right"><div style="font-size:13px;font-weight:800;color:#1d4ed8">€4.451,00</div><div style="font-size:8px;color:var(--g400)">2 sessões</div></div>
-                </div>
-                <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:5px 8px;font-size:9px;font-weight:800;color:#991b1b;margin-bottom:5px">⚠️ SEM COMPROVATIVO — Talão em falta!</div>
-                <div style="background:#fef9c3;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;color:#854d0e;display:inline-block;margin-bottom:5px">⚠️ Aviso</div>
-                <div style="border-top:1px solid var(--g100);padding-top:5px">
-                  <div style="font-size:8px;font-weight:700;color:var(--g400);text-transform:uppercase;margin-bottom:3px">Sessões</div>
-                  <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0;border-bottom:1px solid #f1f5f9"><span style="color:var(--g500)">08/06 &nbsp; Sess. <b>6290</b></span><span style="font-weight:700;color:#1d4ed8">€2.235,50</span></div>
-                  <div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0"><span style="color:var(--g500)">10/06 &nbsp; Sess. <b>6291</b></span><span style="font-weight:700;color:#1d4ed8">€2.215,50</span></div>
-                </div>
-              </div>
-              <div style="font-size:9px;color:var(--g400);padding-top:6px;border-top:1px solid var(--g200)">Com os melhores cumprimentos,<br><strong style="color:var(--g700)">ESS Guia — Ericeira Surf &amp; Skate</strong></div>
-            </div>
+            <div style="background:#1e293b;padding:8px 12px;color:#94a3b8;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Pré-visualização do corpo do email</div>
+            <pre style="padding:10px 12px;background:#f8fafc;font-family:monospace;font-size:9px;line-height:1.7;color:#1e293b;margin:0;white-space:pre-wrap;overflow-x:auto">DEPOSITOS — ESS Guia — junho de 2026
+(ate 19/06/2026)
+ESS Guia — Ericeira Surf &amp; Skate
+NIF 123456789
+
+[DEP.1] 05/06/2026 | Comprovativo: 26443E
+  Sessoes de caixa:
+    01/06  —  Sess. 6280  —     1.635,80€
+    03/06  —  Sess. 6283  —     1.850,00€
+    05/06  —  Sess. 6285  —     1.400,25€
+
+  ► <strong>TOTAL: 4.886,05€</strong>
+
+[DEP.2] 12/06/2026 | Comprovativo: *** SEM COMPROVATIVO ***
+  Estado: AVISO — falta foto do comprovativo
+  Sessoes de caixa:
+    08/06  —  Sess. 6290  —     2.235,50€
+    10/06  —  Sess. 6291  —     2.215,50€
+
+  ► <strong>TOTAL: 4.451,00€</strong>
+  Obs: Prosegur nao veio, fui ao Banco CTT
+
+─────────────────────────────────────
+<strong>TOTAL DEPOSITADO: 9.337,05€</strong>
+SEM COMPROVATIVO: 1 deposito</pre>
           </div>
           <div style="display:flex;gap:6px">
             <div class="mock-btn" style="flex:1;margin-top:0;font-size:10px">✉️ Enviar Email</div>
@@ -1028,8 +1069,31 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
       </div>
     </div>
     <div class="tip"><b>💡 Envio parcial:</b> Pode enviar a qualquer momento do mês — o assunto indica "até DD/MM/YYYY". Pode enviar novamente no final do mês com o total completo.</div>
+    <div class="tip"><b>💡 Depósito único:</b> Quando seleciona apenas um depósito (via Mapa ou via filtro), o assunto diz "Depósito de DD/MM/YYYY" em vez de "até DD/MM/YYYY", deixando claro que é um extrato específico.</div>
+    <div class="tip"><b>💡 Observações no email:</b> Se um registo tiver Observações preenchidas, aparecem no email como "Obs: ..." por baixo do TOTAL desse depósito.</div>
     <div class="warning"><b>⚠️ Email não configurado?</b> Se aparecer aviso a vermelho no campo "Para:", vá às Configurações (⚙️) e preencha o "Email Contabilidade".</div>
-    <div class="important"><b>⚠️ Talão em falta?</b> Se um depósito aparecer com aviso vermelho "SEM COMPROVATIVO", edite o registo na Lista e adicione o número de talão antes de enviar o email.</div>
+    <div class="important"><b>⚠️ SEM COMPROVATIVO?</b> Se um depósito aparecer com aviso "*** SEM COMPROVATIVO ***" no corpo do email, edite o registo na Lista (✏️), adicione o número de comprovativo ou a foto, e reenvie.</div>
+
+    <h3>Envio no telemóvel — Web Share</h3>
+    <p>No telemóvel, o botão "✉️ Enviar Email" abre um <strong>painel de assunto</strong> antes de prosseguir, porque o iOS/Android não preenche automaticamente o assunto quando usa a folha de partilha.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin:12px 0">
+      <div style="background:#fff;border:1.5px solid var(--g200);border-radius:12px;padding:14px 16px;max-width:360px;margin:0 auto;box-shadow:0 2px 12px rgba(0,0,0,.08)">
+        <div style="font-size:11px;font-weight:800;color:var(--g500);text-transform:uppercase;margin-bottom:10px">📝 Assunto do email</div>
+        <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:8px 10px;font-size:10px;font-weight:700;color:#065f46;margin-bottom:10px;font-family:monospace">Depósitos – ESS Guia – junho 2026 – até 19/06/2026</div>
+        <div style="font-size:10px;color:var(--g500);margin-bottom:10px">Copia o assunto, depois escolhe Mail na folha de partilha. O destinatário está na 1.ª linha do corpo do email.</div>
+        <div style="display:flex;gap:6px">
+          <div style="flex:1;background:var(--blue2);color:#fff;border-radius:8px;padding:9px;font-size:10px;font-weight:700;text-align:center">📝 Copiar assunto</div>
+          <div style="flex:1;background:var(--g100);color:var(--g700);border-radius:8px;padding:9px;font-size:10px;font-weight:700;text-align:center">Continuar →</div>
+        </div>
+      </div>
+    </div>
+    <ol class="step-list" style="margin-top:12px">
+      <li><span>Toque em <strong>"📝 Copiar assunto"</strong></span></li>
+      <li><span>Toque em <strong>"Continuar →"</strong></span></li>
+      <li><span>Na folha de partilha do sistema, escolha <strong>Mail</strong></span></li>
+      <li><span>No Mail, <strong>cole o assunto</strong> (campo Assunto) — o corpo e destinatário já estão preenchidos</span></li>
+      <li><span>Envie normalmente</span></li>
+    </ol>
   </div>
 </div>
 
@@ -1476,13 +1540,16 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
       <tbody>
         <tr><td><strong>Esqueci-me da password. O que faço?</strong></td><td>Na página de login, clique em "Esqueceu a password?" e introduza o email para receber o link de recuperação. Ou contacte <code>ivo@despomar.com</code>.</td></tr>
         <tr><td><strong>A Prosegur não veio hoje. Como registo?</strong></td><td>Se foi ao banco depositar, use <strong>Depósito Direto</strong>. Se ainda não depositou, não registe — registe quando depositar.</td></tr>
-        <tr><td><strong>Posso registar sem a foto do talão?</strong></td><td>Não — a foto é obrigatória. Sem ela, o registo fica com estado ⚠️ Aviso e o Super Admin será alertado. Tire sempre a foto no momento do depósito.</td></tr>
+        <tr><td><strong>Posso registar sem a foto do comprovativo?</strong></td><td>Sim, tecnicamente pode guardar sem foto. Mas o registo fica com estado ⚠️ Aviso, o Super Admin recebe uma notificação com o aviso <strong>⚠️ SEM COMPROVATIVO</strong>, e o Cumprimento % fica reduzido. Tire sempre a foto no momento do depósito.</td></tr>
         <tr><td><strong>Como corrijo um valor errado?</strong></td><td>Vá à <strong>Lista</strong>, toque em ✏️ no registo e edite o valor da sessão.</td></tr>
         <tr><td><strong>O que são os "dias sem registo" amarelos?</strong></td><td>Dias do mês em que não há nenhuma sessão de caixa lançada. Pode ser feriado, encerramento ou simplesmente falta de lançamento. O sistema alerta para verificar.</td></tr>
         <tr><td><strong>Quando enviar o email à contabilidade?</strong></td><td>Pode enviar a qualquer momento. O email diz "depósitos efectuados até hoje". Envie no final do mês com o total completo, ou quando necessário.</td></tr>
         <tr><td><strong>O Mapa é diferente do Dashboard?</strong></td><td>Sim. O Dashboard mostra os registos do mês por ordem de criação. O Mapa mostra um calendário completo com todos os dias, incluindo os sem registo.</td></tr>
         <tr><td><strong>O que significa o Cumprimento %?</strong></td><td>É um indicador de qualidade dos depósitos: depósitos feitos no prazo valem mais; depósitos em atraso ou sem registo penalizam. 100% = tudo perfeito.</td></tr>
         <tr><td><strong>Os meus dados são partilhados com outras lojas?</strong></td><td>Não. Cada loja só vê os seus próprios registos. Só o Super Admin tem visão global.</td></tr>
+        <tr><td><strong>Para que servem as Observações?</strong></td><td>Campo livre para notas sobre o depósito — ex: "Prosegur não veio, fui ao banco", "Atraso por avaria da máquina". As observações aparecem no email à contabilidade e na notificação automática ao administrador.</td></tr>
+        <tr><td><strong>O email no telemóvel não preenche o assunto. O que fazer?</strong></td><td>No telemóvel, antes de abrir o Mail aparece um painel com o assunto. Toque em "📝 Copiar assunto", depois em "Continuar →", escolha Mail na folha de partilha e cole o assunto no campo Assunto. O corpo e destinatário ficam preenchidos automaticamente.</td></tr>
+        <tr><td><strong>O sistema diz "Sessão já registada". O que significa?</strong></td><td>O sistema detetou que está a tentar guardar uma sessão com a mesma data, número e valor de um registo já existente. Verifique se já registou este depósito. Se for um erro, contacte <code>ivo@despomar.com</code>.</td></tr>
         <tr><td><strong>A aplicação funciona sem internet?</strong></td><td>Não. Necessita de ligação à internet para guardar e consultar dados.</td></tr>
         <tr><td><strong>Como faço backup dos dados?</strong></td><td>Vá às Configurações (⚙️) → Dados → "📥 Exportar Backup (.json)". Guarde o ficheiro regularmente.</td></tr>
       </tbody>
@@ -1497,6 +1564,10 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
   </div>
 </div>
 
+<div class="no-print" style="max-width:800px;margin:0 auto;padding:0 32px 48px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+  <a href="/depositos" style="display:inline-flex;align-items:center;gap:8px;background:#1e3a8a;color:#fff;border:none;border-radius:14px;padding:14px 24px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 4px 20px rgba(30,58,138,.3)">← Voltar à Aplicação</a>
+  <a href="javascript:history.back()" style="display:inline-flex;align-items:center;gap:8px;background:#475569;color:#fff;border:none;border-radius:14px;padding:14px 24px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 4px 20px rgba(0,0,0,.15)">⬅️ Página Anterior</a>
+</div>
 <button class="no-print" onclick="window.print()" style="position:fixed;bottom:24px;right:16px;background:#2563eb;color:#fff;border:none;border-radius:14px;padding:12px 18px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(37,99,235,.5);z-index:999;display:flex;align-items:center;gap:8px;white-space:nowrap">🖨️ Exportar PDF</button>
 
 </body>
