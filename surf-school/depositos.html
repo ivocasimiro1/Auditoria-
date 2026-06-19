@@ -1183,6 +1183,7 @@ async function doLogout(){
   await SB.auth.signOut();
   sbUser=null;sbProfile=null;isSA=false;regs=[];
   cfg={emp:'Despomar',email:'',nif:'',lojas:[],resps:[]};
+  saveCfg();
   if(_rtCh)try{SB.removeChannel(_rtCh);}catch(e){}
   _rtCh=null;
   if(_pollT){clearInterval(_pollT);_pollT=null;}
