@@ -732,6 +732,160 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
 
     <div class="tip"><b>💡 Limpar e recomeçar:</b> O botão <strong>"⟳ Limpar"</strong> repõe todos os campos a zero para começar uma nova contagem.</div>
     <div class="success"><b>✅ Transferência automática:</b> Após tocar em "✓ Usar no Depósito", o valor total passa para o campo Valor da sessão no formulário Novo. Não é preciso copiar nem escrever o número manualmente — evita erros de digitação.</div>
+
+    <h3>Depósito com várias sessões</h3>
+    <p>Um depósito pode incluir dinheiro de <strong>sessões diferentes</strong> (ex: semana com 3 sessões de caixa). O Contador permite contar cada sessão separadamente e acumulá-las no mesmo formulário, sem perder os valores anteriores.</p>
+
+    <div class="tip"><b>💡 Exemplo real:</b> Segunda-feira tem Sessão 310 (€850) e Quinta-feira tem Sessão 311 (€1.240). Ambas vão no mesmo envelope para a Prosegur — um só depósito com dois valores.</div>
+
+    <h4 style="font-size:14px;font-weight:700;color:var(--g700);margin:20px 0 8px">Passo a passo — Contar sessão a sessão</h4>
+    <ol class="step-list">
+      <li><span>Vá ao <strong>💰 Caixa</strong> e conte as notas/moedas da <strong>1ª sessão</strong></span></li>
+      <li><span>Toque em <strong>"✓ Usar no Depósito"</strong> — o formulário abre com a 1ª sessão preenchida</span></li>
+      <li><span>Volte ao <strong>💰 Caixa</strong> (toque no separador — o formulário fica em memória)</span></li>
+      <li><span>Toque em <strong>"⟳ Limpar"</strong> e conte as notas/moedas da <strong>2ª sessão</strong></span></li>
+      <li><span>Toque em <strong>"✓ Usar no Depósito"</strong> novamente — o sistema deteta que já existe a sessão 1 e <strong>acrescenta</strong> uma nova linha sem apagar a primeira</span></li>
+      <li><span>Repita para mais sessões se necessário</span></li>
+      <li><span>Quando terminar, volte ao formulário e complete os campos restantes (comprovativo, data, tipo)</span></li>
+    </ol>
+
+    <!-- Mockup visual: fluxo 3 passos lado a lado -->
+    <div style="margin:20px 0">
+      <!-- Passo 1: Contar sessão 1 -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:800;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">① Contador — 1ª sessão contada</div>
+        <div class="mockup" style="max-width:360px;margin:0 auto">
+          <div class="mockup-bar"><div class="title">💰 Contador de Caixa</div></div>
+          <div class="mockup-body" style="padding:0">
+            <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:14px;text-align:center;color:#fff">
+              <div style="font-size:9px;font-weight:700;opacity:.75;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Total Contado</div>
+              <div style="font-size:26px;font-weight:800;letter-spacing:-1px">850,00 €</div>
+              <div style="font-size:9px;opacity:.7;margin-top:2px">Sessão de Segunda-feira</div>
+              <div style="display:flex;gap:8px;justify-content:center;margin-top:10px">
+                <div style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 12px;font-size:10px;font-weight:700">⟳ Limpar</div>
+                <div style="background:rgba(255,255,255,.95);color:#1d4ed8;border-radius:8px;padding:6px 12px;font-size:10px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.15)">✓ Usar no Depósito</div>
+              </div>
+            </div>
+            <div style="padding:10px 12px;font-size:10px;color:var(--g500);text-align:center">50€ × 10 · 20€ × 17 · 10€ × 5 · moedas…</div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:11px;color:var(--blue2);font-weight:700;margin-top:6px">▼ toque em "✓ Usar no Depósito"</div>
+      </div>
+
+      <!-- Passo 2: Formulário com sessão 1 -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:800;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">② Formulário — 1ª sessão preenchida</div>
+        <div class="mockup" style="max-width:360px;margin:0 auto">
+          <div class="mockup-bar"><div class="title">➕ Novo Depósito</div></div>
+          <div class="mockup-body">
+            <div style="font-size:9px;font-weight:800;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Sessões</div>
+            <!-- Sessão 1 -->
+            <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:8px;padding:8px 10px;margin-bottom:6px">
+              <div style="display:flex;gap:6px;margin-bottom:4px">
+                <div style="flex:1">
+                  <div style="font-size:8px;color:var(--g500);margin-bottom:2px">Data vendas</div>
+                  <div class="mock-input filled" style="font-size:10px">17/06/2026</div>
+                </div>
+                <div style="flex:1">
+                  <div style="font-size:8px;color:var(--g500);margin-bottom:2px">Nº sessão</div>
+                  <div class="mock-input filled" style="font-size:10px">310</div>
+                </div>
+                <div style="flex:1">
+                  <div style="font-size:8px;color:var(--g500);margin-bottom:2px">Valor</div>
+                  <div class="mock-input filled" style="font-size:10px;color:var(--blue2);font-weight:800">850,00</div>
+                </div>
+              </div>
+            </div>
+            <!-- Botão adicionar sessão -->
+            <div style="text-align:center;font-size:10px;color:var(--g400);padding:4px 0">＋ Adicionar sessão</div>
+            <!-- Total -->
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--g100);margin-top:4px">
+              <span style="font-size:10px;font-weight:700;color:var(--g500)">Total sessões</span>
+              <strong style="font-size:13px;color:var(--blue2)">850,00 €</strong>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:11px;color:var(--blue2);font-weight:700;margin-top:6px">▼ volte ao 💰 Caixa, limpe e conte a 2ª sessão</div>
+      </div>
+
+      <!-- Passo 3: Contador sessão 2 -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:800;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">③ Contador — 2ª sessão contada</div>
+        <div class="mockup" style="max-width:360px;margin:0 auto">
+          <div class="mockup-bar"><div class="title">💰 Contador de Caixa</div></div>
+          <div class="mockup-body" style="padding:0">
+            <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:14px;text-align:center;color:#fff">
+              <div style="font-size:9px;font-weight:700;opacity:.75;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Total Contado</div>
+              <div style="font-size:26px;font-weight:800;letter-spacing:-1px">1.240,00 €</div>
+              <div style="font-size:9px;opacity:.7;margin-top:2px">Sessão de Quinta-feira</div>
+              <div style="display:flex;gap:8px;justify-content:center;margin-top:10px">
+                <div style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 12px;font-size:10px;font-weight:700">⟳ Limpar</div>
+                <div style="background:rgba(255,255,255,.95);color:#1d4ed8;border-radius:8px;padding:6px 12px;font-size:10px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.15)">✓ Usar no Depósito</div>
+              </div>
+            </div>
+            <div style="padding:10px 12px;font-size:10px;color:var(--g500);text-align:center">100€ × 8 · 50€ × 7 · 20€ × 6 · moedas…</div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:11px;color:var(--blue2);font-weight:700;margin-top:6px">▼ toque em "✓ Usar no Depósito" novamente</div>
+      </div>
+
+      <!-- Passo 4: Formulário com 2 sessões -->
+      <div>
+        <div style="font-size:11px;font-weight:800;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">④ Resultado — 2 sessões no mesmo depósito</div>
+        <div class="mockup" style="max-width:360px;margin:0 auto">
+          <div class="mockup-bar"><div class="title">➕ Novo Depósito</div></div>
+          <div class="mockup-body">
+            <div style="font-size:9px;font-weight:800;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Sessões</div>
+            <!-- Sessão 1 -->
+            <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:8px;padding:8px 10px;margin-bottom:6px">
+              <div style="display:flex;gap:6px">
+                <div style="flex:1">
+                  <div style="font-size:8px;color:var(--g500);margin-bottom:2px">Data vendas</div>
+                  <div class="mock-input filled" style="font-size:10px">17/06/2026</div>
+                </div>
+                <div style="flex:1">
+                  <div style="font-size:8px;color:var(--g500);margin-bottom:2px">Nº sessão</div>
+                  <div class="mock-input filled" style="font-size:10px">310</div>
+                </div>
+                <div style="flex:1">
+                  <div style="font-size:8px;color:var(--g500);margin-bottom:2px">Valor</div>
+                  <div class="mock-input filled" style="font-size:10px;color:var(--blue2);font-weight:800">850,00</div>
+                </div>
+              </div>
+            </div>
+            <!-- Sessão 2 — nova, destaque verde -->
+            <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:8px 10px;margin-bottom:6px;position:relative">
+              <div style="position:absolute;top:-8px;right:10px;background:#22c55e;color:#fff;font-size:8px;font-weight:800;padding:2px 7px;border-radius:10px">NOVA</div>
+              <div style="display:flex;gap:6px">
+                <div style="flex:1">
+                  <div style="font-size:8px;color:var(--g500);margin-bottom:2px">Data vendas</div>
+                  <div class="mock-input filled" style="font-size:10px">20/06/2026</div>
+                </div>
+                <div style="flex:1">
+                  <div style="font-size:8px;color:var(--g500);margin-bottom:2px">Nº sessão</div>
+                  <div class="mock-input filled" style="font-size:10px">311</div>
+                </div>
+                <div style="flex:1">
+                  <div style="font-size:8px;color:var(--g500);margin-bottom:2px">Valor</div>
+                  <div class="mock-input filled" style="font-size:10px;color:var(--blue2);font-weight:800">1.240,00</div>
+                </div>
+              </div>
+            </div>
+            <!-- Total -->
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:2px solid var(--blue2);margin-top:4px">
+              <span style="font-size:10px;font-weight:700;color:var(--g600)">TOTAL (2 sessões)</span>
+              <strong style="font-size:16px;color:var(--blue2);letter-spacing:-.5px">2.090,00 €</strong>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:8px">
+          <div style="display:inline-block;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:7px 16px;font-size:11px;font-weight:700;color:#166534">✅ Sessão 1 mantida · Sessão 2 adicionada automaticamente</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="success"><b>✅ Sem perda de dados:</b> Quando toca em "✓ Usar no Depósito" pela segunda vez, o sistema reconhece que já existe informação no formulário e <strong>acrescenta</strong> uma nova linha — não substitui nem apaga a sessão anterior.</div>
+    <div class="tip"><b>💡 Pode fazer isso para 3, 4 ou mais sessões.</b> O total actualiza automaticamente cada vez que adiciona uma sessão. No final, preencha o comprovativo, o tipo de depósito e guarde normalmente.</div>
   </div>
 </div>
 
