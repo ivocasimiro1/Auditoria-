@@ -3723,6 +3723,17 @@ function cntUsar(){
     // valor da sessão
     const vl=document.querySelector('#ses-list [id^="svl-"]');
     if(vl){vl.value=total.toFixed(2);vl.dispatchEvent(new Event('input'));if(typeof updSesTotal==='function')updSesTotal();}
+    // nº sessão → próximo após o último registado
+    const ss=document.querySelector('#ses-list [id^="ss-"]');
+    if(ss&&!ss.value){
+      const loja=document.getElementById('f-loja')?.value;
+      const tipo=document.getElementById('f-tipo')?.value;
+      if(loja){
+        let lastNum=0;
+        regs.filter(r=>r.loja===loja&&(!tipo||r.tipo===tipo)).forEach(r=>(r.sessoes||[]).forEach(s=>{const n=parseInt(s.sessao);if(!isNaN(n)&&n>lastNum)lastNum=n;}));
+        if(lastNum)ss.value=String(lastNum+1);
+      }
+    }
     // data do depósito → hoje
     const dd=document.getElementById('f-dd');
     if(dd&&!dd.value)dd.value=new Date().toISOString().split('T')[0];
