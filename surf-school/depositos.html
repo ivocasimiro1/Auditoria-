@@ -1351,7 +1351,7 @@ function sp(name){
     window.scrollTo(0,0);
     if(name==='dash')rDash();
     if(name==='supervisao'){popSupSel();rSASupervision();}
-    if(name==='novo'){if(!editingId)resetNovoForm();popSel();}
+    if(name==='novo'){if(!editingId&&!_cntAddMode)resetNovoForm();popSel();}
     if(name==='lista')rLista();
     if(name==='mapa')rMapa();
     if(name==='exp'){seExp('email');rExpSel();}
@@ -3718,37 +3718,63 @@ function cntUsar(){
   const raw=(totalEl?.textContent||'0').replace(/[^0-9,]/g,'').replace(',','.');
   const total=parseFloat(raw)||0;
   if(total<=0){toast('⚠️ Contagem está em zero');return;}
+  // se o formulário já tem sessões com valor → adicionar nova sessão sem resetar
+  const filledSess=typeof getSesSionsData==='function'?getSesSionsData().filter(s=>s.valor>0):[];
+  const addMode=filledSess.length>0;
   _cntPendingVal=total;
-  sp('novo');
-  setTimeout(()=>{
-    // valor da sessão
-    const vl=document.querySelector('#ses-list [id^="svl-"]');
-    if(vl){vl.value=total.toFixed(2);vl.dispatchEvent(new Event('input'));if(typeof updSesTotal==='function')updSesTotal();}
-    // nº sessão → próximo após o último registado
-    const ss=document.querySelector('#ses-list [id^="ss-"]');
-    if(ss&&!ss.value){
-      const loja=document.getElementById('f-loja')?.value;
-      const tipo=document.getElementById('f-tipo')?.value;
-      if(loja){
-        let lastNum=0;
-        regs.filter(r=>r.loja===loja&&(!tipo||r.tipo===tipo)).forEach(r=>(r.sessoes||[]).forEach(s=>{const n=parseInt(s.sessao);if(!isNaN(n)&&n>lastNum)lastNum=n;}));
-        if(lastNum)ss.value=String(lastNum+1);
+  if(addMode){
+    // navegar para Novo SEM resetar o formulário
+    _cntAddMode=true;sp('novo');_cntAddMode=false;
+    addSes(); // adiciona nova linha de sessão vazia
+    setTimeout(()=>{
+      // preencher último campo de valor e nº sessão adicionados
+      const allVl=[...document.querySelectorAll('#ses-list [id^="svl-"]')];
+      const vl=allVl[allVl.length-1];
+      const allSs=[...document.querySelectorAll('#ses-list [id^="ss-"]')];
+      const ss=allSs[allSs.length-1];
+      if(vl&&!vl.value){vl.value=total.toFixed(2);vl.dispatchEvent(new Event('input'));if(typeof updSesTotal==='function')updSesTotal();}
+      if(ss&&!ss.value){
+        const loja=document.getElementById('f-loja')?.value;
+        if(loja){
+          let lastNum=0;
+          regs.filter(r=>r.loja===loja).forEach(r=>(r.sessoes||[]).forEach(s=>{const n=parseInt(s.sessao);if(!isNaN(n)&&n>lastNum)lastNum=n;}));
+          getSesSionsData().forEach(s=>{const n=parseInt(s.sessao);if(!isNaN(n)&&n>lastNum)lastNum=n;});
+          if(lastNum)ss.value=String(lastNum+1);
+        }
       }
-    }
-    // data do depósito → hoje
-    const dd=document.getElementById('f-dd');
-    if(dd&&!dd.value)dd.value=new Date().toISOString().split('T')[0];
-    // responsável → só pré-selecionar se existir apenas um configurado
-    const fr=document.getElementById('f-resp');
-    if(fr&&!fr.value&&cfg.resps?.length===1)fr.value=cfg.resps[0];
-    if(typeof checkGuardarBtn==='function')checkGuardarBtn();
-    _cntPendingVal=null;
-    toast('✓ '+_cntFmt(total*100)+' preenchido — verifique sessão e comprovativo');
-  },80);
+      if(typeof checkGuardarBtn==='function')checkGuardarBtn();
+      _cntPendingVal=null;
+      cntReset();
+      toast('✓ '+_cntFmt(total*100)+' adicionado como sessão '+(filledSess.length+1));
+    },50);
+  }else{
+    // primeira contagem → resetar formulário e preencher sessão 1
+    sp('novo');
+    setTimeout(()=>{
+      const vl=document.querySelector('#ses-list [id^="svl-"]');
+      if(vl){vl.value=total.toFixed(2);vl.dispatchEvent(new Event('input'));if(typeof updSesTotal==='function')updSesTotal();}
+      const ss=document.querySelector('#ses-list [id^="ss-"]');
+      if(ss&&!ss.value){
+        const loja=document.getElementById('f-loja')?.value;
+        if(loja){
+          let lastNum=0;
+          regs.filter(r=>r.loja===loja).forEach(r=>(r.sessoes||[]).forEach(s=>{const n=parseInt(s.sessao);if(!isNaN(n)&&n>lastNum)lastNum=n;}));
+          if(lastNum)ss.value=String(lastNum+1);
+        }
+      }
+      const dd=document.getElementById('f-dd');
+      if(dd&&!dd.value)dd.value=new Date().toISOString().split('T')[0];
+      const fr=document.getElementById('f-resp');
+      if(fr&&!fr.value&&cfg.resps?.length===1)fr.value=cfg.resps[0];
+      if(typeof checkGuardarBtn==='function')checkGuardarBtn();
+      _cntPendingVal=null;
+      toast('✓ '+_cntFmt(total*100)+' preenchido — adicione mais sessões ou complete o depósito');
+    },80);
+  }
 }
 
 // ─── EXPORT ──────────────────────────────────────────
-let expFmt='print',exportCfg=null,_gerenteSid='',_preSelectLoja='',_preSelectMes='',_mapaSelIds=null,_cntPendingVal=null;
+let expFmt='print',exportCfg=null,_gerenteSid='',_preSelectLoja='',_preSelectMes='',_mapaSelIds=null,_cntPendingVal=null,_cntAddMode=false;
 async function emailFromMapa(){
   const loja=document.getElementById('mapa-loja')?.value||'';
   const mes=document.getElementById('mapa-mes')?.value||curMesStr();
