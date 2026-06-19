@@ -171,6 +171,7 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
       <li><a href="#acesso" class="loja-a">Acesso e Login</a></li>
       <li><a href="#configuracoes" class="loja-a">Configurações da Loja</a> <strong style="color:var(--red);font-size:11px">— OBRIGATÓRIO</strong></li>
       <li><a href="#novo" class="loja-a">Registar um Novo Depósito</a></li>
+      <li><a href="#contador" class="loja-a">💰 Contador de Caixa — Contar Notas e Moedas</a></li>
       <li><a href="#dashboard" class="loja-a">Dashboard — Resumo do Mês</a></li>
       <li><a href="#lista" class="loja-a">Lista de Registos e Edição</a></li>
       <li><a href="#mapa" class="loja-a">Mapa de Depósitos — Calendário do Mês</a></li>
@@ -630,6 +631,107 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
       </div>
     </div>
     <div class="success"><b>✅ Guardado na nuvem.</b> O registo fica imediatamente visível no Dashboard, Lista e Mapa — em qualquer dispositivo onde a loja faça login.</div>
+  </div>
+</div>
+
+<!-- ════ CONTADOR DE CAIXA ════ -->
+<div class="page chapter" id="contador">
+  <div class="chapter-title loja">
+    <div class="num">Capítulo 3B</div>
+    <h2>💰 Contador de Caixa</h2>
+    <p>Contar notas e moedas antes de ir ao banco ou entregar à Prosegur</p>
+  </div>
+  <div class="section">
+    <p>O <strong>Contador de Caixa</strong> é uma calculadora integrada para contar o dinheiro físico da caixa — notas e moedas — e transferir automaticamente o total para o formulário de novo depósito.</p>
+
+    <div class="tip"><b>💡 Para que serve:</b> Em vez de calcular manualmente (500€ × 2 = 1.000€, etc.), introduza a quantidade de cada nota/moeda e o sistema calcula o total instantaneamente. No final, toque em <strong>"✓ Usar no Depósito"</strong> e o valor aparece automaticamente no campo Valor da sessão de caixa.</div>
+
+    <h3>Como aceder</h3>
+    <ol class="step-list">
+      <li><span>Toque em <strong>💰 Caixa</strong> na barra de navegação inferior</span></li>
+    </ol>
+
+    <div class="mockup" style="max-width:380px;margin:16px auto">
+      <div class="mockup-bar"><div class="title">💰 Contador de Caixa</div></div>
+      <div class="mockup-nav">
+        <div class="nav-tab"><div class="icon">📊</div>DASHBOARD</div>
+        <div class="nav-tab"><div class="icon">➕</div>NOVO</div>
+        <div class="nav-tab"><div class="icon">📋</div>LISTA</div>
+        <div class="nav-tab"><div class="icon">🗓️</div>MAPA</div>
+        <div class="nav-tab active"><div class="icon">💰</div>CAIXA</div>
+      </div>
+      <div class="mockup-body" style="padding:0">
+        <!-- Total card -->
+        <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:16px;text-align:center;color:#fff">
+          <div style="font-size:10px;font-weight:700;opacity:.75;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Total Contado</div>
+          <div style="font-size:28px;font-weight:800;letter-spacing:-1px">1.285,50 €</div>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+            <div style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.25);border-radius:9px;padding:7px 14px;font-size:11px;font-weight:700">⟳ Limpar</div>
+            <div style="background:rgba(255,255,255,.95);color:#1d4ed8;border-radius:9px;padding:7px 14px;font-size:11px;font-weight:700">✓ Usar no Depósito</div>
+          </div>
+        </div>
+        <!-- Notas -->
+        <div style="padding:10px 12px">
+          <div style="font-size:10px;font-weight:800;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">💶 Notas</div>
+          <!-- rows -->
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+            <div style="background:#6d28d9;color:#fff;border-radius:6px;padding:3px 7px;font-size:9px;font-weight:800;width:38px;text-align:center">500€</div>
+            <div style="background:var(--g100);border-radius:6px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--g600)">−</div>
+            <div style="border:1.5px solid var(--blue2);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;width:36px;text-align:center">1</div>
+            <div style="background:var(--g100);border-radius:6px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--g600)">+</div>
+            <div style="margin-left:auto;font-size:11px;font-weight:800;color:var(--blue2)">500,00 €</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+            <div style="background:#059669;color:#fff;border-radius:6px;padding:3px 7px;font-size:9px;font-weight:800;width:38px;text-align:center">100€</div>
+            <div style="background:var(--g100);border-radius:6px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--g600)">−</div>
+            <div style="border:1.5px solid var(--blue2);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;width:36px;text-align:center">7</div>
+            <div style="background:var(--g100);border-radius:6px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--g600)">+</div>
+            <div style="margin-left:auto;font-size:11px;font-weight:800;color:var(--blue2)">700,00 €</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+            <div style="background:#2563eb;color:#fff;border-radius:6px;padding:3px 7px;font-size:9px;font-weight:800;width:38px;text-align:center">20€</div>
+            <div style="background:var(--g100);border-radius:6px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--g600)">−</div>
+            <div style="border:1.5px solid var(--blue2);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;width:36px;text-align:center">3</div>
+            <div style="background:var(--g100);border-radius:6px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--g600)">+</div>
+            <div style="margin-left:auto;font-size:11px;font-weight:800;color:var(--blue2)">60,00 €</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:5px 0;border-top:1px solid var(--g100);margin-top:4px">
+            <span style="font-size:10px;font-weight:700;color:var(--g500)">Subtotal Notas</span>
+            <strong style="font-size:11px;color:var(--g800)">1.260,00 €</strong>
+          </div>
+          <!-- Moedas resumo -->
+          <div style="font-size:10px;font-weight:800;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 6px">🪙 Moedas</div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--g500)"><span>2€ × 5 · 1€ × 12 · 0,50€ × 3 · …</span><strong style="color:var(--g800)">25,50 €</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Como usar</h3>
+    <ol class="step-list">
+      <li><span>Vá ao separador <strong>💰 Caixa</strong></span></li>
+      <li><span>Para cada nota/moeda, introduza a <strong>quantidade</strong> que tem — use os botões <strong>−</strong> / <strong>+</strong> ou escreva o número diretamente</span></li>
+      <li><span>O total é calculado automaticamente em tempo real</span></li>
+      <li><span>Toque em <strong>"✓ Usar no Depósito"</strong> — o sistema abre o formulário ➕ Novo com o valor já preenchido</span></li>
+      <li><span>Complete os restantes campos (data, sessão, responsável, foto) e guarde</span></li>
+    </ol>
+
+    <h3>Notas e moedas disponíveis</h3>
+    <table>
+      <thead><tr><th>Tipo</th><th>Denominações</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>💶 Notas</strong></td>
+          <td>500€ · 200€ · 100€ · 50€ · 20€ · 10€ · 5€</td>
+        </tr>
+        <tr>
+          <td><strong>🪙 Moedas</strong></td>
+          <td>2€ · 1€ · 0,50€ · 0,20€ · 0,10€ · 0,05€ · 0,02€ · 0,01€</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="tip"><b>💡 Limpar e recomeçar:</b> O botão <strong>"⟳ Limpar"</strong> repõe todos os campos a zero para começar uma nova contagem.</div>
+    <div class="success"><b>✅ Transferência automática:</b> Após tocar em "✓ Usar no Depósito", o valor total passa para o campo Valor da sessão no formulário Novo. Não é preciso copiar nem escrever o número manualmente — evita erros de digitação.</div>
   </div>
 </div>
 
