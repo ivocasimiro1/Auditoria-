@@ -3720,7 +3720,7 @@ function cntUsar(){
   _cntPendingVal=total;
   sp('novo');
   setTimeout(()=>{
-    const vl=document.getElementById('svl-0');
+    const vl=document.querySelector('#ses-list [id^="svl-"]');
     if(vl){vl.value=total.toFixed(2);vl.dispatchEvent(new Event('input'));if(typeof updSesTotal==='function')updSesTotal();}
     _cntPendingVal=null;
     toast('✓ '+_cntFmt(total*100)+' preenchido no depósito');
