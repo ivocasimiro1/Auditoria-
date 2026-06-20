@@ -1286,7 +1286,7 @@ function calcEstado(r,storeCfg){
     }
   }
   // Tardio se acumulou sessões além do prazo (span) ou passou demasiado tempo
-  const vencido=diasDesde>prazo||span>prazo||vencidoPorDiaRecolha;
+  const vencido=diasDesde>=prazo||span>prazo||vencidoPorDiaRecolha;
   // Comprovativo (foto) é a validação principal — sem foto = não depositado
   if(!r.foto){
     if(r.talao||r.dataDeposito)
@@ -1804,7 +1804,7 @@ function getOverdueAlerts(lojaFil){
     const prazo=tipo==='Depósito Direto'?2:7;
     const last=new Date(lastStr);last.setHours(0,0,0,0);
     const dias=Math.floor((today-last)/86400000);
-    if(dias>prazo)alerts.push({loja,tipo,lastStr,dias,prazo});
+    if(dias>=prazo)alerts.push({loja,tipo,lastStr,dias,prazo});
   });
   // Also check lojas in cfg that have NO records at all this month
   const mes=curMesStr();
@@ -1825,7 +1825,7 @@ function getOverdueAlerts(lojaFil){
       if(latestRec){
         const ref=new Date(getRefDate(latestRec));ref.setHours(0,0,0,0);
         const dias=Math.floor((today-ref)/86400000);
-        if(dias>2&&!alerts.some(a=>a.loja===loja)){
+        if(dias>=2&&!alerts.some(a=>a.loja===loja)){
           alerts.push({loja,tipo:latestRec.tipo||'—',lastStr:getRefDate(latestRec),dias,prazo:2,noMesData:true});
         }
       }
@@ -2548,7 +2548,7 @@ function rSASupervision(){
         _missCutoff=new Date(+_tDate-_minDaysAgo*86400000).toISOString().split('T')[0];
       }
     }
-    const pastMissingArr=storeMissingArr.filter(d=>d<_missCutoff);
+    const pastMissingArr=storeMissingArr.filter(d=>d<=_missCutoff);
     storeList.push({sid,empName,displayName,lojaLabel,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl,servicoStr,semFoto,semTalao,tardios,gaps,gapDates,pastMissingArr});
   });
   // Add orphan loja groups (records grouped by loja name, no store_id)
