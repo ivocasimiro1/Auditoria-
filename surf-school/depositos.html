@@ -941,6 +941,9 @@ select{
 // ─── SUPABASE ─────────────────────────────────────────
 const _SBURL='https://ubeqidccuvsjhjphybxz.supabase.co';
 const _SBKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U';
+// WhatsApp CallMeBot — preencher após activar em https://www.callmebot.com/blog/free-api-whatsapp-messages/
+const _WA_NUM='';  // ex: '351962800400'
+const _WA_KEY='';  // API key recebida pelo CallMeBot
 // sfetch: REST API direto — funciona sem a biblioteca SB (sem CDN)
 async function sfetch(method,table,qs,body){
   const h={'apikey':_SBKEY,'Authorization':'Bearer '+_SBKEY,'Content-Type':'application/json','Accept':'application/json'};
@@ -1710,6 +1713,19 @@ async function guardar(){
   }
   // Guardar localmente primeiro — nunca perde dados
   saveR();
+  // Upload foto para Supabase Storage → URL pública (novos registos apenas; dados existentes intactos)
+  if(fotoB64&&typeof fotoB64==='string'&&fotoB64.startsWith('data:')){
+    try{
+      const _fRes=await fetch(fotoB64);const _fBlob=await _fRes.blob();
+      const _fName=reg.id+'.jpg';
+      const{error:_fErr}=await SB.storage.from('dep-fotos').upload(_fName,_fBlob,{contentType:'image/jpeg',upsert:true});
+      if(!_fErr){
+        const{data:{publicUrl}}=SB.storage.from('dep-fotos').getPublicUrl(_fName);
+        reg.foto=publicUrl;
+        const _ri=regs.findIndex(x=>x.id===reg.id);if(_ri>=0)regs[_ri].foto=publicUrl;
+      }
+    }catch(_fe){}
+  }
   // Sincronizar com Supabase (não bloqueia se falhar)
   const saved=await sbSave(reg);
   if(!saved){toast('⚠️ Guardado localmente. Vai a Configurações → Re-sincronizar quando tiveres ligação.');setTimeout(()=>sp('dash'),1200);return;}
@@ -1721,19 +1737,18 @@ async function guardar(){
     (async()=>{
       const _totalFmt=total.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2});
       const _sesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''} — ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
-      const _msg=`Nova entrada de depósito registada.${!reg.foto?'\n\n⚠️ SEM COMPROVATIVO — falta anexar foto':''}\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}${reg.obs?'\nObservações: '+reg.obs:''}\nRegistado em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${_totalFmt}€`;
+      const _fotoUrl=reg.foto&&typeof reg.foto==='string'&&reg.foto.startsWith('https:')?reg.foto:null;
+      const _msg=`Nova entrada de depósito registada.${!reg.foto?'\n\n⚠️ SEM COMPROVATIVO — falta anexar foto':''}\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}${reg.obs?'\nObservações: '+reg.obs:''}\nRegistado em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${_totalFmt}€${_fotoUrl?'\n\n📷 Comprovativo: '+_fotoUrl:''}`;
       const frmData=new FormData();
       frmData.append('_subject',`📥 Novo Depósito — ${cfg.emp||loja} — ${loja} — ${_totalFmt}€`);
       frmData.append('message',_msg);
       frmData.append('_captcha','false');
-      if(reg.foto&&typeof reg.foto==='string'&&reg.foto.startsWith('data:')){
-        try{
-          const _r=await fetch(reg.foto);const _b=await _r.blob();
-          const _dt=(reg.dataDeposito||'').replace(/-/g,'')||'foto';
-          frmData.append('attachment',new File([_b],`comprovativo_${(loja||'dep').replace(/\s+/g,'_')}_${_dt}.jpg`,{type:'image/jpeg'}));
-        }catch(e){}
-      }
       fetch('https://formsubmit.co/ajax/ivo@despomar.com',{method:'POST',headers:{'Accept':'application/json'},body:frmData}).catch(()=>{});
+      // WhatsApp via CallMeBot (activo quando _WA_NUM e _WA_KEY preenchidos)
+      if(_WA_NUM&&_WA_KEY){
+        const _waMsg=`📥 *Novo Depósito — ${loja}*\n💶 ${_totalFmt}€\nTipo: ${reg.tipo||'—'}\nResp: ${reg.responsavel||'—'}${reg.dataDeposito?'\nDep: '+fd(reg.dataDeposito):''}${_fotoUrl?'\n\n📷 '+_fotoUrl:''}`;
+        fetch(`https://api.callmebot.com/whatsapp.php?phone=${_WA_NUM}&text=${encodeURIComponent(_waMsg)}&apikey=${_WA_KEY}`,{mode:'no-cors'}).catch(()=>{});
+      }
     })();
   }
   // Reset save button
@@ -3604,10 +3619,16 @@ async function addFotoRapida(id){
     reader.onload=async function(e){
       try{
         const b64=await compressImg(e.target.result);
-        const{error}=await SB.from('dep_registos').update({foto:b64}).eq('id',id);
+        let fotoVal=b64;
+        try{
+          const _fRes=await fetch(b64);const _fBlob=await _fRes.blob();
+          const{error:_fErr}=await SB.storage.from('dep-fotos').upload(id+'.jpg',_fBlob,{contentType:'image/jpeg',upsert:true});
+          if(!_fErr){const{data:{publicUrl}}=SB.storage.from('dep-fotos').getPublicUrl(id+'.jpg');fotoVal=publicUrl;}
+        }catch(_fe){}
+        const{error}=await SB.from('dep_registos').update({foto:fotoVal}).eq('id',id);
         if(error){toast('⚠️ Erro ao guardar: '+error.message);return;}
         const r=regs.find(x=>x.id===id);
-        if(r)r.foto=b64;
+        if(r)r.foto=fotoVal;
         toast('✓ Comprovativo guardado');rLista();rDash();
       }catch(err){toast('⚠️ Erro: '+(err.message||err));}
     };
