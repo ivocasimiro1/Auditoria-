@@ -551,12 +551,6 @@ select{
 
 <!-- ═══ LISTA ═══ -->
 <div class="page" id="page-lista">
-  <div class="sg">
-    <div class="sc"><div class="sl">Total</div><div class="sv" id="s-tot" style="color:var(--blue)">€0</div></div>
-    <div class="sc"><div class="sl">Registos</div><div class="sv" id="s-cnt" style="color:var(--blue)">0</div></div>
-    <div class="sc"><div class="sl">Problemas</div><div class="sv" id="s-err" style="color:var(--red)">0</div></div>
-    <div class="sc"><div class="sl">OK</div><div class="sv" id="s-ok" style="color:var(--green)">0</div></div>
-  </div>
   <div class="msr">
     <select id="fl-mes" onchange="rLista()"><option value="">Todos os meses</option></select>
     <select id="fl-loj" onchange="const s=document.getElementById('fl-sid');if(s)s.value='';rLista()"><option value="">Todas</option></select>
@@ -3520,10 +3514,6 @@ function rLista(){
     return true;
   });
   const total=filtered.reduce((s,r)=>s+totalValor(r),0);
-  document.getElementById('s-tot').textContent=fmt(total);
-  document.getElementById('s-cnt').textContent=filtered.length;
-  document.getElementById('s-err').textContent=filtered.filter(r=>{const s=calcEstado(r,getRecordCfg(r)).s;return s==='err'||s==='warn';}).length;
-  document.getElementById('s-ok').textContent=filtered.filter(r=>calcEstado(r,getRecordCfg(r)).s==='ok').length;
   const el=document.getElementById('list');
   // SA: store summary banner when filtered by store_id
   const bannerEl=document.getElementById('list-store-banner');
