@@ -1011,7 +1011,6 @@ async function tgDailyBriefing(){
       lines.push(`  ⛔ *Salto de depósito* — ${gapDs.length}d sem cobrir\n     Dias: ${shown}${gapDs.length>5?' (+'+(gapDs.length-5)+')':''}`);
     }
     if(!hasProb)lines.push(`  ✅ Tudo em dia`);else if(okL.length)lines.push(...okL);
-    lines.push(`  💶 Semana: €${fmtEur(weekAmt)}`);
     blocks.push(lines.join('\n'));
   }
   const sEmoji=probCount===0?'🟢':probCount<=1?'🟡':'🔴';
