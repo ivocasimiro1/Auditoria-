@@ -12,7 +12,10 @@ async function sbGet(table, qs) {
 
 async function tgSend(chatId, text, inlineBtn) {
   const body = { chat_id: chatId, text, parse_mode: 'Markdown' };
-  if (inlineBtn) body.reply_markup = { inline_keyboard: [[inlineBtn]] };
+  if (inlineBtn) {
+    const row = Array.isArray(inlineBtn) ? inlineBtn : [inlineBtn];
+    body.reply_markup = { inline_keyboard: [row] };
+  }
   await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -355,9 +358,11 @@ export async function onRequestPost(context) {
     } else if (text === '/ranking') {
       const txt = await buildRankingText();
       if (!txt) { await tgSend(chatId, `📊 Sem dados para ${mesLabel(curMes())}`); return new Response('ok'); }
-      // In private chat: add "share to group" button
-      const btn = isPrivate ? { text: '📤 Partilhar no grupo', callback_data: 'share:ranking' } : null;
-      await tgSend(chatId, txt, btn);
+      const btns = isPrivate ? [
+        { text: '📤 Partilhar no grupo', callback_data: 'share:ranking' },
+        { text: '💬 Partilhar no WhatsApp', url: `https://wa.me/?text=${encodeURIComponent(txt)}` }
+      ] : null;
+      await tgSend(chatId, txt, btns);
 
     } else if (text.startsWith('/status')) {
       const query = text.slice(7).trim().toLowerCase();
@@ -371,8 +376,11 @@ export async function onRequestPost(context) {
       } else {
         const txt = await buildStatusText(query);
         if (!txt) { await tgSend(chatId, `❓ Loja não encontrada: *${query}*\n\nUsa /status para ver todas as lojas.`); return new Response('ok'); }
-        const btn = isPrivate ? { text: '📤 Partilhar no grupo', callback_data: `share:status:${query}` } : null;
-        await tgSend(chatId, txt, btn);
+        const btns = isPrivate ? [
+          { text: '📤 Partilhar no grupo', callback_data: `share:status:${query}` },
+          { text: '💬 Partilhar no WhatsApp', url: `https://wa.me/?text=${encodeURIComponent(txt)}` }
+        ] : null;
+        await tgSend(chatId, txt, btns);
       }
     }
   } catch (e) {
