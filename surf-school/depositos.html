@@ -1733,7 +1733,8 @@ async function guardar(){
       const _sesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''} — ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
       const _fotoUrl=reg.foto&&typeof reg.foto==='string'&&reg.foto.startsWith('https:')?reg.foto:null;
       // Alertas: salto de depósito + tipos em atraso
-      const _lojaRegs=regs.filter(r=>r.loja===loja);
+      // Para conta loja: incluir registos sem loja definida (antigos guardados antes de configurar lojas)
+      const _lojaRegs=!isSA?regs.filter(r=>r.loja===loja||!r.loja):regs.filter(r=>r.loja===loja);
       const _sortedR=[..._lojaRegs].sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
       const _todayS=new Date().toISOString().split('T')[0];
       const _newestDep=_sortedR.filter(r=>r.dataDeposito).map(r=>getRefDate(r)).sort().pop()||'';
@@ -1766,6 +1767,14 @@ async function guardar(){
       frmData.append('message',_msg);
       frmData.append('_captcha','false');
       fetch('https://formsubmit.co/ajax/ivo@despomar.com',{method:'POST',headers:{'Accept':'application/json'},body:frmData}).catch(()=>{});
+      // Email de confirmação ao gerente da loja (só em registos novos de conta loja)
+      if(!isSA&&isNew&&sbUser?.email&&sbUser.email!=='ivo@despomar.com'){
+        const _fmGer=new FormData();
+        _fmGer.append('_subject',`✅ Depósito registado — ${loja} — ${_totalFmt}€`);
+        _fmGer.append('message',`O seu depósito foi registado com sucesso.\n\nLoja: ${loja}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${_totalFmt}€${!reg.foto?'\n\n⚠️ Falta anexar comprovativo (foto)':''}`);
+        _fmGer.append('_captcha','false');
+        fetch(`https://formsubmit.co/ajax/${encodeURIComponent(sbUser.email)}`,{method:'POST',headers:{'Accept':'application/json'},body:_fmGer}).catch(()=>{});
+      }
       // Telegram — envia foto como ficheiro binário directo
       if(_TG_TOKEN&&_TG_CHAT){
         const _tgSesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''}: ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
