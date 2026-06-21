@@ -941,9 +941,9 @@ select{
 // ─── SUPABASE ─────────────────────────────────────────
 const _SBURL='https://ubeqidccuvsjhjphybxz.supabase.co';
 const _SBKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U';
-// WhatsApp CallMeBot — preencher após activar em https://www.callmebot.com/blog/free-api-whatsapp-messages/
-const _WA_NUM='';  // ex: '351962800400'
-const _WA_KEY='';  // API key recebida pelo CallMeBot
+// Telegram — notificações com foto ao registar novo depósito
+const _TG_TOKEN='8640253196:AAEP0aWxhijWwLnjOefiKbATvNkcLF1JH2Y';
+const _TG_CHAT='580176998';
 // sfetch: REST API direto — funciona sem a biblioteca SB (sem CDN)
 async function sfetch(method,table,qs,body){
   const h={'apikey':_SBKEY,'Authorization':'Bearer '+_SBKEY,'Content-Type':'application/json','Accept':'application/json'};
@@ -1744,10 +1744,15 @@ async function guardar(){
       frmData.append('message',_msg);
       frmData.append('_captcha','false');
       fetch('https://formsubmit.co/ajax/ivo@despomar.com',{method:'POST',headers:{'Accept':'application/json'},body:frmData}).catch(()=>{});
-      // WhatsApp via CallMeBot (activo quando _WA_NUM e _WA_KEY preenchidos)
-      if(_WA_NUM&&_WA_KEY){
-        const _waMsg=`📥 *Novo Depósito — ${loja}*\n💶 ${_totalFmt}€\nTipo: ${reg.tipo||'—'}\nResp: ${reg.responsavel||'—'}${reg.dataDeposito?'\nDep: '+fd(reg.dataDeposito):''}${_fotoUrl?'\n\n📷 '+_fotoUrl:''}`;
-        fetch(`https://api.callmebot.com/whatsapp.php?phone=${_WA_NUM}&text=${encodeURIComponent(_waMsg)}&apikey=${_WA_KEY}`,{mode:'no-cors'}).catch(()=>{});
+      // Telegram — envia foto+legenda se houver URL, senão só texto
+      if(_TG_TOKEN&&_TG_CHAT){
+        const _tgCaption=`📥 *Novo Depósito — ${loja}*\n💶 ${_totalFmt}€\nTipo: ${reg.tipo||'—'}\nResp: ${reg.responsavel||'—'}${reg.dataDeposito?'\nDep: '+fd(reg.dataDeposito):''}${!reg.foto?'\n⚠️ Sem comprovativo':''}`;
+        const _tgBase=`https://api.telegram.org/bot${_TG_TOKEN}`;
+        if(_fotoUrl){
+          fetch(_tgBase+'/sendPhoto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,photo:_fotoUrl,caption:_tgCaption,parse_mode:'Markdown'})}).catch(()=>{});
+        }else{
+          fetch(_tgBase+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,text:_tgCaption,parse_mode:'Markdown'})}).catch(()=>{});
+        }
       }
     })();
   }
