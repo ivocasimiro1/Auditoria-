@@ -391,10 +391,17 @@ export async function onRequestPost(context) {
         const cfgs = await sbGet('dep_config', `select=store_id,emp&store_id=neq.super`);
         const seen = new Set();
         const unique = cfgs.filter(c => { if (seen.has(c.store_id)) return false; seen.add(c.store_id); return true; });
+        const lojaLabel = c => {
+          const emp = (c.emp || c.store_id).trim();
+          const parts = c.store_id.split('-');
+          const loc = parts.length > 1 ? parts[parts.length - 1] : '';
+          const locCap = loc ? loc.charAt(0).toUpperCase() + loc.slice(1) : '';
+          return locCap && !emp.toLowerCase().includes(loc.toLowerCase()) ? `${emp} ${locCap}` : emp;
+        };
         const rows = [];
         for (let i = 0; i < unique.length; i += 2) {
           rows.push([unique[i], unique[i + 1]].filter(Boolean).map(c => ({
-            text: shortName(c.emp || c.store_id, c.store_id),
+            text: lojaLabel(c),
             callback_data: `status:${c.store_id}`
           })));
         }
