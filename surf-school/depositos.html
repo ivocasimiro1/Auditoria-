@@ -952,14 +952,16 @@ async function tgDailyBriefing(){
   const dayName=dayNames[today.getDay()];
   const dateStr=String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
   const shortD=d=>d?fd(d).slice(0,5):'—';
+  const _wdn=['','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado','Domingo'];
   let probCount=0,okCount=0;
   const blocks=[];
   for(const loja of [...lojaSet].sort()){
     const lr=regs.filter(r=>r.loja===loja);
+    const _sc=allStoreConfigs.find(c=>(c.lojas||[]).includes(loja))||{};
     // Per tipo: latest session date + days to deposit (undeposited records + missing days)
     const tipoLatest={};
-    const tipoCovDates={}; // ALL covered dates (deposited or not)
-    const tipoPendDates={}; // only undeposited record dates
+    const tipoCovDates={};
+    const tipoPendDates={};
     lr.forEach(r=>{
       const t=r.tipo||'Sem tipo';
       (r.sessoes||[]).forEach(s=>{
@@ -978,6 +980,10 @@ async function tgDailyBriefing(){
       const prazo=tipo==='Depósito Direto'?2:7;
       const dias=Math.floor((new Date(todayStr)-new Date(lastStr))/86400000);
       const atraso=dias-prazo;
+      // Configured day for this tipo
+      const _dayNum=tipo==='Prosegur'?_sc.prosegur_day:tipo==='Lomis'?_sc.lomis_day:(tipo==='Câmbio'||tipo==='Cambio')?_sc.cambio_dia:'';
+      const _dayLabel=_dayNum?(_wdn[parseInt(_dayNum)]||''):'';
+      const dayInfo=_dayLabel?` · ${_dayLabel}`:'';
       // Combine undeposited session dates + days with no records since last session
       const pendSet=new Set(tipoPendDates[tipo]||[]);
       const cov=tipoCovDates[tipo]||new Set();
@@ -985,9 +991,9 @@ async function tgDailyBriefing(){
       const de=new Date(todayStr);
       while(di<de){const ds=di.toISOString().split('T')[0];if(!cov.has(ds))pendSet.add(ds);di.setDate(di.getDate()+1);}
       const pendDs=[...pendSet].filter(d=>Math.floor((new Date(todayStr)-new Date(d))/86400000)>=prazo).sort();
-      const pendStr=pendDs.length?`\n     Por depositar: ${pendDs.slice(0,6).map(shortD).join(', ')}${pendDs.length>6?' (+'+(pendDs.length-6)+')':''}` :'';
-      if(dias>prazo)errL.push(`  🔴 ${tipo} — *${atraso}d em atraso* (prazo: ${prazo}d)${pendStr}`);
-      else if(dias>=prazo-1)warnL.push(`  ⚠️ ${tipo} — prazo amanhã${pendStr}`);
+      const pendStr=pendDs.length?`\n     Por depositar: ${pendDs.slice(0,6).map(d=>`*${shortD(d)}*`).join(', ')}${pendDs.length>6?' (+'+(pendDs.length-6)+')':''}` :'';
+      if(dias>prazo)errL.push(`  🔴 ${tipo} — *${atraso}d em atraso* (prazo: ${prazo}d${dayInfo})${pendStr}`);
+      else if(dias>=prazo-1)warnL.push(`  ⚠️ ${tipo} — prazo amanhã${dayInfo}${pendStr}`);
       else okL.push(`  ✅ ${tipo} — ${shortD(lastStr)}`);
     });
     // Gap detection (saltos)
