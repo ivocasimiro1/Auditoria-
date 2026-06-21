@@ -900,6 +900,8 @@ const _SBKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 // Telegram — notificações com foto ao registar novo depósito
 const _TG_TOKEN='8640253196:AAEP0aWxhijWwLnjOefiKbATvNkcLF1JH2Y';
 const _TG_CHAT='-5587765450';
+function _tgWaMarkup(t){const u=`https://wa.me/?text=${encodeURIComponent(t)}`;return u.length<=2048?{inline_keyboard:[[{text:'💬 Partilhar no WhatsApp',url:u}]]}:null;}
+async function _tgPost(text){const _rm=_tgWaMarkup(text);try{await fetch(`https://api.telegram.org/bot${_TG_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,text,parse_mode:'Markdown',...(_rm?{reply_markup:_rm}:{})})});}catch(e){}}
 function shortName(str,sidHint){
   if(!str)return str;
   const words=str.split(/\s+/).filter(w=>w&&w!=='&');
@@ -1016,7 +1018,7 @@ async function tgDailyBriefing(){
   }
   const sEmoji=probCount===0?'🟢':probCount<=1?'🟡':'🔴';
   const msg=`☀️ *BOM DIA — Relatório Depósitos*\n📅 ${dayName}, ${dateStr}\n\n━━━━━━━━━━━━━━━━\n${blocks.join('\n\n')}\n━━━━━━━━━━━━━━━━\n${sEmoji} ${probCount} loja${probCount!==1?'s':''} com problemas · ${okCount} OK${weeklyBlock}`;
-  try{await fetch(`https://api.telegram.org/bot${_TG_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,text:msg,parse_mode:'Markdown'})});}catch(e){}
+  await _tgPost(msg);
 }
 async function tgMonthlyWrapped(){
   if(!isSA||!_TG_TOKEN)return;
@@ -1059,7 +1061,7 @@ async function tgMonthlyWrapped(){
   const bestStreak=ranked.reduce((a,b)=>b.streak>a.streak?b:a,ranked[0]);
   const ok80=ranked.filter(s=>s.pct>=80).length;const red60=ranked.filter(s=>s.pct<60).length;
   const msg=`🎉 *FECHO DE MÊS — ${monthName}*\n\n━━━━━━━━━━━━━━━━\n📊 *RANKING FINAL*\n\n${rankLines.join('\n')}\n\n━━━━━━━━━━━━━━━━\n🏆 Loja do Mês: *${best.empName}* (${best.pct}%)\n🔥 Melhor streak: *${bestStreak.empName} — ${bestStreak.streak} dias*\n⚠️ Mais problemas: *${worst.empName}* (${worst.pct}%)\n\n✅ ${ok80} loja${ok80!==1?'s':''} com cumprimento ≥80%\n🔴 ${red60} loja${red60!==1?'s':''} com cumprimento <60%`;
-  try{await fetch(`https://api.telegram.org/bot${_TG_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,text:msg,parse_mode:'Markdown'})});}catch(e){}
+  await _tgPost(msg);
 }
 async function tgPredictiveAlerts(){
   if(!isSA||!_TG_TOKEN)return;
@@ -1070,7 +1072,7 @@ async function tgPredictiveAlerts(){
   const today=new Date();
   const todayDow=today.getDay();
   const sids=[...new Set(regs.map(r=>r.store_id).filter(s=>s&&s!=='super'))];
-  const _tg=async(msg)=>{try{await fetch(`https://api.telegram.org/bot${_TG_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,text:msg,parse_mode:'Markdown'})});}catch(e){}};
+  const _tg=_tgPost;
   const dowNames=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
   for(const sid of sids){
     const cfg2=allStoreConfigs.find(c=>c.store_id===sid);
@@ -2012,10 +2014,11 @@ async function guardar(){
         if(_fotoBlobForTg){
           const _fd=new FormData();
           _fd.append('chat_id',_TG_CHAT);_fd.append('caption',_tgCaption);_fd.append('parse_mode','Markdown');
+          const _rmDep=_tgWaMarkup(_tgCaption);if(_rmDep)_fd.append('reply_markup',JSON.stringify(_rmDep));
           _fd.append('photo',new File([_fotoBlobForTg],'comprovativo.jpg',{type:'image/jpeg'}));
           fetch(_tgBase+'/sendPhoto',{method:'POST',body:_fd}).catch(()=>{});
         }else{
-          fetch(_tgBase+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,text:_tgCaption,parse_mode:'Markdown'})}).catch(()=>{});
+          _tgPost(_tgCaption).catch(()=>{});
         }
       }
     })();
