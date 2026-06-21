@@ -303,10 +303,9 @@ select{
   padding:32px 28px 32px;text-align:center;color:#fff;
 }
 .auth-icon{
-  width:68px;height:68px;background:rgba(255,255,255,.15);border-radius:20px;
+  width:80px;height:80px;background:transparent;border-radius:50%;
   display:flex;align-items:center;justify-content:center;margin:0 auto 16px;
-  font-size:30px;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);
-  box-shadow:0 8px 24px rgba(0,0,0,.15);
+  overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.25);
 }
 .auth-header h1{font-size:21px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px}
 .auth-header p{font-size:12px;opacity:.7;letter-spacing:.4px;text-transform:uppercase;font-weight:600}
@@ -364,7 +363,7 @@ select{
   <div class="auth-box">
     <div class="auth-header">
       <div class="auth-icon">
-        <img src="/surf-school/depositos-icon.png" width="80" height="80" style="border-radius:50%;display:block" alt="Depósitos">
+        <img src="/surf-school/depositos-icon.png" width="80" height="80" style="width:80px;height:80px;object-fit:cover;display:block" alt="Depósitos">
       </div>
       <h1>Despomar</h1>
       <p>Controlo de Depósitos</p>
@@ -2341,13 +2340,7 @@ async function _buildPdfAsync(pw,loja,mes){
     `Referência: ${loja} | ${mesNome} | Gerado em ${dataRel}`
   ].join('\n');
   // SVG inline do logo Despomar
-  const LOGO_SVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 110" width="224" height="44">
-    <circle cx="55" cy="55" r="50" fill="white" stroke="#1976d2" stroke-width="2.5"/>
-    <path d="M55,9 C71,9 84,18 88,32 C80,25 69,23 59,26 C49,30 42,39 42,50 C38,39 32,29 26,25 C34,15 44,9 55,9Z" fill="#56cce8"/>
-    <path d="M88,32 C98,44 96,60 86,70 C83,60 76,54 67,53 C58,52 50,55 45,62 C46,50 43,38 38,30 C46,23 57,20 66,24 C76,28 85,30 88,32Z" fill="#1aa8d8"/>
-    <path d="M86,70 C76,82 61,88 48,85 C58,79 64,69 62,58 C60,47 51,41 41,42 C46,32 52,24 59,22 C68,26 78,36 84,48 C88,56 88,64 86,70Z" fill="#1462a8"/>
-    <text x="120" y="72" font-family="'Segoe UI',Arial,sans-serif" font-size="62" font-weight="700" fill="#2c3e6e">Despomar</text>
-  </svg>`;
+  const LOGO_SVG=`<img src="https://auditoria-25b.pages.dev/surf-school/depositos-icon.png" width="64" height="64" style="border-radius:50%;vertical-align:middle;margin-right:12px" alt="Depósitos"><span style="font-family:'Segoe UI',Arial,sans-serif;font-size:28px;font-weight:700;color:#2c3e6e;vertical-align:middle">Depósitos Lojas · Despomar</span>`;
 
   const html=`<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8">
 <title>Relatório Cumprimento — ${loja} — ${mesNome}</title>
