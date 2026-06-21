@@ -398,13 +398,7 @@ export async function onRequestPost(context) {
           const locCap = loc ? loc.charAt(0).toUpperCase() + loc.slice(1) : '';
           return locCap && !sn.toLowerCase().includes(loc.toLowerCase()) ? `${sn} ${locCap}` : sn;
         };
-        const rows = [];
-        for (let i = 0; i < unique.length; i += 2) {
-          rows.push([unique[i], unique[i + 1]].filter(Boolean).map(c => ({
-            text: lojaLabel(c),
-            callback_data: `status:${c.store_id}`
-          })));
-        }
+        const rows = unique.map(c => [{ text: lojaLabel(c), callback_data: `status:${c.store_id}` }]);
         await tgSend(chatId, '🏪 *Escolhe uma loja:*', rows);
       } else {
         const txt = await buildStatusText(query);
