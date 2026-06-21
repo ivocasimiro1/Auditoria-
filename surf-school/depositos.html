@@ -512,6 +512,12 @@ select{
     <div class="chip" data-s="prog">📅 Prog.</div>
   </div>
   <div id="list-store-banner"></div>
+  <div id="list-csv-bar" style="display:none;padding:0 0 8px 0">
+    <button onclick="listaCSV()" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;touch-action:manipulation">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Exportar CSV (Excel)
+    </button>
+  </div>
   <div id="list"></div>
   <div id="list-missing"></div>
 </div>
@@ -3600,6 +3606,7 @@ function rLista(){
       </div>`;
     }else{bannerEl.innerHTML='';}
   }
+  const csvBar=document.getElementById('list-csv-bar');if(csvBar)csvBar.style.display=filtered.length?'block':'none';
   if(!filtered.length){el.innerHTML=`<div class="empty"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>Sem registos</p></div>`;return}
   el.innerHTML=filtered.map(r=>{
     const est=calcEstado(r,getRecordCfg(r));const bc=est.s==='ok'?'bok':est.s==='warn'?'bwarn':est.s==='err'?'berr':'bprog';
@@ -4817,6 +4824,36 @@ async function doChangePass(){
 }
 function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';cfg.prosegurDay=document.getElementById('c-prosegur-dia')?.value||'';cfg.lomisDay=document.getElementById('c-lomis-dia')?.value||'';cfg.mesInicio=document.getElementById('c-mes-inicio')?.value||'2026-06';cfg.usaDireto=document.getElementById('c-direto-ativo')?.value??'1';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
 
+function listaCSV(){
+  const fm=document.getElementById('fl-mes').value;
+  const fl=document.getElementById('fl-loj').value;
+  const fSid=document.getElementById('fl-sid')?.value||'';
+  const data=regs.filter(r=>{
+    const s=calcEstado(r,getRecordCfg(r)).s;
+    if(activeSt&&s!==activeSt)return false;
+    if(fm){const ref=getRefDate(r);if(!ref.startsWith(fm))return false}
+    if(fl&&r.loja!==fl)return false;
+    if(fSid&&r.store_id!==fSid)return false;
+    return true;
+  });
+  if(!data.length){toast('Sem registos para exportar');return;}
+  const hdr=['Loja','Tipo','Data Vendas (última)','Data Depósito','Talão','Responsável','Valor (€)','Sessões','Estado'];
+  const rows=data.map(r=>{
+    const est=calcEstado(r,getRecordCfg(r));
+    const tv=totalValor(r);
+    const ml=(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort();
+    return[r.loja,r.tipo||'',ml[ml.length-1]||'',r.dataDeposito||'',r.talao||'',r.responsavel||'',tv.toFixed(2).replace('.',','),(r.sessoes||[]).length,est.label];
+  });
+  const csv='﻿'+[hdr,...rows].map(row=>row.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const mes=fm||curMesStr();
+  const loja=(fl||'todas').replace(/[\s\/]/g,'_');
+  a.href=url;a.download=`depositos_${loja}_${mes}.csv`;a.click();
+  URL.revokeObjectURL(url);
+  toast('✓ CSV exportado — abre no Excel');
+}
 function expCSV(){
   const data=getFiltExp();
   if(!data.length){toast('Sem registos para exportar');return;}
