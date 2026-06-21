@@ -952,22 +952,24 @@ async function tgDailyBriefing(){
   const dayNames=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
   const dayName=dayNames[today.getDay()];
   const dateStr=String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
+  const fmtEur=n=>n.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  const shortD=d=>d?fd(d).slice(0,5):'—';
   let probCount=0,okCount=0,totalWeek=0;
   const blocks=[];
   for(const loja of [...lojaSet].sort()){
     const lr=regs.filter(r=>r.loja===loja);
     const weekAmt=lr.filter(r=>r.dataDeposito&&r.dataDeposito>=weekAgoStr).reduce((s,r)=>s+totalValor(r),0);
     totalWeek+=weekAmt;
-    // Overdue per tipo (reuse getOverdueAlerts logic inline to avoid cfg.lojas dependency)
     const tipoLatest={};
     lr.forEach(r=>{const t=r.tipo||'Sem tipo';(r.sessoes||[]).forEach(s=>{if(s.dataVendas&&(!tipoLatest[t]||s.dataVendas>tipoLatest[t]))tipoLatest[t]=s.dataVendas;});});
     const errL=[],warnL=[],okL=[];
     Object.entries(tipoLatest).forEach(([tipo,lastStr])=>{
       const prazo=tipo==='Depósito Direto'?2:7;
       const dias=Math.floor((new Date(todayStr)-new Date(lastStr))/86400000);
-      if(dias>prazo)errL.push(`  🔴 ${tipo} — último ${fd(lastStr)} (${dias}d)`);
-      else if(dias>=prazo-1)warnL.push(`  ⚠️ ${tipo} — último ${fd(lastStr)} (${dias}d)`);
-      else okL.push(`  ✅ ${tipo}`);
+      const atraso=dias-prazo;
+      if(dias>prazo)errL.push(`  🔴 ${tipo}\n     Último: ${shortD(lastStr)} · *${atraso}d em atraso* (prazo: ${prazo}d)`);
+      else if(dias>=prazo-1)warnL.push(`  ⚠️ ${tipo}\n     Último: ${shortD(lastStr)} · prazo amanhã`);
+      else okL.push(`  ✅ ${tipo} — ${shortD(lastStr)}`);
     });
     // Gap detection (saltos)
     const srtR=[...lr].sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
@@ -978,15 +980,18 @@ async function tgDailyBriefing(){
     if(nDep&&oRef&&oRef<nDep){const di=new Date(oRef);const de=new Date(nDep);while(di<de){const ds=di.toISOString().split('T')[0];if(!covD.has(ds))gapDs.push(ds);di.setDate(di.getDate()+1);}}
     const hasProb=errL.length||warnL.length||gapDs.length;
     if(hasProb)probCount++;else okCount++;
-    const lines=[`🏪 ${loja.toUpperCase()}`,...errL,...warnL];
-    if(gapDs.length){const shown=gapDs.slice(0,4).map(d=>fd(d).slice(0,5)).join(', ');lines.push(`  ⛔ Salto: ${shown}${gapDs.length>4?' (+'+( gapDs.length-4)+')':''}`);}
-    if(!hasProb)lines.push(`  ✅ Tudo em dia`);else lines.push(...okL);
-    lines.push(`  💶 Semana: €${weekAmt.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})}`);
+    const sIcon=errL.length?'🔴':warnL.length||gapDs.length?'🟡':'🟢';
+    const lines=[`🏪 *${loja}* ${sIcon}`,...errL,...warnL];
+    if(gapDs.length){
+      const shown=gapDs.slice(0,5).map(d=>shortD(d)).join(', ');
+      lines.push(`  ⛔ *Salto de depósito* — ${gapDs.length}d sem cobrir\n     Dias: ${shown}${gapDs.length>5?' (+'+(gapDs.length-5)+')':''}`);
+    }
+    if(!hasProb)lines.push(`  ✅ Tudo em dia`);else if(okL.length)lines.push(...okL);
+    lines.push(`  💶 Semana: €${fmtEur(weekAmt)}`);
     blocks.push(lines.join('\n'));
   }
-  const totFmt=totalWeek.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const statusEmoji=probCount===0?'🟢':probCount<=1?'🟡':'🔴';
-  const msg=`☀️ *BOM DIA — Relatório Depósitos*\n📅 ${dayName}, ${dateStr}\n\n━━━━━━━━━━━━━━━━\n${blocks.join('\n\n')}\n━━━━━━━━━━━━━━━━\n${statusEmoji} ${probCount} loja${probCount!==1?'s':''} com problemas · ${okCount} OK\n💰 Total semana: €${totFmt}`;
+  const sEmoji=probCount===0?'🟢':probCount<=1?'🟡':'🔴';
+  const msg=`☀️ *BOM DIA — Relatório Depósitos*\n📅 ${dayName}, ${dateStr}\n\n━━━━━━━━━━━━━━━━\n${blocks.join('\n\n')}\n━━━━━━━━━━━━━━━━\n${sEmoji} ${probCount} loja${probCount!==1?'s':''} com problemas · ${okCount} OK\n💰 Total semana: €${fmtEur(totalWeek)}`;
   try{await fetch(`https://api.telegram.org/bot${_TG_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,text:msg,parse_mode:'Markdown'})});}catch(e){}
 }
 // sfetch: REST API direto — funciona sem a biblioteca SB (sem CDN)
