@@ -152,10 +152,11 @@ async function buildRankingText() {
 
   const ranked = sids.map(sid => {
     const cfg = cfgs.find(c => c.store_id === sid);
-    const srMes = regs.filter(r => r.store_id === sid && getRefDate(r).startsWith(mes));
-    const { pct, pend, missing, missingDates } = calcMetrics(srMes, mes, cfg);
+    const sidAll = regs.filter(r => r.store_id === sid);
+    const srMes = sidAll.filter(r => getRefDate(r).startsWith(mes));
+    const { pct, pend, missing, missingDates } = calcMetrics(sidAll, mes, cfg);
     const noTalao = srMes.filter(r => r.data_deposito && !r.talao).length;
-    const overdue = regs.filter(r => r.store_id === sid && !r.data_deposito && getRefDate(r) < mes + '-01').length;
+    const overdue = sidAll.filter(r => !r.data_deposito && getRefDate(r) < mes + '-01').length;
     return { name: shortName(cfg?.emp || sid, sid), pct: pct ?? 0, pend, missing, missingDates, noTalao, overdue };
   }).sort((a, b) => b.pct - a.pct);
 
@@ -203,7 +204,7 @@ async function buildStatusText(query) {
   const sr = allStore.filter(r => getRefDate(r).startsWith(mes));
   const overdueRegs = allStore.filter(r => !r.data_deposito && getRefDate(r) < mes + '-01');
 
-  const { pct, pend, missing, missingDates } = calcMetrics(sr, mes, cfg);
+  const { pct, pend, missing, missingDates } = calcMetrics(allStore, mes, cfg);
   if (pct === null && !overdueRegs.length) return `🏪 *${empName}*\n\nSem dados para ${mesLabel(mes)}.`;
 
   const lines = [];
