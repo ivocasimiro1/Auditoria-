@@ -147,7 +147,14 @@ export async function onRequestGet(context) {
     const data = await r.json();
     return new Response(JSON.stringify(data, null, 2), { headers: { 'Content-Type': 'application/json' } });
   }
-  return new Response(JSON.stringify({ ok: true, status: 'Depositos TG bot active' }), {
+  if (url.searchParams.get('debug') === '1') {
+    const mes = curMes();
+    const since = mes + '-01';
+    const qs = `select=store_id,datadeposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`;
+    const r = await sbGet('dep_registos', qs);
+    return new Response(JSON.stringify({ query: qs, isArray: Array.isArray(r), result: Array.isArray(r) ? `${r.length} rows` : r }, null, 2), { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+  }
+  return new Response(JSON.stringify({ ok: true, status: 'Depositos TG bot active', v: 4 }), {
     headers: { 'Content-Type': 'application/json; charset=utf-8' }
   });
 }
