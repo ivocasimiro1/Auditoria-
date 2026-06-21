@@ -13,8 +13,9 @@ async function sbGet(table, qs) {
 async function tgSend(chatId, text, inlineBtn) {
   const body = { chat_id: chatId, text, parse_mode: 'Markdown' };
   if (inlineBtn) {
-    const row = Array.isArray(inlineBtn) ? inlineBtn : [inlineBtn];
-    body.reply_markup = { inline_keyboard: [row] };
+    // 2D array = full keyboard; 1D array = single row; single object = single button
+    const is2D = Array.isArray(inlineBtn) && Array.isArray(inlineBtn[0]);
+    body.reply_markup = { inline_keyboard: is2D ? inlineBtn : [Array.isArray(inlineBtn) ? inlineBtn : [inlineBtn]] };
   }
   await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
     method: 'POST',
@@ -329,18 +330,38 @@ export async function onRequestPost(context) {
   try {
     const body = await context.request.json();
 
-    // Handle inline button presses (share to group)
+    // Handle inline button presses
     const cbq = body.callback_query;
     if (cbq) {
       const data = cbq.data || '';
-      await tgAnswerCbq(cbq.id, '📤 A enviar para o grupo...');
-      if (data === 'share:ranking') {
-        const txt = await buildRankingText();
-        if (txt) await tgSend(TG_GROUP, txt);
-      } else if (data.startsWith('share:status:')) {
-        const query = data.slice(13);
+      const cbqChatId = cbq.message?.chat?.id;
+      if (data.startsWith('status:')) {
+        await tgAnswerCbq(cbq.id, '🔍 A carregar...');
+        const query = data.slice(7);
         const txt = await buildStatusText(query);
-        if (txt) await tgSend(TG_GROUP, txt);
+        if (txt && cbqChatId) {
+          const btns = [
+            { text: '📤 Partilhar no grupo', callback_data: `share:status:${query}` },
+            { text: '💬 Partilhar no WhatsApp', url: `https://wa.me/?text=${encodeURIComponent(txt)}` }
+          ];
+          await tgSend(cbqChatId, txt, btns);
+        }
+      } else {
+        await tgAnswerCbq(cbq.id, '📤 A enviar para o grupo...');
+        if (data === 'share:ranking') {
+          const txt = await buildRankingText();
+          if (txt) {
+            const waBtn = { text: '💬 Partilhar no WhatsApp', url: `https://wa.me/?text=${encodeURIComponent(txt)}` };
+            await tgSend(TG_GROUP, txt, waBtn);
+          }
+        } else if (data.startsWith('share:status:')) {
+          const query = data.slice(13);
+          const txt = await buildStatusText(query);
+          if (txt) {
+            const waBtn = { text: '💬 Partilhar no WhatsApp', url: `https://wa.me/?text=${encodeURIComponent(txt)}` };
+            await tgSend(TG_GROUP, txt, waBtn);
+          }
+        }
       }
       return new Response('ok');
     }
@@ -368,11 +389,16 @@ export async function onRequestPost(context) {
       const query = text.slice(7).trim().toLowerCase();
       if (!query) {
         const cfgs = await sbGet('dep_config', `select=store_id,emp&store_id=neq.super`);
-        const lojas = cfgs.map(c => {
-          const sn = shortName(c.emp || c.store_id, c.store_id);
-          return `• /status ${sn.toLowerCase().replace(/ /g, '_')} — ${sn}`;
-        });
-        await tgSend(chatId, `🏪 *Lojas disponíveis:*\n\n${lojas.join('\n')}\n\nOu usa parte do nome, ex: \`/status guia\``);
+        const seen = new Set();
+        const unique = cfgs.filter(c => { if (seen.has(c.store_id)) return false; seen.add(c.store_id); return true; });
+        const rows = [];
+        for (let i = 0; i < unique.length; i += 2) {
+          rows.push([unique[i], unique[i + 1]].filter(Boolean).map(c => ({
+            text: shortName(c.emp || c.store_id, c.store_id),
+            callback_data: `status:${c.store_id}`
+          })));
+        }
+        await tgSend(chatId, '🏪 *Escolhe uma loja:*', rows);
       } else {
         const txt = await buildStatusText(query);
         if (!txt) { await tgSend(chatId, `❓ Loja não encontrada: *${query}*\n\nUsa /status para ver todas as lojas.`); return new Response('ok'); }
