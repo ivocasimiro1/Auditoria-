@@ -74,22 +74,27 @@ async function buildRankingText() {
   const mes = curMes();
   const since = mes + '-01';
   const [regs, cfgs] = await Promise.all([
-    sbGet('dep_registos', `select=store_id,dataDeposito,sessoes,talao&criado_em=gte.${since}T00:00:00Z&store_id=neq.super`),
-    sbGet('dep_config', `select=store_id,emp&store_id=neq.super`)
+    sbGet('dep_registos', `select=store_id,dataDeposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
+    sbGet('dep_config', `select=store_id,emp`)
   ]);
+  if (!Array.isArray(regs)) return `❌ Erro Supabase registos: ${JSON.stringify(regs).slice(0,120)}`;
+  if (!Array.isArray(cfgs)) return `❌ Erro Supabase config: ${JSON.stringify(cfgs).slice(0,120)}`;
   const byStore = {};
   for (const r of regs) {
-    if (!r.store_id || !getRefDate(r).startsWith(mes)) continue;
+    if (!r.store_id || r.store_id === 'super') continue;
+    if (!getRefDate(r).startsWith(mes)) continue;
     if (!byStore[r.store_id]) byStore[r.store_id] = { ok: 0, total: 0, noTalao: 0 };
     byStore[r.store_id].total++;
     if (r.dataDeposito) { byStore[r.store_id].ok++; if (!r.talao) byStore[r.store_id].noTalao++; }
   }
-  const ranked = Object.entries(byStore).map(([sid, d]) => {
+  const storeIds = Object.keys(byStore);
+  if (!storeIds.length) return `📊 Sem registos para ${mesLabel(mes)}\n(${regs.length} registos encontrados no total)`;
+  const ranked = storeIds.map(sid => {
+    const d = byStore[sid];
     const cfg = cfgs.find(c => c.store_id === sid);
     const pct = d.total > 0 ? Math.round(d.ok / d.total * 100) : 0;
     return { name: shortName(cfg?.emp || sid, sid), pct, noTalao: d.noTalao };
   }).sort((a, b) => b.pct - a.pct);
-  if (!ranked.length) return null;
   const medals = ['🥇','🥈','🥉'];
   const lines = ranked.map((s, i) =>
     `${i < 3 ? medals[i] : (i + 1) + ' '} ${s.name} — ${s.pct}%${s.noTalao ? ` · 📄${s.noTalao}` : ''}`
@@ -103,12 +108,15 @@ async function buildStatusText(query) {
   const mes = curMes();
   const since = mes + '-01';
   const [regs, cfgs] = await Promise.all([
-    sbGet('dep_registos', `select=store_id,tipo,dataDeposito,sessoes,talao&criado_em=gte.${since}T00:00:00Z&store_id=neq.super`),
-    sbGet('dep_config', `select=store_id,emp&store_id=neq.super`)
+    sbGet('dep_registos', `select=store_id,tipo,dataDeposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
+    sbGet('dep_config', `select=store_id,emp`)
   ]);
+  if (!Array.isArray(regs) || !Array.isArray(cfgs)) return `❌ Erro ao consultar dados`;
   const cfg = cfgs.find(c =>
-    (c.emp || '').toLowerCase().includes(query) ||
-    (c.store_id || '').toLowerCase().includes(query)
+    c.store_id !== 'super' && (
+      (c.emp || '').toLowerCase().includes(query) ||
+      (c.store_id || '').toLowerCase().includes(query)
+    )
   );
   if (!cfg) return null;
   const sid = cfg.store_id;
@@ -199,6 +207,10 @@ export async function onRequestPost(context) {
     }
   } catch (e) {
     console.error('tg-webhook error:', e);
+    try {
+      const msg2 = body?.message;
+      if (msg2?.chat?.id) await tgSend(msg2.chat.id, `❌ Erro interno: ${String(e).slice(0,200)}`);
+    } catch (_) {}
   }
   return new Response('ok');
 }
