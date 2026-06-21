@@ -111,7 +111,8 @@ async function buildStatusText(query) {
     sbGet('dep_registos', `select=store_id,tipo,datadeposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
     sbGet('dep_config', `select=store_id,emp`)
   ]);
-  if (!Array.isArray(regs) || !Array.isArray(cfgs)) return `❌ Erro ao consultar dados`;
+  if (!Array.isArray(regs)) return `❌ Erro registos: ${JSON.stringify(regs).slice(0,200)}`;
+  if (!Array.isArray(cfgs)) return `❌ Erro config: ${JSON.stringify(cfgs).slice(0,200)}`;
   const cfg = cfgs.find(c =>
     c.store_id !== 'super' && (
       (c.emp || '').toLowerCase().includes(query) ||
