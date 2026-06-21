@@ -961,14 +961,17 @@ async function tgDailyBriefing(){
     const lr=regs.filter(r=>r.loja===loja);
     const weekAmt=lr.filter(r=>r.dataDeposito&&r.dataDeposito>=weekAgoStr).reduce((s,r)=>s+totalValor(r),0);
     totalWeek+=weekAmt;
-    // Per tipo: latest session date + undeposited session dates
+    // Per tipo: latest session date + days to deposit (undeposited records + missing days)
     const tipoLatest={};
-    const tipoPendDates={}; // session dates not yet deposited
+    const tipoCovDates={}; // ALL covered dates (deposited or not)
+    const tipoPendDates={}; // only undeposited record dates
     lr.forEach(r=>{
       const t=r.tipo||'Sem tipo';
       (r.sessoes||[]).forEach(s=>{
         if(!s.dataVendas)return;
         if(!tipoLatest[t]||s.dataVendas>tipoLatest[t])tipoLatest[t]=s.dataVendas;
+        if(!tipoCovDates[t])tipoCovDates[t]=new Set();
+        tipoCovDates[t].add(s.dataVendas);
         if(!r.dataDeposito){
           if(!tipoPendDates[t])tipoPendDates[t]=new Set();
           tipoPendDates[t].add(s.dataVendas);
@@ -980,7 +983,13 @@ async function tgDailyBriefing(){
       const prazo=tipo==='Depósito Direto'?2:7;
       const dias=Math.floor((new Date(todayStr)-new Date(lastStr))/86400000);
       const atraso=dias-prazo;
-      const pendDs=[...(tipoPendDates[tipo]||[])].sort();
+      // Combine undeposited session dates + days with no records since last session
+      const pendSet=new Set(tipoPendDates[tipo]||[]);
+      const cov=tipoCovDates[tipo]||new Set();
+      const di=new Date(lastStr);di.setDate(di.getDate()+1);
+      const de=new Date(todayStr);
+      while(di<de){const ds=di.toISOString().split('T')[0];if(!cov.has(ds))pendSet.add(ds);di.setDate(di.getDate()+1);}
+      const pendDs=[...pendSet].sort();
       const pendStr=pendDs.length?`\n     Por depositar: ${pendDs.slice(0,6).map(shortD).join(', ')}${pendDs.length>6?' (+'+(pendDs.length-6)+')':''}` :'';
       if(dias>prazo)errL.push(`  🔴 ${tipo} — *${atraso}d em atraso* (prazo: ${prazo}d)${pendStr}`);
       else if(dias>=prazo-1)warnL.push(`  ⚠️ ${tipo} — prazo amanhã${pendStr}`);
