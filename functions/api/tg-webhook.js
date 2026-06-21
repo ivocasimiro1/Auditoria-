@@ -158,6 +158,23 @@ function getMissingDays(allRegs, mes, lojaFil, mesIni) {
   return missing;
 }
 
+// For weekly services: cutoff = last pickup date (exclusive) — days on/after cutoff are accumulating
+function displayCutoff(storeCfg) {
+  const now = nowLisbon();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yestStr = yesterday.toISOString().split('T')[0];
+  const days = [parseInt(storeCfg?.prosegur_day), parseInt(storeCfg?.lomis_day)].filter(d => !isNaN(d));
+  if (!days.length) return yestStr; // daily service: up to yesterday
+  const pickups = days.map(dow => {
+    let back = (now.getDay() - dow + 7) % 7;
+    if (back === 0) back = 7;
+    const d = new Date(now); d.setDate(d.getDate() - back);
+    return d.toISOString().split('T')[0];
+  });
+  return pickups.sort().pop(); // most recent pickup = cutoff (days before it are overdue)
+}
+
 // Exact replica of site's storeComplianceMes
 function storeComplianceMes(allRegs, sid, mes, storeCfg) {
   const mr = allRegs.filter(r => r.store_id === sid && getRefDate(r).startsWith(mes));
@@ -197,11 +214,11 @@ async function buildRankingText() {
   const sids = [...new Set(regs.filter(r => r.store_id && r.store_id !== 'super').map(r => r.store_id))];
   if (!sids.length) return `📊 Sem registos para ${mesLabel(mes)}`;
 
-  const todayS = nowLisbon().toISOString().split('T')[0];
   const ranked = sids.map(sid => {
     const cfg = cfgs.find(c => c.store_id === sid);
     const { pct, allMissing, semDep } = storeComplianceMes(regs, sid, mes, cfg);
-    const missingPast = allMissing.filter(d => d < todayS);
+    const cutoff = displayCutoff(cfg);
+    const missingPast = allMissing.filter(d => d < cutoff);
     const srMes = regs.filter(r => r.store_id === sid && getRefDate(r).startsWith(mes));
     const noTalao = srMes.filter(r => r.data_deposito && !r.talao).length;
     const overdue = regs.filter(r => r.store_id === sid && !r.data_deposito && getRefDate(r) < mes + '-01').length;
@@ -243,8 +260,8 @@ async function buildStatusText(query) {
   const sid = cfg.store_id;
   const empName = shortName(cfg.emp || sid, sid);
   const { pct, allMissing, semDep } = storeComplianceMes(regs, sid, mes, cfg);
-  const todayS = nowLisbon().toISOString().split('T')[0];
-  const missingPast = allMissing.filter(d => d < todayS);
+  const cutoff = displayCutoff(cfg);
+  const missingPast = allMissing.filter(d => d < cutoff);
   const srMes = regs.filter(r => r.store_id === sid && getRefDate(r).startsWith(mes));
   const overdueRegs = regs.filter(r => r.store_id === sid && !r.data_deposito && getRefDate(r) < mes + '-01');
   if (pct === null && !overdueRegs.length) return `🏪 *${empName}*\n\nSem dados para ${mesLabel(mes)}.`;
