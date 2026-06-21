@@ -390,7 +390,6 @@ export async function onRequestPost(context) {
       if (!query) {
         const cfgs = await sbGet('dep_config', `select=store_id,emp&store_id=neq.super`);
         const seen = new Set();
-        const unique = cfgs.filter(c => { if (seen.has(c.store_id)) return false; seen.add(c.store_id); return true; });
         const lojaLabel = c => {
           const sn = shortName(c.emp || c.store_id, c.store_id);
           const parts = c.store_id.split('-');
@@ -398,6 +397,10 @@ export async function onRequestPost(context) {
           const locCap = loc ? loc.charAt(0).toUpperCase() + loc.slice(1) : '';
           return locCap && !sn.toLowerCase().includes(loc.toLowerCase()) ? `${sn} ${locCap}` : sn;
         };
+        const unique = cfgs
+          .filter(c => { if (seen.has(c.store_id)) return false; seen.add(c.store_id); return true; })
+          .filter(c => !/(stacatarina|sta.?catarina)/i.test(c.store_id) && !/(sta\.?\s*catarina)/i.test(c.emp || ''))
+          .sort((a, b) => lojaLabel(a).localeCompare(lojaLabel(b), 'pt'));
         const rows = unique.map(c => [{ text: lojaLabel(c), callback_data: `status:${c.store_id}` }]);
         await tgSend(chatId, '🏪 *Escolhe uma loja:*', rows);
       } else {
