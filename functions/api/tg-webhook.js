@@ -239,7 +239,7 @@ async function buildRankingText() {
   }
   const ok = ranked.filter(s => s.pct >= 80 && !s.overdue && !s.missingDates.length).length;
   const bad = ranked.filter(s => s.pct < 60 || s.overdue > 0 || s.missingDates.length > 0).length;
-  return `📊 *RANKING ${mesLabel(mes).toUpperCase()}*\n\n${lines.join('\n')}\n\n✅ ${ok} lojas OK  🔴 ${bad} com problemas\nActualizado às ${hhmm()}`;
+  return `📊 *RANKING DEPÓSITOS — ${mesLabel(mes).toUpperCase()}*\n\n${lines.join('\n')}\n\n✅ ${ok} lojas OK  🔴 ${bad} com problemas\nActualizado às ${hhmm()}`;
 }
 
 async function buildStatusText(query) {
