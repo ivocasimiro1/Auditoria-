@@ -76,88 +76,136 @@ function since3months() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
-const WEEKDAY_PT = {'segunda':1,'terca':2,'terça':2,'quarta':3,'quinta':4,'sexta':5,'sabado':6,'sábado':6,'domingo':0};
-
-function lastPickupDate(dayName) {
-  if (!dayName) return null;
-  const target = WEEKDAY_PT[dayName.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g,'')];
-  if (target === undefined) return null;
-  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' }));
-  let daysBack = (now.getDay() - target + 7) % 7;
-  if (daysBack === 0) daysBack = 7; // if today is pickup day, use last week
-  const d = new Date(now);
-  d.setDate(d.getDate() - daysBack);
-  return d.toISOString().split('T')[0];
+function nowLisbon() {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' }));
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
-function getPickupDate(tipo, storeCfg) {
-  const t = (tipo || '').toLowerCase();
-  if (/prosegur/.test(t)) return lastPickupDate(storeCfg?.prosegur_day);
-  if (/lomis/.test(t))    return lastPickupDate(storeCfg?.lomis_day);
-  if (/c[aâ]mbio/.test(t)) return lastPickupDate(storeCfg?.cambio_dia);
-  return null; // daily service
+function maisAntigaData(r) {
+  const ds = (r.sessoes || []).filter(x => x.dataVendas).map(x => new Date(x.dataVendas));
+  return ds.length ? new Date(Math.min(...ds)) : null;
+}
+function maisRecenteData(r) {
+  const ds = (r.sessoes || []).filter(x => x.dataVendas).map(x => new Date(x.dataVendas));
+  return ds.length ? new Date(Math.max(...ds)) : null;
 }
 
-function calcMetrics(storeRegs, mes, storeCfg) {
+// Exact replica of site's calcEstado
+function calcEstado(r, storeCfg) {
+  const today = nowLisbon();
+  if (!r.sessoes || !r.sessoes.length) return { s: 'prog' };
+  if (r.sessoes.some(s => !s.sessao || (parseFloat(s.valor) || 0) <= 0)) return { s: 'err' };
+  const mr = maisRecenteData(r);
+  const ma = maisAntigaData(r);
+  if (!mr) return { s: 'prog' };
+  const mesIni = storeCfg?.mes_inicio || '';
+  if (mesIni && mr.toISOString().slice(0, 7) < mesIni) return { s: 'ok' };
+  if (mr >= today) return { s: 'prog' };
+  const tv = (r.sessoes || []).reduce((s, x) => s + (parseFloat(x.valor) || 0), 0);
+  if (tv === 0) return { s: 'ok' };
+  const diasDesde = Math.floor((today - ma) / 86400000);
+  const span = Math.floor((mr - ma) / 86400000);
+  let prazo = r.tipo === 'Depósito Direto' ? 2 : 7;
+  let vencidoPorDiaRecolha = false;
+  if (r.tipo !== 'Depósito Direto' && storeCfg) {
+    const dStr = ({ Prosegur: storeCfg.prosegur_day, Lomis: storeCfg.lomis_day, 'Câmbio': storeCfg.cambio_dia })[r.tipo];
+    if (dStr !== undefined && dStr !== '' && dStr !== null) {
+      const dow = parseInt(dStr);
+      if (!isNaN(dow)) {
+        const mrDow = mr.getDay();
+        let dist = (dow - mrDow + 7) % 7;
+        if (dist === 0) dist = 7;
+        const dRecolha = new Date(mr);
+        dRecolha.setDate(mr.getDate() + dist);
+        dRecolha.setHours(0, 0, 0, 0);
+        vencidoPorDiaRecolha = dRecolha <= today;
+        prazo = dist;
+      }
+    }
+  }
+  const vencido = diasDesde >= prazo || span > prazo || vencidoPorDiaRecolha;
+  if (!r.foto) {
+    if (r.talao || r.data_deposito) return vencido ? { s: 'err' } : { s: 'warn' };
+    return vencido ? { s: 'err' } : { s: 'warn' };
+  }
+  if (!r.talao || !r.data_deposito) return vencido ? { s: 'err' } : { s: 'warn' };
+  const dd = new Date(r.data_deposito);
+  const diasParaDep = Math.floor((dd - mr) / 86400000);
+  if (diasParaDep > prazo || span > prazo) return { s: 'warn' };
+  return { s: 'ok' };
+}
+
+// Exact replica of site's getMissingDays (per loja)
+function getMissingDays(allRegs, mes, lojaFil, mesIni) {
+  if (mesIni && mes < mesIni) return [];
   const [year, month] = mes.split('-').map(Number);
-  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' }));
-  const upToDay = mes === curMes() ? now.getDate() - 1 : new Date(year, month, 0).getDate();
-
-  const coveredDates = new Set();
-  const depDates = new Set();
-  const pendDates = new Set();
-
-  for (const r of storeRegs) {
+  const today = nowLisbon();
+  const lastDay = mes === curMes() ? today.getDate() : new Date(year, month, 0).getDate();
+  const covered = new Set();
+  for (const r of allRegs) {
+    if (lojaFil && r.loja !== lojaFil) continue;
     for (const s of (r.sessoes || [])) {
-      if (s.dataVendas && s.dataVendas.startsWith(mes)) {
-        coveredDates.add(s.dataVendas);
-        if (r.data_deposito) depDates.add(s.dataVendas);
-        else pendDates.add(s.dataVendas);
-      }
+      if (s.dataVendas && s.dataVendas.startsWith(mes)) covered.add(s.dataVendas);
     }
   }
-  const netPend = [...pendDates].filter(d => !depDates.has(d));
-
-  // Determine cutoff for weekly services: days only count as missing if <= last pickup date
-  const latestPickup = [...new Set(storeRegs.map(r => getPickupDate(r.tipo, storeCfg)).filter(Boolean))].sort().pop() || null;
-  const hasDailyService = storeRegs.some(r => !getPickupDate(r.tipo, storeCfg));
-
-  const missingDates = [];
-  for (let d = 1; d <= upToDay; d++) {
+  const missing = [];
+  for (let d = 1; d <= lastDay; d++) {
     const ds = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    if (!coveredDates.has(ds)) {
-      if (hasDailyService || (latestPickup && ds <= latestPickup)) {
-        missingDates.push(ds);
-      }
-    }
+    const dt = new Date(ds); dt.setHours(0, 0, 0, 0);
+    if (dt <= today && !covered.has(ds)) missing.push(ds);
   }
+  return missing;
+}
 
-  const total = depDates.size + netPend.length + missingDates.length;
-  const pct = total > 0 ? Math.round(depDates.size / total * 100) : null;
-  return { pct, pend: netPend.length, missing: missingDates.length, missingDates };
+// Exact replica of site's storeComplianceMes
+function storeComplianceMes(allRegs, sid, mes, storeCfg) {
+  const mr = allRegs.filter(r => r.store_id === sid && getRefDate(r).startsWith(mes));
+  const lojas = storeCfg?.lojas?.length ? storeCfg.lojas : [...new Set(mr.map(r => r.loja).filter(Boolean))];
+  const mesIni = storeCfg?.mes_inicio || '';
+  const allMissing = [...new Set(lojas.flatMap(l => getMissingDays(allRegs, mes, l, mesIni)))];
+  const today = nowLisbon();
+  const todayS = today.toISOString().split('T')[0];
+  const pastMissing = allMissing.filter(d => d < todayS).length;
+  const dueRecs = mr.filter(r => calcEstado(r, storeCfg).s !== 'prog');
+  if (!dueRecs.length && !pastMissing) return { pct: null, allMissing, semDep: 0 };
+  const withDep = dueRecs.filter(r => r.data_deposito);
+  const depFeito = withDep.filter(r => calcEstado(r, storeCfg).s !== 'err').length;
+  const depIncompl = withDep.filter(r => calcEstado(r, storeCfg).s === 'err').length;
+  const semDep = dueRecs.filter(r => !r.data_deposito).length;
+  const hasWeekly = (storeCfg?.prosegur_day || '') !== '' || (storeCfg?.lomis_day || '') !== '';
+  const prazo = hasWeekly ? 7 : 2;
+  const num = depFeito * 100 + depIncompl * 60;
+  const den = depFeito + depIncompl + semDep * 3 + (pastMissing / prazo);
+  const pct = den > 0 ? Math.round(num / den) : null;
+  return { pct, allMissing, semDep };
+}
+
+async function fetchRegsAndCfgs(since) {
+  return Promise.all([
+    sbGet('dep_registos', `select=store_id,loja,tipo,foto,data_deposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
+    sbGet('dep_config', `select=store_id,emp,prosegur_day,lomis_day,cambio_dia,lojas,mes_inicio`)
+  ]);
 }
 
 async function buildRankingText() {
   const mes = curMes();
-  const since = since3months();
-  const [regs, cfgs] = await Promise.all([
-    sbGet('dep_registos', `select=store_id,tipo,data_deposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
-    sbGet('dep_config', `select=store_id,emp,prosegur_day,lomis_day,cambio_dia`)
-  ]);
+  const [regs, cfgs] = await fetchRegsAndCfgs(since3months());
   if (!Array.isArray(regs)) return `❌ Erro Supabase registos: ${JSON.stringify(regs).slice(0,120)}`;
   if (!Array.isArray(cfgs)) return `❌ Erro Supabase config: ${JSON.stringify(cfgs).slice(0,120)}`;
 
   const sids = [...new Set(regs.filter(r => r.store_id && r.store_id !== 'super').map(r => r.store_id))];
   if (!sids.length) return `📊 Sem registos para ${mesLabel(mes)}`;
 
+  const todayS = nowLisbon().toISOString().split('T')[0];
   const ranked = sids.map(sid => {
     const cfg = cfgs.find(c => c.store_id === sid);
-    const sidAll = regs.filter(r => r.store_id === sid);
-    const srMes = sidAll.filter(r => getRefDate(r).startsWith(mes));
-    const { pct, pend, missing, missingDates } = calcMetrics(sidAll, mes, cfg);
+    const { pct, allMissing, semDep } = storeComplianceMes(regs, sid, mes, cfg);
+    const missingPast = allMissing.filter(d => d < todayS);
+    const srMes = regs.filter(r => r.store_id === sid && getRefDate(r).startsWith(mes));
     const noTalao = srMes.filter(r => r.data_deposito && !r.talao).length;
-    const overdue = sidAll.filter(r => !r.data_deposito && getRefDate(r) < mes + '-01').length;
-    return { name: shortName(cfg?.emp || sid, sid), pct: pct ?? 0, pend, missing, missingDates, noTalao, overdue };
+    const overdue = regs.filter(r => r.store_id === sid && !r.data_deposito && getRefDate(r) < mes + '-01').length;
+    return { name: shortName(cfg?.emp || sid, sid), pct: pct ?? 0, semDep, missingDates: missingPast, noTalao, overdue };
   }).sort((a, b) => b.pct - a.pct);
 
   const medals = ['🥇','🥈','🥉'];
@@ -165,27 +213,21 @@ async function buildRankingText() {
   for (let i = 0; i < ranked.length; i++) {
     const s = ranked[i];
     const flags = [
-      s.pend ? `⏳${s.pend}` : '',
+      s.semDep ? `⏳${s.semDep}` : '',
       s.overdue ? `🔴${s.overdue}` : '',
       s.noTalao ? `📄${s.noTalao}` : ''
     ].filter(Boolean).join(' ');
     lines.push(`${i < 3 ? medals[i] : (i + 1) + ' '} ${s.name} — ${s.pct}%${flags ? '  ' + flags : ''}`);
-    if (s.missingDates && s.missingDates.length) {
-      lines.push(`   ❌ ${s.missingDates.map(fd).join(' · ')}`);
-    }
+    if (s.missingDates.length) lines.push(`   ❌ ${s.missingDates.map(fd).join(' · ')}`);
   }
-  const ok = ranked.filter(s => s.pct >= 80 && !s.overdue && !s.missing).length;
-  const bad = ranked.filter(s => s.pct < 60 || s.overdue > 0 || s.missing > 0).length;
+  const ok = ranked.filter(s => s.pct >= 80 && !s.overdue && !s.missingDates.length).length;
+  const bad = ranked.filter(s => s.pct < 60 || s.overdue > 0 || s.missingDates.length > 0).length;
   return `📊 *RANKING ${mesLabel(mes).toUpperCase()}*\n\n${lines.join('\n')}\n\n✅ ${ok} lojas OK  🔴 ${bad} com problemas\nActualizado às ${hhmm()}`;
 }
 
 async function buildStatusText(query) {
   const mes = curMes();
-  const since = since3months();
-  const [regs, cfgs] = await Promise.all([
-    sbGet('dep_registos', `select=store_id,tipo,data_deposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
-    sbGet('dep_config', `select=store_id,emp,prosegur_day,lomis_day,cambio_dia`)
-  ]);
+  const [regs, cfgs] = await fetchRegsAndCfgs(since3months());
   if (!Array.isArray(regs)) return `❌ Erro registos: ${JSON.stringify(regs).slice(0,200)}`;
   if (!Array.isArray(cfgs)) return `❌ Erro config: ${JSON.stringify(cfgs).slice(0,200)}`;
   const norm = s => s.toLowerCase().replace(/[-_ ]/g, '');
@@ -200,29 +242,28 @@ async function buildStatusText(query) {
   if (!cfg) return null;
   const sid = cfg.store_id;
   const empName = shortName(cfg.emp || sid, sid);
-  const allStore = regs.filter(r => r.store_id === sid);
-  const sr = allStore.filter(r => getRefDate(r).startsWith(mes));
-  const overdueRegs = allStore.filter(r => !r.data_deposito && getRefDate(r) < mes + '-01');
-
-  const { pct, pend, missing, missingDates } = calcMetrics(allStore, mes, cfg);
+  const { pct, allMissing, semDep } = storeComplianceMes(regs, sid, mes, cfg);
+  const todayS = nowLisbon().toISOString().split('T')[0];
+  const missingPast = allMissing.filter(d => d < todayS);
+  const srMes = regs.filter(r => r.store_id === sid && getRefDate(r).startsWith(mes));
+  const overdueRegs = regs.filter(r => r.store_id === sid && !r.data_deposito && getRefDate(r) < mes + '-01');
   if (pct === null && !overdueRegs.length) return `🏪 *${empName}*\n\nSem dados para ${mesLabel(mes)}.`;
 
   const lines = [];
-  const tipos = [...new Set(sr.map(r => r.tipo).filter(Boolean))];
+  const tipos = [...new Set(srMes.map(r => r.tipo).filter(Boolean))];
   for (const tipo of tipos) {
-    const tr = sr.filter(r => r.tipo === tipo);
+    const tr = srMes.filter(r => r.tipo === tipo);
     const pendR = tr.filter(r => !r.data_deposito).length;
     const lastDep = tr.filter(r => r.data_deposito).sort((a, b) => a.data_deposito < b.data_deposito ? 1 : -1)[0]?.data_deposito;
     const icon = pendR > 0 ? '⏳' : '✅';
     lines.push(`${icon} *${tipo}*${pendR ? ` — ${pendR} por depositar` : ' — em dia'}${lastDep ? ` · último ${fd(lastDep)}` : ''}`);
   }
-  if (missing > 0) {
-    const showDates = missingDates.slice(-5).map(fd).join(' · ');
-    lines.push(`❌ *${missing} dias sem registo*${missing <= 5 ? ': ' + showDates : ' (últimos: ' + showDates + ')'}`);
+  if (missingPast.length) {
+    const show = missingPast.slice(-5).map(fd).join(' · ');
+    lines.push(`❌ *${missingPast.length} dias sem registo*${missingPast.length <= 5 ? ': ' + show : ' (últimos: ' + show + ')'}`);
   }
-  const missTalao = sr.filter(r => r.data_deposito && !r.talao).length;
+  const missTalao = srMes.filter(r => r.data_deposito && !r.talao).length;
   lines.push(``, `📄 ${missTalao} s/talão · ${pct ?? 0}%`);
-
   if (overdueRegs.length) {
     const byMes = {};
     for (const r of overdueRegs) { const m = getRefDate(r).slice(0,7); byMes[m] = (byMes[m]||0)+1; }
