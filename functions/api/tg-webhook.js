@@ -392,11 +392,11 @@ export async function onRequestPost(context) {
         const seen = new Set();
         const unique = cfgs.filter(c => { if (seen.has(c.store_id)) return false; seen.add(c.store_id); return true; });
         const lojaLabel = c => {
-          const emp = (c.emp || c.store_id).trim();
+          const sn = shortName(c.emp || c.store_id, c.store_id);
           const parts = c.store_id.split('-');
           const loc = parts.length > 1 ? parts[parts.length - 1] : '';
           const locCap = loc ? loc.charAt(0).toUpperCase() + loc.slice(1) : '';
-          return locCap && !emp.toLowerCase().includes(loc.toLowerCase()) ? `${emp} ${locCap}` : emp;
+          return locCap && !sn.toLowerCase().includes(loc.toLowerCase()) ? `${sn} ${locCap}` : sn;
         };
         const rows = [];
         for (let i = 0; i < unique.length; i += 2) {
