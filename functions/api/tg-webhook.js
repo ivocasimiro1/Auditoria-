@@ -88,10 +88,14 @@ async function buildRankingText() {
   const byStore = {};
   for (const r of regs) {
     if (!r.store_id || r.store_id === 'super') continue;
-    if (!getRefDate(r).startsWith(mes)) continue;
-    if (!byStore[r.store_id]) byStore[r.store_id] = { ok: 0, total: 0, noTalao: 0 };
-    byStore[r.store_id].total++;
-    if (r.data_deposito) { byStore[r.store_id].ok++; if (!r.talao) byStore[r.store_id].noTalao++; }
+    const refDate = getRefDate(r);
+    if (!byStore[r.store_id]) byStore[r.store_id] = { ok: 0, total: 0, noTalao: 0, overdue: 0 };
+    if (refDate.startsWith(mes)) {
+      byStore[r.store_id].total++;
+      if (r.data_deposito) { byStore[r.store_id].ok++; if (!r.talao) byStore[r.store_id].noTalao++; }
+    } else if (!r.data_deposito) {
+      byStore[r.store_id].overdue++;
+    }
   }
   const storeIds = Object.keys(byStore);
   if (!storeIds.length) return `📊 Sem registos para ${mesLabel(mes)}\n(${regs.length} registos encontrados no total)`;
@@ -99,14 +103,14 @@ async function buildRankingText() {
     const d = byStore[sid];
     const cfg = cfgs.find(c => c.store_id === sid);
     const pct = d.total > 0 ? Math.round(d.ok / d.total * 100) : 0;
-    return { name: shortName(cfg?.emp || sid, sid), pct, noTalao: d.noTalao };
+    return { name: shortName(cfg?.emp || sid, sid), pct, noTalao: d.noTalao, overdue: d.overdue };
   }).sort((a, b) => b.pct - a.pct);
   const medals = ['🥇','🥈','🥉'];
   const lines = ranked.map((s, i) =>
-    `${i < 3 ? medals[i] : (i + 1) + ' '} ${s.name} — ${s.pct}%${s.noTalao ? ` · 📄${s.noTalao}` : ''}`
+    `${i < 3 ? medals[i] : (i + 1) + ' '} ${s.name} — ${s.pct}%${s.overdue ? ` · 🔴${s.overdue} atraso` : ''}${s.noTalao ? ` · 📄${s.noTalao}` : ''}`
   );
-  const ok = ranked.filter(s => s.pct >= 80).length;
-  const bad = ranked.filter(s => s.pct < 60).length;
+  const ok = ranked.filter(s => s.pct >= 80 && !s.overdue).length;
+  const bad = ranked.filter(s => s.pct < 60 || s.overdue > 0).length;
   return `📊 *RANKING ${mesLabel(mes).toUpperCase()}*\n\n${lines.join('\n')}\n\n✅ ${ok} lojas OK  🔴 ${bad} com problemas\nActualizado às ${hhmm()}`;
 }
 
@@ -128,20 +132,38 @@ async function buildStatusText(query) {
   if (!cfg) return null;
   const sid = cfg.store_id;
   const empName = shortName(cfg.emp || sid, sid);
-  const sr = regs.filter(r => r.store_id === sid && getRefDate(r).startsWith(mes));
-  if (!sr.length) return `🏪 *${empName}*\n\nSem dados para ${mesLabel(mes)}.`;
-  const tipos = [...new Set(sr.map(r => r.tipo).filter(Boolean))];
-  const pct = Math.round(sr.filter(r => r.data_deposito).length / sr.length * 100);
-  const missTalao = sr.filter(r => r.data_deposito && !r.talao).length;
-  const days = [...new Set(sr.flatMap(r => (r.sessoes || []).map(s => s.dataVendas).filter(Boolean)))].length;
-  const tipoLines = tipos.map(tipo => {
-    const tr = sr.filter(r => r.tipo === tipo);
-    const pending = tr.filter(r => !r.data_deposito).length;
-    const lastDep = tr.filter(r => r.data_deposito).sort((a, b) => a.data_deposito < b.data_deposito ? 1 : -1)[0]?.data_deposito;
-    const icon = pending > 0 ? '⚠️' : '✅';
-    return `${icon} *${tipo}*${pending ? ` — ${pending} por depositar` : ' — em dia'}${lastDep ? ` · último ${fd(lastDep)}` : ''}`;
-  });
-  return `🏪 *${empName.toUpperCase()} — ${mesLabel(mes)}*\n\n${tipoLines.join('\n')}\n\n📄 ${missTalao} sem talão · 📅 ${days} dias · ${pct}%\nActualizado às ${hhmm()}`;
+  const allStore = regs.filter(r => r.store_id === sid);
+  const sr = allStore.filter(r => getRefDate(r).startsWith(mes));
+  const overdueRegs = allStore.filter(r => !r.data_deposito && getRefDate(r) < mes + '-01');
+  if (!sr.length && !overdueRegs.length) return `🏪 *${empName}*\n\nSem dados para ${mesLabel(mes)}.`;
+  const lines = [];
+  if (sr.length) {
+    const tipos = [...new Set(sr.map(r => r.tipo).filter(Boolean))];
+    const pct = Math.round(sr.filter(r => r.data_deposito).length / sr.length * 100);
+    const missTalao = sr.filter(r => r.data_deposito && !r.talao).length;
+    const days = [...new Set(sr.flatMap(r => (r.sessoes || []).map(s => s.dataVendas).filter(Boolean)))].length;
+    const tipoLines = tipos.map(tipo => {
+      const tr = sr.filter(r => r.tipo === tipo);
+      const pending = tr.filter(r => !r.data_deposito).length;
+      const lastDep = tr.filter(r => r.data_deposito).sort((a, b) => a.data_deposito < b.data_deposito ? 1 : -1)[0]?.data_deposito;
+      const icon = pending > 0 ? '⚠️' : '✅';
+      return `${icon} *${tipo}*${pending ? ` — ${pending} por depositar` : ' — em dia'}${lastDep ? ` · último ${fd(lastDep)}` : ''}`;
+    });
+    lines.push(...tipoLines, ``, `📄 ${missTalao} sem talão · 📅 ${days} dias · ${pct}%`);
+  } else {
+    lines.push(`Sem registos em ${mesLabel(mes)}`);
+  }
+  if (overdueRegs.length) {
+    const byMes = {};
+    for (const r of overdueRegs) {
+      const m = getRefDate(r).slice(0, 7);
+      if (!byMes[m]) byMes[m] = 0;
+      byMes[m]++;
+    }
+    const overdueLines = Object.keys(byMes).sort().map(m => `  • ${mesLabel(m)}: ${byMes[m]} em atraso`);
+    lines.push(``, `🔴 *EM ATRASO (meses anteriores)*`, ...overdueLines);
+  }
+  return `🏪 *${empName.toUpperCase()} — ${mesLabel(mes)}*\n\n${lines.join('\n')}\nActualizado às ${hhmm()}`;
 }
 
 // GET: setup webhook or health check
