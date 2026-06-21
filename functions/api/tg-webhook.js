@@ -187,10 +187,13 @@ async function buildStatusText(query) {
   ]);
   if (!Array.isArray(regs)) return `❌ Erro registos: ${JSON.stringify(regs).slice(0,200)}`;
   if (!Array.isArray(cfgs)) return `❌ Erro config: ${JSON.stringify(cfgs).slice(0,200)}`;
+  const norm = s => s.toLowerCase().replace(/[-_ ]/g, '');
   const cfg = cfgs.find(c =>
     c.store_id !== 'super' && (
       (c.emp || '').toLowerCase().includes(query) ||
-      (c.store_id || '').toLowerCase().includes(query)
+      (c.store_id || '').toLowerCase().includes(query) ||
+      norm(c.store_id || '').includes(norm(query)) ||
+      norm(c.emp || '').includes(norm(query))
     )
   );
   if (!cfg) return null;
