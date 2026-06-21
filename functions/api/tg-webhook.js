@@ -167,8 +167,13 @@ export async function onRequestPost(context) {
       await handleRanking(chatId);
     } else if (text.startsWith('/status')) {
       const query = text.slice(7).trim().toLowerCase();
-      if (query) await handleStatus(chatId, query);
-      else await tgSend(chatId, '💡 Usa: `/status [nome da loja]`\nExemplo: `/status ericeira`');
+      if (query) {
+        await handleStatus(chatId, query);
+      } else {
+        const cfgs = await sbGet('dep_config', `select=store_id,emp&store_id=neq.super`);
+        const lojas = cfgs.map(c => `• /status ${shortName(c.emp||c.store_id,c.store_id).toLowerCase().replace(/ /g,'_')} — ${shortName(c.emp||c.store_id,c.store_id)}`);
+        await tgSend(chatId, `🏪 *Lojas disponíveis:*\n\n${lojas.join('\n')}\n\nOu usa parte do nome, ex: \`/status guia\``);
+      }
     }
   } catch (e) {
     console.error('tg-webhook error:', e);
