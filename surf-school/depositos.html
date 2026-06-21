@@ -1713,22 +1713,10 @@ async function guardar(){
   }
   // Guardar localmente primeiro — nunca perde dados
   saveR();
-  // Upload foto para Supabase Storage via REST directo → URL pública
+  // Guardar blob da foto em memória para enviar ao Telegram directamente (sem depender do Storage)
+  let _fotoBlobForTg=null;
   if(fotoB64&&typeof fotoB64==='string'&&fotoB64.startsWith('data:')){
-    try{
-      const _fRes=await fetch(fotoB64);const _fBlob=await _fRes.blob();
-      const _fName=reg.id+'.jpg';
-      const _upResp=await fetch(`${_SBURL}/storage/v1/object/dep-fotos/${_fName}`,{
-        method:'POST',
-        headers:{'Authorization':'Bearer '+_SBKEY,'apikey':_SBKEY,'Content-Type':'image/jpeg','x-upsert':'true'},
-        body:_fBlob
-      });
-      if(_upResp.ok){
-        const _publicUrl=`${_SBURL}/storage/v1/object/public/dep-fotos/${_fName}`;
-        reg.foto=_publicUrl;
-        const _ri=regs.findIndex(x=>x.id===reg.id);if(_ri>=0)regs[_ri].foto=_publicUrl;
-      }
-    }catch(_fe){}
+    try{const _r=await fetch(fotoB64);_fotoBlobForTg=await _r.blob();}catch(_e){}
   }
   // Sincronizar com Supabase (não bloqueia se falhar)
   const saved=await sbSave(reg);
@@ -1748,13 +1736,18 @@ async function guardar(){
       frmData.append('message',_msg);
       frmData.append('_captcha','false');
       fetch('https://formsubmit.co/ajax/ivo@despomar.com',{method:'POST',headers:{'Accept':'application/json'},body:frmData}).catch(()=>{});
-      // Telegram — envia foto+legenda se houver URL, senão só texto
+      // Telegram — envia foto como ficheiro binário directo (sem depender do Storage)
       if(_TG_TOKEN&&_TG_CHAT){
         const _tgSesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''}: ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
         const _tgCaption=`📥 *Novo Depósito — ${loja}*\n💶 *${_totalFmt}€*\nTipo: ${reg.tipo||'—'}\nResp: ${reg.responsavel||'—'}${reg.dataDeposito?'\nDep: '+fd(reg.dataDeposito):'\nDep: Pendente'}${reg.obs?'\nObs: '+reg.obs:''}\n\nSessões:\n${_tgSesLines}${!reg.foto?'\n\n⚠️ Sem comprovativo':''}`;
         const _tgBase=`https://api.telegram.org/bot${_TG_TOKEN}`;
-        if(_fotoUrl){
-          fetch(_tgBase+'/sendPhoto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,photo:_fotoUrl,caption:_tgCaption,parse_mode:'Markdown'})}).catch(()=>{});
+        if(_fotoBlobForTg){
+          const _fd=new FormData();
+          _fd.append('chat_id',_TG_CHAT);
+          _fd.append('caption',_tgCaption);
+          _fd.append('parse_mode','Markdown');
+          _fd.append('photo',new File([_fotoBlobForTg],'comprovativo.jpg',{type:'image/jpeg'}));
+          fetch(_tgBase+'/sendPhoto',{method:'POST',body:_fd}).catch(()=>{});
         }else{
           fetch(_tgBase+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,text:_tgCaption,parse_mode:'Markdown'})}).catch(()=>{});
         }
