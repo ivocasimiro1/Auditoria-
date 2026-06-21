@@ -138,8 +138,8 @@ export async function onRequestGet(context) {
     const data = await r.json();
     return new Response(JSON.stringify(data, null, 2), { headers: { 'Content-Type': 'application/json' } });
   }
-  return new Response(JSON.stringify({ ok: true, status: 'Depósitos TG bot active' }), {
-    headers: { 'Content-Type': 'application/json' }
+  return new Response(JSON.stringify({ ok: true, status: 'Depositos TG bot active' }), {
+    headers: { 'Content-Type': 'application/json; charset=utf-8' }
   });
 }
 
