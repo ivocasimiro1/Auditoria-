@@ -74,7 +74,7 @@ async function buildRankingText() {
   const mes = curMes();
   const since = mes + '-01';
   const [regs, cfgs] = await Promise.all([
-    sbGet('dep_registos', `select=store_id,dataDeposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
+    sbGet('dep_registos', `select=store_id,datadeposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
     sbGet('dep_config', `select=store_id,emp`)
   ]);
   if (!Array.isArray(regs)) return `❌ Erro Supabase registos: ${JSON.stringify(regs).slice(0,120)}`;
@@ -85,7 +85,7 @@ async function buildRankingText() {
     if (!getRefDate(r).startsWith(mes)) continue;
     if (!byStore[r.store_id]) byStore[r.store_id] = { ok: 0, total: 0, noTalao: 0 };
     byStore[r.store_id].total++;
-    if (r.dataDeposito) { byStore[r.store_id].ok++; if (!r.talao) byStore[r.store_id].noTalao++; }
+    if (r.datadeposito) { byStore[r.store_id].ok++; if (!r.talao) byStore[r.store_id].noTalao++; }
   }
   const storeIds = Object.keys(byStore);
   if (!storeIds.length) return `📊 Sem registos para ${mesLabel(mes)}\n(${regs.length} registos encontrados no total)`;
@@ -108,7 +108,7 @@ async function buildStatusText(query) {
   const mes = curMes();
   const since = mes + '-01';
   const [regs, cfgs] = await Promise.all([
-    sbGet('dep_registos', `select=store_id,tipo,dataDeposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
+    sbGet('dep_registos', `select=store_id,tipo,datadeposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
     sbGet('dep_config', `select=store_id,emp`)
   ]);
   if (!Array.isArray(regs) || !Array.isArray(cfgs)) return `❌ Erro ao consultar dados`;
@@ -124,13 +124,13 @@ async function buildStatusText(query) {
   const sr = regs.filter(r => r.store_id === sid && getRefDate(r).startsWith(mes));
   if (!sr.length) return `🏪 *${empName}*\n\nSem dados para ${mesLabel(mes)}.`;
   const tipos = [...new Set(sr.map(r => r.tipo).filter(Boolean))];
-  const pct = Math.round(sr.filter(r => r.dataDeposito).length / sr.length * 100);
-  const missTalao = sr.filter(r => r.dataDeposito && !r.talao).length;
+  const pct = Math.round(sr.filter(r => r.datadeposito).length / sr.length * 100);
+  const missTalao = sr.filter(r => r.datadeposito && !r.talao).length;
   const days = [...new Set(sr.flatMap(r => (r.sessoes || []).map(s => s.dataVendas).filter(Boolean)))].length;
   const tipoLines = tipos.map(tipo => {
     const tr = sr.filter(r => r.tipo === tipo);
-    const pending = tr.filter(r => !r.dataDeposito).length;
-    const lastDep = tr.filter(r => r.dataDeposito).sort((a, b) => a.dataDeposito < b.dataDeposito ? 1 : -1)[0]?.dataDeposito;
+    const pending = tr.filter(r => !r.datadeposito).length;
+    const lastDep = tr.filter(r => r.datadeposito).sort((a, b) => a.datadeposito < b.datadeposito ? 1 : -1)[0]?.datadeposito;
     const icon = pending > 0 ? '⚠️' : '✅';
     return `${icon} *${tipo}*${pending ? ` — ${pending} por depositar` : ' — em dia'}${lastDep ? ` · último ${fd(lastDep)}` : ''}`;
   });
