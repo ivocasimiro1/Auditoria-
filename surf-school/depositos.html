@@ -960,15 +960,29 @@ async function tgDailyBriefing(){
     const lr=regs.filter(r=>r.loja===loja);
     const weekAmt=lr.filter(r=>r.dataDeposito&&r.dataDeposito>=weekAgoStr).reduce((s,r)=>s+totalValor(r),0);
     totalWeek+=weekAmt;
+    // Per tipo: latest session date + undeposited session dates
     const tipoLatest={};
-    lr.forEach(r=>{const t=r.tipo||'Sem tipo';(r.sessoes||[]).forEach(s=>{if(s.dataVendas&&(!tipoLatest[t]||s.dataVendas>tipoLatest[t]))tipoLatest[t]=s.dataVendas;});});
+    const tipoPendDates={}; // session dates not yet deposited
+    lr.forEach(r=>{
+      const t=r.tipo||'Sem tipo';
+      (r.sessoes||[]).forEach(s=>{
+        if(!s.dataVendas)return;
+        if(!tipoLatest[t]||s.dataVendas>tipoLatest[t])tipoLatest[t]=s.dataVendas;
+        if(!r.dataDeposito){
+          if(!tipoPendDates[t])tipoPendDates[t]=new Set();
+          tipoPendDates[t].add(s.dataVendas);
+        }
+      });
+    });
     const errL=[],warnL=[],okL=[];
     Object.entries(tipoLatest).forEach(([tipo,lastStr])=>{
       const prazo=tipo==='Depósito Direto'?2:7;
       const dias=Math.floor((new Date(todayStr)-new Date(lastStr))/86400000);
       const atraso=dias-prazo;
-      if(dias>prazo)errL.push(`  🔴 ${tipo}\n     Último: ${shortD(lastStr)} · *${atraso}d em atraso* (prazo: ${prazo}d)`);
-      else if(dias>=prazo-1)warnL.push(`  ⚠️ ${tipo}\n     Último: ${shortD(lastStr)} · prazo amanhã`);
+      const pendDs=[...(tipoPendDates[tipo]||[])].sort();
+      const pendStr=pendDs.length?`\n     Por depositar: ${pendDs.slice(0,6).map(shortD).join(', ')}${pendDs.length>6?' (+'+(pendDs.length-6)+')':''}` :'';
+      if(dias>prazo)errL.push(`  🔴 ${tipo} — *${atraso}d em atraso* (prazo: ${prazo}d)${pendStr}`);
+      else if(dias>=prazo-1)warnL.push(`  ⚠️ ${tipo} — prazo amanhã${pendStr}`);
       else okL.push(`  ✅ ${tipo} — ${shortD(lastStr)}`);
     });
     // Gap detection (saltos)
