@@ -772,83 +772,88 @@
   <!-- ══════════════════════════════════════
        MELHORIA 2 — Gráfico Mensal por Loja
   ══════════════════════════════════════ -->
-  <div class="section-label">— MELHORIA 2 · Gráfico Mensal por Loja —</div>
+  <div class="section-label">— MELHORIA 2 · RANKING MENSAL POR LOJA —</div>
 
   <div class="card-wrap">
-    <h2>Gráfico de Cumprimento por Loja</h2>
-    <p class="subtitle">Evolução histórica visível no painel de Supervisão</p>
+    <h2>Ranking de Cumprimento</h2>
+    <p class="subtitle">Lojas ordenadas da melhor para a pior — painel de Supervisão</p>
 
-    <div class="chart-container">
-      <div class="chart-title">Cumprimento por Loja — últimos 4 meses</div>
-      <div class="chart-subtitle">% de depósitos dentro do prazo</div>
-
-      <div class="bar-chart">
-        <!-- Mar -->
-        <div class="bar-group">
-          <div class="bar-group-bars">
-            <div class="bar" style="height:78%;background:#3b82f6;"></div>
-            <div class="bar" style="height:92%;background:#10b981;"></div>
-            <div class="bar" style="height:65%;background:#f59e0b;"></div>
-            <div class="bar" style="height:88%;background:#8b5cf6;"></div>
-          </div>
-          <span class="bar-label">Mar</span>
-        </div>
-        <!-- Abr -->
-        <div class="bar-group">
-          <div class="bar-group-bars">
-            <div class="bar" style="height:82%;background:#3b82f6;"></div>
-            <div class="bar" style="height:88%;background:#10b981;"></div>
-            <div class="bar" style="height:70%;background:#f59e0b;"></div>
-            <div class="bar" style="height:91%;background:#8b5cf6;"></div>
-          </div>
-          <span class="bar-label">Abr</span>
-        </div>
-        <!-- Mai -->
-        <div class="bar-group">
-          <div class="bar-group-bars">
-            <div class="bar" style="height:75%;background:#3b82f6;"></div>
-            <div class="bar" style="height:94%;background:#10b981;"></div>
-            <div class="bar" style="height:55%;background:#f59e0b;"></div>
-            <div class="bar" style="height:89%;background:#8b5cf6;"></div>
-          </div>
-          <span class="bar-label">Mai</span>
-        </div>
-        <!-- Jun — highlighted -->
-        <div class="bar-group">
-          <div class="bar-group-bars">
-            <div class="bar highlighted" style="height:91%;background:#3b82f6;"></div>
-            <div class="bar highlighted" style="height:96%;background:#10b981;"></div>
-            <div class="bar highlighted" style="height:62%;background:#f59e0b;"></div>
-            <div class="bar highlighted" style="height:87%;background:#8b5cf6;"></div>
-          </div>
-          <span class="bar-label" style="color:#93c5fd;font-weight:800;">Jun ▾</span>
-        </div>
+    <div style="background:#0d1b3e;border-radius:12px;padding:14px;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:700;color:#93c5fd">JUNHO 2026</div>
+        <div style="font-size:10px;color:#475569">vs. Maio</div>
       </div>
 
-      <div class="chart-legend">
-        <div class="legend-item"><span class="legend-dot" style="background:#3b82f6;"></span>ESS Peniche</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#10b981;"></span>ESS Guia</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#f59e0b;"></span>ESS Óbidos</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#8b5cf6;"></span>ESS Ericeira</div>
+      <!-- Header row -->
+      <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:0 0 6px;border-bottom:1px solid rgba(255,255,255,.08);font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:.8px;font-weight:700">
+        <div>#</div><div>Loja</div><div style="text-align:center">Cump.</div><div style="text-align:center">Dias</div><div style="text-align:right">Tend.</div>
       </div>
 
-      <div class="tendencia-list">
-        <div style="font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;margin-top:14px;">Tendência vs. mês anterior</div>
-        <div class="tendencia-row">
-          <span class="tendencia-store">ESS Peniche</span>
-          <span class="tendencia-change up">↑ +16 pp</span>
+      <!-- Rows sorted by compliance -->
+      <div style="display:flex;flex-direction:column;gap:0">
+        <!-- 1 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+          <div style="font-size:11px;color:#fbbf24;font-weight:800">🥇</div>
+          <div><div style="font-size:12px;font-weight:700;color:#fff">ESS Guia</div><div style="font-size:9px;color:#64748b">0 saltos · 0 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#10b981">96%</span></div>
+          <div style="text-align:center"><div style="background:rgba(16,185,129,.15);border-radius:4px;height:6px"><div style="background:#10b981;border-radius:4px;height:6px;width:96%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#10b981">↑ +2</div>
         </div>
-        <div class="tendencia-row">
-          <span class="tendencia-store">ESS Guia</span>
-          <span class="tendencia-change up">↑ +2 pp</span>
+        <!-- 2 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+          <div style="font-size:11px;color:#94a3b8;font-weight:800">🥈</div>
+          <div><div style="font-size:12px;font-weight:700;color:#fff">ESS Peniche</div><div style="font-size:9px;color:#64748b">1 salto · 0 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#10b981">91%</span></div>
+          <div style="text-align:center"><div style="background:rgba(16,185,129,.15);border-radius:4px;height:6px"><div style="background:#10b981;border-radius:4px;height:6px;width:91%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#10b981">↑ +16</div>
         </div>
-        <div class="tendencia-row">
-          <span class="tendencia-store">ESS Óbidos</span>
-          <span class="tendencia-change down">↓ −7 pp</span>
+        <!-- 3 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+          <div style="font-size:11px;color:#cd7f32;font-weight:800">🥉</div>
+          <div><div style="font-size:12px;font-weight:700;color:#fff">ESS Ericeira</div><div style="font-size:9px;color:#64748b">0 saltos · 1 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#10b981">87%</span></div>
+          <div style="text-align:center"><div style="background:rgba(16,185,129,.15);border-radius:4px;height:6px"><div style="background:#10b981;border-radius:4px;height:6px;width:87%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#94a3b8">→ −2</div>
         </div>
-        <div class="tendencia-row">
-          <span class="tendencia-store">ESS Ericeira</span>
-          <span class="tendencia-change flat">→ −2 pp</span>
+        <!-- 4 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+          <div style="font-size:11px;color:#64748b;font-weight:800">4</div>
+          <div><div style="font-size:12px;font-weight:700;color:#fff">ESS Caparica</div><div style="font-size:9px;color:#64748b">1 salto · 2 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#f59e0b">79%</span></div>
+          <div style="text-align:center"><div style="background:rgba(245,158,11,.15);border-radius:4px;height:6px"><div style="background:#f59e0b;border-radius:4px;height:6px;width:79%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#10b981">↑ +5</div>
+        </div>
+        <!-- 5 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+          <div style="font-size:11px;color:#64748b;font-weight:800">5</div>
+          <div><div style="font-size:12px;font-weight:700;color:#fff">ESS Matosinhos</div><div style="font-size:9px;color:#64748b">2 saltos · 1 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#f59e0b">74%</span></div>
+          <div style="text-align:center"><div style="background:rgba(245,158,11,.15);border-radius:4px;height:6px"><div style="background:#f59e0b;border-radius:4px;height:6px;width:74%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#10b981">↑ +3</div>
+        </div>
+        <!-- 6 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+          <div style="font-size:11px;color:#64748b;font-weight:800">6</div>
+          <div><div style="font-size:12px;font-weight:700;color:#fff">ESS Nazaré</div><div style="font-size:9px;color:#64748b">2 saltos · 3 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#f59e0b">71%</span></div>
+          <div style="text-align:center"><div style="background:rgba(245,158,11,.15);border-radius:4px;height:6px"><div style="background:#f59e0b;border-radius:4px;height:6px;width:71%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#94a3b8">→ 0</div>
+        </div>
+        <!-- 7 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+          <div style="font-size:11px;color:#64748b;font-weight:800">7</div>
+          <div><div style="font-size:12px;font-weight:700;color:#e2e8f0">ESS Sagres</div><div style="font-size:9px;color:#ef4444">3 saltos · 4 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#ef4444">58%</span></div>
+          <div style="text-align:center"><div style="background:rgba(239,68,68,.15);border-radius:4px;height:6px"><div style="background:#ef4444;border-radius:4px;height:6px;width:58%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#ef4444">↓ −8</div>
+        </div>
+        <!-- 8 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;align-items:center">
+          <div style="font-size:11px;color:#64748b;font-weight:800">8</div>
+          <div><div style="font-size:12px;font-weight:700;color:#e2e8f0">ESS Óbidos</div><div style="font-size:9px;color:#ef4444">5 saltos · 7 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#ef4444">42%</span></div>
+          <div style="text-align:center"><div style="background:rgba(239,68,68,.15);border-radius:4px;height:6px"><div style="background:#ef4444;border-radius:4px;height:6px;width:42%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#ef4444">↓ −11</div>
         </div>
       </div>
     </div>
