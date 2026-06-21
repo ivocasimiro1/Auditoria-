@@ -1732,14 +1732,21 @@ async function guardar(){
       const _totalFmt=total.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2});
       const _sesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''} — ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
       const _fotoUrl=reg.foto&&typeof reg.foto==='string'&&reg.foto.startsWith('https:')?reg.foto:null;
-      // Alertas: salto de depósito + tipos em atraso + dias sem registo (mesma lógica do dashboard)
+      // Alertas: salto de depósito + tipos em atraso
       const _lojaRegs=regs.filter(r=>r.loja===loja);
       const _sortedR=[..._lojaRegs].sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
       const _todayS=new Date().toISOString().split('T')[0];
       const _newestDep=_sortedR.filter(r=>r.dataDeposito).map(r=>getRefDate(r)).sort().pop()||'';
+      // Registos antigos sem depósito (enquanto há mais recentes depositados)
       const _gapRecs=_sortedR.filter(r=>!r.dataDeposito&&_newestDep&&getRefDate(r)<_newestDep);
-      const _missDays=getMissingDays(curMesStr(),loja);
-      const _gapMiss=_missDays.filter(d=>d<_newestDep&&d<_todayS);
+      // Dias sem nenhum registo entre o 1º e o último depósito (não depende de mesInicio)
+      const _coveredD=new Set(_lojaRegs.flatMap(r=>(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean)));
+      const _oldestRef=_sortedR.length?getRefDate(_sortedR[0]):'';
+      const _gapMiss=[];
+      if(_newestDep&&_oldestRef){
+        const _di=new Date(_oldestRef);const _de=new Date(_newestDep);
+        while(_di<_de){const _ds=_di.toISOString().split('T')[0];if(!_coveredD.has(_ds))_gapMiss.push(_ds);_di.setDate(_di.getDate()+1);}
+      }
       const _totalGaps=_gapRecs.length+_gapMiss.length;
       const _ovAlerts=getOverdueAlerts(loja);
       let _pendStr='';
@@ -1751,12 +1758,6 @@ async function guardar(){
       if(_ovAlerts.length>0){
         const _aLines=_ovAlerts.map(a=>`  • ${a.tipo} — último: ${fd(a.lastStr)} (${a.dias}d em atraso)`).join('\n');
         _pendParts.push(`🔴 ${_ovAlerts.length} tipo${_ovAlerts.length>1?'s':''} em atraso:\n${_aLines}`);
-      }
-      const _missDaysOnly=_missDays.filter(d=>!_gapMiss.includes(d));
-      if(_missDaysOnly.length>0){
-        const _mShow=_missDaysOnly.slice(0,7).map(d=>fd(d)).join(', ');
-        const _mMore=_missDaysOnly.length>7?` (+${_missDaysOnly.length-7})`:'';
-        _pendParts.push(`⚠️ ${_missDaysOnly.length} dia${_missDaysOnly.length>1?'s':''} sem registo: ${_mShow}${_mMore}`);
       }
       if(_pendParts.length>0)_pendStr='\n\n'+_pendParts.join('\n');
       const _msg=`${_isUpd?'Registo actualizado.':'Nova entrada de depósito registada.'}${!reg.foto?'\n\n⚠️ SEM COMPROVATIVO — falta anexar foto':''}\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}${reg.obs?'\nObservações: '+reg.obs:''}\n${_isUpd?'Actualizado':'Registado'} em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${_totalFmt}€${_fotoUrl?'\n\n📷 Comprovativo: '+_fotoUrl:''}${_pendStr}`;
