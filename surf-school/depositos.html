@@ -1746,7 +1746,8 @@ async function guardar(){
       fetch('https://formsubmit.co/ajax/ivo@despomar.com',{method:'POST',headers:{'Accept':'application/json'},body:frmData}).catch(()=>{});
       // Telegram — envia foto+legenda se houver URL, senão só texto
       if(_TG_TOKEN&&_TG_CHAT){
-        const _tgCaption=`📥 *Novo Depósito — ${loja}*\n💶 ${_totalFmt}€\nTipo: ${reg.tipo||'—'}\nResp: ${reg.responsavel||'—'}${reg.dataDeposito?'\nDep: '+fd(reg.dataDeposito):''}${!reg.foto?'\n⚠️ Sem comprovativo':''}`;
+        const _tgSesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''}: ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
+        const _tgCaption=`📥 *Novo Depósito — ${loja}*\n💶 *${_totalFmt}€*\nTipo: ${reg.tipo||'—'}\nResp: ${reg.responsavel||'—'}${reg.dataDeposito?'\nDep: '+fd(reg.dataDeposito):'\nDep: Pendente'}${reg.obs?'\nObs: '+reg.obs:''}\n\nSessões:\n${_tgSesLines}${!reg.foto?'\n\n⚠️ Sem comprovativo':''}`;
         const _tgBase=`https://api.telegram.org/bot${_TG_TOKEN}`;
         if(_fotoUrl){
           fetch(_tgBase+'/sendPhoto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,photo:_fotoUrl,caption:_tgCaption,parse_mode:'Markdown'})}).catch(()=>{});
