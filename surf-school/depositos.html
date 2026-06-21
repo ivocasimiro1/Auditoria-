@@ -1732,7 +1732,15 @@ async function guardar(){
       const _totalFmt=total.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2});
       const _sesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''} — ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
       const _fotoUrl=reg.foto&&typeof reg.foto==='string'&&reg.foto.startsWith('https:')?reg.foto:null;
-      const _msg=`${_isUpd?'Registo actualizado.':'Nova entrada de depósito registada.'}${!reg.foto?'\n\n⚠️ SEM COMPROVATIVO — falta anexar foto':''}\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}${reg.obs?'\nObservações: '+reg.obs:''}\n${_isUpd?'Actualizado':'Registado'} em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${_totalFmt}€${_fotoUrl?'\n\n📷 Comprovativo: '+_fotoUrl:''}`;
+      // Depósitos pendentes desta loja (sem data depósito ou sem talão), excluindo o actual
+      const _currId=editingId||reg.id;
+      const _pend=regs.filter(r=>r.loja===loja&&r.id!==_currId&&(!r.dataDeposito||!r.talao));
+      let _pendStr='';
+      if(_pend.length>0){
+        const _pLines=_pend.map(p=>{const _ds=(p.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort();const _rng=_ds.length>1?fd(_ds[0])+' a '+fd(_ds[_ds.length-1]):_ds.length?fd(_ds[0]):'—';return`  • ${p.tipo||'—'} — ${_rng}${!p.dataDeposito?' (sem data)':' (sem talão)'}`;}).join('\n');
+        _pendStr=`\n\n🔴 ${_pend.length} depósito${_pend.length>1?'s':''} anterior${_pend.length>1?'es':''} por concluir:\n${_pLines}`;
+      }
+      const _msg=`${_isUpd?'Registo actualizado.':'Nova entrada de depósito registada.'}${!reg.foto?'\n\n⚠️ SEM COMPROVATIVO — falta anexar foto':''}\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}${reg.obs?'\nObservações: '+reg.obs:''}\n${_isUpd?'Actualizado':'Registado'} em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${_totalFmt}€${_fotoUrl?'\n\n📷 Comprovativo: '+_fotoUrl:''}${_pendStr}`;
       const frmData=new FormData();
       frmData.append('_subject',`${_icon} ${_label} — ${cfg.emp||loja} — ${loja} — ${_totalFmt}€`);
       frmData.append('message',_msg);
@@ -1741,7 +1749,7 @@ async function guardar(){
       // Telegram — envia foto como ficheiro binário directo
       if(_TG_TOKEN&&_TG_CHAT){
         const _tgSesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''}: ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
-        const _tgCaption=`${_icon} *${_label} — ${loja}*\n💶 *${_totalFmt}€*\nTipo: ${reg.tipo||'—'}\nResp: ${reg.responsavel||'—'}${reg.dataDeposito?'\nDep: '+fd(reg.dataDeposito):'\nDep: Pendente'}${reg.obs?'\nObs: '+reg.obs:''}\n\nSessões:\n${_tgSesLines}${!reg.foto?'\n\n⚠️ Sem comprovativo':''}`;
+        const _tgCaption=`${_icon} *${_label} — ${loja}*\n💶 *${_totalFmt}€*\nTipo: ${reg.tipo||'—'}\nResp: ${reg.responsavel||'—'}${reg.dataDeposito?'\nDep: '+fd(reg.dataDeposito):'\nDep: Pendente'}${reg.obs?'\nObs: '+reg.obs:''}\n\nSessões:\n${_tgSesLines}${!reg.foto?'\n\n⚠️ Sem comprovativo':''}${_pendStr}`;
         const _tgBase=`https://api.telegram.org/bot${_TG_TOKEN}`;
         if(_fotoBlobForTg){
           const _fd=new FormData();
