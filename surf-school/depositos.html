@@ -534,6 +534,10 @@ select{
       <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
       <span id="exp-btn-lbl">Enviar Email</span>
     </button>
+    <button class="btn" onclick="expCSV()" style="margin-top:8px;background:#059669;color:#fff;border:none">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Exportar CSV (Excel)
+    </button>
   </div>
   <div id="email-prev-card" class="card" style="display:none">
     <div class="ct">📧 Email que será enviado</div>
@@ -951,19 +955,42 @@ async function tgDailyBriefing(){
     const oRef=srtR.length?getRefDate(srtR[0]):'';
     const gapDs=[];
     if(nDep&&oRef&&oRef<nDep){const di=new Date(oRef);const de=new Date(nDep);while(di<de){const ds=di.toISOString().split('T')[0];if(!covD.has(ds))gapDs.push(ds);di.setDate(di.getDate()+1);}}
-    const hasProb=errL.length||warnL.length||gapDs.length;
+    const semTalao=lr.filter(r=>r.dataDeposito&&!r.talao);
+    const hasProb=errL.length||warnL.length||gapDs.length||semTalao.length;
     if(hasProb)probCount++;else okCount++;
-    const sIcon=errL.length?'🔴':warnL.length||gapDs.length?'🟡':'🟢';
+    const sIcon=errL.length?'🔴':(warnL.length||gapDs.length||semTalao.length)?'🟡':'🟢';
     const lines=[`🏪 *${loja}* ${sIcon}`,...errL,...warnL];
     if(gapDs.length){
       const shown=gapDs.slice(0,5).map(d=>shortD(d)).join(', ');
       lines.push(`  ⛔ *Salto de depósito* — ${gapDs.length}d sem cobrir\n     Dias: ${shown}${gapDs.length>5?' (+'+(gapDs.length-5)+')':''}`);
     }
+    if(semTalao.length){const td=semTalao.slice(0,4).map(r=>`*${shortD(r.dataDeposito)}*`).join(', ')+(semTalao.length>4?` (+${semTalao.length-4})`:'');lines.push(`  📄 Sem talão: ${td}`);}
     if(!hasProb)lines.push(`  ✅ Tudo em dia`);else if(okL.length)lines.push(...okL);
     blocks.push(lines.join('\n'));
   }
+  // Resumo semanal (segundas-feiras)
+  let weeklyBlock='';
+  if(today.getDay()===1){
+    const weekAgo=new Date(today);weekAgo.setDate(weekAgo.getDate()-7);
+    const weekAgoStr=weekAgo.toISOString().split('T')[0];
+    let wTotal=0,wDeps=0,wNoTalao=0;
+    const wLines=[];
+    for(const loja of [...lojaSet].sort()){
+      const wRegs=regs.filter(r=>r.loja===loja&&r.dataDeposito&&r.dataDeposito>=weekAgoStr&&r.dataDeposito<todayStr);
+      if(!wRegs.length)continue;
+      const wVal=wRegs.reduce((s,r)=>s+totalValor(r),0);
+      wTotal+=wVal;wDeps+=wRegs.length;
+      const noT=wRegs.filter(r=>!r.talao).length;wNoTalao+=noT;
+      wLines.push(`  🏪 ${loja}: ${wRegs.length} dep · *€${wVal.toFixed(2).replace('.',',')}*${noT?` · 📄${noT}`:''}`);
+    }
+    if(wLines.length){
+      const f2=d=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+      const wEnd=new Date(today);wEnd.setDate(wEnd.getDate()-1);
+      weeklyBlock=`\n\n📊 *RESUMO DA SEMANA* (${f2(weekAgo)}→${f2(wEnd)})\n${wLines.join('\n')}\n💰 Total: *€${wTotal.toFixed(2).replace('.',',')}* · ${wDeps} depósitos${wNoTalao?'\n⚠️ '+wNoTalao+' sem talão':''}`;
+    }
+  }
   const sEmoji=probCount===0?'🟢':probCount<=1?'🟡':'🔴';
-  const msg=`☀️ *BOM DIA — Relatório Depósitos*\n📅 ${dayName}, ${dateStr}\n\n━━━━━━━━━━━━━━━━\n${blocks.join('\n\n')}\n━━━━━━━━━━━━━━━━\n${sEmoji} ${probCount} loja${probCount!==1?'s':''} com problemas · ${okCount} OK`;
+  const msg=`☀️ *BOM DIA — Relatório Depósitos*\n📅 ${dayName}, ${dateStr}\n\n━━━━━━━━━━━━━━━━\n${blocks.join('\n\n')}\n━━━━━━━━━━━━━━━━\n${sEmoji} ${probCount} loja${probCount!==1?'s':''} com problemas · ${okCount} OK${weeklyBlock}`;
   try{await fetch(`https://api.telegram.org/bot${_TG_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,text:msg,parse_mode:'Markdown'})});}catch(e){}
 }
 // sfetch: REST API direto — funciona sem a biblioteca SB (sem CDN)
@@ -1158,6 +1185,13 @@ async function afterLogin(user){
     const nbDash=document.getElementById('nb-dash');if(nbDash)nbDash.style.display=isSA?'none':'flex';
     popSel();
     if(isSA){popSupSel();sp('supervisao');setTimeout(tgDailyBriefing,1500);}else{rDash();}
+    setTimeout(()=>{
+      if(!navigator.setAppBadge)return;
+      try{
+        if(isSA){const n=new Set(regs.filter(r=>{const e=calcEstado(r,getRecordCfg(r));return e.s==='err'||e.s==='warn';}).map(r=>r.loja||r.store_id).filter(Boolean)).size;n>0?navigator.setAppBadge(n):navigator.clearAppBadge();}
+        else{const n=regs.filter(r=>{const e=calcEstado(r,getRecordCfg(r));return e.s==='err'||e.s==='warn';}).length;n>0?navigator.setAppBadge(n):navigator.clearAppBadge();}
+      }catch(e){}
+    },2500);
     sbSubscribeRT();
   }catch(e){
     console.error('afterLogin error:',e);
@@ -4783,6 +4817,26 @@ async function doChangePass(){
 }
 function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';cfg.prosegurDay=document.getElementById('c-prosegur-dia')?.value||'';cfg.lomisDay=document.getElementById('c-lomis-dia')?.value||'';cfg.mesInicio=document.getElementById('c-mes-inicio')?.value||'2026-06';cfg.usaDireto=document.getElementById('c-direto-ativo')?.value??'1';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
 
+function expCSV(){
+  const data=getFiltExp();
+  if(!data.length){toast('Sem registos para exportar');return;}
+  const hdr=['Loja','Tipo','Data Vendas (última)','Data Depósito','Talão','Responsável','Valor (€)','Sessões','Estado'];
+  const rows=data.map(r=>{
+    const est=calcEstado(r,getRecordCfg(r));
+    const tv=totalValor(r);
+    const ml=(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort();
+    return[r.loja,r.tipo||'',ml[ml.length-1]||'',r.dataDeposito||'',r.talao||'',r.responsavel||'',tv.toFixed(2).replace('.',','),(r.sessoes||[]).length,est.label];
+  });
+  const csv='﻿'+[hdr,...rows].map(row=>row.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const mes=document.getElementById('e-mes')?.value||curMesStr();
+  const loja=(document.getElementById('e-loja')?.value||'todas').replace(/[\s\/]/g,'_');
+  a.href=url;a.download=`depositos_${loja}_${mes}.csv`;a.click();
+  URL.revokeObjectURL(url);
+  toast('✓ CSV exportado — abre no Excel');
+}
 function expBackup(){const b={regs,cfg,v:3,at:new Date().toISOString()};const blob=new Blob([JSON.stringify(b,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`backup_depositos_${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(url);toast('✓ Backup exportado!')}
 function exportHistCSV(){
   const mes=document.getElementById('sa-mes')?.value||curMesStr();
