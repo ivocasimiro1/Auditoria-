@@ -1721,31 +1721,31 @@ async function guardar(){
   // Sincronizar com Supabase (não bloqueia se falhar)
   const saved=await sbSave(reg);
   if(!saved){toast('⚠️ Guardado localmente. Vai a Configurações → Re-sincronizar quando tiveres ligação.');setTimeout(()=>sp('dash'),1200);return;}
-  // Notificar SA (Ivo) por email quando é um NOVO registo (não edição)
-  if(isNew&&!isSA){
+  // Notificar SA (Ivo) por email e Telegram — novo registo ou actualização
+  if(!isSA){
     const total=(reg.sessoes||[]).reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
     const storeId=sbProfile?.store_id||'';
-    const storeName=`${cfg.emp||loja}${storeId?' ('+storeId+')':''}`;
+    const _isUpd=!isNew;
+    const _icon=_isUpd?'✏️':'📥';
+    const _label=_isUpd?'Depósito Actualizado':'Novo Depósito';
     (async()=>{
       const _totalFmt=total.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2});
       const _sesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''} — ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
       const _fotoUrl=reg.foto&&typeof reg.foto==='string'&&reg.foto.startsWith('https:')?reg.foto:null;
-      const _msg=`Nova entrada de depósito registada.${!reg.foto?'\n\n⚠️ SEM COMPROVATIVO — falta anexar foto':''}\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}${reg.obs?'\nObservações: '+reg.obs:''}\nRegistado em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${_totalFmt}€${_fotoUrl?'\n\n📷 Comprovativo: '+_fotoUrl:''}`;
+      const _msg=`${_isUpd?'Registo actualizado.':'Nova entrada de depósito registada.'}${!reg.foto?'\n\n⚠️ SEM COMPROVATIVO — falta anexar foto':''}\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}${reg.obs?'\nObservações: '+reg.obs:''}\n${_isUpd?'Actualizado':'Registado'} em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${_totalFmt}€${_fotoUrl?'\n\n📷 Comprovativo: '+_fotoUrl:''}`;
       const frmData=new FormData();
-      frmData.append('_subject',`📥 Novo Depósito — ${cfg.emp||loja} — ${loja} — ${_totalFmt}€`);
+      frmData.append('_subject',`${_icon} ${_label} — ${cfg.emp||loja} — ${loja} — ${_totalFmt}€`);
       frmData.append('message',_msg);
       frmData.append('_captcha','false');
       fetch('https://formsubmit.co/ajax/ivo@despomar.com',{method:'POST',headers:{'Accept':'application/json'},body:frmData}).catch(()=>{});
-      // Telegram — envia foto como ficheiro binário directo (sem depender do Storage)
+      // Telegram — envia foto como ficheiro binário directo
       if(_TG_TOKEN&&_TG_CHAT){
         const _tgSesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''}: ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
-        const _tgCaption=`📥 *Novo Depósito — ${loja}*\n💶 *${_totalFmt}€*\nTipo: ${reg.tipo||'—'}\nResp: ${reg.responsavel||'—'}${reg.dataDeposito?'\nDep: '+fd(reg.dataDeposito):'\nDep: Pendente'}${reg.obs?'\nObs: '+reg.obs:''}\n\nSessões:\n${_tgSesLines}${!reg.foto?'\n\n⚠️ Sem comprovativo':''}`;
+        const _tgCaption=`${_icon} *${_label} — ${loja}*\n💶 *${_totalFmt}€*\nTipo: ${reg.tipo||'—'}\nResp: ${reg.responsavel||'—'}${reg.dataDeposito?'\nDep: '+fd(reg.dataDeposito):'\nDep: Pendente'}${reg.obs?'\nObs: '+reg.obs:''}\n\nSessões:\n${_tgSesLines}${!reg.foto?'\n\n⚠️ Sem comprovativo':''}`;
         const _tgBase=`https://api.telegram.org/bot${_TG_TOKEN}`;
         if(_fotoBlobForTg){
           const _fd=new FormData();
-          _fd.append('chat_id',_TG_CHAT);
-          _fd.append('caption',_tgCaption);
-          _fd.append('parse_mode','Markdown');
+          _fd.append('chat_id',_TG_CHAT);_fd.append('caption',_tgCaption);_fd.append('parse_mode','Markdown');
           _fd.append('photo',new File([_fotoBlobForTg],'comprovativo.jpg',{type:'image/jpeg'}));
           fetch(_tgBase+'/sendPhoto',{method:'POST',body:_fd}).catch(()=>{});
         }else{
