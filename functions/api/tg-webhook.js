@@ -70,9 +70,15 @@ function hhmm() {
   return new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Lisbon' });
 }
 
+function since3months() {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' }));
+  d.setMonth(d.getMonth() - 3);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+}
+
 async function buildRankingText() {
   const mes = curMes();
-  const since = mes + '-01';
+  const since = since3months();
   const [regs, cfgs] = await Promise.all([
     sbGet('dep_registos', `select=store_id,data_deposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
     sbGet('dep_config', `select=store_id,emp`)
@@ -106,7 +112,7 @@ async function buildRankingText() {
 
 async function buildStatusText(query) {
   const mes = curMes();
-  const since = mes + '-01';
+  const since = since3months();
   const [regs, cfgs] = await Promise.all([
     sbGet('dep_registos', `select=store_id,tipo,data_deposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
     sbGet('dep_config', `select=store_id,emp`)
@@ -148,8 +154,7 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify(data, null, 2), { headers: { 'Content-Type': 'application/json' } });
   }
   if (url.searchParams.get('debug') === '1') {
-    const mes = curMes();
-    const since = mes + '-01';
+    const since = since3months();
     const qs = `select=store_id,data_deposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`;
     const r = await sbGet('dep_registos', qs);
     return new Response(JSON.stringify({ query: qs, isArray: Array.isArray(r), result: Array.isArray(r) ? `${r.length} rows` : r }, null, 2), { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
