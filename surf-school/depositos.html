@@ -551,12 +551,6 @@ select{
 
 <!-- ═══ LISTA ═══ -->
 <div class="page" id="page-lista">
-  <div class="sg">
-    <div class="sc"><div class="sl">Total</div><div class="sv" id="s-tot" style="color:var(--blue)">€0</div></div>
-    <div class="sc"><div class="sl">Registos</div><div class="sv" id="s-cnt" style="color:var(--blue)">0</div></div>
-    <div class="sc"><div class="sl">Problemas</div><div class="sv" id="s-err" style="color:var(--red)">0</div></div>
-    <div class="sc"><div class="sl">OK</div><div class="sv" id="s-ok" style="color:var(--green)">0</div></div>
-  </div>
   <div class="msr">
     <select id="fl-mes" onchange="rLista()"><option value="">Todos os meses</option></select>
     <select id="fl-loj" onchange="const s=document.getElementById('fl-sid');if(s)s.value='';rLista()"><option value="">Todas</option></select>
@@ -941,6 +935,9 @@ select{
 // ─── SUPABASE ─────────────────────────────────────────
 const _SBURL='https://ubeqidccuvsjhjphybxz.supabase.co';
 const _SBKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U';
+// Telegram — notificações com foto ao registar novo depósito
+const _TG_TOKEN='8640253196:AAEP0aWxhijWwLnjOefiKbATvNkcLF1JH2Y';
+const _TG_CHAT='-5587765450';
 // sfetch: REST API direto — funciona sem a biblioteca SB (sem CDN)
 async function sfetch(method,table,qs,body){
   const h={'apikey':_SBKEY,'Authorization':'Bearer '+_SBKEY,'Content-Type':'application/json','Accept':'application/json'};
@@ -1286,7 +1283,7 @@ function calcEstado(r,storeCfg){
     }
   }
   // Tardio se acumulou sessões além do prazo (span) ou passou demasiado tempo
-  const vencido=diasDesde>prazo||span>prazo||vencidoPorDiaRecolha;
+  const vencido=diasDesde>=prazo||span>prazo||vencidoPorDiaRecolha;
   // Comprovativo (foto) é a validação principal — sem foto = não depositado
   if(!r.foto){
     if(r.talao||r.dataDeposito)
@@ -1351,7 +1348,7 @@ function sp(name){
     window.scrollTo(0,0);
     if(name==='dash')rDash();
     if(name==='supervisao'){popSupSel();rSASupervision();}
-    if(name==='novo'){if(!editingId)resetNovoForm();popSel();}
+    if(name==='novo'){if(!editingId&&!_cntAddMode)resetNovoForm();popSel();}
     if(name==='lista')rLista();
     if(name==='mapa')rMapa();
     if(name==='exp'){seExp('email');rExpSel();}
@@ -1710,30 +1707,82 @@ async function guardar(){
   }
   // Guardar localmente primeiro — nunca perde dados
   saveR();
+  // Guardar blob da foto em memória para enviar ao Telegram directamente (sem depender do Storage)
+  let _fotoBlobForTg=null;
+  if(fotoB64&&typeof fotoB64==='string'&&fotoB64.startsWith('data:')){
+    try{const _r=await fetch(fotoB64);_fotoBlobForTg=await _r.blob();}catch(_e){}
+  }
   // Sincronizar com Supabase (não bloqueia se falhar)
   const saved=await sbSave(reg);
   if(!saved){toast('⚠️ Guardado localmente. Vai a Configurações → Re-sincronizar quando tiveres ligação.');setTimeout(()=>sp('dash'),1200);return;}
-  // Notificar SA (Ivo) por email quando é um NOVO registo (não edição)
-  if(isNew&&!isSA){
+  // Notificar SA (Ivo) por email e Telegram — novo registo ou actualização
+  if(!isSA||!isNew){
     const total=(reg.sessoes||[]).reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
     const storeId=sbProfile?.store_id||'';
-    const storeName=`${cfg.emp||loja}${storeId?' ('+storeId+')':''}`;
+    const _isUpd=!isNew;
+    const _icon=_isUpd?'✏️':'📥';
+    const _label=_isUpd?'Depósito Actualizado':'Novo Depósito';
     (async()=>{
       const _totalFmt=total.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2});
       const _sesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''} — ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
-      const _msg=`Nova entrada de depósito registada.${!reg.foto?'\n\n⚠️ SEM COMPROVATIVO — falta anexar foto':''}\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}${reg.obs?'\nObservações: '+reg.obs:''}\nRegistado em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${_totalFmt}€`;
+      const _fotoUrl=reg.foto&&typeof reg.foto==='string'&&reg.foto.startsWith('https:')?reg.foto:null;
+      // Alertas: salto de depósito + tipos em atraso
+      // Para conta loja: incluir registos sem loja definida (antigos guardados antes de configurar lojas)
+      const _lojaRegs=!isSA?regs.filter(r=>r.loja===loja||!r.loja):regs.filter(r=>r.loja===loja);
+      const _sortedR=[..._lojaRegs].sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
+      const _todayS=new Date().toISOString().split('T')[0];
+      const _newestDep=_sortedR.filter(r=>r.dataDeposito).map(r=>getRefDate(r)).sort().pop()||'';
+      // Registos antigos sem depósito (enquanto há mais recentes depositados)
+      const _gapRecs=_sortedR.filter(r=>!r.dataDeposito&&_newestDep&&getRefDate(r)<_newestDep);
+      // Dias sem nenhum registo entre o 1º e o último depósito (não depende de mesInicio)
+      const _coveredD=new Set(_lojaRegs.flatMap(r=>(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean)));
+      const _oldestRef=_sortedR.length?getRefDate(_sortedR[0]):'';
+      const _gapMiss=[];
+      if(_newestDep&&_oldestRef){
+        const _di=new Date(_oldestRef);const _de=new Date(_newestDep);
+        while(_di<_de){const _ds=_di.toISOString().split('T')[0];if(!_coveredD.has(_ds))_gapMiss.push(_ds);_di.setDate(_di.getDate()+1);}
+      }
+      const _totalGaps=_gapRecs.length+_gapMiss.length;
+      const _ovAlerts=getOverdueAlerts(loja);
+      let _pendStr='';
+      const _pendParts=[];
+      if(_totalGaps>0){
+        const _gapDates=[..._gapRecs.map(r=>fd(getRefDate(r)).slice(0,5)),..._gapMiss.map(d=>fd(d).slice(0,5))].sort().join(', ');
+        _pendParts.push(`⛔ SALTO DE DEPÓSITO — ${_totalGaps} dia${_totalGaps>1?'s':''} por depositar enquanto há depósitos mais recentes\nDias: ${_gapDates}`);
+      }
+      if(_ovAlerts.length>0){
+        const _aLines=_ovAlerts.map(a=>`  • ${a.tipo} — último: ${fd(a.lastStr)} (${a.dias}d em atraso)`).join('\n');
+        _pendParts.push(`🔴 ${_ovAlerts.length} tipo${_ovAlerts.length>1?'s':''} em atraso:\n${_aLines}`);
+      }
+      if(_pendParts.length>0)_pendStr='\n\n'+_pendParts.join('\n');
+      const _msg=`${_isUpd?'Registo actualizado.':'Nova entrada de depósito registada.'}${!reg.foto?'\n\n⚠️ SEM COMPROVATIVO — falta anexar foto':''}\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}${reg.obs?'\nObservações: '+reg.obs:''}\n${_isUpd?'Actualizado':'Registado'} em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${_totalFmt}€${_fotoUrl?'\n\n📷 Comprovativo: '+_fotoUrl:''}${_pendStr}`;
       const frmData=new FormData();
-      frmData.append('_subject',`📥 Novo Depósito — ${cfg.emp||loja} — ${loja} — ${_totalFmt}€`);
+      frmData.append('_subject',`${_icon} ${_label} — ${cfg.emp||loja} — ${loja} — ${_totalFmt}€`);
       frmData.append('message',_msg);
       frmData.append('_captcha','false');
-      if(reg.foto&&typeof reg.foto==='string'&&reg.foto.startsWith('data:')){
-        try{
-          const _r=await fetch(reg.foto);const _b=await _r.blob();
-          const _dt=(reg.dataDeposito||'').replace(/-/g,'')||'foto';
-          frmData.append('attachment',new File([_b],`comprovativo_${(loja||'dep').replace(/\s+/g,'_')}_${_dt}.jpg`,{type:'image/jpeg'}));
-        }catch(e){}
-      }
       fetch('https://formsubmit.co/ajax/ivo@despomar.com',{method:'POST',headers:{'Accept':'application/json'},body:frmData}).catch(()=>{});
+      // Email de confirmação ao gerente da loja (só em registos novos de conta loja)
+      if(!isSA&&isNew&&sbUser?.email&&sbUser.email!=='ivo@despomar.com'){
+        const _fmGer=new FormData();
+        _fmGer.append('_subject',`✅ Depósito registado — ${loja} — ${_totalFmt}€`);
+        _fmGer.append('message',`O seu depósito foi registado com sucesso.\n\nLoja: ${loja}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${_totalFmt}€${!reg.foto?'\n\n⚠️ Falta anexar comprovativo (foto)':''}`);
+        _fmGer.append('_captcha','false');
+        fetch(`https://formsubmit.co/ajax/${encodeURIComponent(sbUser.email)}`,{method:'POST',headers:{'Accept':'application/json'},body:_fmGer}).catch(()=>{});
+      }
+      // Telegram — envia foto como ficheiro binário directo
+      if(_TG_TOKEN&&_TG_CHAT){
+        const _tgSesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''}: ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
+        const _tgCaption=`${_icon} *${_label} — ${loja}*\n💶 *${_totalFmt}€*\nTipo: ${reg.tipo||'—'}\nResp: ${reg.responsavel||'—'}${reg.dataDeposito?'\nDep: '+fd(reg.dataDeposito):'\nDep: Pendente'}${reg.obs?'\nObs: '+reg.obs:''}\n\nSessões:\n${_tgSesLines}${!reg.foto?'\n\n⚠️ Sem comprovativo':''}${_pendStr}`;
+        const _tgBase=`https://api.telegram.org/bot${_TG_TOKEN}`;
+        if(_fotoBlobForTg){
+          const _fd=new FormData();
+          _fd.append('chat_id',_TG_CHAT);_fd.append('caption',_tgCaption);_fd.append('parse_mode','Markdown');
+          _fd.append('photo',new File([_fotoBlobForTg],'comprovativo.jpg',{type:'image/jpeg'}));
+          fetch(_tgBase+'/sendPhoto',{method:'POST',body:_fd}).catch(()=>{});
+        }else{
+          fetch(_tgBase+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,text:_tgCaption,parse_mode:'Markdown'})}).catch(()=>{});
+        }
+      }
     })();
   }
   // Reset save button
@@ -1804,7 +1853,7 @@ function getOverdueAlerts(lojaFil){
     const prazo=tipo==='Depósito Direto'?2:7;
     const last=new Date(lastStr);last.setHours(0,0,0,0);
     const dias=Math.floor((today-last)/86400000);
-    if(dias>prazo)alerts.push({loja,tipo,lastStr,dias,prazo});
+    if(dias>=prazo)alerts.push({loja,tipo,lastStr,dias,prazo});
   });
   // Also check lojas in cfg that have NO records at all this month
   const mes=curMesStr();
@@ -1825,7 +1874,7 @@ function getOverdueAlerts(lojaFil){
       if(latestRec){
         const ref=new Date(getRefDate(latestRec));ref.setHours(0,0,0,0);
         const dias=Math.floor((today-ref)/86400000);
-        if(dias>2&&!alerts.some(a=>a.loja===loja)){
+        if(dias>=2&&!alerts.some(a=>a.loja===loja)){
           alerts.push({loja,tipo:latestRec.tipo||'—',lastStr:getRefDate(latestRec),dias,prazo:2,noMesData:true});
         }
       }
@@ -2548,7 +2597,7 @@ function rSASupervision(){
         _missCutoff=new Date(+_tDate-_minDaysAgo*86400000).toISOString().split('T')[0];
       }
     }
-    const pastMissingArr=storeMissingArr.filter(d=>d<_missCutoff);
+    const pastMissingArr=storeMissingArr.filter(d=>d<=_missCutoff);
     storeList.push({sid,empName,displayName,lojaLabel,email,total,ok,warn,err,prog,compliant,lastCompliant,avgDelay,lateVal,cycle,exposure,maxAge,storeMissingCount,storeLojas2,wSemComp,wPendentes,wACompl,servicoStr,semFoto,semTalao,tardios,gaps,gapDates,pastMissingArr});
   });
   // Add orphan loja groups (records grouped by loja name, no store_id)
@@ -3465,10 +3514,6 @@ function rLista(){
     return true;
   });
   const total=filtered.reduce((s,r)=>s+totalValor(r),0);
-  document.getElementById('s-tot').textContent=fmt(total);
-  document.getElementById('s-cnt').textContent=filtered.length;
-  document.getElementById('s-err').textContent=filtered.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
-  document.getElementById('s-ok').textContent=filtered.filter(r=>calcEstado(r,getRecordCfg(r)).s==='ok').length;
   const el=document.getElementById('list');
   // SA: store summary banner when filtered by store_id
   const bannerEl=document.getElementById('list-store-banner');
@@ -3522,19 +3567,40 @@ function rLista(){
       </div>
     </div>`;
   }).join('');
-  // Mostrar dias em falta no fundo da lista (quando filtro de loja activo e mês escolhido)
+  // Mostrar saltos de depósito + dias sem registo no fundo da lista
   const missingEl=document.getElementById('list-missing');
   if(missingEl){
-    if(fl&&fm&&!activeSt){
-      const missing=getMissingDays(fm,fl)||[];
-      if(missing.length){
-        missingEl.innerHTML=`<div style="margin-top:12px;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:12px;padding:12px 14px">
-          <div style="font-size:12px;font-weight:800;color:#991b1b;margin-bottom:8px">📅 ${missing.length} dia${missing.length!==1?'s':''} sem registo em ${mesLabel(fm)}</div>
+    if(fl&&!activeSt){
+      // Saltos: dias entre o 1º e o último registo depositado sem cobertura
+      const _lr=regs.filter(r=>r.loja===fl||(r.store_id&&!r.loja));
+      const _covD=new Set(_lr.flatMap(r=>(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean)));
+      const _srtR=[..._lr].sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
+      const _nDep=_srtR.filter(r=>r.dataDeposito).map(r=>getRefDate(r)).sort().pop()||'';
+      const _oRef=_srtR.length?getRefDate(_srtR[0]):'';
+      const _gapDs=[];
+      if(_nDep&&_oRef){const _di=new Date(_oRef);const _de=new Date(_nDep);while(_di<_de){const _ds=_di.toISOString().split('T')[0];if(!_covD.has(_ds))_gapDs.push(_ds);_di.setDate(_di.getDate()+1);}}
+      // Dias sem registo no mês seleccionado
+      const missing=fm&&!activeSt?getMissingDays(fm,fl)||[]:[];
+      // Dias do salto que não estão já nos missing
+      const gapOnly=_gapDs.filter(d=>!missing.includes(d));
+      let html='';
+      if(gapOnly.length){
+        html+=`<div style="margin-top:12px;background:#fff1f2;border:2px solid #f43f5e;border-radius:12px;padding:12px 14px">
+          <div style="font-size:12px;font-weight:800;color:#be123c;margin-bottom:8px">⛔ SALTO DE DEPÓSITO — ${gapOnly.length} dia${gapOnly.length!==1?'s':''} por depositar enquanto há depósitos mais recentes</div>
           <div style="display:flex;flex-wrap:wrap;gap:6px">
-            ${missing.map(d=>`<button onclick="abrirNovoComDia('${d}')" style="background:#fff;border:1.5px solid #fca5a5;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:#991b1b;cursor:pointer;touch-action:manipulation" title="Registar depósito para este dia">${fd(d)} ➕</button>`).join('')}
+            ${gapOnly.map(d=>`<button onclick="abrirNovoComDia('${d}')" style="background:#fff;border:2px solid #f43f5e;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#be123c;cursor:pointer;touch-action:manipulation">${fd(d).slice(0,5)} ➕</button>`).join('')}
           </div>
         </div>`;
-      }else{missingEl.innerHTML='';}
+      }
+      if(missing.length){
+        html+=`<div style="margin-top:12px;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:12px;padding:12px 14px">
+          <div style="font-size:12px;font-weight:800;color:#991b1b;margin-bottom:8px">📅 ${missing.length} dia${missing.length!==1?'s':''} sem registo em ${mesLabel(fm)}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${missing.map(d=>`<button onclick="abrirNovoComDia('${d}')" style="background:#fff;border:1.5px solid #fca5a5;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:#991b1b;cursor:pointer;touch-action:manipulation">${fd(d)} ➕</button>`).join('')}
+          </div>
+        </div>`;
+      }
+      missingEl.innerHTML=html;
     }else{missingEl.innerHTML='';}
   }
 }
@@ -3604,10 +3670,16 @@ async function addFotoRapida(id){
     reader.onload=async function(e){
       try{
         const b64=await compressImg(e.target.result);
-        const{error}=await SB.from('dep_registos').update({foto:b64}).eq('id',id);
+        let fotoVal=b64;
+        try{
+          const _fRes=await fetch(b64);const _fBlob=await _fRes.blob();
+          const _upResp=await fetch(`${_SBURL}/storage/v1/object/dep-fotos/${id}.jpg`,{method:'POST',headers:{'Authorization':'Bearer '+_SBKEY,'apikey':_SBKEY,'Content-Type':'image/jpeg','x-upsert':'true'},body:_fBlob});
+          if(_upResp.ok)fotoVal=`${_SBURL}/storage/v1/object/public/dep-fotos/${id}.jpg`;
+        }catch(_fe){}
+        const{error}=await SB.from('dep_registos').update({foto:fotoVal}).eq('id',id);
         if(error){toast('⚠️ Erro ao guardar: '+error.message);return;}
         const r=regs.find(x=>x.id===id);
-        if(r)r.foto=b64;
+        if(r)r.foto=fotoVal;
         toast('✓ Comprovativo guardado');rLista();rDash();
       }catch(err){toast('⚠️ Erro: '+(err.message||err));}
     };
@@ -3718,37 +3790,63 @@ function cntUsar(){
   const raw=(totalEl?.textContent||'0').replace(/[^0-9,]/g,'').replace(',','.');
   const total=parseFloat(raw)||0;
   if(total<=0){toast('⚠️ Contagem está em zero');return;}
+  // se o formulário já tem sessões com valor → adicionar nova sessão sem resetar
+  const filledSess=typeof getSesSionsData==='function'?getSesSionsData().filter(s=>s.valor>0):[];
+  const addMode=filledSess.length>0;
   _cntPendingVal=total;
-  sp('novo');
-  setTimeout(()=>{
-    // valor da sessão
-    const vl=document.querySelector('#ses-list [id^="svl-"]');
-    if(vl){vl.value=total.toFixed(2);vl.dispatchEvent(new Event('input'));if(typeof updSesTotal==='function')updSesTotal();}
-    // nº sessão → próximo após o último registado
-    const ss=document.querySelector('#ses-list [id^="ss-"]');
-    if(ss&&!ss.value){
-      const loja=document.getElementById('f-loja')?.value;
-      const tipo=document.getElementById('f-tipo')?.value;
-      if(loja){
-        let lastNum=0;
-        regs.filter(r=>r.loja===loja&&(!tipo||r.tipo===tipo)).forEach(r=>(r.sessoes||[]).forEach(s=>{const n=parseInt(s.sessao);if(!isNaN(n)&&n>lastNum)lastNum=n;}));
-        if(lastNum)ss.value=String(lastNum+1);
+  if(addMode){
+    // navegar para Novo SEM resetar o formulário
+    _cntAddMode=true;sp('novo');_cntAddMode=false;
+    addSes(); // adiciona nova linha de sessão vazia
+    setTimeout(()=>{
+      // preencher último campo de valor e nº sessão adicionados
+      const allVl=[...document.querySelectorAll('#ses-list [id^="svl-"]')];
+      const vl=allVl[allVl.length-1];
+      const allSs=[...document.querySelectorAll('#ses-list [id^="ss-"]')];
+      const ss=allSs[allSs.length-1];
+      if(vl&&!vl.value){vl.value=total.toFixed(2);vl.dispatchEvent(new Event('input'));if(typeof updSesTotal==='function')updSesTotal();}
+      if(ss&&!ss.value){
+        const loja=document.getElementById('f-loja')?.value;
+        if(loja){
+          let lastNum=0;
+          regs.filter(r=>r.loja===loja).forEach(r=>(r.sessoes||[]).forEach(s=>{const n=parseInt(s.sessao);if(!isNaN(n)&&n>lastNum)lastNum=n;}));
+          getSesSionsData().forEach(s=>{const n=parseInt(s.sessao);if(!isNaN(n)&&n>lastNum)lastNum=n;});
+          if(lastNum)ss.value=String(lastNum+1);
+        }
       }
-    }
-    // data do depósito → hoje
-    const dd=document.getElementById('f-dd');
-    if(dd&&!dd.value)dd.value=new Date().toISOString().split('T')[0];
-    // responsável → só pré-selecionar se existir apenas um configurado
-    const fr=document.getElementById('f-resp');
-    if(fr&&!fr.value&&cfg.resps?.length===1)fr.value=cfg.resps[0];
-    if(typeof checkGuardarBtn==='function')checkGuardarBtn();
-    _cntPendingVal=null;
-    toast('✓ '+_cntFmt(total*100)+' preenchido — verifique sessão e comprovativo');
-  },80);
+      if(typeof checkGuardarBtn==='function')checkGuardarBtn();
+      _cntPendingVal=null;
+      cntReset();
+      toast('✓ '+_cntFmt(total*100)+' adicionado como sessão '+(filledSess.length+1));
+    },50);
+  }else{
+    // primeira contagem → resetar formulário e preencher sessão 1
+    sp('novo');
+    setTimeout(()=>{
+      const vl=document.querySelector('#ses-list [id^="svl-"]');
+      if(vl){vl.value=total.toFixed(2);vl.dispatchEvent(new Event('input'));if(typeof updSesTotal==='function')updSesTotal();}
+      const ss=document.querySelector('#ses-list [id^="ss-"]');
+      if(ss&&!ss.value){
+        const loja=document.getElementById('f-loja')?.value;
+        if(loja){
+          let lastNum=0;
+          regs.filter(r=>r.loja===loja).forEach(r=>(r.sessoes||[]).forEach(s=>{const n=parseInt(s.sessao);if(!isNaN(n)&&n>lastNum)lastNum=n;}));
+          if(lastNum)ss.value=String(lastNum+1);
+        }
+      }
+      const dd=document.getElementById('f-dd');
+      if(dd&&!dd.value)dd.value=new Date().toISOString().split('T')[0];
+      const fr=document.getElementById('f-resp');
+      if(fr&&!fr.value&&cfg.resps?.length===1)fr.value=cfg.resps[0];
+      if(typeof checkGuardarBtn==='function')checkGuardarBtn();
+      _cntPendingVal=null;
+      toast('✓ '+_cntFmt(total*100)+' preenchido — adicione mais sessões ou complete o depósito');
+    },80);
+  }
 }
 
 // ─── EXPORT ──────────────────────────────────────────
-let expFmt='print',exportCfg=null,_gerenteSid='',_preSelectLoja='',_preSelectMes='',_mapaSelIds=null,_cntPendingVal=null;
+let expFmt='print',exportCfg=null,_gerenteSid='',_preSelectLoja='',_preSelectMes='',_mapaSelIds=null,_cntPendingVal=null,_cntAddMode=false;
 async function emailFromMapa(){
   const loja=document.getElementById('mapa-loja')?.value||'';
   const mes=document.getElementById('mapa-mes')?.value||curMesStr();
