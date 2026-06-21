@@ -8,56 +8,15 @@
 <meta name="apple-mobile-web-app-title" content="Depósitos">
 <meta name="theme-color" content="#0f2460">
 <title>Controlo de Depósitos · Despomar</title>
+<link rel="apple-touch-icon" href="/surf-school/depositos-apple-icon.png">
+<link rel="icon" type="image/png" href="/surf-school/depositos-icon.png">
 <script>
 (function(){
-  function genIcon(sz){
-    const c=document.createElement('canvas');
-    c.width=c.height=sz;
-    const ctx=c.getContext('2d');
-    const s=sz/192;
-    // Background rounded rect
-    const r=sz*0.197;
-    ctx.fillStyle='#0f2460';
-    ctx.beginPath();
-    ctx.moveTo(r,0);ctx.lineTo(sz-r,0);ctx.arcTo(sz,0,sz,r,r);
-    ctx.lineTo(sz,sz-r);ctx.arcTo(sz,sz,sz-r,sz,r);
-    ctx.lineTo(r,sz);ctx.arcTo(0,sz,0,sz-r,r);
-    ctx.lineTo(0,r);ctx.arcTo(0,0,r,0,r);
-    ctx.closePath();ctx.fill();
-    // Surfboard white body
-    ctx.fillStyle='white';
-    ctx.beginPath();ctx.ellipse(96*s,95*s,36*s,65*s,0,0,Math.PI*2);ctx.fill();
-    // Pointed nose
-    ctx.beginPath();ctx.moveTo(96*s,20*s);ctx.lineTo(62*s,52*s);ctx.lineTo(130*s,52*s);ctx.closePath();ctx.fill();
-    // Cyan rail
-    ctx.fillStyle='#4fc9e8';
-    ctx.beginPath();ctx.ellipse(96*s,95*s,20*s,51*s,0,0,Math.PI*2);ctx.fill();
-    // Tail fin
-    ctx.fillStyle='white';
-    ctx.beginPath();ctx.moveTo(80*s,150*s);ctx.lineTo(96*s,173*s);ctx.lineTo(112*s,150*s);ctx.closePath();ctx.fill();
-    // € arc (C shape, opening right)
-    ctx.strokeStyle='#0f2460';ctx.lineWidth=11*s;ctx.lineCap='round';
-    ctx.beginPath();ctx.arc(96*s,94*s,29*s,-Math.PI/4,Math.PI/4,true);ctx.stroke();
-    // € top bar
-    ctx.beginPath();ctx.moveTo(62*s,83*s);ctx.lineTo(113*s,83*s);ctx.stroke();
-    // € bottom bar
-    ctx.beginPath();ctx.moveTo(62*s,107*s);ctx.lineTo(113*s,107*s);ctx.stroke();
-    // Wave left
-    ctx.strokeStyle='#56cce8';ctx.lineWidth=5*s;
-    ctx.beginPath();ctx.moveTo(12*s,168*s);ctx.quadraticCurveTo(26*s,156*s,40*s,168*s);ctx.quadraticCurveTo(54*s,180*s,68*s,168*s);ctx.stroke();
-    // Wave right
-    ctx.beginPath();ctx.moveTo(124*s,168*s);ctx.quadraticCurveTo(138*s,156*s,152*s,168*s);ctx.quadraticCurveTo(166*s,180*s,180*s,168*s);ctx.stroke();
-    return c.toDataURL('image/png');
-  }
   try{
-    const icon180=genIcon(180);
-    const al=document.createElement('link');al.rel='apple-touch-icon';al.href=icon180;document.head.appendChild(al);
-    const manifest={name:'Controlo de Depósitos · Despomar',short_name:'Depósitos',description:'Gestão de depósitos bancários Despomar',start_url:'/depositos',display:'standalone',background_color:'#0f2460',theme_color:'#0f2460',orientation:'portrait-primary',
-      icons:[{src:genIcon(192),sizes:'192x192',type:'image/png'},{src:genIcon(512),sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
+    const manifest={name:'Depósitos Lojas · Despomar',short_name:'Depósitos',description:'Gestão de depósitos bancários Despomar',start_url:'/depositos',display:'standalone',background_color:'#0d1b3e',theme_color:'#0d1b3e',orientation:'portrait-primary',
+      icons:[{src:'/surf-school/depositos-icon.png',sizes:'192x192',type:'image/png'},{src:'/surf-school/depositos-icon-512.png',sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
     const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
     const ml=document.createElement('link');ml.rel='manifest';ml.href=URL.createObjectURL(blob);document.head.appendChild(ml);
-    // favicon
-    const fl=document.createElement('link');fl.rel='icon';fl.type='image/png';fl.href=genIcon(64);document.head.appendChild(fl);
   }catch(e){}
 })();
 </script>
@@ -455,12 +414,7 @@ select{
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:8px">
     <button id="back-btn" class="cfg-btn" style="font-size:16px;padding:6px 10px" title="Voltar">←</button>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="32" height="32" style="flex-shrink:0">
-      <circle cx="50" cy="50" r="46" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.6)" stroke-width="3"/>
-      <path d="M50,8 C65,8 78,17 82,30 C74,23 63,21 53,24 C43,28 36,37 36,48 C32,37 26,27 20,23 C28,13 38,8 50,8Z" fill="#93d8f0"/>
-      <path d="M82,30 C92,42 90,58 80,68 C77,58 70,52 61,51 C52,50 44,53 39,60 C40,48 37,36 32,28 C40,21 51,18 60,22 C70,26 79,28 82,30Z" fill="rgba(255,255,255,.75)"/>
-      <path d="M80,68 C70,80 55,86 42,83 C52,77 58,67 56,56 C54,45 45,39 35,40 C40,30 46,22 53,20 C62,24 72,34 78,46 C82,54 82,62 80,68Z" fill="rgba(255,255,255,.5)"/>
-    </svg>
+    <img src="/surf-school/depositos-icon.png" width="36" height="36" style="flex-shrink:0;border-radius:50%;display:block" alt="Depósitos">
     <div><h1 id="ttitle">Dashboard</h1><div class="sub" id="tsub">Despomar</div></div>
   </div>
   <div style="display:flex;gap:6px;align-items:center">
