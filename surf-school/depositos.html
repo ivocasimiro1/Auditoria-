@@ -1734,7 +1734,7 @@ async function guardar(){
       const _fotoUrl=reg.foto&&typeof reg.foto==='string'&&reg.foto.startsWith('https:')?reg.foto:null;
       // Depósitos por concluir desta loja (estado warn ou err segundo calcEstado), excluindo o actual
       const _currId=editingId||reg.id;
-      const _pend=regs.filter(r=>r.loja===loja&&r.id!==_currId&&calcEstado(r,cfg).s!=='ok');
+      const _pend=regs.filter(r=>r.loja===loja&&r.id!==_currId&&!(r.dataDeposito&&r.talao)&&calcEstado(r,cfg).s!=='ok');
       let _pendStr='';
       if(_pend.length>0){
         const _errN=_pend.filter(r=>calcEstado(r,cfg).s==='err').length;
