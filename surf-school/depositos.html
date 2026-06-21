@@ -1732,13 +1732,15 @@ async function guardar(){
       const _totalFmt=total.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2});
       const _sesLines=(reg.sessoes||[]).map(s=>`  • ${fd(s.dataVendas)||'—'}${s.sessao?' — Nº '+s.sessao:''} — ${parseFloat(s.valor||0).toLocaleString('pt-PT',{minimumFractionDigits:2})}€`).join('\n');
       const _fotoUrl=reg.foto&&typeof reg.foto==='string'&&reg.foto.startsWith('https:')?reg.foto:null;
-      // Depósitos pendentes desta loja (sem data depósito ou sem talão), excluindo o actual
+      // Depósitos por concluir desta loja (estado warn ou err segundo calcEstado), excluindo o actual
       const _currId=editingId||reg.id;
-      const _pend=regs.filter(r=>r.loja===loja&&r.id!==_currId&&(!r.dataDeposito||!r.talao));
+      const _pend=regs.filter(r=>r.loja===loja&&r.id!==_currId&&calcEstado(r,cfg).s!=='ok');
       let _pendStr='';
       if(_pend.length>0){
-        const _pLines=_pend.map(p=>{const _ds=(p.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort();const _rng=_ds.length>1?fd(_ds[0])+' a '+fd(_ds[_ds.length-1]):_ds.length?fd(_ds[0]):'—';return`  • ${p.tipo||'—'} — ${_rng}${!p.dataDeposito?' (sem data)':' (sem talão)'}`;}).join('\n');
-        _pendStr=`\n\n🔴 ${_pend.length} depósito${_pend.length>1?'s':''} anterior${_pend.length>1?'es':''} por concluir:\n${_pLines}`;
+        const _errN=_pend.filter(r=>calcEstado(r,cfg).s==='err').length;
+        const _pList=_pend.slice(0,5).map(p=>{const _ds=(p.sessoes||[]).map(s=>s.dataVendas).filter(Boolean).sort();const _rng=_ds.length>1?fd(_ds[0])+' a '+fd(_ds[_ds.length-1]):_ds.length?fd(_ds[0]):'—';const _e=calcEstado(p,cfg);return`  • ${p.tipo||'—'} — ${_rng} (${_e.label.replace(/^[🔴⚠✅]\s*/u,'').replace(/^.{1,2}\s/,'')})`;}).join('\n');
+        const _more=_pend.length>5?`\n  … mais ${_pend.length-5}`:'';
+        _pendStr=`\n\n${_errN>0?'🔴':'⚠️'} ${_pend.length} depósito${_pend.length>1?'s':''} por concluir${_errN>0?' ('+_errN+' em atraso)':''}:\n${_pList}${_more}`;
       }
       const _msg=`${_isUpd?'Registo actualizado.':'Nova entrada de depósito registada.'}${!reg.foto?'\n\n⚠️ SEM COMPROVATIVO — falta anexar foto':''}\n\nLoja: ${loja}\nEmpresa: ${cfg.emp||'—'}\nID Loja: ${storeId||'—'}\nTipo: ${reg.tipo||'—'}\nData Depósito: ${reg.dataDeposito?fd(reg.dataDeposito):'Pendente'}\nResponsável: ${reg.responsavel||'—'}${reg.obs?'\nObservações: '+reg.obs:''}\n${_isUpd?'Actualizado':'Registado'} em: ${new Date().toLocaleString('pt-PT')}\n\nSessões (${(reg.sessoes||[]).length}):\n${_sesLines||'  (sem sessões)'}\n  ► TOTAL: ${_totalFmt}€${_fotoUrl?'\n\n📷 Comprovativo: '+_fotoUrl:''}${_pendStr}`;
       const frmData=new FormData();
