@@ -76,16 +76,27 @@ function since3months() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
-// Calculates per-day metrics: deposited days, pending days, missing days
+// Weekly services (Prosegur/Lomis): deposits happen once a week, not daily
+const isWeekly = (tipo) => /prosegur|lomis/i.test(tipo || '');
+
+// For weekly services: % based on records (deposited/total)
+// For daily services: % based on session days (deposited days / all days incl. missing)
 function calcMetrics(storeRegs, mes) {
   const [year, month] = mes.split('-').map(Number);
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' }));
-  const isCurrentMonth = mes === curMes();
-  const upToDay = isCurrentMonth ? now.getDate() - 1 : new Date(year, month, 0).getDate();
+  const upToDay = mes === curMes() ? now.getDate() - 1 : new Date(year, month, 0).getDate();
 
+  const dailyRegs = storeRegs.filter(r => !isWeekly(r.tipo));
+  const weeklyRegs = storeRegs.filter(r => isWeekly(r.tipo));
+
+  // Weekly services: simple record count
+  const wDep = weeklyRegs.filter(r => r.data_deposito).length;
+  const wPend = weeklyRegs.filter(r => !r.data_deposito).length;
+
+  // Daily services: per-day coverage
   const depDays = new Set();
   const pendDays = new Set();
-  for (const r of storeRegs) {
+  for (const r of dailyRegs) {
     for (const s of (r.sessoes || [])) {
       if (s.dataVendas && s.dataVendas.startsWith(mes)) {
         if (r.data_deposito) depDays.add(s.dataVendas);
@@ -95,20 +106,25 @@ function calcMetrics(storeRegs, mes) {
   }
   const netPend = [...pendDays].filter(d => !depDays.has(d));
   const missingDates = [];
-  for (let d = 1; d <= upToDay; d++) {
-    const ds = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    if (!depDays.has(ds) && !pendDays.has(ds)) missingDates.push(ds);
+  if (dailyRegs.length) {
+    for (let d = 1; d <= upToDay; d++) {
+      const ds = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      if (!depDays.has(ds) && !pendDays.has(ds)) missingDates.push(ds);
+    }
   }
-  const total = depDays.size + netPend.length + missingDates.length;
-  const pct = total > 0 ? Math.round(depDays.size / total * 100) : null;
-  return { pct, dep: depDays.size, pend: netPend.length, missing: missingDates.length, missingDates };
+
+  // Combined pct: weekly records + daily days
+  const totalOk = wDep + depDays.size;
+  const totalAll = wDep + wPend + depDays.size + netPend.length + missingDates.length;
+  const pct = totalAll > 0 ? Math.round(totalOk / totalAll * 100) : null;
+  return { pct, wPend, pend: netPend.length, missing: missingDates.length, missingDates };
 }
 
 async function buildRankingText() {
   const mes = curMes();
   const since = since3months();
   const [regs, cfgs] = await Promise.all([
-    sbGet('dep_registos', `select=store_id,data_deposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
+    sbGet('dep_registos', `select=store_id,tipo,data_deposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
     sbGet('dep_config', `select=store_id,emp`)
   ]);
   if (!Array.isArray(regs)) return `❌ Erro Supabase registos: ${JSON.stringify(regs).slice(0,120)}`;
@@ -120,24 +136,29 @@ async function buildRankingText() {
   const ranked = sids.map(sid => {
     const cfg = cfgs.find(c => c.store_id === sid);
     const srMes = regs.filter(r => r.store_id === sid && getRefDate(r).startsWith(mes));
-    const { pct, pend, missing } = calcMetrics(srMes, mes);
-    const noTalao = regs.filter(r => r.store_id === sid && getRefDate(r).startsWith(mes) && r.data_deposito && !r.talao).length;
+    const { pct, wPend, pend, missing, missingDates } = calcMetrics(srMes, mes);
+    const noTalao = srMes.filter(r => r.data_deposito && !r.talao).length;
     const overdue = regs.filter(r => r.store_id === sid && !r.data_deposito && getRefDate(r) < mes + '-01').length;
-    return { name: shortName(cfg?.emp || sid, sid), pct: pct ?? 0, pend, missing, noTalao, overdue };
+    return { name: shortName(cfg?.emp || sid, sid), pct: pct ?? 0, wPend, pend, missing, missingDates, noTalao, overdue };
   }).sort((a, b) => b.pct - a.pct);
 
   const medals = ['🥇','🥈','🥉'];
-  const lines = ranked.map((s, i) => {
+  const lines = [];
+  for (let i = 0; i < ranked.length; i++) {
+    const s = ranked[i];
     const flags = [
-      s.pend ? `⏳${s.pend}` : '',
-      s.missing ? `❌${s.missing}d` : '',
+      s.wPend ? `⏳${s.wPend}` : '',
+      s.pend ? `⏳${s.pend}d` : '',
       s.overdue ? `🔴${s.overdue}` : '',
       s.noTalao ? `📄${s.noTalao}` : ''
     ].filter(Boolean).join(' ');
-    return `${i < 3 ? medals[i] : (i + 1) + ' '} ${s.name} — ${s.pct}%${flags ? '  ' + flags : ''}`;
-  });
-  const ok = ranked.filter(s => s.pct >= 80 && !s.overdue && !s.missing).length;
-  const bad = ranked.filter(s => s.pct < 60 || s.overdue > 0 || s.missing > 0).length;
+    lines.push(`${i < 3 ? medals[i] : (i + 1) + ' '} ${s.name} — ${s.pct}%${flags ? '  ' + flags : ''}`);
+    if (s.missingDates && s.missingDates.length) {
+      lines.push(`   ❌ ${s.missingDates.map(fd).join(' · ')}`);
+    }
+  }
+  const ok = ranked.filter(s => s.pct >= 80 && !s.overdue && !s.missing && !s.wPend).length;
+  const bad = ranked.filter(s => s.pct < 60 || s.overdue > 0 || s.missing > 0 || s.wPend > 0).length;
   return `📊 *RANKING ${mesLabel(mes).toUpperCase()}*\n\n${lines.join('\n')}\n\n✅ ${ok} lojas OK  🔴 ${bad} com problemas\nActualizado às ${hhmm()}`;
 }
 
