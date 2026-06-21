@@ -1722,7 +1722,7 @@ async function guardar(){
   const saved=await sbSave(reg);
   if(!saved){toast('⚠️ Guardado localmente. Vai a Configurações → Re-sincronizar quando tiveres ligação.');setTimeout(()=>sp('dash'),1200);return;}
   // Notificar SA (Ivo) por email e Telegram — novo registo ou actualização
-  if(!isSA){
+  if(!isSA||!isNew){
     const total=(reg.sessoes||[]).reduce((s,x)=>s+(parseFloat(x.valor)||0),0);
     const storeId=sbProfile?.store_id||'';
     const _isUpd=!isNew;
