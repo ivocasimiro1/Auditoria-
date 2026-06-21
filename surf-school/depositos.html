@@ -900,6 +900,22 @@ const _SBKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 // Telegram — notificações com foto ao registar novo depósito
 const _TG_TOKEN='8640253196:AAEP0aWxhijWwLnjOefiKbATvNkcLF1JH2Y';
 const _TG_CHAT='-5587765450';
+function shortName(str,sidHint){
+  if(!str)return str;
+  const words=str.split(/\s+/).filter(w=>w&&w!=='&');
+  if(words.length<=2)return str;
+  const busW=new Set(['surf','skate','shop','store','loja','sports','boards','escola','escolas']);
+  const skipI=new Set(['de','da','do','das','dos','e','a','o','os','as']);
+  const lastW=words[words.length-1];
+  let locW,brandW;
+  if(!busW.has(lastW.toLowerCase())){locW=lastW;brandW=words.slice(0,-1);}
+  else{const h=(sidHint||'').split('-').pop();locW=h&&h.length>2?h.charAt(0).toUpperCase()+h.slice(1):'';brandW=words;}
+  const hasCode=/^\d/.test(brandW[0]);
+  let init;
+  if(hasCode){init=brandW.filter(w=>/^\d/.test(w)||!busW.has(w.toLowerCase())).map(w=>/^\d/.test(w)?w:w[0].toUpperCase()).filter(t=>!skipI.has(t.toLowerCase())).join('');}
+  else{init=brandW.filter(w=>!skipI.has(w.toLowerCase())).map(w=>w[0].toUpperCase()).join('');}
+  return locW?`${init} ${locW}`:init||str;
+}
 async function tgDailyBriefing(){
   if(!isSA||!_TG_TOKEN)return;
   const todayStr=new Date().toISOString().split('T')[0];
@@ -1018,7 +1034,7 @@ async function tgMonthlyWrapped(){
   const ranked=[];
   for(const sid of sids){
     const cfg2=allStoreConfigs.find(c=>c.store_id===sid);
-    const empName=cfg2?.emp||sid;
+    const empName=shortName(cfg2?.emp||sid,sid);
     const pct=storeComplianceMes(sid,prevMes);
     const sr=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(prevMes));
     const missTalao=sr.filter(r=>r.dataDeposito&&!r.talao).length;
@@ -1058,7 +1074,7 @@ async function tgPredictiveAlerts(){
   const dowNames=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
   for(const sid of sids){
     const cfg2=allStoreConfigs.find(c=>c.store_id===sid);
-    const empName=cfg2?.emp||sid;
+    const empName=shortName(cfg2?.emp||sid,sid);
     const sr=regs.filter(r=>r.store_id===sid);
     const tipos=[...new Set(sr.map(r=>r.tipo).filter(Boolean))];
     const issues=[];
@@ -1080,8 +1096,10 @@ async function tgPredictiveAlerts(){
       const lastSess=sr.filter(r=>r.tipo===tipo).flatMap(r=>(r.sessoes||[]).map(s=>s.dataVendas)).filter(Boolean).sort().pop()||'';
       const sessAge=lastSess?Math.floor((today-new Date(lastSess))/86400000):0;
       if(sessAge<3)continue;
-      const last3dates=tr.slice(-3).map(r=>fd(r.dataDeposito).slice(0,5));
-      issues.push(`Padrão detectado: *${tipo}* habitualmente às *${dowNames[pDow]}s*\nHoje é ${dowNames[todayDow]} — ainda sem depósito esta semana\n⏰ Últimos depósitos: ${last3dates.join(' · ')}`);
+      const lastDep=tr.length?fd(tr[tr.length-1].dataDeposito).slice(0,5):'—';
+      const pendRecs=sr.filter(r=>r.tipo===tipo&&!r.dataDeposito);
+      const pendDays=[...new Set(pendRecs.flatMap(r=>(r.sessoes||[]).map(s=>s.dataVendas).filter(Boolean)))].length;
+      issues.push(`Padrão: *${tipo}* habitual às *${dowNames[pDow]}s*\nÚltimo depósito: ${lastDep}${pendDays?`\n📋 ${pendDays} dia${pendDays!==1?'s':''} por depositar`:''}`);
     }
     if(!issues.length)continue;
     const msg=`🔮 *ALERTA PREDITIVO — ${empName}*\n\n${issues.join('\n\n')}`;
@@ -1106,7 +1124,7 @@ async function tgPollBotCommands(){
     if(text==='/ranking'){
       const sids=[...new Set(regs.map(r=>r.store_id).filter(s=>s&&s!=='super'))];
       const ranked=[];
-      for(const sid of sids){const cfg2=allStoreConfigs.find(c=>c.store_id===sid);const p=storeComplianceMes(sid,mes);ranked.push({name:cfg2?.emp||sid,pct:p||0});}
+      for(const sid of sids){const cfg2=allStoreConfigs.find(c=>c.store_id===sid);const p=storeComplianceMes(sid,mes);ranked.push({name:shortName(cfg2?.emp||sid,sid),pct:p||0});}
       ranked.sort((a,b)=>b.pct-a.pct);
       const medals=['🥇','🥈','🥉'];
       const lines=ranked.map((s,i)=>`${i<3?medals[i]:(i+1)+'  '} ${s.name} — ${s.pct}%`);
@@ -1118,7 +1136,7 @@ async function tgPollBotCommands(){
       const query=text.slice(7).trim().toLowerCase();
       const cfg2=allStoreConfigs.find(c=>(c.emp||'').toLowerCase().includes(query)||(c.store_id||'').toLowerCase().includes(query));
       if(!cfg2){await _send(chatId,`❓ Loja não encontrada: *${query}*\nUsa /ranking para ver todas as lojas.`);continue;}
-      const sid=cfg2.store_id;const empName=cfg2.emp||sid;
+      const sid=cfg2.store_id;const empName=shortName(cfg2.emp||sid,sid);
       const sr=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes));
       const pct=storeComplianceMes(sid,mes)||0;
       const missTalao=sr.filter(r=>r.dataDeposito&&!r.talao).length;
@@ -3320,14 +3338,20 @@ function rSASupervision(){
       const prevPct=s.lastCompliant;
       const trend=prevPct===null?'→':pct>prevPct?'↑':pct<prevPct?'↓':'→';
       const tColor=trend==='↑'?'#059669':trend==='↓'?'#dc2626':'#94a3b8';
-      return`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.06);${i%2?'background:rgba(255,255,255,.03)':''}">
-        <div style="width:22px;text-align:center;flex-shrink:0;font-size:15px">${i<3?medals[i]:'<span style="font-size:12px;color:#94a3b8;font-weight:700">'+(i+1)+'</span>'}</div>
-        <div style="flex:1;font-size:12px;font-weight:700;color:#e2e8f0;min-width:0;word-break:break-word">${s.displayName}</div>
-        <div style="font-size:13px;font-weight:800;color:${pctColor};min-width:38px;text-align:right">${pct}%</div>
-        <div style="width:48px;background:rgba(255,255,255,.1);border-radius:4px;height:6px;flex-shrink:0"><div style="background:${pctColor};border-radius:4px;height:6px;width:${pct}%"></div></div>
-        <div style="font-size:11px;color:#94a3b8;min-width:26px;text-align:center">${s.gaps>0?'⛔'+s.gaps:''}</div>
-        <div style="font-size:11px;color:#94a3b8;min-width:22px;text-align:center">${s.semTalao>0?'📄'+s.semTalao:''}</div>
-        <div style="font-size:13px;color:${tColor};font-weight:700;min-width:14px;text-align:center">${trend}</div>
+      const _m=s.semTalao||0;const _g=s.gaps||0;
+      const _sc=Math.max(0,Math.min(100,pct-Math.min(20,_m*5)-Math.min(24,_g*8)));
+      const _gr=_sc>=85?'A':_sc>=70?'B':_sc>=55?'C':'D';
+      const _gc=_gr==='A'?'#059669':_gr==='B'?'#2563eb':_gr==='C'?'#d97706':'#dc2626';
+      const sn=shortName(s.displayName,s.sid);
+      return`<div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.06);${i%2?'background:rgba(255,255,255,.03)':''}">
+        <div style="width:20px;text-align:center;flex-shrink:0;font-size:14px">${i<3?medals[i]:'<span style="font-size:11px;color:#94a3b8;font-weight:700">'+(i+1)+'</span>'}</div>
+        <div style="flex:1;font-size:12px;font-weight:700;color:#e2e8f0;min-width:0">${sn}</div>
+        <div style="font-size:13px;font-weight:800;color:${pctColor};min-width:32px;text-align:right">${pct}%</div>
+        <div style="width:32px;background:rgba(255,255,255,.1);border-radius:3px;height:5px;flex-shrink:0"><div style="background:${pctColor};border-radius:3px;height:5px;width:${pct}%"></div></div>
+        <div style="font-size:13px;font-weight:900;color:${_gc};min-width:16px;text-align:center">${_gr}</div>
+        <div style="font-size:10px;color:#94a3b8;min-width:22px;text-align:center">${_g>0?'⛔'+_g:''}</div>
+        <div style="font-size:10px;color:#94a3b8;min-width:18px;text-align:center">${_m>0?'📄'+_m:''}</div>
+        <div style="font-size:12px;color:${tColor};font-weight:700;min-width:12px;text-align:center">${trend}</div>
       </div>`;
     }).join('');
     _rankPanel.innerHTML=`<div style="background:#0d1b3e;border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid rgba(255,255,255,.08)">
@@ -3336,46 +3360,15 @@ function rSASupervision(){
       ${_rankRows||'<div style="color:#64748b;font-size:13px;padding:8px 0">Sem dados para este mês</div>'}
     </div>`;
   }
-  // ── FEATURE 2: Score Cards ──
-  const _scoresPanel=document.getElementById('sa-scores');
-  if(_scoresPanel){
-    const _scoreData=storeList.filter(s=>s.total>0).map(s=>{
-      const base=s.compliant||0;
-      const missTalao=s.semTalao||0;const gaps=s.gaps||0;
-      const score=Math.max(0,Math.min(100,Math.round(base*0.6+(base*0.4))-Math.min(20,missTalao*5)-Math.min(24,gaps*8)));
-      const grade=score>=85?'A':score>=70?'B':score>=55?'C':'D';
-      const gradeColor=grade==='A'?'#059669':grade==='B'?'#2563eb':grade==='C'?'#d97706':'#dc2626';
-      const prevBase=s.lastCompliant||0;
-      const prevScore=Math.max(0,Math.min(100,Math.round(prevBase*0.6+(prevBase*0.4))));
-      const trend=s.lastCompliant===null?'→':score>prevScore?'↑':score<prevScore?'↓':'→';
-      const tColor=trend==='↑'?'#059669':trend==='↓'?'#dc2626':'#94a3b8';
-      const daysCovered=[...new Set((regs.filter(r=>r.store_id===s.sid&&getRefDate(r).startsWith(mes))||[]).flatMap(r=>(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean)))].length;
-      return{...s,score,grade,gradeColor,trend,tColor,daysCovered,missTalao,gaps};
-    }).sort((a,b)=>b.score-a.score);
-    const _scoreCards=_scoreData.map(s=>`<div style="background:#0d1b3e;border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,.08)">
-      <div style="font-size:11px;font-weight:700;color:#93c5fd;margin-bottom:6px;word-break:break-word;line-height:1.3">${s.displayName}</div>
-      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px">
-        <span style="font-size:28px;font-weight:900;color:#e2e8f0;line-height:1">${s.score}</span>
-        <span style="font-size:18px;font-weight:900;color:${s.gradeColor};margin-left:2px">${s.grade}</span>
-        <span style="font-size:14px;color:${s.tColor};margin-left:auto">${s.trend}</span>
-      </div>
-      <div style="background:rgba(255,255,255,.1);border-radius:4px;height:5px;margin-bottom:8px"><div style="background:${s.gradeColor};border-radius:4px;height:5px;width:${s.score}%"></div></div>
-      <div style="display:flex;gap:6px;font-size:10px;color:#94a3b8;flex-wrap:wrap">
-        <span>📅 ${s.daysCovered}d</span>${s.missTalao?`<span style="color:#f59e0b">📄 ${s.missTalao}</span>`:''}${s.gaps?`<span style="color:#dc2626">⛔ ${s.gaps}</span>`:''}
-      </div>
-    </div>`).join('');
-    _scoresPanel.innerHTML=`<div style="background:rgba(255,255,255,.03);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid rgba(255,255,255,.06)">
-      <div style="font-size:12px;font-weight:800;color:#93c5fd;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">🎯 Nota por Loja — ${mesLabelStr}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${_scoreCards||'<div style="color:#64748b;font-size:13px;grid-column:1/-1">Sem dados</div>'}</div>
-    </div>`;
-  }
+  // Score cards removed — grade now inline in ranking table
+  const _scoresPanel=document.getElementById('sa-scores');if(_scoresPanel)_scoresPanel.innerHTML='';
   // ── FEATURE 3: Streak Counter ──
   const _streakPanel=document.getElementById('sa-streaks');
   if(_streakPanel){
     const _streakToday=new Date().toISOString().split('T')[0];
     const _sids2=[...new Set(regs.map(r=>r.store_id).filter(s=>s&&s!=='super'))];
     const _streakData=_sids2.map(sid=>{
-      const cfg2=allStoreConfigs.find(c=>c.store_id===sid);const empName=cfg2?.emp||sid;
+      const cfg2=allStoreConfigs.find(c=>c.store_id===sid);const empName=shortName(cfg2?.emp||sid,sid);
       let streak=0;
       for(let i=0;i<90;i++){
         const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().split('T')[0];
