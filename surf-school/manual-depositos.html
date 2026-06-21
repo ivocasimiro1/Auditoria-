@@ -897,7 +897,7 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
     <p>Visão geral dos depósitos, alertas e estado do mês selecionado</p>
   </div>
   <div class="section">
-    <p>O Dashboard é o ecrã inicial após login. Mostra os indicadores do mês e a lista completa de registos da loja.</p>
+    <p>O Dashboard é o ecrã inicial após login. Mostra os indicadores de cumprimento do mês — percentagem, depósitos no prazo, atrasos, dias cobertos — e a lista completa de registos da loja.</p>
     <div class="mockup" style="max-width:480px;margin:16px auto">
       <div class="mockup-bar"><div class="title">📊 Dashboard</div><div class="sub">junho 2026 · ESS Guia</div></div>
       <div class="mockup-nav">
@@ -1011,7 +1011,7 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
         <tr><td>Seletor de mês / loja (topo)</td><td>Filtra tudo para o período ou loja escolhidos</td></tr>
         <tr><td>Chip amarelo de dia em falta (ex: <span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700">15/06</span>)</td><td>Abre o formulário Novo com essa data já preenchida</td></tr>
         <tr><td>Card de um depósito</td><td>Abre detalhe completo com opção de editar/apagar</td></tr>
-        <tr><td>Indicador Cumprimento %</td><td>Percentagem de conformidade do mês — <strong>visível pelo administrador Despomar</strong> e incluído no ranking mensal de lojas</td></tr>
+        <tr><td>Indicador Cumprimento %</td><td>Percentagem de conformidade do mês (depósitos no prazo, sem atrasos, com talão) — <strong>visível pelo administrador Despomar</strong> e incluído no ranking mensal de lojas</td></tr>
       </tbody>
     </table>
   </div>
@@ -1151,7 +1151,7 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
     <p>Calendário completo do mês — todos os dias, com e sem registo</p>
   </div>
   <div class="section">
-    <p>O Mapa mostra uma tabela calendário com <strong>todos os dias do mês</strong>. Os dias com depósito aparecem com os dados completos; os dias sem nenhum registo aparecem como linha em branco, permitindo identificar facilmente lacunas.</p>
+    <p>O Mapa mostra uma tabela calendário com <strong>todos os dias do mês</strong>. Os dias com depósito aparecem com o estado de cumprimento (no prazo, aviso, atraso); os dias sem nenhum registo aparecem em cinzento, permitindo identificar facilmente lacunas e saltos que penalizam o Cumprimento %.</p>
     <h3>Como aceder</h3>
     <ol class="step-list">
       <li><span>Toque em <strong>Mapa</strong> na barra de navegação inferior</span></li>
@@ -1180,23 +1180,23 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
           <div class="kpi red" style="padding:7px"><div class="kl">Dias s/ Reg.</div><div class="kv" style="font-size:14px">2</div></div>
         </div>
         <div style="background:#fff;border-radius:8px;border:1px solid var(--g100);overflow:hidden">
-          <div style="display:grid;grid-template-columns:60px 1fr 70px 60px;background:var(--g800);color:#fff;padding:5px 8px;font-size:8px;font-weight:700;text-transform:uppercase;gap:4px">
-            <div>Período</div><div>Tipo / Serviço</div><div>Valor</div><div>Estado</div>
+          <div style="display:grid;grid-template-columns:60px 1fr 80px;background:var(--g800);color:#fff;padding:5px 8px;font-size:8px;font-weight:700;text-transform:uppercase;gap:4px">
+            <div>Período</div><div>Tipo / Serviço</div><div>Estado</div>
           </div>
-          <div style="display:grid;grid-template-columns:60px 1fr 70px 60px;padding:5px 8px;font-size:9px;gap:4px;background:#f0fdf4;border-bottom:1px solid var(--g100)">
-            <div style="font-weight:700">01/06→07/06</div><div style="color:var(--g600)">Prosegur · Dep: 05/06 · T: 26443E</div><div style="font-weight:700;color:var(--blue2)">€4.886</div><div><span class="mock-badge ok">OK</span></div>
+          <div style="display:grid;grid-template-columns:60px 1fr 80px;padding:5px 8px;font-size:9px;gap:4px;background:#f0fdf4;border-bottom:1px solid var(--g100)">
+            <div style="font-weight:700">01/06→07/06</div><div style="color:var(--g600)">Prosegur · Dep: 05/06 · T: 26443E · 📷</div><div><span class="mock-badge ok">✅ OK</span></div>
           </div>
-          <div style="display:grid;grid-template-columns:60px 1fr 70px 60px;padding:5px 8px;font-size:9px;gap:4px;background:#f0fdf4;border-bottom:1px solid var(--g100)">
-            <div style="font-weight:700">08/06→12/06</div><div style="color:var(--g600)">Prosegur · Dep: 12/06 · T: 26802E</div><div style="font-weight:700;color:var(--blue2)">€4.451</div><div><span class="mock-badge ok">OK</span></div>
+          <div style="display:grid;grid-template-columns:60px 1fr 80px;padding:5px 8px;font-size:9px;gap:4px;background:#f0fdf4;border-bottom:1px solid var(--g100)">
+            <div style="font-weight:700">08/06→12/06</div><div style="color:var(--g600)">Prosegur · Dep: 12/06 · T: 26802E · 📷</div><div><span class="mock-badge ok">✅ OK</span></div>
           </div>
-          <div style="display:grid;grid-template-columns:60px 1fr 70px 60px;padding:5px 8px;font-size:9px;gap:4px;background:var(--g50);border-bottom:1px solid var(--g100)">
-            <div style="color:var(--g400);font-style:italic">Seg 13/06</div><div style="color:var(--g300);font-style:italic">sem registo</div><div></div><div></div>
+          <div style="display:grid;grid-template-columns:60px 1fr 80px;padding:5px 8px;font-size:9px;gap:4px;background:var(--g50);border-bottom:1px solid var(--g100)">
+            <div style="color:var(--g400);font-style:italic">Seg 13/06</div><div style="color:var(--g300);font-style:italic">sem registo</div><div style="color:var(--g300)">—</div>
           </div>
-          <div style="display:grid;grid-template-columns:60px 1fr 70px 60px;padding:5px 8px;font-size:9px;gap:4px;background:var(--g50);border-bottom:1px solid var(--g100)">
-            <div style="color:var(--g400);font-style:italic">Ter 14/06</div><div style="color:var(--g300);font-style:italic">sem registo</div><div></div><div></div>
+          <div style="display:grid;grid-template-columns:60px 1fr 80px;padding:5px 8px;font-size:9px;gap:4px;background:var(--g50);border-bottom:1px solid var(--g100)">
+            <div style="color:var(--g400);font-style:italic">Ter 14/06</div><div style="color:var(--g300);font-style:italic">sem registo</div><div style="color:var(--g300)">—</div>
           </div>
-          <div style="display:grid;grid-template-columns:60px 1fr 70px 60px;padding:5px 8px;font-size:9px;gap:4px;background:#f0fdf4">
-            <div style="font-weight:700">15/06→21/06</div><div style="color:var(--g600)">Prosegur · Dep: 19/06 · T: 27102E</div><div style="font-weight:700;color:var(--blue2)">€5.210</div><div><span class="mock-badge ok">OK</span></div>
+          <div style="display:grid;grid-template-columns:60px 1fr 80px;padding:5px 8px;font-size:9px;gap:4px;background:#fffbeb">
+            <div style="font-weight:700">15/06→21/06</div><div style="color:var(--orange)">Prosegur · Dep: 19/06 · ⚠️ sem foto talão</div><div><span class="mock-badge warn">⚠️ Aviso</span></div>
           </div>
         </div>
         <div style="font-size:9px;color:var(--g400);margin-top:6px;text-align:center">Linhas cinzentas = dias sem qualquer registo de sessão de caixa</div>
@@ -1212,6 +1212,7 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
         <tr><td style="background:var(--g50)"><em style="color:var(--g400)">sem registo</em></td><td>Dia sem nenhuma sessão de caixa registada — verificar se é feriado/encerramento</td></tr>
       </tbody>
     </table>
+    <div class="tip"><b>💡 Foco em cumprimento:</b> O Mapa mostra o estado de cada depósito (OK / Aviso / Atraso / Em Progresso) e os dias sem registo — estes são os dados que determinam o Cumprimento % do mês, visível pelo Super Admin.</div>
     <div class="tip"><b>💡 PDF como registo mensal:</b> O botão 🖨️ PDF gera um documento com o título "Registo de Depósitos — [Mês]" e todos os dias, ideal para arquivo físico ou digital.</div>
 
     <h3>Selecionar depósitos para e-mail</h3>
@@ -1223,15 +1224,13 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
           <div style="width:16px;height:16px;border:2px solid var(--blue2);border-radius:3px;background:var(--blue2);flex-shrink:0;display:flex;align-items:center;justify-content:center">
             <span style="color:#fff;font-size:10px;font-weight:800">✓</span>
           </div>
-          <div style="flex:1"><span style="font-weight:700">01/06→07/06</span> &nbsp;·&nbsp; Prosegur · Dep: 05/06 · T: 26443E</div>
-          <div style="font-weight:800;color:var(--blue2)">€4.886</div>
-          <span class="mock-badge ok">OK</span>
+          <div style="flex:1"><span style="font-weight:700">01/06→07/06</span> &nbsp;·&nbsp; Prosegur · Dep: 05/06 · T: 26443E · 📷</div>
+          <span class="mock-badge ok">✅ OK</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;font-size:10px;padding:6px 8px;background:var(--g50);border-radius:7px;border:1px solid var(--g100);margin-top:4px">
           <div style="width:16px;height:16px;border:2px solid var(--g300);border-radius:3px;background:#fff;flex-shrink:0"></div>
-          <div style="flex:1;color:var(--g400);font-style:italic">08/06→14/06 &nbsp;·&nbsp; Prosegur · Dep: 12/06 · T: 26802E</div>
-          <div style="font-weight:800;color:var(--g400)">€4.451</div>
-          <span class="mock-badge ok">OK</span>
+          <div style="flex:1;color:var(--g400);font-style:italic">08/06→14/06 &nbsp;·&nbsp; Prosegur · Dep: 12/06 · T: 26802E · 📷</div>
+          <span class="mock-badge ok">✅ OK</span>
         </div>
       </div>
     </div>
@@ -1495,13 +1494,13 @@ SEM COMPROVATIVO: 1 deposito</pre>
           </div>
           <div style="padding:8px;background:var(--g50)">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px">
-              <div style="background:#fff;border-radius:7px;padding:6px 8px;border:1px solid var(--g100)"><div style="font-size:7px;color:var(--g400);font-weight:700">TOTAL</div><div style="font-size:12px;font-weight:800;color:var(--blue2)">€24.4k</div></div>
               <div style="background:#fff;border-radius:7px;padding:6px 8px;border:1px solid var(--g100)"><div style="font-size:7px;color:var(--g400);font-weight:700">CUMPRIMENTO</div><div style="font-size:12px;font-weight:800;color:var(--green)">87%</div></div>
+              <div style="background:#fff;border-radius:7px;padding:6px 8px;border:1px solid var(--g100)"><div style="font-size:7px;color:var(--g400);font-weight:700">NO PRAZO</div><div style="font-size:12px;font-weight:800;color:var(--green)">4 / 4</div></div>
             </div>
             <div style="background:#fff;border-radius:7px;padding:6px 8px;border:1px solid var(--g100);font-size:8px">
-              <div style="font-weight:800;color:var(--g700);margin-bottom:3px">ESS Guia</div>
-              <div style="color:var(--g500)">01→07/06 · Prosegur · €4.886</div>
-              <div style="color:var(--g500)">08→12/06 · Prosegur · €4.451</div>
+              <div style="font-weight:800;color:var(--g700);margin-bottom:3px">ESS Guia — junho 2026</div>
+              <div style="color:var(--g500)">01→07/06 · Prosegur · ✅ OK · 📷</div>
+              <div style="color:var(--g500)">08→12/06 · Prosegur · ✅ OK · 📷</div>
             </div>
           </div>
           <div style="display:flex;border-top:1px solid var(--g100);background:#fff">
