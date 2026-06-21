@@ -3522,7 +3522,7 @@ function rLista(){
   const total=filtered.reduce((s,r)=>s+totalValor(r),0);
   document.getElementById('s-tot').textContent=fmt(total);
   document.getElementById('s-cnt').textContent=filtered.length;
-  document.getElementById('s-err').textContent=filtered.filter(r=>calcEstado(r,getRecordCfg(r)).s==='err').length;
+  document.getElementById('s-err').textContent=filtered.filter(r=>{const s=calcEstado(r,getRecordCfg(r)).s;return s==='err'||s==='warn';}).length;
   document.getElementById('s-ok').textContent=filtered.filter(r=>calcEstado(r,getRecordCfg(r)).s==='ok').length;
   const el=document.getElementById('list');
   // SA: store summary banner when filtered by store_id
