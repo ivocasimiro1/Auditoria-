@@ -915,18 +915,18 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
         </div>
         <!-- KPIs -->
         <div class="mockup-kpi">
-          <div class="kpi blue"><div class="kl">Total Mês</div><div class="kv">€19.690</div><div style="font-size:9px;color:var(--g400);margin-top:2px">5 dep. · 11 sessões</div></div>
-          <div class="kpi green"><div class="kl">✅ Depositado</div><div class="kv">€14.548</div><div style="font-size:9px;color:var(--g400);margin-top:2px">3 depósitos OK</div></div>
-          <div class="kpi red"><div class="kl">⚠️ Pendente</div><div class="kv">€5.142</div><div style="font-size:9px;color:var(--g400);margin-top:2px">1 atraso · 1 prog.</div></div>
           <div class="kpi orange"><div class="kl">Cumprimento</div><div class="kv">68%</div><div style="font-size:9px;color:var(--g400);margin-top:2px">deste mês</div></div>
+          <div class="kpi green"><div class="kl">✅ A Tempo</div><div class="kv">3 / 4</div><div style="font-size:9px;color:var(--g400);margin-top:2px">depósitos no prazo</div></div>
+          <div class="kpi red"><div class="kl">🔴 Atrasos</div><div class="kv">1</div><div style="font-size:9px;color:var(--g400);margin-top:2px">prazo ultrapassado</div></div>
+          <div class="kpi blue"><div class="kl">Dias Cobertos</div><div class="kv">18 / 21</div><div style="font-size:9px;color:var(--g400);margin-top:2px">dias com registo</div></div>
         </div>
         <!-- Alertas -->
         <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 10px;margin-bottom:6px">
           <div style="font-size:9px;font-weight:800;color:#991b1b;margin-bottom:3px">🔴 1 DEPÓSITO EM ATRASO — AÇÃO URGENTE</div>
-          <div style="font-size:9px;color:#7f1d1d">22/06→28/06 · €3.892,50 · Prosegur · prazo 26/06 ultrapassado</div>
+          <div style="font-size:9px;color:#7f1d1d">22/06→28/06 · Prosegur · prazo 26/06 ultrapassado · registe o talão já</div>
         </div>
         <div style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:8px;padding:8px 10px;margin-bottom:8px">
-          <div style="font-size:9px;font-weight:800;color:#92400e;margin-bottom:3px">⚠️ 1 REGISTO INCOMPLETO — Falta foto do talão</div>
+          <div style="font-size:9px;font-weight:800;color:#92400e;margin-bottom:3px">⚠️ 1 REGISTO SEM TALÃO — Cumprimento penalizado</div>
           <div style="font-size:9px;color:#78350f">15/06→21/06 · Talão: 27102567E · Foto não anexada</div>
         </div>
         <!-- Lista de todos os registos -->
@@ -938,10 +938,9 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
             <div style="flex:1">
               <div style="font-weight:700;color:var(--g800)">01/06 → 07/06</div>
               <div style="color:var(--g500);font-size:9px">Sess. 6280 · 6281 · 6282 · Talão: 26443160E · Dep: 05/06</div>
-              <div style="font-size:9px;color:var(--g400)">Resp: Tiago Rufino · 📷 Foto OK</div>
+              <div style="font-size:9px;color:var(--g400)">Resp: Tiago Rufino · 📷 Foto OK · no prazo</div>
             </div>
             <div style="text-align:right">
-              <div style="font-weight:800;color:var(--blue2);font-size:12px">€4.886,20</div>
               <div class="mock-badge ok">✅ OK</div>
             </div>
           </div>
@@ -951,10 +950,9 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
             <div style="flex:1">
               <div style="font-weight:700;color:var(--g800)">08/06 → 14/06</div>
               <div style="color:var(--g500);font-size:9px">Sess. 6290 · 6291 · Talão: 26802134E · Dep: 12/06</div>
-              <div style="font-size:9px;color:var(--g400)">Resp: André Costa · 📷 Foto OK</div>
+              <div style="font-size:9px;color:var(--g400)">Resp: André Costa · 📷 Foto OK · no prazo</div>
             </div>
             <div style="text-align:right">
-              <div style="font-weight:800;color:var(--blue2);font-size:12px">€4.451,35</div>
               <div class="mock-badge ok">✅ OK</div>
             </div>
           </div>
@@ -964,10 +962,9 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
             <div style="flex:1">
               <div style="font-weight:700;color:var(--g800)">15/06 → 21/06</div>
               <div style="color:var(--g500);font-size:9px">Sess. 6300 · 6301 · 6302 · Talão: 27102567E · Dep: 19/06</div>
-              <div style="font-size:9px;color:#92400e">Resp: Tiago Rufino · ⚠️ Foto não anexada</div>
+              <div style="font-size:9px;color:#92400e">Resp: Tiago Rufino · ⚠️ Sem foto do talão</div>
             </div>
             <div style="text-align:right">
-              <div style="font-weight:800;color:var(--blue2);font-size:12px">€5.210,80</div>
               <div class="mock-badge warn">⚠️ Aviso</div>
             </div>
           </div>
@@ -977,10 +974,9 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
             <div style="flex:1">
               <div style="font-weight:700;color:var(--g800)">22/06 → 28/06</div>
               <div style="color:var(--g500);font-size:9px">Sess. 6310 · 6311 · Prazo: 26/06 · SEM DEPÓSITO</div>
-              <div style="font-size:9px;color:#991b1b">Resp: André Costa · 🔴 Depósito em falta</div>
+              <div style="font-size:9px;color:#991b1b">Resp: André Costa · 🔴 Prazo ultrapassado</div>
             </div>
             <div style="text-align:right">
-              <div style="font-weight:800;color:var(--red);font-size:12px">€3.892,50</div>
               <div class="mock-badge err">🔴 Atraso</div>
             </div>
           </div>
@@ -992,16 +988,16 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
               <div style="color:var(--g500);font-size:9px">Sess. 6320 · Prazo: 03/07 · Em progresso</div>
             </div>
             <div style="text-align:right">
-              <div style="font-weight:800;color:var(--blue2);font-size:12px">€1.250,00</div>
               <div class="mock-badge prog">📅 Prog.</div>
             </div>
           </div>
         </div>
-        <!-- Totais -->
-        <div style="background:var(--g800);color:#fff;border-radius:8px;padding:8px 12px;margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center">
-          <div><div style="font-size:8px;opacity:.6;text-transform:uppercase">Total</div><div style="font-size:12px;font-weight:800">€19.690,85</div></div>
-          <div><div style="font-size:8px;opacity:.6;text-transform:uppercase">Depositado</div><div style="font-size:12px;font-weight:800;color:#86efac">€14.548,35</div></div>
-          <div><div style="font-size:8px;opacity:.6;text-transform:uppercase">Pendente</div><div style="font-size:12px;font-weight:800;color:#fca5a5">€5.142,50</div></div>
+        <!-- Resumo de Cumprimento -->
+        <div style="background:var(--g800);color:#fff;border-radius:8px;padding:8px 12px;margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;text-align:center">
+          <div><div style="font-size:8px;opacity:.6;text-transform:uppercase">Cumprimento</div><div style="font-size:12px;font-weight:800;color:#fbbf24">68%</div></div>
+          <div><div style="font-size:8px;opacity:.6;text-transform:uppercase">No Prazo</div><div style="font-size:12px;font-weight:800;color:#86efac">3 / 4</div></div>
+          <div><div style="font-size:8px;opacity:.6;text-transform:uppercase">Atrasos</div><div style="font-size:12px;font-weight:800;color:#fca5a5">1</div></div>
+          <div><div style="font-size:8px;opacity:.6;text-transform:uppercase">Sem Talão</div><div style="font-size:12px;font-weight:800;color:#fcd34d">1</div></div>
         </div>
       </div>
     </div>
@@ -1068,12 +1064,11 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
               <div style="flex:1">
                 <div style="font-size:9px;color:var(--g400);font-weight:700;text-transform:uppercase;margin-bottom:3px">01/06 → 07/06 · Prosegur</div>
-                <div style="font-size:11px;font-weight:700;color:var(--g700)">Dep: 05/06 &nbsp;·&nbsp; Talão: 26443E</div>
-                <div style="font-size:9px;color:var(--g500);margin-top:2px">3 sessões &nbsp;·&nbsp; Maria Costa</div>
+                <div style="font-size:11px;font-weight:700;color:var(--g700)">Dep: 05/06 &nbsp;·&nbsp; Talão: 26443E &nbsp;·&nbsp; 📷 foto OK</div>
+                <div style="font-size:9px;color:var(--green);margin-top:2px">3 sessões · no prazo · Maria Costa</div>
               </div>
               <div style="text-align:right;flex-shrink:0;margin-left:8px">
-                <div style="font-size:14px;font-weight:800;color:var(--blue2)">€4.886</div>
-                <span class="mock-badge ok" style="margin-top:3px;display:inline-block">✅ OK</span>
+                <span class="mock-badge ok" style="display:inline-block">✅ OK</span>
               </div>
             </div>
           </div>
@@ -1082,12 +1077,11 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
               <div style="flex:1">
                 <div style="font-size:9px;color:var(--g400);font-weight:700;text-transform:uppercase;margin-bottom:3px">08/06 → 12/06 · Prosegur</div>
-                <div style="font-size:11px;font-weight:700;color:var(--g700)">Dep: 12/06 &nbsp;·&nbsp; Talão: 26802E</div>
-                <div style="font-size:9px;color:var(--g500);margin-top:2px">2 sessões &nbsp;·&nbsp; Tiago Rufino</div>
+                <div style="font-size:11px;font-weight:700;color:var(--g700)">Dep: 12/06 &nbsp;·&nbsp; Talão: 26802E &nbsp;·&nbsp; 📷 foto OK</div>
+                <div style="font-size:9px;color:var(--green);margin-top:2px">2 sessões · no prazo · Tiago Rufino</div>
               </div>
               <div style="text-align:right;flex-shrink:0;margin-left:8px">
-                <div style="font-size:14px;font-weight:800;color:var(--blue2)">€4.451</div>
-                <span class="mock-badge ok" style="margin-top:3px;display:inline-block">✅ OK</span>
+                <span class="mock-badge ok" style="display:inline-block">✅ OK</span>
               </div>
             </div>
           </div>
@@ -1097,11 +1091,10 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
               <div style="flex:1">
                 <div style="font-size:9px;color:var(--g400);font-weight:700;text-transform:uppercase;margin-bottom:3px">15/06 → 18/06 · Dep. Direto</div>
                 <div style="font-size:11px;font-weight:700;color:var(--orange)">Dep: 18/06 &nbsp;·&nbsp; ⚠️ SEM TALÃO</div>
-                <div style="font-size:9px;color:var(--g500);margin-top:2px">2 sessões &nbsp;·&nbsp; Tiago Rufino</div>
+                <div style="font-size:9px;color:var(--orange);margin-top:2px">2 sessões · Tiago Rufino · cumprimento penalizado</div>
               </div>
               <div style="text-align:right;flex-shrink:0;margin-left:8px">
-                <div style="font-size:14px;font-weight:800;color:var(--blue2)">€3.210</div>
-                <span class="mock-badge warn" style="margin-top:3px;display:inline-block">⚠️ Aviso</span>
+                <span class="mock-badge warn" style="display:inline-block">⚠️ Aviso</span>
               </div>
             </div>
           </div>
@@ -1110,12 +1103,11 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
               <div style="flex:1">
                 <div style="font-size:9px;color:var(--g400);font-weight:700;text-transform:uppercase;margin-bottom:3px">19/06 → 21/06 · Câmbio</div>
-                <div style="font-size:11px;font-weight:700;color:var(--red)">🔴 EM ATRASO — Ainda pendente</div>
-                <div style="font-size:9px;color:var(--g500);margin-top:2px">2 sessões &nbsp;·&nbsp; prazo ultrapassado</div>
+                <div style="font-size:11px;font-weight:700;color:var(--red)">🔴 EM ATRASO — Prazo 21/06 ultrapassado</div>
+                <div style="font-size:9px;color:var(--red);margin-top:2px">2 sessões · sem depósito registado · ação urgente</div>
               </div>
               <div style="text-align:right;flex-shrink:0;margin-left:8px">
-                <div style="font-size:14px;font-weight:800;color:var(--blue2)">€2.100</div>
-                <span class="mock-badge err" style="margin-top:3px;display:inline-block">🔴 Erro</span>
+                <span class="mock-badge err" style="display:inline-block">🔴 Erro</span>
               </div>
             </div>
           </div>
@@ -1124,12 +1116,11 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
               <div style="flex:1">
                 <div style="font-size:9px;color:var(--g400);font-weight:700;text-transform:uppercase;margin-bottom:3px">22/06 → 26/06 · Prosegur</div>
-                <div style="font-size:11px;font-weight:700;color:var(--blue)">📅 Programado: 28/06 (sábado)</div>
-                <div style="font-size:9px;color:var(--g500);margin-top:2px">3 sessões &nbsp;·&nbsp; Maria Costa</div>
+                <div style="font-size:11px;font-weight:700;color:var(--blue)">📅 Programado: 28/06 · prazo OK</div>
+                <div style="font-size:9px;color:var(--g500);margin-top:2px">3 sessões · Maria Costa · dentro do prazo</div>
               </div>
               <div style="text-align:right;flex-shrink:0;margin-left:8px">
-                <div style="font-size:14px;font-weight:800;color:var(--blue2)">€4.987</div>
-                <span class="mock-badge prog" style="margin-top:3px;display:inline-block">📅 Prog.</span>
+                <span class="mock-badge prog" style="display:inline-block">📅 Prog.</span>
               </div>
             </div>
           </div>
@@ -1184,9 +1175,9 @@ p{margin-bottom:10px;font-size:13px;color:var(--g600)}
           <div style="background:#0f172a;color:#fff;border-radius:7px;padding:6px 10px;font-size:10px;font-weight:700;white-space:nowrap">🖨️ PDF</div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
-          <div class="kpi green" style="padding:7px"><div class="kl">Depósitos</div><div class="kv" style="font-size:14px">5</div></div>
-          <div class="kpi blue" style="padding:7px"><div class="kl">Depositado</div><div class="kv" style="font-size:14px">€24k</div></div>
-          <div class="kpi orange" style="padding:7px"><div class="kl">Dias s/ Reg.</div><div class="kv" style="font-size:14px">2</div></div>
+          <div class="kpi orange" style="padding:7px"><div class="kl">Cumprimento</div><div class="kv" style="font-size:14px">68%</div></div>
+          <div class="kpi green" style="padding:7px"><div class="kl">No Prazo</div><div class="kv" style="font-size:14px">3 / 4</div></div>
+          <div class="kpi red" style="padding:7px"><div class="kl">Dias s/ Reg.</div><div class="kv" style="font-size:14px">2</div></div>
         </div>
         <div style="background:#fff;border-radius:8px;border:1px solid var(--g100);overflow:hidden">
           <div style="display:grid;grid-template-columns:60px 1fr 70px 60px;background:var(--g800);color:#fff;padding:5px 8px;font-size:8px;font-weight:700;text-transform:uppercase;gap:4px">
