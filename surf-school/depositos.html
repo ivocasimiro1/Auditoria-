@@ -948,19 +948,14 @@ async function tgDailyBriefing(){
   const lojaSet=new Set(regs.map(r=>r.loja).filter(Boolean));
   if(!lojaSet.size)return;
   const today=new Date();
-  const weekAgo=new Date(today);weekAgo.setDate(weekAgo.getDate()-7);
-  const weekAgoStr=weekAgo.toISOString().split('T')[0];
   const dayNames=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
   const dayName=dayNames[today.getDay()];
   const dateStr=String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
-  const fmtEur=n=>n.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
   const shortD=d=>d?fd(d).slice(0,5):'—';
-  let probCount=0,okCount=0,totalWeek=0;
+  let probCount=0,okCount=0;
   const blocks=[];
   for(const loja of [...lojaSet].sort()){
     const lr=regs.filter(r=>r.loja===loja);
-    const weekAmt=lr.filter(r=>r.dataDeposito&&r.dataDeposito>=weekAgoStr).reduce((s,r)=>s+totalValor(r),0);
-    totalWeek+=weekAmt;
     // Per tipo: latest session date + days to deposit (undeposited records + missing days)
     const tipoLatest={};
     const tipoCovDates={}; // ALL covered dates (deposited or not)
@@ -1014,7 +1009,7 @@ async function tgDailyBriefing(){
     blocks.push(lines.join('\n'));
   }
   const sEmoji=probCount===0?'🟢':probCount<=1?'🟡':'🔴';
-  const msg=`☀️ *BOM DIA — Relatório Depósitos*\n📅 ${dayName}, ${dateStr}\n\n━━━━━━━━━━━━━━━━\n${blocks.join('\n\n')}\n━━━━━━━━━━━━━━━━\n${sEmoji} ${probCount} loja${probCount!==1?'s':''} com problemas · ${okCount} OK\n💰 Total semana: €${fmtEur(totalWeek)}`;
+  const msg=`☀️ *BOM DIA — Relatório Depósitos*\n📅 ${dayName}, ${dateStr}\n\n━━━━━━━━━━━━━━━━\n${blocks.join('\n\n')}\n━━━━━━━━━━━━━━━━\n${sEmoji} ${probCount} loja${probCount!==1?'s':''} com problemas · ${okCount} OK`;
   try{await fetch(`https://api.telegram.org/bot${_TG_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,text:msg,parse_mode:'Markdown'})});}catch(e){}
 }
 // sfetch: REST API direto — funciona sem a biblioteca SB (sem CDN)
