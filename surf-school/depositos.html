@@ -1713,16 +1713,20 @@ async function guardar(){
   }
   // Guardar localmente primeiro — nunca perde dados
   saveR();
-  // Upload foto para Supabase Storage → URL pública (novos registos apenas; dados existentes intactos)
+  // Upload foto para Supabase Storage via REST directo → URL pública
   if(fotoB64&&typeof fotoB64==='string'&&fotoB64.startsWith('data:')){
     try{
       const _fRes=await fetch(fotoB64);const _fBlob=await _fRes.blob();
       const _fName=reg.id+'.jpg';
-      const{error:_fErr}=await SB.storage.from('dep-fotos').upload(_fName,_fBlob,{contentType:'image/jpeg',upsert:true});
-      if(!_fErr){
-        const{data:{publicUrl}}=SB.storage.from('dep-fotos').getPublicUrl(_fName);
-        reg.foto=publicUrl;
-        const _ri=regs.findIndex(x=>x.id===reg.id);if(_ri>=0)regs[_ri].foto=publicUrl;
+      const _upResp=await fetch(`${_SBURL}/storage/v1/object/dep-fotos/${_fName}`,{
+        method:'POST',
+        headers:{'Authorization':'Bearer '+_SBKEY,'apikey':_SBKEY,'Content-Type':'image/jpeg','x-upsert':'true'},
+        body:_fBlob
+      });
+      if(_upResp.ok){
+        const _publicUrl=`${_SBURL}/storage/v1/object/public/dep-fotos/${_fName}`;
+        reg.foto=_publicUrl;
+        const _ri=regs.findIndex(x=>x.id===reg.id);if(_ri>=0)regs[_ri].foto=_publicUrl;
       }
     }catch(_fe){}
   }
@@ -3628,8 +3632,8 @@ async function addFotoRapida(id){
         let fotoVal=b64;
         try{
           const _fRes=await fetch(b64);const _fBlob=await _fRes.blob();
-          const{error:_fErr}=await SB.storage.from('dep-fotos').upload(id+'.jpg',_fBlob,{contentType:'image/jpeg',upsert:true});
-          if(!_fErr){const{data:{publicUrl}}=SB.storage.from('dep-fotos').getPublicUrl(id+'.jpg');fotoVal=publicUrl;}
+          const _upResp=await fetch(`${_SBURL}/storage/v1/object/dep-fotos/${id}.jpg`,{method:'POST',headers:{'Authorization':'Bearer '+_SBKEY,'apikey':_SBKEY,'Content-Type':'image/jpeg','x-upsert':'true'},body:_fBlob});
+          if(_upResp.ok)fotoVal=`${_SBURL}/storage/v1/object/public/dep-fotos/${id}.jpg`;
         }catch(_fe){}
         const{error}=await SB.from('dep_registos').update({foto:fotoVal}).eq('id',id);
         if(error){toast('⚠️ Erro ao guardar: '+error.message);return;}
