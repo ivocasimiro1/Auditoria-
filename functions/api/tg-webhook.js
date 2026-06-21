@@ -76,48 +76,65 @@ function since3months() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
-// Weekly services (Prosegur/Lomis): deposits happen once a week, not daily
-const isWeekly = (tipo) => /prosegur|lomis/i.test(tipo || '');
+const WEEKDAY_PT = {'segunda':1,'terca':2,'terça':2,'quarta':3,'quinta':4,'sexta':5,'sabado':6,'sábado':6,'domingo':0};
 
-// For weekly services: % based on records (deposited/total)
-// For daily services: % based on session days (deposited days / all days incl. missing)
-function calcMetrics(storeRegs, mes) {
+function lastPickupDate(dayName) {
+  if (!dayName) return null;
+  const target = WEEKDAY_PT[dayName.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g,'')];
+  if (target === undefined) return null;
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' }));
+  let daysBack = (now.getDay() - target + 7) % 7;
+  if (daysBack === 0) daysBack = 7; // if today is pickup day, use last week
+  const d = new Date(now);
+  d.setDate(d.getDate() - daysBack);
+  return d.toISOString().split('T')[0];
+}
+
+function getPickupDate(tipo, storeCfg) {
+  const t = (tipo || '').toLowerCase();
+  if (/prosegur/.test(t)) return lastPickupDate(storeCfg?.prosegur_day);
+  if (/lomis/.test(t))    return lastPickupDate(storeCfg?.lomis_day);
+  if (/c[aâ]mbio/.test(t)) return lastPickupDate(storeCfg?.cambio_dia);
+  return null; // daily service
+}
+
+function calcMetrics(storeRegs, mes, storeCfg) {
   const [year, month] = mes.split('-').map(Number);
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' }));
   const upToDay = mes === curMes() ? now.getDate() - 1 : new Date(year, month, 0).getDate();
 
-  const dailyRegs = storeRegs.filter(r => !isWeekly(r.tipo));
-  const weeklyRegs = storeRegs.filter(r => isWeekly(r.tipo));
+  const coveredDates = new Set();
+  const depDates = new Set();
+  const pendDates = new Set();
 
-  // Weekly services: simple record count
-  const wDep = weeklyRegs.filter(r => r.data_deposito).length;
-  const wPend = weeklyRegs.filter(r => !r.data_deposito).length;
-
-  // Daily services: per-day coverage
-  const depDays = new Set();
-  const pendDays = new Set();
-  for (const r of dailyRegs) {
+  for (const r of storeRegs) {
     for (const s of (r.sessoes || [])) {
       if (s.dataVendas && s.dataVendas.startsWith(mes)) {
-        if (r.data_deposito) depDays.add(s.dataVendas);
-        else pendDays.add(s.dataVendas);
+        coveredDates.add(s.dataVendas);
+        if (r.data_deposito) depDates.add(s.dataVendas);
+        else pendDates.add(s.dataVendas);
       }
     }
   }
-  const netPend = [...pendDays].filter(d => !depDays.has(d));
+  const netPend = [...pendDates].filter(d => !depDates.has(d));
+
+  // Determine cutoff for weekly services: days only count as missing if <= last pickup date
+  const latestPickup = [...new Set(storeRegs.map(r => getPickupDate(r.tipo, storeCfg)).filter(Boolean))].sort().pop() || null;
+  const hasDailyService = storeRegs.some(r => !getPickupDate(r.tipo, storeCfg));
+
   const missingDates = [];
-  if (dailyRegs.length) {
-    for (let d = 1; d <= upToDay; d++) {
-      const ds = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      if (!depDays.has(ds) && !pendDays.has(ds)) missingDates.push(ds);
+  for (let d = 1; d <= upToDay; d++) {
+    const ds = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    if (!coveredDates.has(ds)) {
+      if (hasDailyService || (latestPickup && ds <= latestPickup)) {
+        missingDates.push(ds);
+      }
     }
   }
 
-  // Combined pct: weekly records + daily days
-  const totalOk = wDep + depDays.size;
-  const totalAll = wDep + wPend + depDays.size + netPend.length + missingDates.length;
-  const pct = totalAll > 0 ? Math.round(totalOk / totalAll * 100) : null;
-  return { pct, wPend, pend: netPend.length, missing: missingDates.length, missingDates };
+  const total = depDates.size + netPend.length + missingDates.length;
+  const pct = total > 0 ? Math.round(depDates.size / total * 100) : null;
+  return { pct, pend: netPend.length, missing: missingDates.length, missingDates };
 }
 
 async function buildRankingText() {
@@ -125,7 +142,7 @@ async function buildRankingText() {
   const since = since3months();
   const [regs, cfgs] = await Promise.all([
     sbGet('dep_registos', `select=store_id,tipo,data_deposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
-    sbGet('dep_config', `select=store_id,emp`)
+    sbGet('dep_config', `select=store_id,emp,prosegur_day,lomis_day,cambio_dia`)
   ]);
   if (!Array.isArray(regs)) return `❌ Erro Supabase registos: ${JSON.stringify(regs).slice(0,120)}`;
   if (!Array.isArray(cfgs)) return `❌ Erro Supabase config: ${JSON.stringify(cfgs).slice(0,120)}`;
@@ -136,10 +153,10 @@ async function buildRankingText() {
   const ranked = sids.map(sid => {
     const cfg = cfgs.find(c => c.store_id === sid);
     const srMes = regs.filter(r => r.store_id === sid && getRefDate(r).startsWith(mes));
-    const { pct, wPend, pend, missing, missingDates } = calcMetrics(srMes, mes);
+    const { pct, pend, missing, missingDates } = calcMetrics(srMes, mes, cfg);
     const noTalao = srMes.filter(r => r.data_deposito && !r.talao).length;
     const overdue = regs.filter(r => r.store_id === sid && !r.data_deposito && getRefDate(r) < mes + '-01').length;
-    return { name: shortName(cfg?.emp || sid, sid), pct: pct ?? 0, wPend, pend, missing, missingDates, noTalao, overdue };
+    return { name: shortName(cfg?.emp || sid, sid), pct: pct ?? 0, pend, missing, missingDates, noTalao, overdue };
   }).sort((a, b) => b.pct - a.pct);
 
   const medals = ['🥇','🥈','🥉'];
@@ -147,8 +164,7 @@ async function buildRankingText() {
   for (let i = 0; i < ranked.length; i++) {
     const s = ranked[i];
     const flags = [
-      s.wPend ? `⏳${s.wPend}` : '',
-      s.pend ? `⏳${s.pend}d` : '',
+      s.pend ? `⏳${s.pend}` : '',
       s.overdue ? `🔴${s.overdue}` : '',
       s.noTalao ? `📄${s.noTalao}` : ''
     ].filter(Boolean).join(' ');
@@ -157,8 +173,8 @@ async function buildRankingText() {
       lines.push(`   ❌ ${s.missingDates.map(fd).join(' · ')}`);
     }
   }
-  const ok = ranked.filter(s => s.pct >= 80 && !s.overdue && !s.missing && !s.wPend).length;
-  const bad = ranked.filter(s => s.pct < 60 || s.overdue > 0 || s.missing > 0 || s.wPend > 0).length;
+  const ok = ranked.filter(s => s.pct >= 80 && !s.overdue && !s.missing).length;
+  const bad = ranked.filter(s => s.pct < 60 || s.overdue > 0 || s.missing > 0).length;
   return `📊 *RANKING ${mesLabel(mes).toUpperCase()}*\n\n${lines.join('\n')}\n\n✅ ${ok} lojas OK  🔴 ${bad} com problemas\nActualizado às ${hhmm()}`;
 }
 
@@ -167,7 +183,7 @@ async function buildStatusText(query) {
   const since = since3months();
   const [regs, cfgs] = await Promise.all([
     sbGet('dep_registos', `select=store_id,tipo,data_deposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
-    sbGet('dep_config', `select=store_id,emp`)
+    sbGet('dep_config', `select=store_id,emp,prosegur_day,lomis_day,cambio_dia`)
   ]);
   if (!Array.isArray(regs)) return `❌ Erro registos: ${JSON.stringify(regs).slice(0,200)}`;
   if (!Array.isArray(cfgs)) return `❌ Erro config: ${JSON.stringify(cfgs).slice(0,200)}`;
@@ -184,7 +200,7 @@ async function buildStatusText(query) {
   const sr = allStore.filter(r => getRefDate(r).startsWith(mes));
   const overdueRegs = allStore.filter(r => !r.data_deposito && getRefDate(r) < mes + '-01');
 
-  const { pct, pend, missing, missingDates } = calcMetrics(sr, mes);
+  const { pct, pend, missing, missingDates } = calcMetrics(sr, mes, cfg);
   if (pct === null && !overdueRegs.length) return `🏪 *${empName}*\n\nSem dados para ${mesLabel(mes)}.`;
 
   const lines = [];
