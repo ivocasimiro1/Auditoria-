@@ -176,10 +176,22 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify(data, null, 2), { headers: { 'Content-Type': 'application/json' } });
   }
   if (url.searchParams.get('debug') === '1') {
+    const mes = curMes();
     const since = since3months();
-    const qs = `select=store_id,data_deposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`;
-    const r = await sbGet('dep_registos', qs);
-    return new Response(JSON.stringify({ query: qs, isArray: Array.isArray(r), result: Array.isArray(r) ? `${r.length} rows` : r }, null, 2), { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+    const qs = `select=store_id,data_deposito,sessoes,criado_em&criado_em=gte.${since}T00:00:00Z`;
+    const rows = await sbGet('dep_registos', qs);
+    if (!Array.isArray(rows)) return new Response(JSON.stringify(rows), { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+    const byStore = {};
+    for (const r of rows) {
+      if (!r.store_id || r.store_id === 'super') continue;
+      const ref = getRefDate(r);
+      const isCur = ref.startsWith(mes);
+      const isPending = !r.data_deposito;
+      if (!byStore[r.store_id]) byStore[r.store_id] = { cur: 0, curPending: 0, overdue: 0 };
+      if (isCur) { byStore[r.store_id].cur++; if (isPending) byStore[r.store_id].curPending++; }
+      else if (isPending) byStore[r.store_id].overdue++;
+    }
+    return new Response(JSON.stringify({ mes, totalRows: rows.length, byStore }, null, 2), { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
   }
   return new Response(JSON.stringify({ ok: true, status: 'Depositos TG bot active', v: 4 }), {
     headers: { 'Content-Type': 'application/json; charset=utf-8' }
