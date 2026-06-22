@@ -5275,17 +5275,40 @@ async function init(){
   else{document.getElementById('auth-screen').style.display='flex';}
 }
 
+let _nlEditMode=false;
+function editarLoja(sid){
+  const c=allStoreConfigs.find(x=>x.store_id===sid);
+  if(!c)return;
+  _nlEditMode=true;
+  const modal=document.getElementById('modal-nova-loja');
+  modal.style.display='flex';
+  modal.querySelector('div>div:first-child').textContent='✏️ Editar Loja';
+  const idInput=document.getElementById('nl-id');
+  idInput.value=sid;idInput.readOnly=true;idInput.style.opacity='.5';idInput.style.pointerEvents='none';
+  document.getElementById('nl-emp').value=c.emp||'';
+  document.getElementById('nl-email').value=c.email||'';
+  document.getElementById('nl-emailcc').value=c.email_cc||'';
+  document.getElementById('nl-login-email').value='';
+  document.getElementById('nl-login-pass').value='';
+  document.getElementById('nl-msg').textContent='';
+  // hide login section in edit mode
+  const loginSection=document.getElementById('nl-login-section');
+  if(loginSection)loginSection.style.display='none';
+}
 function rCfgLojasList(){
   const el=document.getElementById('cfg-lojas-lista');
   if(!el)return;
   if(!allStoreConfigs.length){el.innerHTML='<div style="font-size:13px;color:var(--g400)">Sem lojas configuradas</div>';return;}
   const sorted=[...allStoreConfigs].sort((a,b)=>(a.emp||a.store_id).localeCompare(b.emp||b.store_id,'pt'));
-  el.innerHTML=sorted.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--g50,#f8fafc);border:1px solid var(--g100);border-radius:8px;padding:8px 12px">
-    <div>
-      <div style="font-size:13px;font-weight:700;color:var(--g800)">${c.emp||c.store_id}</div>
+  el.innerHTML=sorted.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--g50,#f8fafc);border:1px solid var(--g100);border-radius:8px;padding:8px 12px;gap:8px">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:700;color:var(--g800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.emp||c.store_id}</div>
       <div style="font-size:11px;color:var(--g400);margin-top:2px">${c.store_id}</div>
     </div>
-    <button onclick="removerLoja('${c.store_id}','${(c.emp||c.store_id).replace(/'/g,"\\'")}');rCfgLojasList()" style="background:none;border:1px solid #fca5a5;color:#ef4444;border-radius:7px;padding:5px 9px;font-size:13px;cursor:pointer">🗑</button>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button onclick="editarLoja('${c.store_id}')" style="background:none;border:1px solid #93c5fd;color:#2563eb;border-radius:7px;padding:5px 9px;font-size:13px;cursor:pointer">✏️</button>
+      <button onclick="removerLoja('${c.store_id}','${(c.emp||c.store_id).replace(/'/g,"\\'")}');rCfgLojasList()" style="background:none;border:1px solid #fca5a5;color:#ef4444;border-radius:7px;padding:5px 9px;font-size:13px;cursor:pointer">🗑</button>
+    </div>
   </div>`).join('');
 }
 async function saveNovaLoja(){
@@ -5295,11 +5318,24 @@ async function saveNovaLoja(){
   const loginPass=(document.getElementById('nl-login-pass').value||'').trim();
   const nlMsg=document.getElementById('nl-msg');
   if(!sid||!emp){nlMsg.innerHTML='<span style="color:var(--red)">⚠️ ID e Nome são obrigatórios</span>';return;}
+  // EDIT MODE
+  if(_nlEditMode){
+    nlMsg.textContent='A guardar…';
+    const body={emp,email:document.getElementById('nl-email').value.trim(),email_cc:document.getElementById('nl-emailcc').value.trim()};
+    const{error}=await SB.from('dep_config').update(body).eq('store_id',sid);
+    if(error){nlMsg.innerHTML='<span style="color:var(--red)">❌ '+error.message+'</span>';return;}
+    const idx=allStoreConfigs.findIndex(c=>c.store_id===sid);
+    if(idx>=0)Object.assign(allStoreConfigs[idx],body);
+    rStoresStatus();rCfgLojasList();
+    nlMsg.innerHTML=`<span style="color:var(--green)">✅ <strong>${emp}</strong> atualizado!</span>`;
+    setTimeout(()=>{_fecharModal();},2000);
+    return;
+  }
+  // CREATE MODE
   if(!/^[a-z0-9-]+$/.test(sid)){nlMsg.innerHTML='<span style="color:var(--red)">⚠️ ID só pode ter letras minúsculas, números e hífens</span>';return;}
   nlMsg.textContent='A criar…';
   const{data:ex}=await SB.from('dep_config').select('store_id').eq('store_id',sid).maybeSingle();
   if(ex){nlMsg.innerHTML='<span style="color:var(--red)">⚠️ Já existe uma loja com este ID</span>';return;}
-  // 1. Criar utilizador Supabase Auth (cliente separado para não perturbar sessão do SA)
   let userId=null;
   if(loginEmail&&loginPass){
     try{
@@ -5309,12 +5345,10 @@ async function saveNovaLoja(){
       userId=aData?.user?.id||null;
     }catch(e){nlMsg.innerHTML='<span style="color:var(--red)">❌ '+e.message+'</span>';return;}
   }
-  // 2. Criar dep_users se temos userId
   if(userId){
     const{error:uErr}=await SB.from('dep_users').insert({id:userId,role:'loja',store_id:sid,nome:emp});
     if(uErr){nlMsg.innerHTML='<span style="color:var(--red)">⚠️ Login criado mas erro em dep_users: '+uErr.message+'</span>';}
   }
-  // 3. Criar dep_config
   const body={store_id:sid,emp,email:document.getElementById('nl-email').value.trim(),email_cc:document.getElementById('nl-emailcc').value.trim(),mes_inicio:'2026-06',lojas:[],resps:[]};
   const{error:cfgErr}=await SB.from('dep_config').insert(body);
   if(cfgErr){nlMsg.innerHTML='<span style="color:var(--red)">❌ '+cfgErr.message+'</span>';return;}
@@ -5322,8 +5356,19 @@ async function saveNovaLoja(){
   rStoresStatus();rCfgLojasList();
   const loginOk=userId?'✅ Login criado · ':'⚠️ Sem login — ';
   nlMsg.innerHTML=`<span style="color:var(--green)">${loginOk}Loja <strong>${emp}</strong> criada!</span>`;
+  setTimeout(()=>{_fecharModal();},3000);
+}
+function _fecharModal(){
+  _nlEditMode=false;
+  const modal=document.getElementById('modal-nova-loja');
+  modal.style.display='none';
+  const idInput=document.getElementById('nl-id');
+  idInput.readOnly=false;idInput.style.opacity='';idInput.style.pointerEvents='';
+  modal.querySelector('div>div:first-child').textContent='➕ Nova Loja';
+  const loginSection=document.getElementById('nl-login-section');
+  if(loginSection)loginSection.style.display='';
   ['nl-id','nl-emp','nl-login-email','nl-login-pass','nl-email','nl-emailcc'].forEach(i=>document.getElementById(i).value='');
-  setTimeout(()=>{document.getElementById('modal-nova-loja').style.display='none';nlMsg.textContent='';},3000);
+  document.getElementById('nl-msg').textContent='';
 }
 async function removerLoja(sid,nome){
   if(!confirm(`Remover "${nome}"?\n\nRemove configurações e acesso de login. Os registos de depósitos ficam preservados.`))return;
@@ -5380,7 +5425,7 @@ init();
 
     <div style="display:flex;gap:10px">
       <button onclick="saveNovaLoja()" style="flex:1;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer">Criar Loja</button>
-      <button onclick="document.getElementById('modal-nova-loja').style.display='none'" style="flex:1;background:#f1f5f9;color:#374151;border:none;border-radius:10px;padding:12px;font-weight:600;font-size:14px;cursor:pointer">Cancelar</button>
+      <button onclick="_fecharModal()" style="flex:1;background:#f1f5f9;color:#374151;border:none;border-radius:10px;padding:12px;font-weight:600;font-size:14px;cursor:pointer">Cancelar</button>
     </div>
     <div id="nl-msg" style="text-align:center;font-size:13px;margin-top:12px;min-height:18px"></div>
   </div>
