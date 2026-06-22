@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>LinkedIn Mockups — Sistema Reservas Surf</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#111;color:#fff;padding:40px 20px}
+h1{text-align:center;font-size:1.1rem;color:#888;margin-bottom:40px;letter-spacing:.1em;text-transform:uppercase}
+
+/* Each slide is 1200x627px (LinkedIn optimal) */
+.slide{width:1200px;height:627px;margin:0 auto 60px;border-radius:20px;overflow:hidden;position:relative;display:flex}
+.slide-label{text-align:center;color:#555;font-size:.8rem;margin-bottom:10px;letter-spacing:.08em;text-transform:uppercase}
+
+/* ═══════════════════════════════════════
+   SLIDE 1 — Hero / Apresentação
+═══════════════════════════════════════ */
+.s1{background:linear-gradient(135deg,#060D1B 0%,#0A2540 60%,#0d3060 100%)}
+.s1-bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=1200&q=80') center/cover;opacity:.25}
+.s1-content{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center;padding:60px 80px;flex:1}
+.s1-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.35);padding:6px 18px;border-radius:50px;font-size:.72rem;color:#C9A84C;letter-spacing:.12em;text-transform:uppercase;margin-bottom:28px;width:fit-content}
+.s1-tag::before{content:'🏄';font-size:1rem}
+.s1 h2{font-family:'Cormorant Garamond',serif;font-size:4.2rem;line-height:1.05;font-weight:700;margin-bottom:20px}
+.s1 h2 em{font-style:italic;color:#C9A84C}
+.s1 p{font-size:1.05rem;color:rgba(255,255,255,.7);line-height:1.7;max-width:480px;margin-bottom:36px}
+.s1-pills{display:flex;gap:10px;flex-wrap:wrap}
+.pill{padding:8px 18px;border-radius:50px;font-size:.78rem;font-weight:600}
+.pill-gold{background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.4);color:#C9A84C}
+.pill-cyan{background:rgba(0,207,253,.1);border:1px solid rgba(0,207,253,.3);color:#00CFFD}
+.pill-green{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#22c55e}
+.s1-right{position:relative;z-index:2;width:420px;display:flex;align-items:center;justify-content:center;padding:40px}
+.s1-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px;width:320px;backdrop-filter:blur(20px)}
+.s1-card-title{font-size:.7rem;color:#C9A84C;text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px;font-weight:600}
+.stat-row{display:flex;justify-content:space-between;margin-bottom:14px}
+.stat-box{text-align:center}
+.stat-box .num{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:#C9A84C;line-height:1}
+.stat-box .lbl{font-size:.65rem;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
+.divider{height:1px;background:rgba(255,255,255,.08);margin:14px 0}
+.wa-btn{width:100%;padding:12px;background:#25D366;border:none;border-radius:12px;color:#fff;font-size:.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:default}
+
+/* ═══════════════════════════════════════
+   SLIDE 2 — Calendário / Disponibilidade
+═══════════════════════════════════════ */
+.s2{background:#060D1B;flex-direction:column;padding:50px 80px}
+.s2-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:36px}
+.s2-txt h2{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:700;margin-bottom:8px}
+.s2-txt p{color:rgba(255,255,255,.5);font-size:.9rem}
+.s2-legend{display:flex;gap:20px;align-items:center}
+.leg{display:flex;align-items:center;gap:6px;font-size:.75rem;color:rgba(255,255,255,.5)}
+.dot{width:9px;height:9px;border-radius:50%}
+.dot-g{background:#22c55e}
+.dot-o{background:#f59e0b}
+.dot-r{background:#ef4444}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.cal-hd{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:8px}
+.cal-hd span{text-align:center;font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.3);padding:6px 0}
+.cal-cell{min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px;font-size:.88rem;font-weight:500;position:relative;padding:6px 4px;gap:2px;border:1px solid transparent}
+.cc-empty{background:transparent}
+.cc-past{color:rgba(255,255,255,.2);background:rgba(255,255,255,.02)}
+.cc-avail{background:rgba(34,197,94,.06);border-color:rgba(34,197,94,.2);color:#fff}
+.cc-avail:hover,.cc-selected{background:rgba(201,168,76,.15);border-color:#C9A84C;color:#C9A84C}
+.cc-low{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.2);color:#fff}
+.cc-full{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.15);color:rgba(255,255,255,.35)}
+.cc-selected{background:rgba(201,168,76,.2)!important;border-color:#C9A84C!important}
+.cc-today{border-color:rgba(201,168,76,.5)!important}
+.avail-tag{font-size:.55rem;font-weight:700;line-height:1}
+.avail-tag.g{color:#22c55e}
+.avail-tag.o{color:#f59e0b}
+.avail-tag.r{color:#ef4444}
+.temp{font-size:.55rem;color:rgba(255,180,50,.8);font-weight:600}
+
+/* ═══════════════════════════════════════
+   SLIDE 3 — Modalidades / Preços
+═══════════════════════════════════════ */
+.s3{background:#060D1B;flex-direction:column;padding:50px 80px}
+.s3-top{margin-bottom:36px}
+.s3-top h2{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:700;margin-bottom:8px}
+.s3-top p{color:rgba(255,255,255,.5);font-size:.9rem}
+.cards-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.lcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:24px;position:relative;transition:all .2s}
+.lcard.featured{background:rgba(201,168,76,.06);border-color:rgba(201,168,76,.35)}
+.lcard.featured::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#C9A84C,#00CFFD);border-radius:18px 18px 0 0}
+.popular-badge{position:absolute;top:12px;right:12px;background:#C9A84C;color:#060D1B;font-size:.58rem;font-weight:700;padding:3px 8px;border-radius:50px;text-transform:uppercase;letter-spacing:.05em}
+.lcard-icon{font-size:2rem;margin-bottom:12px;display:block}
+.lcard h3{font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:700;margin-bottom:6px}
+.lcard-desc{font-size:.75rem;color:rgba(255,255,255,.5);line-height:1.55;margin-bottom:14px}
+.lcard-price{display:flex;align-items:baseline;gap:4px;margin-bottom:14px}
+.lcard-price .val{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:#C9A84C}
+.lcard-price .unit{font-size:.75rem;color:rgba(255,255,255,.4)}
+.lcard-includes{display:flex;flex-direction:column;gap:5px}
+.inc{font-size:.72rem;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:6px}
+.inc::before{content:'✓';color:#C9A84C;font-weight:700;font-size:.8rem}
+.lcard-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+.ltag{font-size:.62rem;color:#00CFFD;background:rgba(0,207,253,.08);border:1px solid rgba(0,207,253,.18);padding:3px 8px;border-radius:50px}
+
+/* ═══════════════════════════════════════
+   SLIDE 4 — WhatsApp + Multiidioma
+═══════════════════════════════════════ */
+.s4{background:linear-gradient(135deg,#060D1B 0%,#0A2540 100%);align-items:stretch}
+.s4-left{flex:1;display:flex;flex-direction:column;justify-content:center;padding:60px 70px}
+.s4-left h2{font-family:'Cormorant Garamond',serif;font-size:2.8rem;font-weight:700;line-height:1.1;margin-bottom:16px}
+.s4-left h2 em{font-style:italic;color:#25D366}
+.s4-left p{color:rgba(255,255,255,.6);font-size:.95rem;line-height:1.7;margin-bottom:32px;max-width:380px}
+.features-list{display:flex;flex-direction:column;gap:14px}
+.feat{display:flex;align-items:center;gap:12px;font-size:.88rem;color:rgba(255,255,255,.8)}
+.feat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.feat-icon.wa{background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.25)}
+.feat-icon.gl{background:rgba(0,207,253,.1);border:1px solid rgba(0,207,253,.2)}
+.feat-icon.rt{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2)}
+.feat-icon.db{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2)}
+.s4-right{width:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;gap:16px}
+.phone-mock{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:22px;padding:20px;width:280px}
+.phone-header{font-size:.7rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.phone-header::before{content:'';width:8px;height:8px;border-radius:50%;background:#25D366;flex-shrink:0}
+.msg{padding:10px 14px;border-radius:12px;font-size:.75rem;line-height:1.55;margin-bottom:8px;max-width:90%}
+.msg-in{background:rgba(255,255,255,.08);color:rgba(255,255,255,.8);border-radius:12px 12px 12px 4px}
+.msg-out{background:#25D366;color:#fff;border-radius:12px 12px 4px 12px;margin-left:auto}
+.flags-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:280px}
+.flag-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px;text-align:center;font-size:1.2rem}
+.flag-pill span{display:block;font-size:.6rem;color:rgba(255,255,255,.4);margin-top:2px}
+
+/* ═══════════════════════════════════════
+   SLIDE 5 — Painel Admin
+═══════════════════════════════════════ */
+.s5{background:#050D1A;flex-direction:column;padding:40px 60px}
+.s5-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px}
+.s5-top h2{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700}
+.s5-top p{color:rgba(255,255,255,.45);font-size:.85rem;margin-top:6px}
+.admin-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px}
+.admin-stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px}
+.admin-stat .ast-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);margin-bottom:8px}
+.admin-stat .ast-val{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:700;line-height:1}
+.admin-stat .ast-sub{font-size:.72rem;color:rgba(255,255,255,.35);margin-top:4px}
+.v-green{color:#22c55e}
+.v-gold{color:#C9A84C}
+.v-cyan{color:#00CFFD}
+.bookings-list{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;overflow:hidden}
+.bl-header{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;padding:10px 16px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.07)}
+.bl-header span{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.3);font-weight:600}
+.bl-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);align-items:center}
+.bl-row:last-child{border-bottom:none}
+.bl-row span{font-size:.8rem;color:rgba(255,255,255,.7)}
+.bl-name{font-weight:600;color:#fff!important}
+.status-badge{font-size:.65rem;font-weight:700;padding:3px 10px;border-radius:50px;text-transform:uppercase;letter-spacing:.05em}
+.st-pend{background:rgba(234,179,8,.12);color:#eab308;border:1px solid rgba(234,179,8,.25)}
+.st-conf{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.25)}
+.st-comp{background:rgba(99,102,241,.12);color:#818cf8;border:1px solid rgba(99,102,241,.25)}
+.wa-mini{width:28px;height:28px;background:#25D366;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.9rem;cursor:default}
+
+/* ═══════════════════════════════════════
+   SLIDE 6 — Proposta Comercial
+═══════════════════════════════════════ */
+.s6{background:linear-gradient(135deg,#060D1B,#0A2540);flex-direction:column;align-items:center;justify-content:center;padding:60px 80px;text-align:center}
+.s6 h2{font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:700;margin-bottom:12px;line-height:1.1}
+.s6 h2 em{color:#C9A84C;font-style:italic}
+.s6 p{color:rgba(255,255,255,.55);font-size:1rem;margin-bottom:48px;max-width:560px;line-height:1.7}
+.pricing-cards{display:flex;gap:24px;justify-content:center;margin-bottom:40px}
+.pcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:28px 32px;width:240px;text-align:center}
+.pcard.highlight{background:rgba(201,168,76,.07);border-color:rgba(201,168,76,.4)}
+.pcard-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.35);margin-bottom:14px}
+.pcard-val{font-family:'Cormorant Garamond',serif;font-size:3.5rem;font-weight:700;color:#C9A84C;line-height:1;margin-bottom:8px}
+.pcard-desc{font-size:.78rem;color:rgba(255,255,255,.45);line-height:1.55}
+.s6-features{display:flex;gap:32px;justify-content:center}
+.s6-feat{display:flex;align-items:center;gap:8px;font-size:.82rem;color:rgba(255,255,255,.55)}
+.s6-feat::before{content:'✓';color:#22c55e;font-weight:700}
+
+/* ═══════════════════════════════════════
+   POST TEXT BOXES
+═══════════════════════════════════════ */
+.post-section{width:1200px;margin:0 auto 80px;position:relative}
+.post-label{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:#C9A84C;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.post-label::before{content:'';flex:1;height:1px;background:rgba(201,168,76,.2)}
+.post-label::after{content:'';flex:1;height:1px;background:rgba(201,168,76,.2)}
+.post-box{background:#0D1623;border:1px solid rgba(201,168,76,.25);border-radius:16px;padding:32px 36px;position:relative}
+.post-box::before{content:'';position:absolute;top:0;left:32px;right:32px;height:2px;background:linear-gradient(90deg,transparent,#C9A84C,transparent)}
+.copy-btn{position:absolute;top:20px;right:20px;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);color:#C9A84C;font-size:.72rem;font-weight:600;letter-spacing:.06em;padding:7px 16px;border-radius:8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{background:rgba(201,168,76,.25)}
+.copy-btn.copied{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:#22c55e}
+.post-text{font-size:.95rem;line-height:1.85;color:rgba(255,255,255,.82);white-space:pre-wrap;padding-right:100px}
+.post-text strong{color:#fff;font-weight:600}
+.hashtags{margin-top:20px;font-size:.82rem;color:#4A9ECC;line-height:1.9}
+.post-hint{margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06);font-size:.75rem;color:rgba(255,255,255,.3);display:flex;align-items:center;gap:6px}
+.post-hint::before{content:'💡'}
+</style>
+</head>
+<body>
+<h1>LinkedIn — 6 Posts prontos a publicar · Screenshot do slide + copia o texto</h1>
+
+<!-- SLIDE 1 -->
+<div class="slide-label">SLIDE 1 de 6 — Tira o screenshot do slide abaixo · depois copia o texto do post</div>
+<div class="slide s1">
+  <div class="s1-bg"></div>
+  <div class="s1-content">
+    <div class="s1-tag">Sistema de Reservas para Escolas de Surf</div>
+    <h2>Reservas online<br>para o teu <em>negócio</em><br>de surf</h2>
+    <p>O cliente reserva em minutos. Tu recebes tudo no painel. Confirmação automática por WhatsApp.</p>
+    <div class="s1-pills">
+      <div class="pill pill-gold">7 idiomas automáticos</div>
+      <div class="pill pill-cyan">Tempo real</div>
+      <div class="pill pill-green">WhatsApp integrado</div>
+    </div>
+  </div>
+  <div class="s1-right">
+    <div class="s1-card">
+      <div class="s1-card-title">📊 Esta semana</div>
+      <div class="stat-row">
+        <div class="stat-box"><div class="num">24</div><div class="lbl">Reservas</div></div>
+        <div class="stat-box"><div class="num">87</div><div class="lbl">Pessoas</div></div>
+        <div class="stat-box"><div class="num">3k€</div><div class="lbl">Volume</div></div>
+      </div>
+      <div class="divider"></div>
+      <div class="wa-btn">💬 Confirmação automática via WhatsApp</div>
+    </div>
+  </div>
+</div>
+
+<!-- POST TEXT 1 -->
+<div class="post-section">
+  <div class="post-label">✦ TEXTO DO POST 1 — copia e cola no LinkedIn com o screenshot acima ✦</div>
+  <div class="post-box">
+    <button class="copy-btn" onclick="copyPost(this)">Copiar texto</button>
+    <div class="post-text">Passei anos a gerir operações de retalho.
+
+E cheguei à conclusão que o maior problema das escolas de surf não é ensinar surf.
+
+É a confusão de WhatsApps, telefonemas e cadernos com reservas.
+
+Por isso construí um sistema que muda isso:
+→ O cliente reserva online em 3 minutos
+→ A confirmação vai por WhatsApp automaticamente
+→ O gestor vê tudo num painel em tempo real
+→ 7 idiomas detectados pelo país do cliente
+
+Sem formação técnica. Sem complicações.
+
+A experiência com gestão de operações ensina-te uma coisa: qualquer processo com fricção vai ser ignorado.
+
+Alguma escola de surf que conheças ainda funciona com cadernos e telefonemas? 👇</div>
+    <div class="hashtags">#GestãoDeOperações #Tecnologia #Empreendedorismo #Surf #Inovação #Portugal #DigitalTransformation</div>
+    <div class="post-hint">No LinkedIn: cria publicação → carrega a imagem do slide → cola este texto em cima da imagem</div>
+  </div>
+</div>
+
+<!-- SLIDE 2 -->
+<div class="slide-label">SLIDE 2 de 6 — Tira o screenshot do slide abaixo · depois copia o texto do post</div>
+<div class="slide s2">
+  <div class="s2-top">
+    <div class="s2-txt">
+      <h2>Disponibilidade em tempo real</h2>
+      <p>O cliente vê os lugares disponíveis antes de reservar — sem telefonemas</p>
+    </div>
+    <div class="s2-legend">
+      <div class="leg"><div class="dot dot-g"></div>Disponível</div>
+      <div class="leg"><div class="dot dot-o"></div>Quase cheio</div>
+      <div class="leg"><div class="dot dot-r"></div>Lotado</div>
+    </div>
+  </div>
+  <div class="cal-hd">
+    <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+  </div>
+  <div class="cal">
+    <div class="cal-cell cc-empty"></div>
+    <div class="cal-cell cc-past">1</div>
+    <div class="cal-cell cc-past">2</div>
+    <div class="cal-cell cc-past">3</div>
+    <div class="cal-cell cc-past">4</div>
+    <div class="cal-cell cc-past">5</div>
+    <div class="cal-cell cc-past">6</div>
+    <div class="cal-cell cc-past">7</div>
+    <div class="cal-cell cc-past">8</div>
+    <div class="cal-cell cc-avail">9<div class="avail-tag g">4 vagas</div><div class="temp">24°</div></div>
+    <div class="cal-cell cc-avail">10<div class="avail-tag g">6 vagas</div><div class="temp">23°</div></div>
+    <div class="cal-cell cc-low">11<div class="avail-tag o">2 vagas</div><div class="temp">22°</div></div>
+    <div class="cal-cell cc-avail">12<div class="avail-tag g">5 vagas</div><div class="temp">25°</div></div>
+    <div class="cal-cell cc-avail">13<div class="avail-tag g">6 vagas</div><div class="temp">24°</div></div>
+    <div class="cal-cell cc-avail">14<div class="avail-tag g">6 vagas</div><div class="temp">23°</div></div>
+    <div class="cal-cell cc-avail">15<div class="avail-tag g">5 vagas</div><div class="temp">24°</div></div>
+    <div class="cal-cell cc-avail cc-today">16<div class="avail-tag g">4 vagas</div><div class="temp">26°</div></div>
+    <div class="cal-cell cc-low">17<div class="avail-tag o">1 vaga</div><div class="temp">25°</div></div>
+    <div class="cal-cell cc-full">18<div class="avail-tag r">Lotado</div><div class="temp">24°</div></div>
+    <div class="cal-cell cc-full">19<div class="avail-tag r">Lotado</div><div class="temp">23°</div></div>
+    <div class="cal-cell cc-avail cc-selected">20<div class="avail-tag g" style="color:rgba(0,0,0,.6)">3 vagas</div></div>
+    <div class="cal-cell cc-avail">21<div class="avail-tag g">6 vagas</div><div class="temp">24°</div></div>
+    <div class="cal-cell cc-avail">22<div class="avail-tag g">4 vagas</div><div class="temp">25°</div></div>
+    <div class="cal-cell cc-avail">23<div class="avail-tag g">5 vagas</div><div class="temp">26°</div></div>
+    <div class="cal-cell cc-avail">24<div class="avail-tag g">6 vagas</div><div class="temp">24°</div></div>
+    <div class="cal-cell cc-low">25<div class="avail-tag o">2 vagas</div><div class="temp">23°</div></div>
+    <div class="cal-cell cc-avail">26<div class="avail-tag g">6 vagas</div><div class="temp">25°</div></div>
+    <div class="cal-cell cc-avail">27<div class="avail-tag g">5 vagas</div><div class="temp">26°</div></div>
+  </div>
+</div>
+
+<!-- POST TEXT 2 -->
+<div class="post-section">
+  <div class="post-label">✦ TEXTO DO POST 2 — copia e cola no LinkedIn com o screenshot acima ✦</div>
+  <div class="post-box">
+    <button class="copy-btn" onclick="copyPost(this)">Copiar texto</button>
+    <div class="post-text">"Tem vaga para sábado?"
+"Espera, vou ver o caderno..."
+"Já ligamos a confirmar."
+
+Este é o fluxo de reservas de muitas escolas de surf em Portugal.
+
+O cliente não consegue ver disponibilidade. O staff perde tempo ao telefone. As reservas perdem-se no meio do caos.
+
+Construí um calendário em tempo real que mostra ao cliente exactamente o que está disponível — antes de fazer uma pergunta sequer.
+
+🟢 Verde = vagas disponíveis
+🟡 Laranja = quase cheio
+🔴 Vermelho = lotado
+
+Simples como devia ser.
+
+Digitalizar um processo não é complicado. O que é complicado é convencer as pessoas a abandonar o caderno.
+
+No vosso negócio, qual foi o processo mais difícil de digitalizar? 👇</div>
+    <div class="hashtags">#Digitalização #GestãoDeNegócios #Operações #Turismo #Portugal #Inovação #ProcessImprovement</div>
+    <div class="post-hint">No LinkedIn: cria publicação → carrega a imagem do slide → cola este texto em cima da imagem</div>
+  </div>
+</div>
+
+<!-- SLIDE 3 -->
+<div class="slide-label">SLIDE 3 de 6 — Tira o screenshot do slide abaixo · depois copia o texto do post</div>
+<div class="slide s3">
+  <div class="s3-top">
+    <h2>4 modalidades. Preços definidos. Reserva em 3 minutos.</h2>
+    <p>O cliente escolhe online — tu só tens de aparecer na praia</p>
+  </div>
+  <div class="cards-grid">
+    <div class="lcard">
+      <span class="lcard-icon">🏄</span>
+      <div class="lcard-tags"><span class="ltag">2h</span><span class="ltag">Grupo</span></div>
+      <h3>Iniciante</h3>
+      <div class="lcard-desc">Primeira vez no mar. Instrutores ISA certificados. Equipamento incluído.</div>
+      <div class="lcard-price"><span class="val">35€</span><span class="unit">/ pessoa</span></div>
+      <div class="lcard-includes">
+        <div class="inc">Prancha e fato incluídos</div>
+        <div class="inc">Instrutor certificado</div>
+        <div class="inc">Seguro incluído</div>
+      </div>
+    </div>
+    <div class="lcard featured">
+      <div class="popular-badge">Popular</div>
+      <span class="lcard-icon">⚡</span>
+      <div class="lcard-tags"><span class="ltag">2h</span><span class="ltag">Grupo</span></div>
+      <h3>Intermédio</h3>
+      <div class="lcard-desc">Já sabes ficar em cima da prancha. Vamos melhorar a técnica.</div>
+      <div class="lcard-price"><span class="val">35€</span><span class="unit">/ pessoa</span></div>
+      <div class="lcard-includes">
+        <div class="inc">Prancha e fato incluídos</div>
+        <div class="inc">Análise de vídeo</div>
+        <div class="inc">Feedback personalizado</div>
+      </div>
+    </div>
+    <div class="lcard">
+      <span class="lcard-icon">🎯</span>
+      <div class="lcard-tags"><span class="ltag">2h</span><span class="ltag">Privada</span></div>
+      <h3>Privada</h3>
+      <div class="lcard-desc">Aula a dois. Atenção total do instrutor para evolução rápida.</div>
+      <div class="lcard-price"><span class="val">65€</span><span class="unit">/ aula</span></div>
+      <div class="lcard-includes">
+        <div class="inc">Instrutor exclusivo</div>
+        <div class="inc">Horário flexível</div>
+        <div class="inc">Progressão garantida</div>
+      </div>
+    </div>
+    <div class="lcard">
+      <span class="lcard-icon">🏊</span>
+      <div class="lcard-tags"><span class="ltag">2h</span><span class="ltag">Grupo</span></div>
+      <h3>Bodyboard</h3>
+      <div class="lcard-desc">Para quem prefere a adrenalina deitado na prancha.</div>
+      <div class="lcard-price"><span class="val">30€</span><span class="unit">/ pessoa</span></div>
+      <div class="lcard-includes">
+        <div class="inc">Bodyboard e fato incluídos</div>
+        <div class="inc">Instrutor certificado</div>
+        <div class="inc">Para todas as idades</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- POST TEXT 3 -->
+<div class="post-section">
+  <div class="post-label">✦ TEXTO DO POST 3 — copia e cola no LinkedIn com o screenshot acima ✦</div>
+  <div class="post-box">
+    <button class="copy-btn" onclick="copyPost(this)">Copiar texto</button>
+    <div class="post-text">4 modalidades de surf.
+4 preços.
+1 sistema que trata de tudo.
+
+O cliente entra no site, escolhe o que quer — sem negociar, sem confusão, sem o instrutor ter de explicar o mesmo 10 vezes por dia.
+
+🏄 Iniciante: €35/pessoa
+⚡ Intermédio: €35/pessoa
+🎯 Privada: €65/aula
+🏊 Bodyboard: €30/pessoa
+
+A escola define os preços uma vez. O sistema trata do resto.
+
+Gestão de operações ensina-te que o maior inimigo da produtividade é repetir tarefas que uma máquina podia fazer.
+
+Cada vez que um instrutor explica preços ao telefone, está a desperdiçar tempo que devia estar na água.
+
+O que simplificarias primeiro no teu negócio se tivesses esta manhã livre? 👇</div>
+    <div class="hashtags">#ProcessosDeNegócio #Eficiência #GestãoDeOperações #Empreendedorismo #Surf #Automação</div>
+    <div class="post-hint">No LinkedIn: cria publicação → carrega a imagem do slide → cola este texto em cima da imagem</div>
+  </div>
+</div>
+
+<!-- SLIDE 4 -->
+<div class="slide-label">SLIDE 4 de 6 — Tira o screenshot do slide abaixo · depois copia o texto do post</div>
+<div class="slide s4">
+  <div class="s4-left">
+    <h2>Confirmação<br>automática via<br><em>WhatsApp</em></h2>
+    <p>O cliente reserva online e recebe confirmação em segundos — no idioma dele, sem que faças nada.</p>
+    <div class="features-list">
+      <div class="feat"><div class="feat-icon wa">💬</div>Mensagem WhatsApp automática ao cliente</div>
+      <div class="feat"><div class="feat-icon gl">🌍</div>7 idiomas detectados pelo país automaticamente</div>
+      <div class="feat"><div class="feat-icon rt">⚡</div>Disponibilidade actualizada em tempo real</div>
+      <div class="feat"><div class="feat-icon db">📊</div>Tudo registado na base de dados automaticamente</div>
+    </div>
+  </div>
+  <div class="s4-right">
+    <div class="phone-mock">
+      <div class="phone-header">WhatsApp · Escola de Surf</div>
+      <div class="msg msg-in">Olá! Quero reservar uma aula de surf para amanhã às 10h para 3 pessoas 🏄</div>
+      <div class="msg msg-out">✅ Reserva confirmada!<br>📅 Amanhã · 10h30<br>👥 3 pessoas · Iniciante<br>📍 Ponto de encontro enviado<br><br>Até amanhã! 🤙</div>
+    </div>
+    <div class="flags-grid">
+      <div class="flag-pill">🇵🇹<span>PT</span></div>
+      <div class="flag-pill">🇬🇧<span>EN</span></div>
+      <div class="flag-pill">🇫🇷<span>FR</span></div>
+      <div class="flag-pill">🇩🇪<span>DE</span></div>
+      <div class="flag-pill">🇪🇸<span>ES</span></div>
+      <div class="flag-pill">🇳🇱<span>NL</span></div>
+      <div class="flag-pill">🇧🇷<span>PT-BR</span></div>
+      <div class="flag-pill" style="background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.3);font-size:.7rem;color:#C9A84C;display:flex;align-items:center;justify-content:center">AUTO</div>
+    </div>
+  </div>
+</div>
+
+<!-- POST TEXT 4 -->
+<div class="post-section">
+  <div class="post-label">✦ TEXTO DO POST 4 — copia e cola no LinkedIn com o screenshot acima ✦</div>
+  <div class="post-box">
+    <button class="copy-btn" onclick="copyPost(this)">Copiar texto</button>
+    <div class="post-text">O turista alemão reserva a aula.
+O sistema detecta que é da Alemanha.
+A confirmação vai em alemão.
+Automaticamente.
+
+Sem tradutores. Sem Google Translate. Sem embaraço.
+
+Construí um sistema que detecta o país do cliente e envia toda a comunicação no idioma certo — em 7 línguas:
+
+🇵🇹 Português · 🇬🇧 Inglês · 🇫🇷 Francês
+🇩🇪 Alemão · 🇪🇸 Espanhol · 🇳🇱 Neerlandês · 🇧🇷 Português BR
+
+A experiência do cliente começa antes de ele chegar à praia.
+
+Vi escolas a perder reservas de turistas estrangeiros simplesmente porque não conseguiam comunicar na língua deles.
+
+Isso é um problema que tecnologia resolve em menos de uma tarde.
+
+Já tiveste uma situação de negócio perdido por barreira de idioma? 👇</div>
+    <div class="hashtags">#ExperiênciaDoCliente #Turismo #Internacionalização #Automação #Portugal #CustomerExperience</div>
+    <div class="post-hint">No LinkedIn: cria publicação → carrega a imagem do slide → cola este texto em cima da imagem</div>
+  </div>
+</div>
+
+<!-- SLIDE 5 -->
+<div class="slide-label">SLIDE 5 de 6 — Tira o screenshot do slide abaixo · depois copia o texto do post</div>
+<div class="slide s5">
+  <div class="s5-top">
+    <div>
+      <h2>Painel da escola — tudo num só lugar</h2>
+      <p>Vês todas as reservas, confirmas, cancelas, e envias WhatsApp com 1 clique</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e"></div>
+      <span style="font-size:.75rem;color:rgba(255,255,255,.4)">Em tempo real</span>
+    </div>
+  </div>
+  <div class="admin-grid">
+    <div class="admin-stat"><div class="ast-label">Hoje</div><div class="ast-val v-gold">8</div><div class="ast-sub">reservas confirmadas</div></div>
+    <div class="admin-stat"><div class="ast-label">Esta semana</div><div class="ast-val v-green">34</div><div class="ast-sub">pessoas no mar</div></div>
+    <div class="admin-stat"><div class="ast-label">Pendentes</div><div class="ast-val v-cyan">3</div><div class="ast-sub">aguardam confirmação</div></div>
+  </div>
+  <div class="bookings-list">
+    <div class="bl-header">
+      <span>Cliente</span><span>Modalidade</span><span>Horário</span><span>Estado</span><span>Ação</span>
+    </div>
+    <div class="bl-row">
+      <span class="bl-name">Sophie Müller 🇩🇪</span>
+      <span>Iniciante · 3 pax</span>
+      <span>08:00</span>
+      <span><div class="status-badge st-conf">Confirmado</div></span>
+      <span><div class="wa-mini">💬</div></span>
+    </div>
+    <div class="bl-row">
+      <span class="bl-name">João Silva 🇵🇹</span>
+      <span>Intermédio · 2 pax</span>
+      <span>10:30</span>
+      <span><div class="status-badge st-pend">Pendente</div></span>
+      <span><div class="wa-mini">💬</div></span>
+    </div>
+    <div class="bl-row">
+      <span class="bl-name">Emma Johnson 🇬🇧</span>
+      <span>Privada · 1 pax</span>
+      <span>14:00</span>
+      <span><div class="status-badge st-conf">Confirmado</div></span>
+      <span><div class="wa-mini">💬</div></span>
+    </div>
+    <div class="bl-row">
+      <span class="bl-name">Marc Dupont 🇫🇷</span>
+      <span>Bodyboard · 4 pax</span>
+      <span>16:30</span>
+      <span><div class="status-badge st-comp">Concluído</div></span>
+      <span><div class="wa-mini">💬</div></span>
+    </div>
+  </div>
+</div>
+
+<!-- POST TEXT 5 -->
+<div class="post-section">
+  <div class="post-label">✦ TEXTO DO POST 5 — copia e cola no LinkedIn com o screenshot acima ✦</div>
+  <div class="post-box">
+    <button class="copy-btn" onclick="copyPost(this)">Copiar texto</button>
+    <div class="post-text">Imagina abrir o telemóvel de manhã e ver:
+
+✅ 8 reservas confirmadas para hoje
+📊 34 pessoas no mar esta semana
+⏳ 3 pendentes para confirmar
+
+Tudo num só ecrã. Sem emails. Sem cadernos. Sem telefonemas perdidos.
+
+É isso que um bom painel de gestão deve fazer — dar-te o controlo sem te roubar tempo.
+
+Desenvolvi este sistema para gestão de reservas mas a lógica é a mesma para qualquer negócio:
+
+→ Menos fricção para o cliente = mais conversões
+→ Menos fricção para o staff = mais produtividade
+→ Menos informação dispersa = menos erros
+
+A tecnologia deve trabalhar para nós. Não o contrário.
+
+Qual é o painel de gestão que mais usas no dia-a-dia? O que te falta nele? 👇</div>
+    <div class="hashtags">#GestãoDeOperações #Produtividade #Liderança #Tecnologia #Dashboard #DataDriven</div>
+    <div class="post-hint">No LinkedIn: cria publicação → carrega a imagem do slide → cola este texto em cima da imagem</div>
+  </div>
+</div>
+
+<!-- SLIDE 6 -->
+<div class="slide-label">SLIDE 6 de 6 — Tira o screenshot do slide abaixo · depois copia o texto do post</div>
+<div class="slide s6">
+  <h2>Sem custos fixos.<br>Só pagas quando <em>vendes.</em></h2>
+  <p>Modelo de comissão simples — a escola só paga quando a aula acontece. Sem mensalidades, sem contratos.</p>
+  <div class="pricing-cards">
+    <div class="pcard">
+      <div class="pcard-label">Arranque</div>
+      <div class="pcard-val">3%</div>
+      <div class="pcard-desc">Por aula concluída. Zero custos fixos para começar.</div>
+    </div>
+    <div class="pcard highlight">
+      <div class="pcard-label">Com volume</div>
+      <div class="pcard-val">4-5%</div>
+      <div class="pcard-desc">Quando o negócio cresce, crescemos juntos.</div>
+    </div>
+  </div>
+  <div class="s6-features">
+    <div class="s6-feat">Setup incluído</div>
+    <div class="s6-feat">Sem mensalidades</div>
+    <div class="s6-feat">Sem contratos</div>
+    <div class="s6-feat">Suporte incluído</div>
+  </div>
+</div>
+
+<!-- POST TEXT 6 -->
+<div class="post-section">
+  <div class="post-label">✦ TEXTO DO POST 6 — copia e cola no LinkedIn com o screenshot acima ✦</div>
+  <div class="post-box">
+    <button class="copy-btn" onclick="copyPost(this)">Copiar texto</button>
+    <div class="post-text">O maior obstáculo de uma pequena escola de surf adoptar tecnologia?
+
+O custo fixo.
+
+A mensalidade que tens de pagar mesmo quando o verão termina.
+O contrato que te prende quando a época é fraca.
+O software caro que tens de aprender a usar.
+
+Por isso construí um modelo diferente:
+→ Zero custos fixos
+→ Comissão de 3% só quando a aula acontece
+→ Sem mensalidades. Sem contratos.
+
+Se a escola não vende, não paga nada.
+
+Este é o tipo de alinhamento de interesses que faz sentido — quem fornece o serviço ganha quando o cliente ganha.
+
+Vi este modelo a funcionar no retalho. Funciona em qualquer negócio baseado em serviços.
+
+Se tens uma escola de surf, ou conheces alguém que tenha, fala comigo — estou a falar com os primeiros parceiros. 👇</div>
+    <div class="hashtags">#ModeloDeNegócio #Empreendedorismo #SaaS #GestãoDeOperações #Portugal #Surf #Parceria</div>
+    <div class="post-hint">No LinkedIn: cria publicação → carrega a imagem do slide → cola este texto em cima da imagem</div>
+  </div>
+</div>
+
+<script>
+function copyPost(btn) {
+  const box = btn.closest('.post-box');
+  const text = box.querySelector('.post-text').innerText;
+  const tags = box.querySelector('.hashtags').innerText;
+  const full = text + '\n\n' + tags;
+  navigator.clipboard.writeText(full).then(() => {
+    btn.textContent = '✓ Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar texto'; btn.classList.remove('copied'); }, 2500);
+  });
+}
+</script>
+</body>
+</html>
