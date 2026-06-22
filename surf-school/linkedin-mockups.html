@@ -43,7 +43,9 @@ h1{text-align:center;font-size:1.1rem;color:#888;margin-bottom:40px;letter-spaci
 /* ═══════════════════════════════════════
    SLIDE 2 — Calendário / Disponibilidade
 ═══════════════════════════════════════ */
-.s2{background:#060D1B;flex-direction:column;padding:50px 80px}
+.s2{background:#060D1B;flex-direction:column;padding:50px 80px;position:relative;overflow:hidden}
+.s2-bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80') center/cover;opacity:.12;z-index:0}
+.s2-top,.cal-hd,.cal{position:relative;z-index:1}
 .s2-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:36px}
 .s2-txt h2{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:700;margin-bottom:8px}
 .s2-txt p{color:rgba(255,255,255,.5);font-size:.9rem}
@@ -74,7 +76,9 @@ h1{text-align:center;font-size:1.1rem;color:#888;margin-bottom:40px;letter-spaci
 /* ═══════════════════════════════════════
    SLIDE 3 — Modalidades / Preços
 ═══════════════════════════════════════ */
-.s3{background:#060D1B;flex-direction:column;padding:50px 80px}
+.s3{background:#060D1B;flex-direction:column;padding:50px 80px;position:relative;overflow:hidden}
+.s3-bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80') center top/cover;opacity:.13;z-index:0}
+.s3-top,.cards-grid{position:relative;z-index:1}
 .s3-top{margin-bottom:36px}
 .s3-top h2{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:700;margin-bottom:8px}
 .s3-top p{color:rgba(255,255,255,.5);font-size:.9rem}
@@ -98,7 +102,9 @@ h1{text-align:center;font-size:1.1rem;color:#888;margin-bottom:40px;letter-spaci
 /* ═══════════════════════════════════════
    SLIDE 4 — WhatsApp + Multiidioma
 ═══════════════════════════════════════ */
-.s4{background:linear-gradient(135deg,#060D1B 0%,#0A2540 100%);align-items:stretch}
+.s4{background:linear-gradient(135deg,#060D1B 0%,#0A2540 100%);align-items:stretch;position:relative;overflow:hidden}
+.s4-bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1505118380757-91f5f5632de0?auto=format&fit=crop&w=1200&q=80') center/cover;opacity:.10;z-index:0}
+.s4-left,.s4-right{position:relative;z-index:1}
 .s4-left{flex:1;display:flex;flex-direction:column;justify-content:center;padding:60px 70px}
 .s4-left h2{font-family:'Cormorant Garamond',serif;font-size:2.8rem;font-weight:700;line-height:1.1;margin-bottom:16px}
 .s4-left h2 em{font-style:italic;color:#25D366}
@@ -124,7 +130,9 @@ h1{text-align:center;font-size:1.1rem;color:#888;margin-bottom:40px;letter-spaci
 /* ═══════════════════════════════════════
    SLIDE 5 — Painel Admin
 ═══════════════════════════════════════ */
-.s5{background:#050D1A;flex-direction:column;padding:40px 60px}
+.s5{background:#050D1A;flex-direction:column;padding:40px 60px;position:relative;overflow:hidden}
+.s5-bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1509914398892-963f53e6e2f1?auto=format&fit=crop&w=1200&q=80') center/cover;opacity:.08;z-index:0}
+.s5-top,.admin-grid,.bookings-list{position:relative;z-index:1}
 .s5-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px}
 .s5-top h2{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700}
 .s5-top p{color:rgba(255,255,255,.45);font-size:.85rem;margin-top:6px}
@@ -152,7 +160,9 @@ h1{text-align:center;font-size:1.1rem;color:#888;margin-bottom:40px;letter-spaci
 /* ═══════════════════════════════════════
    SLIDE 6 — Proposta Comercial
 ═══════════════════════════════════════ */
-.s6{background:linear-gradient(135deg,#060D1B,#0A2540);flex-direction:column;align-items:center;justify-content:center;padding:60px 80px;text-align:center}
+.s6{background:linear-gradient(135deg,#060D1B,#0A2540);flex-direction:column;align-items:center;justify-content:center;padding:60px 80px;text-align:center;position:relative;overflow:hidden}
+.s6-bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1476673160081-cf065607f449?auto=format&fit=crop&w=1200&q=80') center/cover;opacity:.12;z-index:0}
+.s6>*{position:relative;z-index:1}
 .s6 h2{font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:700;margin-bottom:12px;line-height:1.1}
 .s6 h2 em{color:#C9A84C;font-style:italic}
 .s6 p{color:rgba(255,255,255,.55);font-size:1rem;margin-bottom:48px;max-width:560px;line-height:1.7}
@@ -246,6 +256,7 @@ Alguma escola de surf que conheças ainda funciona com cadernos e telefonemas? �
 <!-- SLIDE 2 -->
 <div class="slide-label">SLIDE 2 de 6 — Tira o screenshot do slide abaixo · depois copia o texto do post</div>
 <div class="slide s2">
+  <div class="s2-bg"></div>
   <div class="s2-top">
     <div class="s2-txt">
       <h2>Disponibilidade em tempo real</h2>
@@ -324,6 +335,7 @@ No vosso negócio, qual foi o processo mais difícil de digitalizar? 👇</div>
 <!-- SLIDE 3 -->
 <div class="slide-label">SLIDE 3 de 6 — Tira o screenshot do slide abaixo · depois copia o texto do post</div>
 <div class="slide s3">
+  <div class="s3-bg"></div>
   <div class="s3-top">
     <h2>4 modalidades. Preços definidos. Reserva em 3 minutos.</h2>
     <p>O cliente escolhe online — tu só tens de aparecer na praia</p>
@@ -412,6 +424,7 @@ O que simplificarias primeiro no teu negócio se tivesses esta manhã livre? �
 <!-- SLIDE 4 -->
 <div class="slide-label">SLIDE 4 de 6 — Tira o screenshot do slide abaixo · depois copia o texto do post</div>
 <div class="slide s4">
+  <div class="s4-bg"></div>
   <div class="s4-left">
     <h2>Confirmação<br>automática via<br><em>WhatsApp</em></h2>
     <p>O cliente reserva online e recebe confirmação em segundos — no idioma dele, sem que faças nada.</p>
@@ -473,6 +486,7 @@ Já tiveste uma situação de negócio perdido por barreira de idioma? 👇</div
 <!-- SLIDE 5 -->
 <div class="slide-label">SLIDE 5 de 6 — Tira o screenshot do slide abaixo · depois copia o texto do post</div>
 <div class="slide s5">
+  <div class="s5-bg"></div>
   <div class="s5-top">
     <div>
       <h2>Painel da escola — tudo num só lugar</h2>
@@ -555,6 +569,7 @@ Qual é o painel de gestão que mais usas no dia-a-dia? O que te falta nele? �
 <!-- SLIDE 6 -->
 <div class="slide-label">SLIDE 6 de 6 — Tira o screenshot do slide abaixo · depois copia o texto do post</div>
 <div class="slide s6">
+  <div class="s6-bg"></div>
   <h2>Sem custos fixos.<br>Só pagas quando <em>vendes.</em></h2>
   <p>Modelo de comissão simples — a escola só paga quando a aula acontece. Sem mensalidades, sem contratos.</p>
   <div class="pricing-cards">
