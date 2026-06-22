@@ -2318,10 +2318,11 @@ function rStoresStatus(){
         <div class="ct" style="margin-bottom:4px">Lojas a Utilizar</div>
         <div style="font-size:11px;color:var(--g500)">Atividade em ${mesLabel}</div>
       </div>
-      <div style="display:flex;gap:10px;font-size:11px;color:var(--g600);flex-wrap:wrap">
+      <div style="display:flex;gap:10px;font-size:11px;color:var(--g600);flex-wrap:wrap;align-items:center">
         ${activeCount?`<span>🟢 <strong>${activeCount}</strong> ativas</span>`:''}
         ${idleCount?`<span>🟡 <strong>${idleCount}</strong> inativas</span>`:''}
         ${neverCount?`<span>⚪ <strong>${neverCount}</strong> sem uso</span>`:''}
+        <button onclick="document.getElementById('modal-nova-loja').style.display='flex'" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap">+ Nova Loja</button>
       </div>
     </div>
     ${rows}
@@ -5264,7 +5265,57 @@ async function init(){
   if(session?.user){await afterLogin(session.user);}
   else{document.getElementById('auth-screen').style.display='flex';}
 }
+
+async function saveNovaLoja(){
+  const sid=(document.getElementById('nl-id').value||'').trim().toLowerCase().replace(/\s+/g,'-');
+  const emp=(document.getElementById('nl-emp').value||'').trim();
+  const nlMsg=document.getElementById('nl-msg');
+  if(!sid||!emp){nlMsg.innerHTML='<span style="color:var(--red)">⚠️ ID e Nome são obrigatórios</span>';return;}
+  if(!/^[a-z0-9-]+$/.test(sid)){nlMsg.innerHTML='<span style="color:var(--red)">⚠️ ID só pode ter letras minúsculas, números e hífens</span>';return;}
+  nlMsg.textContent='A criar...';
+  const{data:ex}=await SB.from('dep_config').select('store_id').eq('store_id',sid).maybeSingle();
+  if(ex){nlMsg.innerHTML='<span style="color:var(--red)">⚠️ Já existe uma loja com este ID</span>';return;}
+  const body={store_id:sid,emp,email:document.getElementById('nl-email').value.trim(),email_cc:document.getElementById('nl-emailcc').value.trim(),mes_inicio:'2026-06',lojas:[],resps:[]};
+  const{error}=await SB.from('dep_config').insert(body);
+  if(error){nlMsg.innerHTML='<span style="color:var(--red)">❌ '+error.message+'</span>';return;}
+  allStoreConfigs.push({...body});
+  rStoresStatus();
+  nlMsg.innerHTML='<span style="color:var(--green)">✅ Loja criada!</span>';
+  ['nl-id','nl-emp','nl-email','nl-emailcc'].forEach(i=>document.getElementById(i).value='');
+  setTimeout(()=>{document.getElementById('modal-nova-loja').style.display='none';nlMsg.textContent='';},2000);
+}
 init();
 </script>
+
+<div id="modal-nova-loja" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:24px;width:min(400px,92vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:18px">➕ Nova Loja</div>
+    <div class="fg" style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">ID da Loja *</label>
+      <input id="nl-id" type="text" placeholder="ex: ess-setubal" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')">
+      <div style="font-size:11px;color:#94a3b8;margin-top:4px">Letras minúsculas, números e hífens</div>
+    </div>
+    <div class="fg" style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Nome da Empresa *</label>
+      <input id="nl-emp" type="text" placeholder="ex: ESS Setúbal" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px">
+    </div>
+    <div class="fg" style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Email Notificações</label>
+      <input id="nl-email" type="email" placeholder="contabilidade@despomar.com" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px">
+    </div>
+    <div class="fg" style="margin-bottom:16px">
+      <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Email Gerente (CC)</label>
+      <input id="nl-emailcc" type="email" placeholder="gerente@loja.pt" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px">
+    </div>
+    <div style="background:#f8fafc;border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:#64748b;line-height:1.5">
+      <strong>ℹ️ Login da loja:</strong> Após criar, vai ao Supabase → Authentication → Users → <em>Invite User</em> com o email da loja, e adiciona uma linha em <code>dep_users</code> com <code>store_id='[id]'</code> e <code>role='loja'</code>.
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="saveNovaLoja()" style="flex:1;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer">Criar Loja</button>
+      <button onclick="document.getElementById('modal-nova-loja').style.display='none'" style="flex:1;background:#f1f5f9;color:#374151;border:none;border-radius:10px;padding:12px;font-weight:600;font-size:14px;cursor:pointer">Cancelar</button>
+    </div>
+    <div id="nl-msg" style="text-align:center;font-size:13px;margin-top:12px;min-height:18px"></div>
+  </div>
+</div>
 </body>
 </html>
