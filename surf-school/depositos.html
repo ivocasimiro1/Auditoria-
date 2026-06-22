@@ -2310,6 +2310,7 @@ function rStoresStatus(){
         ${rightTop}
         <div style="font-size:10px;color:var(--g400);margin-top:2px">Total: ${st.total} · Último: ${lastStr}</div>
       </div>
+      <button onclick="removerLoja('${sid}','${(info.emp||sid).replace(/'/g,'\\\'')}')" title="Remover loja" style="flex-shrink:0;background:none;border:1px solid #fca5a5;color:#ef4444;border-radius:8px;padding:5px 8px;font-size:13px;cursor:pointer;line-height:1">🗑</button>
     </div>`;
   }).join('');
   panel.innerHTML=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
@@ -5269,47 +5270,93 @@ async function init(){
 async function saveNovaLoja(){
   const sid=(document.getElementById('nl-id').value||'').trim().toLowerCase().replace(/\s+/g,'-');
   const emp=(document.getElementById('nl-emp').value||'').trim();
+  const loginEmail=(document.getElementById('nl-login-email').value||'').trim();
+  const loginPass=(document.getElementById('nl-login-pass').value||'').trim();
   const nlMsg=document.getElementById('nl-msg');
   if(!sid||!emp){nlMsg.innerHTML='<span style="color:var(--red)">⚠️ ID e Nome são obrigatórios</span>';return;}
   if(!/^[a-z0-9-]+$/.test(sid)){nlMsg.innerHTML='<span style="color:var(--red)">⚠️ ID só pode ter letras minúsculas, números e hífens</span>';return;}
-  nlMsg.textContent='A criar...';
+  nlMsg.textContent='A criar…';
   const{data:ex}=await SB.from('dep_config').select('store_id').eq('store_id',sid).maybeSingle();
   if(ex){nlMsg.innerHTML='<span style="color:var(--red)">⚠️ Já existe uma loja com este ID</span>';return;}
+  // 1. Criar utilizador Supabase Auth (cliente separado para não perturbar sessão do SA)
+  let userId=null;
+  if(loginEmail&&loginPass){
+    try{
+      const _sbTmp=supabase.createClient(_SBURL,_SBKEY,{auth:{persistSession:false,autoRefreshToken:false}});
+      const{data:aData,error:aErr}=await _sbTmp.auth.signUp({email:loginEmail,password:loginPass});
+      if(aErr){nlMsg.innerHTML='<span style="color:var(--red)">❌ Erro ao criar login: '+aErr.message+'</span>';return;}
+      userId=aData?.user?.id||null;
+    }catch(e){nlMsg.innerHTML='<span style="color:var(--red)">❌ '+e.message+'</span>';return;}
+  }
+  // 2. Criar dep_users se temos userId
+  if(userId){
+    const{error:uErr}=await SB.from('dep_users').insert({id:userId,role:'loja',store_id:sid,nome:emp});
+    if(uErr){nlMsg.innerHTML='<span style="color:var(--red)">⚠️ Login criado mas erro em dep_users: '+uErr.message+'</span>';}
+  }
+  // 3. Criar dep_config
   const body={store_id:sid,emp,email:document.getElementById('nl-email').value.trim(),email_cc:document.getElementById('nl-emailcc').value.trim(),mes_inicio:'2026-06',lojas:[],resps:[]};
-  const{error}=await SB.from('dep_config').insert(body);
-  if(error){nlMsg.innerHTML='<span style="color:var(--red)">❌ '+error.message+'</span>';return;}
+  const{error:cfgErr}=await SB.from('dep_config').insert(body);
+  if(cfgErr){nlMsg.innerHTML='<span style="color:var(--red)">❌ '+cfgErr.message+'</span>';return;}
   allStoreConfigs.push({...body});
   rStoresStatus();
-  nlMsg.innerHTML='<span style="color:var(--green)">✅ Loja criada!</span>';
-  ['nl-id','nl-emp','nl-email','nl-emailcc'].forEach(i=>document.getElementById(i).value='');
-  setTimeout(()=>{document.getElementById('modal-nova-loja').style.display='none';nlMsg.textContent='';},2000);
+  const loginOk=userId?'✅ Login criado · ':'⚠️ Sem login — ';
+  nlMsg.innerHTML=`<span style="color:var(--green)">${loginOk}Loja <strong>${emp}</strong> criada!</span>`;
+  ['nl-id','nl-emp','nl-login-email','nl-login-pass','nl-email','nl-emailcc'].forEach(i=>document.getElementById(i).value='');
+  setTimeout(()=>{document.getElementById('modal-nova-loja').style.display='none';nlMsg.textContent='';},3000);
+}
+async function removerLoja(sid,nome){
+  if(!confirm(`Remover "${nome}"?\n\nRemove configurações e acesso de login. Os registos de depósitos ficam preservados.`))return;
+  await SB.from('dep_config').delete().eq('store_id',sid);
+  await SB.from('dep_users').delete().eq('store_id',sid);
+  allStoreConfigs=allStoreConfigs.filter(c=>c.store_id!==sid);
+  rStoresStatus();
+  toast('Loja removida');
 }
 init();
 </script>
 
 <div id="modal-nova-loja" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:16px;padding:24px;width:min(400px,92vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-    <div style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:18px">➕ Nova Loja</div>
-    <div class="fg" style="margin-bottom:12px">
-      <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">ID da Loja *</label>
-      <input id="nl-id" type="text" placeholder="ex: ess-setubal" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')">
-      <div style="font-size:11px;color:#94a3b8;margin-top:4px">Letras minúsculas, números e hífens</div>
+  <div style="background:#fff;border-radius:16px;padding:24px;width:min(420px,92vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:4px">➕ Nova Loja</div>
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:18px">Preenche os campos e a loja fica pronta a usar</div>
+
+    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Identificação</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">ID único *</label>
+        <input id="nl-id" type="text" placeholder="ess-setubal" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Nome *</label>
+        <input id="nl-emp" type="text" placeholder="ESS Setúbal" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
+      </div>
     </div>
-    <div class="fg" style="margin-bottom:12px">
-      <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Nome da Empresa *</label>
-      <input id="nl-emp" type="text" placeholder="ex: ESS Setúbal" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px">
+
+    <div style="font-size:11px;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:14px">🔑 Login da Loja</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px">
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Email de login</label>
+        <input id="nl-login-email" type="email" placeholder="loja@email.pt" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #bfdbfe;border-radius:8px;font-size:13px">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Password temporária</label>
+        <input id="nl-login-pass" type="password" placeholder="mínimo 6 caracteres" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #bfdbfe;border-radius:8px;font-size:13px">
+      </div>
     </div>
-    <div class="fg" style="margin-bottom:12px">
-      <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Email Notificações</label>
-      <input id="nl-email" type="email" placeholder="contabilidade@despomar.com" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px">
+    <div style="font-size:11px;color:#94a3b8;margin-bottom:14px">Opcional — se não preencheres, a loja fica criada mas sem acesso de login</div>
+
+    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Emails</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Notificações</label>
+        <input id="nl-email" type="email" placeholder="contabilidade@..." style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Gerente (CC)</label>
+        <input id="nl-emailcc" type="email" placeholder="gerente@loja.pt" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
+      </div>
     </div>
-    <div class="fg" style="margin-bottom:16px">
-      <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Email Gerente (CC)</label>
-      <input id="nl-emailcc" type="email" placeholder="gerente@loja.pt" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px">
-    </div>
-    <div style="background:#f8fafc;border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:#64748b;line-height:1.5">
-      <strong>ℹ️ Login da loja:</strong> Após criar, vai ao Supabase → Authentication → Users → <em>Invite User</em> com o email da loja, e adiciona uma linha em <code>dep_users</code> com <code>store_id='[id]'</code> e <code>role='loja'</code>.
-    </div>
+
     <div style="display:flex;gap:10px">
       <button onclick="saveNovaLoja()" style="flex:1;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer">Criar Loja</button>
       <button onclick="document.getElementById('modal-nova-loja').style.display='none'" style="flex:1;background:#f1f5f9;color:#374151;border:none;border-radius:10px;padding:12px;font-weight:600;font-size:14px;cursor:pointer">Cancelar</button>
