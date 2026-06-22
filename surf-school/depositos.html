@@ -588,6 +588,13 @@ select{
 
 <!-- ═══ SETTINGS ═══ -->
 <div class="page" id="page-settings">
+  <div class="card sa-tab" style="display:none;flex-direction:column;padding:14px 16px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div class="ct" style="margin:0">Gestão de Lojas</div>
+      <button onclick="document.getElementById('modal-nova-loja').style.display='flex'" style="background:#2563eb;color:#fff;border:none;border-radius:10px;padding:9px 18px;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap">+ Nova Loja</button>
+    </div>
+    <div id="cfg-lojas-lista" style="margin-top:12px;display:flex;flex-direction:column;gap:6px"></div>
+  </div>
   <div class="card">
     <div class="ct">Empresa</div>
     <div id="cfg-sync-note" style="display:none;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:10px 13px;margin-bottom:14px;font-size:12px;color:#1e40af;font-weight:600;line-height:1.5"></div>
@@ -1356,6 +1363,7 @@ async function afterLogin(user){
     const uce=document.getElementById('user-chip-email');if(uce)uce.textContent=user.email;
     const cpc=document.getElementById('change-pass-card');if(cpc)cpc.style.display=isSA?'none':'block';
     document.querySelectorAll('.sa-tab').forEach(el=>el.style.display=isSA?'flex':'none');
+    if(isSA)rCfgLojasList();
     const nbNovo=document.getElementById('nb-novo');if(nbNovo)nbNovo.style.display=isSA?'none':'flex';
     const nbDash=document.getElementById('nb-dash');if(nbDash)nbDash.style.display=isSA?'none':'flex';
     popSel();
@@ -5267,6 +5275,19 @@ async function init(){
   else{document.getElementById('auth-screen').style.display='flex';}
 }
 
+function rCfgLojasList(){
+  const el=document.getElementById('cfg-lojas-lista');
+  if(!el)return;
+  if(!allStoreConfigs.length){el.innerHTML='<div style="font-size:13px;color:var(--g400)">Sem lojas configuradas</div>';return;}
+  const sorted=[...allStoreConfigs].sort((a,b)=>(a.emp||a.store_id).localeCompare(b.emp||b.store_id,'pt'));
+  el.innerHTML=sorted.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--g50,#f8fafc);border:1px solid var(--g100);border-radius:8px;padding:8px 12px">
+    <div>
+      <div style="font-size:13px;font-weight:700;color:var(--g800)">${c.emp||c.store_id}</div>
+      <div style="font-size:11px;color:var(--g400);margin-top:2px">${c.store_id}</div>
+    </div>
+    <button onclick="removerLoja('${c.store_id}','${(c.emp||c.store_id).replace(/'/g,"\\'")}');rCfgLojasList()" style="background:none;border:1px solid #fca5a5;color:#ef4444;border-radius:7px;padding:5px 9px;font-size:13px;cursor:pointer">🗑</button>
+  </div>`).join('');
+}
 async function saveNovaLoja(){
   const sid=(document.getElementById('nl-id').value||'').trim().toLowerCase().replace(/\s+/g,'-');
   const emp=(document.getElementById('nl-emp').value||'').trim();
@@ -5298,7 +5319,7 @@ async function saveNovaLoja(){
   const{error:cfgErr}=await SB.from('dep_config').insert(body);
   if(cfgErr){nlMsg.innerHTML='<span style="color:var(--red)">❌ '+cfgErr.message+'</span>';return;}
   allStoreConfigs.push({...body});
-  rStoresStatus();
+  rStoresStatus();rCfgLojasList();
   const loginOk=userId?'✅ Login criado · ':'⚠️ Sem login — ';
   nlMsg.innerHTML=`<span style="color:var(--green)">${loginOk}Loja <strong>${emp}</strong> criada!</span>`;
   ['nl-id','nl-emp','nl-login-email','nl-login-pass','nl-email','nl-emailcc'].forEach(i=>document.getElementById(i).value='');
