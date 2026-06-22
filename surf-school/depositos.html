@@ -5280,20 +5280,17 @@ function editarLoja(sid){
   const c=allStoreConfigs.find(x=>x.store_id===sid);
   if(!c)return;
   _nlEditMode=true;
-  const modal=document.getElementById('modal-nova-loja');
-  modal.style.display='flex';
-  modal.querySelector('div>div:first-child').textContent='✏️ Editar Loja';
+  document.getElementById('nl-title').textContent='✏️ Editar Loja';
+  document.getElementById('nl-subtitle').textContent='Altera o nome ou emails da loja';
+  document.getElementById('nl-save-btn').textContent='Guardar Alterações';
   const idInput=document.getElementById('nl-id');
   idInput.value=sid;idInput.readOnly=true;idInput.style.opacity='.5';idInput.style.pointerEvents='none';
   document.getElementById('nl-emp').value=c.emp||'';
   document.getElementById('nl-email').value=c.email||'';
   document.getElementById('nl-emailcc').value=c.email_cc||'';
-  document.getElementById('nl-login-email').value='';
-  document.getElementById('nl-login-pass').value='';
+  document.getElementById('nl-login-section').style.display='none';
   document.getElementById('nl-msg').textContent='';
-  // hide login section in edit mode
-  const loginSection=document.getElementById('nl-login-section');
-  if(loginSection)loginSection.style.display='none';
+  document.getElementById('modal-nova-loja').style.display='flex';
 }
 function rCfgLojasList(){
   const el=document.getElementById('cfg-lojas-lista');
@@ -5360,13 +5357,13 @@ async function saveNovaLoja(){
 }
 function _fecharModal(){
   _nlEditMode=false;
-  const modal=document.getElementById('modal-nova-loja');
-  modal.style.display='none';
+  document.getElementById('modal-nova-loja').style.display='none';
+  document.getElementById('nl-title').textContent='➕ Nova Loja';
+  document.getElementById('nl-subtitle').textContent='Preenche os campos e a loja fica pronta a usar';
+  document.getElementById('nl-save-btn').textContent='Criar Loja';
   const idInput=document.getElementById('nl-id');
   idInput.readOnly=false;idInput.style.opacity='';idInput.style.pointerEvents='';
-  modal.querySelector('div>div:first-child').textContent='➕ Nova Loja';
-  const loginSection=document.getElementById('nl-login-section');
-  if(loginSection)loginSection.style.display='';
+  document.getElementById('nl-login-section').style.display='';
   ['nl-id','nl-emp','nl-login-email','nl-login-pass','nl-email','nl-emailcc'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('nl-msg').textContent='';
 }
@@ -5383,8 +5380,8 @@ init();
 
 <div id="modal-nova-loja" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:16px;padding:24px;width:min(420px,92vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-    <div style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:4px">➕ Nova Loja</div>
-    <div style="font-size:12px;color:#94a3b8;margin-bottom:18px">Preenche os campos e a loja fica pronta a usar</div>
+    <div id="nl-title" style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:4px">➕ Nova Loja</div>
+    <div id="nl-subtitle" style="font-size:12px;color:#94a3b8;margin-bottom:18px">Preenche os campos e a loja fica pronta a usar</div>
 
     <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Identificação</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
@@ -5398,18 +5395,20 @@ init();
       </div>
     </div>
 
-    <div style="font-size:11px;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:14px">🔑 Login da Loja</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px">
-      <div>
-        <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Email de login</label>
-        <input id="nl-login-email" type="email" placeholder="loja@email.pt" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #bfdbfe;border-radius:8px;font-size:13px">
+    <div id="nl-login-section">
+      <div style="font-size:11px;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:14px">🔑 Login da Loja</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Email de login</label>
+          <input id="nl-login-email" type="email" placeholder="loja@email.pt" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #bfdbfe;border-radius:8px;font-size:13px">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Password temporária</label>
+          <input id="nl-login-pass" type="password" placeholder="mínimo 6 caracteres" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #bfdbfe;border-radius:8px;font-size:13px">
+        </div>
       </div>
-      <div>
-        <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Password temporária</label>
-        <input id="nl-login-pass" type="password" placeholder="mínimo 6 caracteres" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #bfdbfe;border-radius:8px;font-size:13px">
-      </div>
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:14px">Opcional — se não preencheres, a loja fica criada mas sem acesso de login</div>
     </div>
-    <div style="font-size:11px;color:#94a3b8;margin-bottom:14px">Opcional — se não preencheres, a loja fica criada mas sem acesso de login</div>
 
     <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Emails</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
@@ -5424,7 +5423,7 @@ init();
     </div>
 
     <div style="display:flex;gap:10px">
-      <button onclick="saveNovaLoja()" style="flex:1;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer">Criar Loja</button>
+      <button id="nl-save-btn" onclick="saveNovaLoja()" style="flex:1;background:#2563eb;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer">Criar Loja</button>
       <button onclick="_fecharModal()" style="flex:1;background:#f1f5f9;color:#374151;border:none;border-radius:10px;padding:12px;font-weight:600;font-size:14px;cursor:pointer">Cancelar</button>
     </div>
     <div id="nl-msg" style="text-align:center;font-size:13px;margin-top:12px;min-height:18px"></div>
