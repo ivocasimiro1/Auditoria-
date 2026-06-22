@@ -10,6 +10,12 @@ async function sbGet(table, qs) {
   return r.json();
 }
 
+function waUrl(t) {
+  let s = t;
+  if (encodeURIComponent(s).length > 2020) { const max = Math.floor(2020 / 3); s = s.slice(0, max).trimEnd() + '…'; }
+  return `https://wa.me/?text=${encodeURIComponent(s)}`;
+}
+
 async function tgSend(chatId, text, inlineBtn) {
   const body = { chat_id: chatId, text, parse_mode: 'Markdown' };
   if (inlineBtn) {
@@ -342,7 +348,7 @@ export async function onRequestPost(context) {
         if (txt && cbqChatId) {
           const btns = [
             { text: '📤 Partilhar no grupo', callback_data: `share:status:${query}` },
-            { text: '💬 Partilhar no WhatsApp', url: `https://wa.me/?text=${encodeURIComponent(txt)}` }
+            { text: '💬 Partilhar no WhatsApp', url: waUrl(txt) }
           ];
           await tgSend(cbqChatId, txt, btns);
         }
@@ -351,14 +357,14 @@ export async function onRequestPost(context) {
         if (data === 'share:ranking') {
           const txt = await buildRankingText();
           if (txt) {
-            const waBtn = { text: '💬 Partilhar no WhatsApp', url: `https://wa.me/?text=${encodeURIComponent(txt)}` };
+            const waBtn = { text: '💬 Partilhar no WhatsApp', url: waUrl(txt) };
             await tgSend(TG_GROUP, txt, waBtn);
           }
         } else if (data.startsWith('share:status:')) {
           const query = data.slice(13);
           const txt = await buildStatusText(query);
           if (txt) {
-            const waBtn = { text: '💬 Partilhar no WhatsApp', url: `https://wa.me/?text=${encodeURIComponent(txt)}` };
+            const waBtn = { text: '💬 Partilhar no WhatsApp', url: waUrl(txt) };
             await tgSend(TG_GROUP, txt, waBtn);
           }
         }
@@ -381,7 +387,7 @@ export async function onRequestPost(context) {
       if (!txt) { await tgSend(chatId, `📊 Sem dados para ${mesLabel(curMes())}`); return new Response('ok'); }
       const btns = isPrivate ? [
         { text: '📤 Partilhar no grupo', callback_data: 'share:ranking' },
-        { text: '💬 Partilhar no WhatsApp', url: `https://wa.me/?text=${encodeURIComponent(txt)}` }
+        { text: '💬 Partilhar no WhatsApp', url: waUrl(txt) }
       ] : null;
       await tgSend(chatId, txt, btns);
 
@@ -408,7 +414,7 @@ export async function onRequestPost(context) {
         if (!txt) { await tgSend(chatId, `❓ Loja não encontrada: *${query}*\n\nUsa /status para ver todas as lojas.`); return new Response('ok'); }
         const btns = isPrivate ? [
           { text: '📤 Partilhar no grupo', callback_data: `share:status:${query}` },
-          { text: '💬 Partilhar no WhatsApp', url: `https://wa.me/?text=${encodeURIComponent(txt)}` }
+          { text: '💬 Partilhar no WhatsApp', url: waUrl(txt) }
         ] : null;
         await tgSend(chatId, txt, btns);
       }

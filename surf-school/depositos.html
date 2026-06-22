@@ -900,7 +900,7 @@ const _SBKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 // Telegram — notificações com foto ao registar novo depósito
 const _TG_TOKEN='8640253196:AAEP0aWxhijWwLnjOefiKbATvNkcLF1JH2Y';
 const _TG_CHAT='-5587765450';
-function _tgWaMarkup(t){const u=`https://wa.me/?text=${encodeURIComponent(t)}`;return u.length<=2048?{inline_keyboard:[[{text:'💬 Partilhar no WhatsApp',url:u}]]}:null;}
+function _tgWaMarkup(t){let s=t;if(encodeURIComponent(s).length>2020){const max=Math.floor(2020/3);s=s.slice(0,max).trimEnd()+'…';}return{inline_keyboard:[[{text:'💬 Partilhar no WhatsApp',url:`https://wa.me/?text=${encodeURIComponent(s)}`}]]};}
 async function _tgPost(text){const _rm=_tgWaMarkup(text);try{await fetch(`https://api.telegram.org/bot${_TG_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:_TG_CHAT,text,parse_mode:'Markdown',...(_rm?{reply_markup:_rm}:{})})});}catch(e){}}
 function shortName(str,sidHint){
   if(!str)return str;
