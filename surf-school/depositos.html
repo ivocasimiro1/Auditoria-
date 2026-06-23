@@ -695,6 +695,13 @@ select{
     <button class="btn" style="background:#f3f4f6;color:#4b5563;border:2px dashed #d1d5db" onclick="loadDemo()">🧪 Carregar Dados Demo</button>
     <button class="btn bd" onclick="clearAll()">🗑️ Limpar Todos os Dados</button>
   </div>
+  <div class="card sa-tab" id="change-email-card" style="display:none;flex-direction:column">
+    <div class="ct">📧 Alterar Email de Login</div>
+    <div id="ce-msg" style="display:none;border-radius:8px;padding:10px 13px;margin-bottom:12px;font-size:13px;font-weight:600"></div>
+    <div class="fg" style="display:flex;flex-direction:column"><label>Novo email de login</label><input type="email" id="ce-new" placeholder="supervisores@despomar.com" autocomplete="email"></div>
+    <button class="btn bs" onclick="doChangeEmail()">📧 Alterar Email</button>
+    <p style="font-size:11px;color:var(--g400);margin-top:8px;line-height:1.5">O Supabase envia um link de confirmação para o novo endereço. Clique nesse link para activar a alteração.</p>
+  </div>
   <div class="card" id="change-pass-card" style="display:none">
     <div class="ct">🔑 Alterar Password</div>
     <div id="cp-msg" style="display:none;border-radius:8px;padding:10px 13px;margin-bottom:12px;font-size:13px;font-weight:600"></div>
@@ -5052,6 +5059,17 @@ async function scBtn(){
   }finally{
     if(btn){btn.disabled=false;btn.textContent='✓ Guardar Configurações';}
   }
+}
+async function doChangeEmail(){
+  const el=document.getElementById('ce-new');
+  const msgEl=document.getElementById('ce-msg');
+  const ne=(el?.value||'').trim();
+  function showCE(t,ok){msgEl.textContent=t;msgEl.style.cssText=`display:block;border-radius:8px;padding:10px 13px;margin-bottom:12px;font-size:13px;font-weight:600;background:${ok?'#dcfce7':'#fee2e2'};color:${ok?'#166534':'#991b1b'}`;}
+  if(!ne||!ne.includes('@')){showCE('⚠️ Introduza um email válido',false);return;}
+  const{error}=await SB.auth.updateUser({email:ne});
+  if(error){showCE('⚠️ Erro: '+error.message,false);return;}
+  showCE('✓ Link de confirmação enviado para '+ne+'. Clique no link para activar.',true);
+  el.value='';
 }
 async function doChangePass(){
   const npEl=document.getElementById('cp-new');
