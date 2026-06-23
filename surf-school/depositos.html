@@ -2992,7 +2992,7 @@ function rSASupervision(){
       const depTxt=r.dataDeposito?fd(r.dataDeposito).slice(0,5):'Nao realizado';
       const talTxt=r.talao?r.talao:'Nao registado';
       const lines=[
-        `  ${i+1}. Periodo: ${_period(r)}  |  ${r.tipo||'--'}  |  ${saEur(totalValor(r))}`,
+        `  ${i+1}. Periodo: ${_period(r)}  |  ${r.tipo||'--'}`,
         `     Data de deposito: ${depTxt}`,
         `     Talao/comprovativo: ${talTxt}`,
         `     Situacao: ${situacao}`,
