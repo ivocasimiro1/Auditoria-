@@ -2975,29 +2975,32 @@ function rSASupervision(){
     const compPct=s.compliant!==null?s.compliant+'%':'N/D';
     const compSym=s.compliant===100?' (OK)':s.compliant>=80?' (OK)':s.compliant>=50?' (Atencao)':' (Critico)';
     const diffSym=Math.abs(diff2)<0.01?' (OK)':' (VERIFICAR)';
-    // Split records: problem (no deposit, late, no receipt) vs OK
-    const _probRecs=storeRecs.filter(r=>{const e=calcEstado(r,getRecordCfg(r));return!r.dataDeposito||e.s==='err'||e.s==='warn'||!r.talao;});
-    const _okRecs=storeRecs.filter(r=>{const e=calcEstado(r,getRecordCfg(r));return r.dataDeposito&&e.s==='ok'&&r.talao;});
+    // Only records that are late OR missing comprovativo
     const _period=r=>{const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();return sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';};
-    // Problem records: visually prominent with >>> prefix, plain-language explanation
-    const _probLine=r=>{
+    const _probRecs=storeRecs.filter(r=>{const e=calcEstado(r,getRecordCfg(r));return!r.dataDeposito||e.s==='err'||!r.talao;});
+    // Professional format — no arrows, clean audit style
+    const _probLine=(r,i)=>{
       const estR=calcEstado(r,getRecordCfg(r));
-      const lines=[`>>>`,`>>> ${_period(r)}  |  ${r.tipo||'--'}  |  ${saEur(totalValor(r))}`];
-      if(!r.dataDeposito)lines.push(`>>> PROBLEMA: O dinheiro deste periodo ainda nao foi depositado. Prazo ultrapassado.`);
-      else if(estR.s==='err')lines.push(`>>> PROBLEMA: Deposito em atraso — o prazo regulamentar foi ultrapassado.`);
-      else if(estR.s==='warn')lines.push(`>>> AVISO: Deposito proximos do prazo ou com irregularidade.`);
-      if(!r.talao&&!r.foto)lines.push(`>>> SEM COMPROVATIVO: nao ha talao nem foto associada — nao e possivel confirmar a entrega.`);
-      else if(!r.talao)lines.push(`>>> SEM TALAO: o numero do talao nao foi registado.`);
-      const depTxt=r.dataDeposito?fd(r.dataDeposito).slice(0,5):'NAO REALIZADO';
-      const compTxt=r.talao?`Talao: ${r.talao}`:'Sem talao registado';
-      lines.push(`>>> Depositado: ${depTxt}  |  ${compTxt}`,`>>>`);
+      const situacao=!r.dataDeposito
+        ?'Deposito nao realizado — o prazo regulamentar foi ultrapassado e o dinheiro continua por entregar.'
+        :estR.s==='err'?'Deposito em atraso — o prazo regulamentar foi ultrapassado.'
+        :'Deposito realizado.';
+      const compSit=!r.talao&&!r.foto
+        ?'Sem comprovativo — nao ha talao nem foto associada. Nao e possivel confirmar a entrega junto do banco.'
+        :!r.talao?'Numero de talao nao registado no sistema.'
+        :'';
+      const depTxt=r.dataDeposito?fd(r.dataDeposito).slice(0,5):'Nao realizado';
+      const talTxt=r.talao?r.talao:'Nao registado';
+      const lines=[
+        `  ${i+1}. Periodo: ${_period(r)}  |  ${r.tipo||'--'}  |  ${saEur(totalValor(r))}`,
+        `     Data de deposito: ${depTxt}`,
+        `     Talao/comprovativo: ${talTxt}`,
+        `     Situacao: ${situacao}`,
+      ];
+      if(compSit)lines.push(`     Comprovativo: ${compSit}`);
+      lines.push('');
       return lines.join('\n');
     };
-    // OK records: compact, clean
-    const _okLine=r=>[
-      `  ${_period(r)}  |  ${r.tipo||'--'}  |  ${saEur(totalValor(r))}`,
-      `  Depositado: ${fd(r.dataDeposito).slice(0,5)}  |  Talao: ${r.talao}`,
-    ].join('\n');
     const introLine=hasIssues
       ?`Segue a analise dos depositos de ${mesNomeEmail}.\nForam identificados ${saIssues.length} ponto(s) que requerem a sua atencao e regularizacao.`
       :`Os depositos de ${mesNomeEmail} estao em ordem. Obrigado pela regularidade.`;
@@ -3027,7 +3030,7 @@ function rSASupervision(){
         `DEPOSITOS PENDENTES / EM ATRASO (${_probRecs.length} de ${storeRecs.length})`,
         `-------------------------------------`,
         ``,
-        ..._probRecs.map(_probLine),
+        ..._probRecs.map((r,i)=>_probLine(r,i)),
       ]:[]),
       `-------------------------------------`,
       ...(hasIssues?[`Solicito regularizacao dos pontos acima ate ${prazoRespStr}.`]:[`Agradecemos a regularidade.`]),
