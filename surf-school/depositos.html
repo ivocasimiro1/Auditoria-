@@ -2948,93 +2948,95 @@ function rSASupervision(){
     const storeLojas=cfg2b?.lojas||[...new Set(regs.filter(r=>r.store_id===sid).map(r=>r.loja).filter(Boolean))];
     const todayStr=new Date().toISOString().split('T')[0];
     const allMissing=[...new Set(storeLojas.flatMap(l=>getMissingDays(mes,l)||[]))].sort().filter(d=>d!==todayStr);
-    // Records for this store this month
     const storeRecs=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes.slice(0,7))).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
     const totalVal2=storeRecs.reduce((sum,r)=>sum+totalValor(r),0);
     const depVal2=storeRecs.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((sum,r)=>sum+totalValor(r),0);
-    // Detetar saltos de depósito para o email (inclui dias completamente em falta)
-    const saTodayStr=new Date().toISOString().split('T')[0];
+    const diff2=totalVal2-depVal2;
     const saNewestDepDate=storeRecs.filter(r=>r.dataDeposito).map(r=>getRefDate(r)).sort().pop()||'';
-    const saGapRecs=storeRecs.filter(r=>{
-      if(r.dataDeposito)return false;
-      return saNewestDepDate&&getRefDate(r)<saNewestDepDate;
-    });
-    const saGapMissingDays=allMissing.filter(d=>d<saNewestDepDate&&d<saTodayStr);
+    const saGapRecs=storeRecs.filter(r=>!r.dataDeposito&&saNewestDepDate&&getRefDate(r)<saNewestDepDate);
+    const saGapMissingDays=allMissing.filter(d=>d<saNewestDepDate&&d<todayStr);
     const saHasGap=saGapRecs.length>0||saGapMissingDays.length>0;
-    const saEarliestGap=[...saGapMissingDays,...saGapRecs.map(r=>getRefDate(r))].sort()[0]||'';
-    const saDepAhead=saEarliestGap?storeRecs.filter(r=>r.dataDeposito&&getRefDate(r)>=saEarliestGap).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1):[];
-    const estadoLabel2=saHasGap?'!!! SALTO DE DEPOSITO DETECTADO !!!':s.err>0||(s.compliant!==null&&s.compliant<50)?'*** DEPOSITOS EM ATRASO - ACAO URGENTE ***':s.warn>0||(s.compliant!==null&&s.compliant<80)?'Atencao: verificar depositos pendentes':'Tudo em ordem';
-    const saEur=v=>fmt(v).replace('€','EUR');
-    const recBlocks=[];
-    storeRecs.forEach((r,i)=>{
-      const estR=calcEstado(r,getRecordCfg(r));
-      const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
-      const period=sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
-      const estTxt=estR.s==='ok'?'OK deposito':estR.s==='warn'?'Aviso: '+estR.label.replace(/[📅✅⚠️🔴]/gu,'').trim():estR.s==='err'?'ERRO: '+estR.label.replace(/[📅✅⚠️🔴]/gu,'').trim():'Pendente';
-      recBlocks.push(`[${i+1}] ${period} | ${r.tipo||'--'}`);
-      recBlocks.push(`  Valor: ${saEur(totalValor(r))}`);
-      recBlocks.push(`  Deposito: ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'}`);
-      if(r.talao)recBlocks.push(`  Talao: ${r.talao}`);
-      recBlocks.push(`  Estado: ${estTxt}`);
-      recBlocks.push('');
-    });
-    const saMissing=allMissing.length?`DIAS SEM REGISTO (${allMissing.length}):\n${allMissing.map(d=>fd(d).slice(0,5)).join(', ')}`:'Todos os dias registados.';
-    // Irregularidades detetadas para o email
+    const pastMissing=allMissing.filter(d=>d<todayStr);
     const saErrNoDep=storeRecs.filter(r=>!r.dataDeposito&&calcEstado(r,getRecordCfg(r)).s==='err');
     const saErrSemFoto=storeRecs.filter(r=>r.dataDeposito&&!r.foto&&calcEstado(r,getRecordCfg(r)).s==='err');
     const saWarnSemFoto=storeRecs.filter(r=>!r.foto&&(r.talao||r.dataDeposito)&&calcEstado(r,getRecordCfg(r)).s==='warn');
+    const saEur=v=>fmt(v).replace('€','EUR');
+    // Build issues — each appears only once
     const saIssues=[];
-    const pastMissingPast=allMissing.filter(d=>d<saTodayStr);
-    if(saHasGap)saIssues.push(`• SALTO DE DEPÓSITO: foram processados depósitos mais recentes enquanto registos mais antigos ficaram por depositar. O dinheiro desses dias foi entregue?`);
-    if(saGapMissingDays.length>0)saIssues.push(`• DIAS SEM REGISTO no período com salto: ${saGapMissingDays.map(d=>fd(d).slice(0,5)).join(', ')}`);
-    if(saErrNoDep.length>0)saIssues.push(`• ${saErrNoDep.length} DEPÓSITO(S) EM ATRASO sem data de depósito registada (prazo ultrapassado)`);
-    if(saErrSemFoto.length>0)saIssues.push(`• ${saErrSemFoto.length} depósito(s) realizados sem COMPROVATIVO (foto) associado`);
-    if(saWarnSemFoto.length>0)saIssues.push(`• ${saWarnSemFoto.length} registo(s) com depósito mas sem foto de comprovativo`);
-    if(pastMissingPast.length>0)saIssues.push(`• ${pastMissingPast.length} DIA(S) SEM REGISTO de sessão de caixa`);
+    if(saHasGap)saIssues.push(`(*) SALTO DE DEPOSITO: foram processados depositos mais recentes enquanto registos mais antigos ficaram por depositar. O dinheiro desses dias foi entregue?\n   Dias em falta no periodo: ${saGapMissingDays.length>0?saGapMissingDays.map(d=>fd(d).slice(0,5)).join(', '):'ver registos pendentes abaixo'}`);
+    if(saErrNoDep.length>0)saIssues.push(`(*) ${saErrNoDep.length} deposito(s) em atraso — prazo ultrapassado, sem data de deposito registada`);
+    if(saErrSemFoto.length>0)saIssues.push(`(*) ${saErrSemFoto.length} deposito(s) realizados sem comprovativo (foto/talao) associado`);
+    if(saWarnSemFoto.length>0)saIssues.push(`( ) ${saWarnSemFoto.length} registo(s) com deposito mas sem comprovativo`);
+    if(pastMissing.length>0&&!saHasGap)saIssues.push(`( ) ${pastMissing.length} dia(s) sem registo de sessao de caixa: ${pastMissing.map(d=>fd(d).slice(0,5)).join(', ')}`);
+    const hasIssues=saIssues.length>0;
     const prazoResp=new Date();prazoResp.setDate(prazoResp.getDate()+3);
-    const prazoRespStr=prazoResp.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'});
-    const saRecLine=r=>{
+    const prazoRespStr=prazoResp.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const compPct=s.compliant!==null?s.compliant+'%':'N/D';
+    const compSym=s.compliant===100?' (OK)':s.compliant>=80?' (OK)':s.compliant>=50?' (Atencao)':' (Critico)';
+    const diffSym=Math.abs(diff2)<0.01?' (OK)':' (VERIFICAR)';
+    // Record lines — 2-line format, flags inline
+    const saRecLine=(r,i)=>{
       const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
-      const period=sm.length>1?fd(sm[0]).slice(0,5)+'-'+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
+      const period=sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
       const estR=calcEstado(r,getRecordCfg(r));
-      const flag=estR.s==='err'?' [!]':estR.s==='warn'?' [?]':'';
-      return`  ${period} | ${(r.tipo||'--').padEnd(14)} | ${saEur(totalValor(r)).padStart(9)} | Dep: ${r.dataDeposito?fd(r.dataDeposito).slice(0,5):'PENDENTE'}${r.talao?' | T:'+r.talao:''}${!r.foto?' | SEM FOTO':''}${flag}`;
+      const flags=[];
+      if(estR.s==='err')flags.push('EM ATRASO (*)');
+      else if(estR.s==='warn')flags.push('Atencao');
+      if(!r.foto&&!r.talao)flags.push('SEM COMPROVATIVO (*)');
+      else if(!r.foto||!r.talao)flags.push('Comprovativo incompleto');
+      const flagStr=flags.length?'  ['+flags.join(' | ')+']':'';
+      const dep=r.dataDeposito?fd(r.dataDeposito).slice(0,5):'PENDENTE (*)';
+      const tal=r.talao?`  Talao: ${r.talao}`:'  Sem talao';
+      return`[${i+1}] ${period}  |  ${r.tipo||'--'}  |  ${saEur(totalValor(r))}${flagStr}\n    Depositado: ${dep}${tal}`;
     };
+    const introLine=hasIssues
+      ?`Segue a analise dos depositos de ${mesNomeEmail}.\nForam identificados ${saIssues.length} ponto(s) que requerem a sua atencao e regularizacao.`
+      :`Os depositos de ${mesNomeEmail} estao em ordem. Obrigado pela regularidade.`;
     const body=[
-      `Exmo(a) Responsável de ${s.empName},`,
+      `Exmo(a) Responsavel de ${s.empName},`,
       ``,
-      `Na análise dos registos de depósitos de ${mesNomeEmail} foram identificadas irregularidades que requerem a sua atenção e justificação.`,
+      introLine,
       ``,
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-      `IRREGULARIDADES DETETADAS`,
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-      ...(saIssues.length>0?saIssues:['  Sem irregularidades neste mês.']),
+      `-------------------------------------`,
+      `RESUMO DO MES`,
+      `-------------------------------------`,
+      `Vendas registadas:   ${saEur(totalVal2)}`,
+      `Total depositado:    ${saEur(depVal2)}`,
+      `Diferenca:           ${saEur(diff2)}${diffSym}`,
+      `Registos:            ${storeRecs.length}`,
+      `Conformidade:        ${compPct}${compSym}`,
+      ...(hasIssues?[
+        ``,
+        `-------------------------------------`,
+        `PONTOS A REGULARIZAR`,
+        `-------------------------------------`,
+        ...saIssues,
+      ]:[]),
       ``,
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-      `TODOS OS DEPÓSITOS — ${mesNomeEmail.toUpperCase()}`,
-      `  ([!] = em atraso  [?] = incompleto)`,
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-      ...(storeRecs.length>0?storeRecs.map(saRecLine):['  (sem registos este mês)']),
+      `-------------------------------------`,
+      `DEPOSITOS DE ${mesNomeEmail.toUpperCase()}`,
+      `-------------------------------------`,
+      ...(storeRecs.length>0?storeRecs.map(saRecLine):['  (sem registos este mes)']),
       ``,
-      `TOTAL DO MÊS: ${saEur(totalVal2)}  |  DEPOSITADO: ${saEur(depVal2)}`,
-      ...(allMissing.length>0?[``,`DIAS SEM REGISTO: ${allMissing.map(d=>fd(d).slice(0,5)).join(', ')}`]:[]),
-      ``,
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-      `Solicito resposta/regularização até ${prazoRespStr}.`,
-      `Acesso ao sistema: auditoria-25b.pages.dev/depositos`,
+      `-------------------------------------`,
+      ...(hasIssues?[`Solicito regularizacao dos pontos acima ate ${prazoRespStr}.`]:[`Agradecemos a regularidade.`]),
+      `Sistema: auditoria-25b.pages.dev/depositos`,
       ``,
       `Cumprimentos,`,
-      `Ivo Casimiro | Gestão Despomar`
+      `Ivo Casimiro`,
+      `Gestao Financeira | Grupo Despomar`,
     ].join('\n');
-    // Colocar body no URL — ASCII apenas, URL curto, funciona em iOS/Android
-    const subject=encodeURIComponent('Depositos '+mesNomeEmail+' - Irregularidades - '+s.empName);
-    const mailtoSA=`mailto:${destEmail}?subject=${subject}&body=${encodeURIComponent(body)}`;
+    // CC automatico (supervisores / configurado nas Settings)
+    const _autoCC=(window._saDefaultCC||'').trim();
+    const ccParam=_autoCC?`cc=${encodeURIComponent(_autoCC)}&`:'';
+    const todayLabel=new Date().toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'});
+    const subject=encodeURIComponent(`Depositos - ${s.empName} - ${mesNomeEmail} - ate ${todayLabel}`);
+    const mailtoSA=`mailto:${destEmail}?${ccParam}subject=${subject}&body=${encodeURIComponent(body)}`;
     if(mailtoSA.length>3800){
-      // Fallback clipboard se a loja tiver muitos registos
       const _ta2=document.createElement('textarea');_ta2.value=body;_ta2.style.cssText='position:fixed;top:-9999px;opacity:0';document.body.appendChild(_ta2);_ta2.focus();_ta2.select();let _cp2=false;try{_cp2=document.execCommand('copy');}catch(e){}document.body.removeChild(_ta2);
       navigator.clipboard?.writeText(body).catch(()=>{});
-      window.location.href=`mailto:${destEmail}?subject=${subject}`;
-      toast(_cp2?'📋 Corpo copiado — cole no email (pressao longa → Colar)':'Email aberto');
+      window.location.href=`mailto:${destEmail}?${ccParam}subject=${subject}`;
+      toast(_cp2?'Corpo copiado - cole no email (pressao longa para Colar)':'Email aberto');
     } else {
       window.location.href=mailtoSA;
       toast('Email aberto com corpo preenchido');
