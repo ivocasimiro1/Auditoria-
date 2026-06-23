@@ -2945,100 +2945,43 @@ function rSASupervision(){
     const cfg2b=allStoreConfigs.find(c=>c.store_id===sid);
     const destEmail=cfg2b?.email||s.email||cn.email||'';
     const mesNomeEmail=mesLabel(mes);
-    const storeLojas=cfg2b?.lojas||[...new Set(regs.filter(r=>r.store_id===sid).map(r=>r.loja).filter(Boolean))];
-    const todayStr=new Date().toISOString().split('T')[0];
-    const allMissing=[...new Set(storeLojas.flatMap(l=>getMissingDays(mes,l)||[]))].sort().filter(d=>d!==todayStr);
     const storeRecs=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes.slice(0,7))).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
-    const totalVal2=storeRecs.reduce((sum,r)=>sum+totalValor(r),0);
-    const depVal2=storeRecs.filter(r=>r.foto&&r.talao&&r.dataDeposito).reduce((sum,r)=>sum+totalValor(r),0);
-    const diff2=totalVal2-depVal2;
-    const saNewestDepDate=storeRecs.filter(r=>r.dataDeposito).map(r=>getRefDate(r)).sort().pop()||'';
-    const saGapRecs=storeRecs.filter(r=>!r.dataDeposito&&saNewestDepDate&&getRefDate(r)<saNewestDepDate);
-    const saGapMissingDays=allMissing.filter(d=>d<saNewestDepDate&&d<todayStr);
-    const saHasGap=saGapRecs.length>0||saGapMissingDays.length>0;
-    const pastMissing=allMissing.filter(d=>d<todayStr);
-    const saErrNoDep=storeRecs.filter(r=>!r.dataDeposito&&calcEstado(r,getRecordCfg(r)).s==='err');
-    const saErrSemFoto=storeRecs.filter(r=>r.dataDeposito&&!r.foto&&calcEstado(r,getRecordCfg(r)).s==='err');
-    const saWarnSemFoto=storeRecs.filter(r=>!r.foto&&(r.talao||r.dataDeposito)&&calcEstado(r,getRecordCfg(r)).s==='warn');
-    const saEur=v=>fmt(v).replace('€','EUR');
-    // Build issues — each appears only once, described in plain language
-    const saIssues=[];
-    if(saHasGap){
-      const gapDays=saGapMissingDays.length>0?` Dias sem registo nesse periodo: ${saGapMissingDays.map(d=>fd(d).slice(0,5)).join(', ')}.`:'';
-      saIssues.push(`(*) DEPOSITO FORA DE ORDEM: existe pelo menos um deposito recente registado enquanto registos de dias anteriores ainda nao foram depositados. Isto significa que ha dinheiro de dias mais antigos que devia ter sido entregue mas nao consta no sistema.${gapDays} Confirmar com o responsavel o que aconteceu a esse dinheiro.`);
-    }
-    if(saErrNoDep.length>0)saIssues.push(`(*) ${saErrNoDep.length === 1 ? 'Existe 1 registo de caixa cujo prazo de deposito foi ultrapassado' : `Existem ${saErrNoDep.length} registos de caixa cujos prazos de deposito foram ultrapassados`} e o deposito ainda nao foi realizado. O dinheiro continua por entregar. Ver detalhe abaixo.`);
-    if(saErrSemFoto.length>0)saIssues.push(`(*) ${saErrSemFoto.length === 1 ? 'Foi realizado 1 deposito com numero de talao registado mas sem foto do comprovativo associada' : `Foram realizados ${saErrSemFoto.length} depositos com numero de talao registado mas sem foto do comprovativo`}. A entrega nao pode ser confirmada sem imagem do talao bancario. Solicitar a foto do comprovativo ao responsavel de caixa.`);
-    const hasIssues=saIssues.length>0;
+    // Records not yet deposited (truly pending)
+    const pendRecs=storeRecs.filter(r=>!r.dataDeposito);
+    // Records deposited but without comprovativo
+    const semCompRecs=storeRecs.filter(r=>r.dataDeposito&&!r.talao);
+    const hasIssues=pendRecs.length>0||semCompRecs.length>0;
     const prazoResp=new Date();prazoResp.setDate(prazoResp.getDate()+3);
     const prazoRespStr=prazoResp.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'});
-    const compPct=s.compliant!==null?s.compliant+'%':'N/D';
-    const compSym=s.compliant===100?' (OK)':s.compliant>=80?' (OK)':s.compliant>=50?' (Atencao)':' (Critico)';
-    const diffSym=Math.abs(diff2)<0.01?' (OK)':' (VERIFICAR)';
-    // Only records that are late OR missing comprovativo
-    const _period=r=>{const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();return sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';};
-    const _probRecs=storeRecs.filter(r=>{const e=calcEstado(r,getRecordCfg(r));return!r.dataDeposito||e.s==='err'||!r.talao;});
-    // Professional format — no arrows, clean audit style
-    const _probLine=(r,i)=>{
-      const estR=calcEstado(r,getRecordCfg(r));
-      const situacao=!r.dataDeposito
-        ?'Deposito nao realizado — o prazo regulamentar foi ultrapassado e o dinheiro continua por entregar.'
-        :estR.s==='err'?'Deposito em atraso — o prazo regulamentar foi ultrapassado.'
-        :'Deposito realizado.';
-      const compSit=!r.talao&&!r.foto
-        ?'Sem comprovativo — nao ha talao nem foto associada. Nao e possivel confirmar a entrega junto do banco.'
-        :!r.talao?'Numero de talao nao registado no sistema.'
-        :'';
-      const depTxt=r.dataDeposito?fd(r.dataDeposito).slice(0,5):'Nao realizado';
-      const talTxt=r.talao?r.talao:'Nao registado';
-      const sessOrdenadas=(r.sessoes||[]).filter(x=>x.dataVendas).sort((a,b)=>a.dataVendas<b.dataVendas?-1:1);
-      const sessLinhas=sessOrdenadas.map(x=>`       ${fd(x.dataVendas).slice(0,5)}  Sessao ${x.sessao||'—'}`);
-      const lines=[
-        `  ${i+1}. ${r.tipo||'--'} — ${_period(r)}`,
-        `     Sessoes:`,
-        ...sessLinhas,
-        `     Data de deposito: ${depTxt}`,
-        `     Talao/comprovativo: ${talTxt}`,
-        `     Situacao: ${situacao}`,
-      ];
-      if(compSit)lines.push(`     Comprovativo: ${compSit}`);
-      lines.push('');
-      return lines.join('\n');
-    };
-    const introLine=hasIssues
-      ?`Segue a analise dos depositos de ${mesNomeEmail}.\nForam identificados ${saIssues.length} ponto(s) que requerem a sua atencao e regularizacao.`
-      :`Os depositos de ${mesNomeEmail} estao em ordem. Obrigado pela regularidade.`;
+    // Session lines per pending record
+    const pendLines=[];
+    pendRecs.forEach(r=>{
+      const sess=(r.sessoes||[]).filter(x=>x.dataVendas).sort((a,b)=>a.dataVendas<b.dataVendas?-1:1);
+      pendLines.push(`  ${r.tipo||'Deposito'}:`);
+      sess.forEach(x=>pendLines.push(`    ${fd(x.dataVendas).slice(0,5)}  -  Sessao ${x.sessao||'—'}`));
+      pendLines.push('');
+    });
+    // Comprovativo missing lines
+    const compLines=semCompRecs.map(r=>{
+      const sess=(r.sessoes||[]).filter(x=>x.dataVendas).sort((a,b)=>a.dataVendas<b.dataVendas?-1:1);
+      const period=sess.length>1?fd(sess[0].dataVendas).slice(0,5)+' a '+fd(sess[sess.length-1].dataVendas).slice(0,5):sess.length?fd(sess[0].dataVendas).slice(0,5):'—';
+      return`  ${r.tipo||'Deposito'} ${period}  (depositado em ${fd(r.dataDeposito).slice(0,5)})`;
+    });
     const body=[
       `Exmo(a) Responsavel de ${s.empName},`,
       ``,
-      introLine,
-      ``,
-      `-------------------------------------`,
-      `RESUMO DO MES`,
-      `-------------------------------------`,
-      `Vendas registadas:   ${saEur(totalVal2)}`,
-      `Total depositado:    ${saEur(depVal2)}`,
-      `Diferenca:           ${saEur(diff2)}${diffSym}`,
-      `Registos:            ${storeRecs.length}`,
-      `Conformidade:        ${compPct}${compSym}`,
-      ...(hasIssues?[
+      ...(pendRecs.length?[
+        `Verificamos que as seguintes sessoes de caixa de ${mesNomeEmail} ainda nao foram depositadas:`,
         ``,
-        `-------------------------------------`,
-        `PONTOS A REGULARIZAR`,
-        `-------------------------------------`,
-        ...saIssues,
+        ...pendLines,
       ]:[]),
-      ...(_probRecs.length?[
+      ...(semCompRecs.length?[
+        `Os seguintes depositos foram realizados mas nao tem numero de talao/comprovativo registado no sistema:`,
         ``,
-        `-------------------------------------`,
-        `DEPOSITOS PENDENTES / EM ATRASO (${_probRecs.length} de ${storeRecs.length})`,
-        `-------------------------------------`,
+        ...compLines,
         ``,
-        ..._probRecs.map((r,i)=>_probLine(r,i)),
       ]:[]),
-      `-------------------------------------`,
-      ...(hasIssues?[`Solicito regularizacao dos pontos acima ate ${prazoRespStr}.`]:[`Agradecemos a regularidade.`]),
-      `Sistema: auditoria-25b.pages.dev/depositos`,
+      `Solicitamos que regularize a situacao o mais rapidamente possivel.`,
       ``,
       `Cumprimentos,`,
       `Ivo Casimiro`,
@@ -3048,9 +2991,7 @@ function rSASupervision(){
     const _autoCC=(window._saDefaultCC||'').trim();
     const ccParam=_autoCC?`cc=${encodeURIComponent(_autoCC)}&`:'';
     const todayLabel=new Date().toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'});
-    // Subject: includes "Irregularidades" only when there are issues
-    const subjSuffix=hasIssues?` - Irregularidades`:` - Verificado`;
-    const subject=encodeURIComponent(`Depositos - ${s.empName} - ${mesNomeEmail}${subjSuffix} - ate ${todayLabel}`);
+    const subject=encodeURIComponent(`Depositos em atraso - ${s.empName} - ${mesNomeEmail}`);
     const mailtoSA=`mailto:${destEmail}?${ccParam}subject=${subject}&body=${encodeURIComponent(body)}`;
     if(mailtoSA.length>3800){
       const _ta2=document.createElement('textarea');_ta2.value=body;_ta2.style.cssText='position:fixed;top:-9999px;opacity:0';document.body.appendChild(_ta2);_ta2.focus();_ta2.select();let _cp2=false;try{_cp2=document.execCommand('copy');}catch(e){}document.body.removeChild(_ta2);
