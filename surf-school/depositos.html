@@ -2950,8 +2950,9 @@ function rSASupervision(){
     const storeRecs=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes.slice(0,7))).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
     // Records not yet deposited
     const pendRecs=storeRecs.filter(r=>!r.dataDeposito);
-    // Days with no record at all (missing from system entirely), past only
-    const allMissing=[...new Set(storeLojas.flatMap(l=>getMissingDays(mes,l)||[]))].sort().filter(d=>d<todayStr);
+    // Days with no record at all — exclude days already covered by sessions in pending records
+    const coveredBySess=new Set(pendRecs.flatMap(r=>(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean)));
+    const allMissing=[...new Set(storeLojas.flatMap(l=>getMissingDays(mes,l)||[]))].sort().filter(d=>d<todayStr&&!coveredBySess.has(d));
     // Records deposited but without comprovativo
     const semCompRecs=storeRecs.filter(r=>r.dataDeposito&&!r.talao);
     const hasIssues=pendRecs.length>0||allMissing.length>0||semCompRecs.length>0;
