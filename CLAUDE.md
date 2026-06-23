@@ -253,17 +253,45 @@ const{error}=ex
 ```
 
 ### Email — fluxo e regras
-**Loja envia para contabilidade (Ivo/Despomar):**
-- `To:` = `cfg.email` da loja (email contabilidade configurado nas Settings da loja)
-- `CC:` = `cfg.emailCC` + `cfg.emailCC2`
-- Corpo: lista de depósitos com sessões discriminadas, estado por depósito, aviso se falta talão
 
-**SA envia para a loja seleccionada:**
-- `updEmailPrev()` faz SELECT na `dep_config` da loja seleccionada
-- `To:` = email da LOJA (não do SA)
-- Corpo: dirigido ao gerente da loja ("Caro/a gerente — [Loja]")
-- SA é a contabilidade — email vai DA contabilidade PARA a loja
-- Se a loja não tiver config → mostra aviso ep-config-warn
+**Loja envia para contabilidade (Ivo/Despomar):**
+- `To:` = `cfg.email` da loja (email contabilidade, campo "Email" nas Settings da loja)
+- `CC:` = `cfg.emailCC` (gerente + outros, campo CC nas Settings) + `window._saDefaultCC` (supervisores Despomar)
+- Corpo HTML preview + plain text para mailto
+- Assunto: `Depósitos – [Loja] – [Mês] – até DD/MM/YYYY`
+
+**SA envia alerta de depósitos em atraso (`_saAlertEmail`):**
+- Função: `window._saAlertEmail(sid)` — chamada ao clicar Email na card da loja no painel SA
+- `To:` = `cfg2b.email_cc` (gerente da loja) — fallback para `cfg2b.email` se não configurado
+- `CC:` = `cfg2b.email` (contabilidade da loja) + `window._saDefaultCC` (supervisores Despomar)
+- Assunto: `Depósitos em atraso - [Loja] - [Mês]`
+- Corpo plain text com acentos, inclui apenas o que está em atraso:
+  1. **Saltos de depósito** — registos mais antigos pendentes enquanto há mais recentes depositados (topo, em destaque)
+  2. **Sessões por depositar** — records sem `dataDeposito`, listados por tipo com data+sessão
+  3. **Dias sem registo** — dias sem qualquer sessão no sistema, filtrados por `_missCutoff` (respeita calendário Prosegur/Lomis/Câmbio)
+  4. **Sem comprovativo** — depositos realizados sem talão registado
+- `_missCutoff`: calculado igual ao painel SA — para lojas com schedule semanal, é o dia da última passagem da transportadora; sem schedule, hoje-2 dias
+- Assunto dinâmico: inclui "Irregularidades" se houver problemas, "Verificado" se tudo OK
+- Assinatura: `Gestão Financeira | Grupo Despomar` (sem nome pessoal)
+
+**`window._saDefaultCC`** — CC automático global:
+- Carregado do `dep_config.email_cc2` da row `store_id='super'` (SA config)
+- Configurável nas Settings do SA (campo "CC automático — todas as lojas")
+- Adicionado automaticamente a TODOS os emails enviados pelas lojas
+- Default inicial: `ivo@despomar.com`
+
+**Múltiplas contas SA:**
+- Conta original: `dep_users` row com `role='super_admin'`
+- Contas adicionais: `dep_config` rows com `store_id='sauser-<email>'`
+- Login fallback: se não encontra em `dep_users`, procura em `dep_config` por email
+- Criar via Settings SA → card "Super-Admins" → "+ Adicionar"
+- Email de confirmação redireciona para `/depositos` (não `/surf`)
+
+**Campos `dep_config` usados no email:**
+- `email` = contabilidade da loja (To nos emails da loja; CC nos emails SA)
+- `email_cc` = gerente da loja (CC nos emails da loja; To nos emails SA)
+- `email_cc2` = CC adicional (usado pelo SA para guardar `_saDefaultCC`)
+- `prosegur_day`, `lomis_day`, `cambio_dia` = dia da semana (0=Dom) da recolha — determina `_missCutoff`
 
 **Assunto sempre inclui:** `Depósitos – [Loja] – [Mês] – até DD/MM/YYYY`
 
