@@ -210,18 +210,20 @@ function storeComplianceMes(allRegs, sid, mes, storeCfg) {
 
 async function fetchRegsAndCfgs() {
   const mes = curMes();
-  // Filter by data_deposito (indexed) instead of criado_em (no index = full scan)
-  // pendRecs: all records not yet deposited (small set)
-  // depRecs: records deposited this month (bounded set)
-  const [pendRecs, depRecs, cfgs] = await Promise.all([
-    sbGet('dep_registos', `select=id,store_id,loja,tipo,foto,data_deposito,sessoes,talao,criado_em&data_deposito=is.null&limit=1000`),
-    sbGet('dep_registos', `select=id,store_id,loja,tipo,foto,data_deposito,sessoes,talao,criado_em&data_deposito=gte.${mes}-01&limit=1000`),
+  const [pendRecs, curDepRecs, cfgs] = await Promise.all([
+    // Pending records WITHOUT sessoes — keeps payload tiny regardless of table size
+    sbGet('dep_registos', `select=id,store_id,loja,tipo,foto,data_deposito,talao,criado_em&data_deposito=is.null&limit=500`),
+    // This month deposited records WITH sessoes — small bounded set
+    sbGet('dep_registos', `select=id,store_id,loja,tipo,foto,data_deposito,sessoes,talao,criado_em&data_deposito=gte.${mes}-01&limit=500`),
     sbGet('dep_config', `select=store_id,emp,prosegur_day,lomis_day,cambio_dia,lojas,mes_inicio`)
   ]);
   if (!Array.isArray(pendRecs)) return [pendRecs, cfgs];
-  if (!Array.isArray(depRecs)) return [depRecs, cfgs];
-  const seen = new Set();
-  const merged = [...pendRecs, ...depRecs].filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+  if (!Array.isArray(curDepRecs)) return [curDepRecs, cfgs];
+  const depIds = new Set(curDepRecs.map(r => r.id));
+  const merged = [
+    ...curDepRecs,
+    ...pendRecs.filter(r => !depIds.has(r.id)).map(r => ({ ...r, sessoes: [] }))
+  ];
   return [merged, cfgs];
 }
 
