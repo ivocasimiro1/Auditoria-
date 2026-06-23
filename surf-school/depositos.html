@@ -609,6 +609,11 @@ select{
       <input type="text" id="c-emailcc" placeholder="gerente@loja.pt; supervisor@empresa.pt" oninput="sc()">
       <div style="font-size:11px;color:var(--g400);margin-top:4px;line-height:1.4">Emails incluídos em CC nos relatórios. Separe múltiplos com ; (ponto e vírgula).</div>
     </div>
+    <div class="fg sa-tab" style="display:none">
+      <label>📧 CC automático (todas as lojas)</label>
+      <input type="text" id="c-default-cc" placeholder="ivo@despomar.com" oninput="sc()">
+      <div style="font-size:11px;color:var(--g400);margin-top:4px;line-height:1.4">Adicionado automaticamente ao CC em todos os emails de todas as lojas.</div>
+    </div>
     <div class="fg"><label>NIF</label><input type="text" id="c-nif" placeholder="999999999" oninput="sc()"></div>
     <div style="font-size:11px;font-weight:700;color:var(--g500);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.4px">Serviços de depósito activos</div>
     <div class="fg"><label>Depósito Direto</label>
@@ -1204,7 +1209,9 @@ async function sbLoad(silent=false){
   try{
     if(!isSA){
       const{data:c}=await SB.from('dep_config').select('*').eq('store_id',sbProfile.store_id).maybeSingle();
-      if(c){const _cc=[c.email_cc,c.email_cc2].filter(Boolean).join('; ');cfg={emp:c.emp||'Despomar',email:c.email||'',emailCC:_cc,nif:c.nif||'',cambioDia:c.cambio_dia||'',prosegurDay:c.prosegur_day||'',lomisDay:c.lomis_day||'',mesInicio:c.mes_inicio||'2026-06',lojas:c.lojas||[],resps:c.resps||[]}}
+      if(c){const _cc=[c.email_cc,c.email_cc2].filter(Boolean).join('; ');cfg={emp:c.emp||'Despomar',email:c.email||'',emailCC:_cc,defaultCC:cfg.defaultCC||'ivo@despomar.com',nif:c.nif||'',cambioDia:c.cambio_dia||'',prosegurDay:c.prosegur_day||'',lomisDay:c.lomis_day||'',mesInicio:c.mes_inicio||'2026-06',lojas:c.lojas||[],resps:c.resps||[]}}
+      // Load SA default CC (for auto-append in email composition)
+      SB.from('dep_config').select('email_cc2').eq('store_id','super').maybeSingle().then(({data:sr})=>{if(sr?.email_cc2){window._saDefaultCC=sr.email_cc2;cfg.defaultCC=sr.email_cc2;}});
     }else{
       // SA: load personal config from 'super' row + merge lojas/resps from all stores
       const[{data:saRow},{data:cs},{data:allUsers}]=await Promise.all([
@@ -1219,7 +1226,8 @@ async function sbLoad(silent=false){
         cfg={
           emp:saRow.emp||cfg.emp||'Despomar',
           email:saRow.email||cfg.email||'',
-          emailCC:[saRow.email_cc,saRow.email_cc2].filter(Boolean).join('; ')||cfg.emailCC||'',
+          emailCC:saRow.email_cc||cfg.emailCC||'',
+          defaultCC:saRow.email_cc2||cfg.defaultCC||'ivo@despomar.com',
           nif:saRow.nif||cfg.nif||'',
           cambioDia:saRow.cambio_dia||cfg.cambioDia||'',
           prosegurDay:saRow.prosegur_day||cfg.prosegurDay||'',
@@ -1227,6 +1235,7 @@ async function sbLoad(silent=false){
           mesInicio:saRow.mes_inicio||cfg.mesInicio||'2026-06',
           lojas:cfg.lojas,resps:saRow.resps||cfg.resps
         };
+        window._saDefaultCC=cfg.defaultCC;
       }
       if(cs?.length){
         allStoreConfigs=cs.filter(c=>c.store_id&&c.store_id!=='super');
@@ -1293,7 +1302,7 @@ async function sbSaveCfgSB(){
   if(!sbProfile){toast('⚠️ Sessão não activa — faça login novamente');return false;}
   const sid=isSA?'super':sbProfile.store_id;
   if(!sid){toast('⚠️ ID da loja em falta — contacte o suporte');return false;}
-  const body={store_id:sid,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',mes_inicio:cfg.mesInicio||'',lojas:cfg.lojas||[],resps:cfg.resps||[]};
+  const body={store_id:sid,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:isSA?(cfg.defaultCC||''):'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',mes_inicio:cfg.mesInicio||'',lojas:cfg.lojas||[],resps:cfg.resps||[]};
   try{
     // Try SB SDK first (SELECT→UPDATE/INSERT avoids onConflict constraint)
     const{data:ex,error:selErr}=await SB.from('dep_config').select('store_id').eq('store_id',sid).maybeSingle();
@@ -1473,7 +1482,8 @@ async function doReset(){
 // ─── STORAGE ─────────────────────────────────────────
 const DB={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
 let regs=DB.get('regs',[]);
-let cfg=DB.get('cfg',{emp:'Despomar',email:'contab@despomar.com',nif:'',cambioDia:'',prosegurDay:'',lomisDay:'',mesInicio:'2026-06',lojas:['ESS FARO','BB Lagos','BB Portimão'],resps:['João Silva','Maria Santos','Pedro Costa','Ana Lopes']});
+let cfg=DB.get('cfg',{emp:'Despomar',email:'contab@despomar.com',emailCC:'',defaultCC:'ivo@despomar.com',nif:'',cambioDia:'',prosegurDay:'',lomisDay:'',mesInicio:'2026-06',lojas:['ESS FARO','BB Lagos','BB Portimão'],resps:['João Silva','Maria Santos','Pedro Costa','Ana Lopes']});
+window._saDefaultCC=cfg.defaultCC||'ivo@despomar.com';
 const saveR=()=>DB.set('regs',regs);
 const saveCfg=()=>DB.set('cfg',cfg);
 
@@ -4349,9 +4359,9 @@ async function updEmailPrev(){
   const empresa=activeCfg.emp||'Empresa';
   const nif=activeCfg.nif||'';
   if(!isSA)dest=activeCfg.email||'';
-  const _IVOEMAIL='ivo@despomar.com';
+  const _autoCC=(window._saDefaultCC||'ivo@despomar.com').trim();
   const _ccParts=(activeCfg.emailCC||'').split(';').map(e=>e.trim()).filter(Boolean);
-  if(!isSA&&!_ccParts.some(e=>e.toLowerCase()===_IVOEMAIL))_ccParts.push(_IVOEMAIL);
+  if(!isSA&&_autoCC&&!_ccParts.some(e=>e.toLowerCase()===_autoCC.toLowerCase()))_ccParts.push(_autoCC);
   const cc=isSA?'—':(_ccParts.join('; ')||'—');
   const cw=document.getElementById('ep-config-warn');
   if(cw)cw.style.display=dest?'none':'block';
@@ -5001,6 +5011,7 @@ function rSettings(){
   document.getElementById('c-emp').value=cfg.emp||'';
   document.getElementById('c-email').value=cfg.email||'';
   const ccEl=document.getElementById('c-emailcc');if(ccEl)ccEl.value=cfg.emailCC||'';
+  const dccEl=document.getElementById('c-default-cc');if(dccEl)dccEl.value=cfg.defaultCC||'ivo@despomar.com';
   document.getElementById('c-nif').value=cfg.nif||'';
   const cdEl=document.getElementById('c-cambio-dia');if(cdEl)cdEl.value=cfg.cambioDia||'';
   const pdEl=document.getElementById('c-prosegur-dia');if(pdEl)pdEl.value=cfg.prosegurDay||'';
@@ -5076,7 +5087,7 @@ async function doChangePass(){
   showMsg('✓ Password alterada com sucesso! O administrador foi notificado.',true);
   npEl.value='';ncEl.value='';
 }
-function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';cfg.prosegurDay=document.getElementById('c-prosegur-dia')?.value||'';cfg.lomisDay=document.getElementById('c-lomis-dia')?.value||'';cfg.mesInicio=document.getElementById('c-mes-inicio')?.value||'2026-06';cfg.usaDireto=document.getElementById('c-direto-ativo')?.value??'1';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
+function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';if(isSA){cfg.defaultCC=document.getElementById('c-default-cc')?.value||'';window._saDefaultCC=cfg.defaultCC||'ivo@despomar.com';}cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';cfg.prosegurDay=document.getElementById('c-prosegur-dia')?.value||'';cfg.lomisDay=document.getElementById('c-lomis-dia')?.value||'';cfg.mesInicio=document.getElementById('c-mes-inicio')?.value||'2026-06';cfg.usaDireto=document.getElementById('c-direto-ativo')?.value??'1';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
 
 function listaCSV(){
   const fm=document.getElementById('fl-mes').value;
