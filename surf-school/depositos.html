@@ -1383,8 +1383,9 @@ async function afterLogin(user){
     if(p){
       sbProfile=p;isSA=(p.role==='super_admin'||p.store_id==='super');
     }else{
-      // Fallback: check dep_config for SA accounts created via the app (store_id='sauser-<uid>')
-      const{data:saRow}=await SB.from('dep_config').select('*').eq('store_id','sauser-'+user.id).maybeSingle();
+      // Fallback: check dep_config for SA accounts — match by email (robust across multiple signUp attempts)
+      const{data:saRows}=await SB.from('dep_config').select('*').like('store_id','sauser-%');
+      const saRow=(saRows||[]).find(r=>r.email&&r.email.toLowerCase()===user.email.toLowerCase());
       if(!saRow){showAE('Conta sem permissões. Contacte o administrador.');await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;}
       sbProfile={id:user.id,role:'super_admin',store_id:'super',nome:saRow.emp||'Super Admin'};
       isSA=true;
@@ -5122,7 +5123,8 @@ async function createSAUser(){
     const uid=ud?.user?.id;
     if(!uid)throw new Error('Não foi possível criar o utilizador');
     // dep_users RLS blocks client inserts — store SA marker in dep_config (has allow_all)
-    const{error:ie}=await SB.from('dep_config').insert({store_id:'sauser-'+uid,emp:nome,email:'',mes_inicio:'2026-06',lojas:[],resps:[]});
+    // Use email as lookup key (more reliable than uid across multiple signUp attempts)
+    const{error:ie}=await SB.from('dep_config').upsert({store_id:'sauser-'+uid,emp:nome,email:email,mes_inicio:'2026-06',lojas:[],resps:[]},{onConflict:'store_id'});
     if(ie)throw ie;
     showM('✓ Super-admin "'+nome+'" criado com sucesso!',true);
     document.getElementById('sa-new-nome').value='';
