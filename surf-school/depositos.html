@@ -2961,13 +2961,14 @@ function rSASupervision(){
     const saErrSemFoto=storeRecs.filter(r=>r.dataDeposito&&!r.foto&&calcEstado(r,getRecordCfg(r)).s==='err');
     const saWarnSemFoto=storeRecs.filter(r=>!r.foto&&(r.talao||r.dataDeposito)&&calcEstado(r,getRecordCfg(r)).s==='warn');
     const saEur=v=>fmt(v).replace('€','EUR');
-    // Build issues — each appears only once
+    // Build issues — each appears only once, described in plain language
     const saIssues=[];
-    if(saHasGap)saIssues.push(`(*) SALTO DE DEPOSITO: foram processados depositos mais recentes enquanto registos mais antigos ficaram por depositar. O dinheiro desses dias foi entregue?\n   Dias em falta no periodo: ${saGapMissingDays.length>0?saGapMissingDays.map(d=>fd(d).slice(0,5)).join(', '):'ver registos pendentes abaixo'}`);
-    if(saErrNoDep.length>0)saIssues.push(`(*) ${saErrNoDep.length} deposito(s) em atraso — prazo ultrapassado, sem data de deposito registada`);
-    if(saErrSemFoto.length>0)saIssues.push(`(*) ${saErrSemFoto.length} deposito(s) realizados sem comprovativo (foto/talao) associado`);
-    if(saWarnSemFoto.length>0)saIssues.push(`( ) ${saWarnSemFoto.length} registo(s) com deposito mas sem comprovativo`);
-    if(pastMissing.length>0&&!saHasGap)saIssues.push(`( ) ${pastMissing.length} dia(s) sem registo de sessao de caixa: ${pastMissing.map(d=>fd(d).slice(0,5)).join(', ')}`);
+    if(saHasGap){
+      const gapDays=saGapMissingDays.length>0?` Dias sem registo nesse periodo: ${saGapMissingDays.map(d=>fd(d).slice(0,5)).join(', ')}.`:'';
+      saIssues.push(`(*) DEPOSITO FORA DE ORDEM: existe pelo menos um deposito recente registado enquanto registos de dias anteriores ainda nao foram depositados. Isto significa que ha dinheiro de dias mais antigos que devia ter sido entregue mas nao consta no sistema.${gapDays} Confirmar com o responsavel o que aconteceu a esse dinheiro.`);
+    }
+    if(saErrNoDep.length>0)saIssues.push(`(*) ${saErrNoDep.length === 1 ? 'Existe 1 registo de caixa cujo prazo de deposito foi ultrapassado' : `Existem ${saErrNoDep.length} registos de caixa cujos prazos de deposito foram ultrapassados`} e o deposito ainda nao foi realizado. O dinheiro continua por entregar. Ver detalhe abaixo.`);
+    if(saErrSemFoto.length>0)saIssues.push(`(*) ${saErrSemFoto.length === 1 ? 'Foi realizado 1 deposito' : `Foram realizados ${saErrSemFoto.length} depositos`} sem comprovativo associado no sistema (sem foto do talao). Nao e possivel confirmar a entrega junto do banco. Solicitar o talao ao responsavel.`);
     const hasIssues=saIssues.length>0;
     const prazoResp=new Date();prazoResp.setDate(prazoResp.getDate()+3);
     const prazoRespStr=prazoResp.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'});
@@ -2978,19 +2979,19 @@ function rSASupervision(){
     const _probRecs=storeRecs.filter(r=>{const e=calcEstado(r,getRecordCfg(r));return!r.dataDeposito||e.s==='err'||e.s==='warn'||!r.talao;});
     const _okRecs=storeRecs.filter(r=>{const e=calcEstado(r,getRecordCfg(r));return r.dataDeposito&&e.s==='ok'&&r.talao;});
     const _period=r=>{const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();return sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';};
-    // Problem records: visually prominent with >>> prefix
+    // Problem records: visually prominent with >>> prefix, plain-language explanation
     const _probLine=r=>{
       const estR=calcEstado(r,getRecordCfg(r));
-      const statusTxt=!r.dataDeposito?'DEPOSITO NAO REALIZADO':estR.s==='err'?'EM ATRASO':estR.s==='warn'?'ATENCAO':'Verificar';
-      const compTxt=r.talao?`Talao: ${r.talao}`:'SEM COMPROVATIVO';
-      const depTxt=r.dataDeposito?fd(r.dataDeposito).slice(0,5):'PENDENTE';
-      return[
-        `>>>`,
-        `>>> ${_period(r)}  |  ${r.tipo||'--'}  |  ${saEur(totalValor(r))}`,
-        `>>> ESTADO: ${statusTxt}`,
-        `>>> Depositado: ${depTxt}  |  ${compTxt}`,
-        `>>>`,
-      ].join('\n');
+      const lines=[`>>>`,`>>> ${_period(r)}  |  ${r.tipo||'--'}  |  ${saEur(totalValor(r))}`];
+      if(!r.dataDeposito)lines.push(`>>> PROBLEMA: O dinheiro deste periodo ainda nao foi depositado. Prazo ultrapassado.`);
+      else if(estR.s==='err')lines.push(`>>> PROBLEMA: Deposito em atraso — o prazo regulamentar foi ultrapassado.`);
+      else if(estR.s==='warn')lines.push(`>>> AVISO: Deposito proximos do prazo ou com irregularidade.`);
+      if(!r.talao&&!r.foto)lines.push(`>>> SEM COMPROVATIVO: nao ha talao nem foto associada — nao e possivel confirmar a entrega.`);
+      else if(!r.talao)lines.push(`>>> SEM TALAO: o numero do talao nao foi registado.`);
+      const depTxt=r.dataDeposito?fd(r.dataDeposito).slice(0,5):'NAO REALIZADO';
+      const compTxt=r.talao?`Talao: ${r.talao}`:'Sem talao registado';
+      lines.push(`>>> Depositado: ${depTxt}  |  ${compTxt}`,`>>>`);
+      return lines.join('\n');
     };
     // OK records: compact, clean
     const _okLine=r=>[
