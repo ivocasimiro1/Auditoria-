@@ -1384,9 +1384,13 @@ async function afterLogin(user){
       sbProfile=p;isSA=(p.role==='super_admin'||p.store_id==='super');
     }else{
       // Fallback: check dep_config for SA accounts — match by email (robust across multiple signUp attempts)
-      const{data:saRows}=await SB.from('dep_config').select('*').like('store_id','sauser-%');
+      const{data:saRows,error:saErr}=await SB.from('dep_config').select('store_id,emp,email').like('store_id','sauser-%');
       const saRow=(saRows||[]).find(r=>r.email&&r.email.toLowerCase()===user.email.toLowerCase());
-      if(!saRow){showAE('Conta sem permissões. Contacte o administrador.');await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;}
+      if(!saRow){
+        const dbg='Login: '+user.email+'\nRows encontradas: '+(saRows?.length||0)+'\n'+(saRows||[]).map(r=>r.store_id+'|'+r.email).join('\n')+(saErr?'\nErro: '+saErr.message:'');
+        showAE('Sem permissões.\n\n'+dbg);
+        await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;
+      }
       sbProfile={id:user.id,role:'super_admin',store_id:'super',nome:saRow.emp||'Super Admin'};
       isSA=true;
     }
