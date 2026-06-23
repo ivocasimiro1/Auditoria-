@@ -1392,10 +1392,10 @@ async function afterLogin(user){
     }
     await sbLoad();
     document.getElementById('auth-screen').style.display='none';
-    document.getElementById('tsub').textContent=isSA?('⭐ '+(p.nome||'Super Admin')):(p.nome||p.store_id||cfg.emp||'Depósitos');
+    document.getElementById('tsub').textContent=isSA?('⭐ '+(sbProfile.nome||'Super Admin')):(sbProfile.nome||sbProfile.store_id||cfg.emp||'Depósitos');
     const lb=document.getElementById('logout-btn');if(lb)lb.style.display='flex';
     const uc=document.getElementById('user-chip');if(uc)uc.style.display='flex';
-    const ucn=document.getElementById('user-chip-name');if(ucn)ucn.textContent=(p.nome||p.store_id||'')+(isSA?' ⭐':'');
+    const ucn=document.getElementById('user-chip-name');if(ucn)ucn.textContent=(sbProfile.nome||sbProfile.store_id||'')+(isSA?' ⭐':'');
     const uce=document.getElementById('user-chip-email');if(uce)uce.textContent=user.email;
     const cpc=document.getElementById('change-pass-card');if(cpc)cpc.style.display=isSA?'none':'block';
     document.querySelectorAll('.sa-tab').forEach(el=>el.style.display=isSA?'flex':'none');
