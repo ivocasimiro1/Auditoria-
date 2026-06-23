@@ -210,16 +210,18 @@ function storeComplianceMes(allRegs, sid, mes, storeCfg) {
 
 async function fetchRegsAndCfgs() {
   const mes = curMes();
-  const since = sincePrevMonth();
-  // Split query: base (no sessoes, fast) + current month with sessoes (small)
-  const [regsBase, regsSess, cfgs] = await Promise.all([
-    sbGet('dep_registos', `select=id,store_id,loja,tipo,foto,data_deposito,talao,criado_em&criado_em=gte.${since}T00:00:00Z&limit=2000`),
-    sbGet('dep_registos', `select=id,store_id,loja,tipo,foto,data_deposito,sessoes,talao,criado_em&criado_em=gte.${mes}-01T00:00:00Z&limit=500`),
+  // Filter by data_deposito (indexed) instead of criado_em (no index = full scan)
+  // pendRecs: all records not yet deposited (small set)
+  // depRecs: records deposited this month (bounded set)
+  const [pendRecs, depRecs, cfgs] = await Promise.all([
+    sbGet('dep_registos', `select=id,store_id,loja,tipo,foto,data_deposito,sessoes,talao,criado_em&data_deposito=is.null&limit=1000`),
+    sbGet('dep_registos', `select=id,store_id,loja,tipo,foto,data_deposito,sessoes,talao,criado_em&data_deposito=gte.${mes}-01&limit=1000`),
     sbGet('dep_config', `select=store_id,emp,prosegur_day,lomis_day,cambio_dia,lojas,mes_inicio`)
   ]);
-  if (!Array.isArray(regsBase)) return [regsBase, cfgs];
-  const sessById = Array.isArray(regsSess) ? new Map(regsSess.map(r => [r.id, r.sessoes || []])) : new Map();
-  const merged = regsBase.map(r => ({ ...r, sessoes: sessById.get(r.id) || [] }));
+  if (!Array.isArray(pendRecs)) return [pendRecs, cfgs];
+  if (!Array.isArray(depRecs)) return [depRecs, cfgs];
+  const seen = new Set();
+  const merged = [...pendRecs, ...depRecs].filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
   return [merged, cfgs];
 }
 
@@ -318,8 +320,7 @@ export async function onRequestGet(context) {
   }
   if (url.searchParams.get('debug') === '1') {
     const mes = curMes();
-    const since = sincePrevMonth();
-    const qs = `select=store_id,data_deposito,sessoes,criado_em&criado_em=gte.${since}T00:00:00Z`;
+    const qs = `select=store_id,data_deposito,criado_em&data_deposito=gte.${mes}-01&limit=500`;
     const rows = await sbGet('dep_registos', qs);
     if (!Array.isArray(rows)) return new Response(JSON.stringify(rows), { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
     const byStore = {};
