@@ -80,9 +80,9 @@ function hhmm() {
   return new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Lisbon' });
 }
 
-function since3months() {
+function sincePrevMonth() {
   const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' }));
-  d.setMonth(d.getMonth() - 3);
+  d.setMonth(d.getMonth() - 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
@@ -210,14 +210,14 @@ function storeComplianceMes(allRegs, sid, mes, storeCfg) {
 
 async function fetchRegsAndCfgs(since) {
   return Promise.all([
-    sbGet('dep_registos', `select=store_id,loja,tipo,foto,data_deposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z`),
+    sbGet('dep_registos', `select=store_id,loja,tipo,foto,data_deposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z&limit=3000`),
     sbGet('dep_config', `select=store_id,emp,prosegur_day,lomis_day,cambio_dia,lojas,mes_inicio`)
   ]);
 }
 
 async function buildRankingText() {
   const mes = curMes();
-  const [regs, cfgs] = await fetchRegsAndCfgs(since3months());
+  const [regs, cfgs] = await fetchRegsAndCfgs(sincePrevMonth());
   if (!Array.isArray(regs)) return `❌ Erro Supabase registos: ${JSON.stringify(regs).slice(0,120)}`;
   if (!Array.isArray(cfgs)) return `❌ Erro Supabase config: ${JSON.stringify(cfgs).slice(0,120)}`;
 
@@ -254,7 +254,7 @@ async function buildRankingText() {
 
 async function buildStatusText(query) {
   const mes = curMes();
-  const [regs, cfgs] = await fetchRegsAndCfgs(since3months());
+  const [regs, cfgs] = await fetchRegsAndCfgs(sincePrevMonth());
   if (!Array.isArray(regs)) return `❌ Erro registos: ${JSON.stringify(regs).slice(0,200)}`;
   if (!Array.isArray(cfgs)) return `❌ Erro config: ${JSON.stringify(cfgs).slice(0,200)}`;
   const norm = s => s.toLowerCase().replace(/[-_ ]/g, '');
@@ -310,7 +310,7 @@ export async function onRequestGet(context) {
   }
   if (url.searchParams.get('debug') === '1') {
     const mes = curMes();
-    const since = since3months();
+    const since = sincePrevMonth();
     const qs = `select=store_id,data_deposito,sessoes,criado_em&criado_em=gte.${since}T00:00:00Z`;
     const rows = await sbGet('dep_registos', qs);
     if (!Array.isArray(rows)) return new Response(JSON.stringify(rows), { headers: { 'Content-Type': 'application/json; charset=utf-8' } });

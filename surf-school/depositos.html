@@ -1500,7 +1500,7 @@ async function doReset(){
   if(!email){return;}
   const btn=document.getElementById('reset-btn');
   btn.textContent='A enviar...';btn.disabled=true;
-  const{error}=await SB.auth.resetPasswordForEmail(email,{redirectTo:'https://depositos-despomar.pages.dev'});
+  const{error}=await SB.auth.resetPasswordForEmail(email,{redirectTo:'https://auditoria-25b.pages.dev/depositos'});
   btn.textContent='Enviar link de recuperação';btn.disabled=false;
   if(error){showAE(error.message||'Erro ao enviar email');hideReset();return;}
   document.getElementById('reset-body').style.display='none';
@@ -5397,7 +5397,17 @@ async function init(){
   popSel();addSes();
   document.getElementById('tsub').textContent=cfg.emp||'Depósitos';
   const{data:{session}}=await SB.auth.getSession();
-  if(session?.user){await afterLogin(session.user);}
+  if(session?.user){
+    await afterLogin(session.user);
+    // Detect password recovery link (arrived from reset email)
+    if(window.location.hash.includes('type=recovery')){
+      sp('settings');
+      const cpc=document.getElementById('change-pass-card');
+      if(cpc){cpc.style.display='block';setTimeout(()=>cpc.scrollIntoView({behavior:'smooth'}),300);}
+      const msg=document.getElementById('cp-msg');
+      if(msg){msg.textContent='Define a tua nova password abaixo.';msg.style.cssText='display:block;background:#dbeafe;color:#1e40af;border-radius:8px;padding:10px 13px;margin-bottom:12px;font-size:13px;font-weight:600';}
+    }
+  }
   else{document.getElementById('auth-screen').style.display='flex';}
 }
 
