@@ -5084,11 +5084,11 @@ function toggleAddSA(){
 }
 async function loadSAUsers(){
   const el=document.getElementById('sa-users-list');if(!el)return;
-  const{data}=await SB.from('dep_users').select('user_id,nome,role,store_id').eq('role','super_admin');
+  const{data}=await SB.from('dep_users').select('id,nome,role,store_id').eq('role','super_admin');
   const me=sbUser?.id;
   el.innerHTML=(data||[]).map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:9px 12px;font-size:13px">
-    <span style="font-weight:600">${u.nome||'Super-Admin'}${u.user_id===me?' <span style="font-size:11px;color:#6b7280">(eu)</span>':''}</span>
-    ${u.user_id!==me?`<button onclick="removeSAUser('${u.user_id}','${(u.nome||'').replace(/'/g,"\\'")}')\" style="background:#fee2e2;color:#991b1b;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-weight:700">🗑 Remover</button>`:''}
+    <span style="font-weight:600">${u.nome||'Super-Admin'}${u.id===me?' <span style="font-size:11px;color:#6b7280">(eu)</span>':''}</span>
+    ${u.id!==me?`<button onclick="removeSAUser('${u.id}','${(u.nome||'').replace(/'/g,"\\'")}')\" style="background:#fee2e2;color:#991b1b;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-weight:700">🗑 Remover</button>`:''}
   </div>`).join('')||'<div style="font-size:13px;color:var(--g400)">Nenhum super-admin registado</div>';
 }
 async function createSAUser(){
@@ -5107,7 +5107,7 @@ async function createSAUser(){
     if(ue)throw ue;
     const uid=ud?.user?.id;
     if(!uid)throw new Error('Não foi possível criar o utilizador');
-    const{error:ie}=await SB.from('dep_users').insert({user_id:uid,role:'super_admin',nome,store_id:'super'});
+    const{error:ie}=await SB.from('dep_users').insert({id:uid,role:'super_admin',nome,store_id:'super'});
     if(ie)throw ie;
     showM('✓ Super-admin "'+nome+'" criado com sucesso!',true);
     document.getElementById('sa-new-nome').value='';
@@ -5118,7 +5118,7 @@ async function createSAUser(){
 }
 async function removeSAUser(uid,nome){
   if(!confirm(`Remover acesso de super-admin a "${nome}"?`))return;
-  await SB.from('dep_users').delete().eq('user_id',uid);
+  await SB.from('dep_users').delete().eq('id',uid);
   toast('✓ Acesso removido');
   loadSAUsers();
 }
