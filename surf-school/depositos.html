@@ -1241,7 +1241,7 @@ async function sbLoad(silent=false){
         SB.from('dep_users').select('store_id,nome,role')
       ]);
       // All registered store accounts (non-SA) — used for dropdown even when records have no store_id
-      window._storeUsers=(allUsers||[]).filter(u=>u.store_id&&u.role!=='super_admin');
+      window._storeUsers=(allUsers||[]).filter(u=>u.store_id&&u.store_id!=='super'&&u.role!=='super_admin');
       window._storeUserName=Object.fromEntries(window._storeUsers.map(u=>[u.store_id,u.nome||u.store_id]));
       if(saRow){
         cfg={
@@ -1381,7 +1381,7 @@ async function afterLogin(user){
     sbUser=user;
     const{data:p,error}=await SB.from('dep_users').select('*').eq('id',user.id).single();
     if(error||!p){showAE('Conta sem permissões. Contacte o administrador. ('+(error?.message||'sem dados')+')');await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;}
-    sbProfile=p;isSA=(p.role==='super_admin');
+    sbProfile=p;isSA=(p.role==='super_admin'||p.store_id==='super');
     await sbLoad();
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('tsub').textContent=isSA?('⭐ '+(p.nome||'Super Admin')):(p.nome||p.store_id||cfg.emp||'Depósitos');
@@ -5084,7 +5084,7 @@ function toggleAddSA(){
 }
 async function loadSAUsers(){
   const el=document.getElementById('sa-users-list');if(!el)return;
-  const{data}=await SB.from('dep_users').select('id,nome,role,store_id').eq('role','super_admin');
+  const{data}=await SB.from('dep_users').select('id,nome,role,store_id').or('role.eq.super_admin,store_id.eq.super');
   const me=sbUser?.id;
   el.innerHTML=(data||[]).map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:9px 12px;font-size:13px">
     <span style="font-weight:600">${u.nome||'Super-Admin'}${u.id===me?' <span style="font-size:11px;color:#6b7280">(eu)</span>':''}</span>
@@ -5107,9 +5107,8 @@ async function createSAUser(){
     if(ue)throw ue;
     const uid=ud?.user?.id;
     if(!uid)throw new Error('Não foi possível criar o utilizador');
-    // Sign in as the new user so they can insert their own dep_users row (RLS: auth.uid()=id)
-    await _sb2.auth.signInWithPassword({email,password:pass});
-    const{error:ie}=await _sb2.from('dep_users').insert({id:uid,role:'super_admin',nome,store_id:'super'});
+    // Insert via Ivo's session using role='loja'+store_id='super' to pass the RLS INSERT policy
+    const{error:ie}=await SB.from('dep_users').insert({id:uid,role:'loja',store_id:'super',nome});
     if(ie)throw ie;
     showM('✓ Super-admin "'+nome+'" criado com sucesso!',true);
     document.getElementById('sa-new-nome').value='';
