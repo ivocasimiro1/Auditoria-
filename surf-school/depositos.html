@@ -5103,7 +5103,7 @@ async function createSAUser(){
   showM('A criar...', true);
   try{
     const _sb2=supabase.createClient(_SBURL,_SBKEY,{auth:{persistSession:false,autoRefreshToken:false}});
-    const{data:ud,error:ue}=await _sb2.auth.signUp({email,password:pass});
+    const{data:ud,error:ue}=await _sb2.auth.signUp({email,password:pass,options:{emailRedirectTo:'https://auditoria-25b.pages.dev/depositos'}});
     if(ue)throw ue;
     const uid=ud?.user?.id;
     if(!uid)throw new Error('Não foi possível criar o utilizador');
@@ -5128,7 +5128,7 @@ async function doChangeEmail(){
   const ne=(el?.value||'').trim();
   function showCE(t,ok){msgEl.textContent=t;msgEl.style.cssText=`display:block;border-radius:8px;padding:10px 13px;margin-bottom:12px;font-size:13px;font-weight:600;background:${ok?'#dcfce7':'#fee2e2'};color:${ok?'#166534':'#991b1b'}`;}
   if(!ne||!ne.includes('@')){showCE('⚠️ Introduza um email válido',false);return;}
-  const{error}=await SB.auth.updateUser({email:ne});
+  const{error}=await SB.auth.updateUser({email:ne,options:{emailRedirectTo:'https://auditoria-25b.pages.dev/depositos'}});
   if(error){showCE('⚠️ Erro: '+error.message,false);return;}
   showCE('✓ Link de confirmação enviado para '+ne+'. Clique no link para activar.',true);
   el.value='';
