@@ -2943,7 +2943,9 @@ function rSASupervision(){
     const s=storeList.find(x=>x.sid===sid);if(!s)return;
     const cn=credNotes[sid]||{};
     const cfg2b=allStoreConfigs.find(c=>c.store_id===sid);
-    const destEmail=cfg2b?.email||s.email||cn.email||'';
+    // Para: gerente da loja (email_cc = "Email do Gerente"); CC: email da loja + supervisores
+    const destEmail=cfg2b?.email_cc||cfg2b?.email||s.email||cn.email||'';
+    const _lojaEmail=cfg2b?.email||'';
     const mesNomeEmail=mesLabel(mes);
     const storeLojas=cfg2b?.lojas||[...new Set(regs.filter(r=>r.store_id===sid).map(r=>r.loja).filter(Boolean))];
     const todayStr=new Date().toISOString().split('T')[0];
@@ -3026,9 +3028,10 @@ function rSASupervision(){
       `Cumprimentos,`,
       `Gestão Financeira | Grupo Despomar`,
     ].join('\n');
-    // CC automático (supervisores / configurado nas Settings)
+    // CC: email da loja (contabilidade) + supervisores
     const _autoCC=(window._saDefaultCC||'').trim();
-    const ccParam=_autoCC?`cc=${encodeURIComponent(_autoCC)}&`:'';
+    const _ccParts=[_lojaEmail,_autoCC].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);
+    const ccParam=_ccParts.length?`cc=${encodeURIComponent(_ccParts.join(','))}&`:'';
     const todayLabel=new Date().toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'});
     const subject=encodeURIComponent(`Depósitos em atraso - ${s.empName} - ${mesNomeEmail}`);
     const mailtoSA=`mailto:${destEmail}?${ccParam}subject=${subject}&body=${encodeURIComponent(body)}`;
