@@ -2991,8 +2991,12 @@ function rSASupervision(){
         :'';
       const depTxt=r.dataDeposito?fd(r.dataDeposito).slice(0,5):'Nao realizado';
       const talTxt=r.talao?r.talao:'Nao registado';
+      const sessOrdenadas=(r.sessoes||[]).filter(x=>x.dataVendas).sort((a,b)=>a.dataVendas<b.dataVendas?-1:1);
+      const sessLinhas=sessOrdenadas.map(x=>`       ${fd(x.dataVendas).slice(0,5)}  Sessao ${x.sessao||'—'}`);
       const lines=[
-        `  ${i+1}. Periodo: ${_period(r)}  |  ${r.tipo||'--'}`,
+        `  ${i+1}. ${r.tipo||'--'} — ${_period(r)}`,
+        `     Sessoes:`,
+        ...sessLinhas,
         `     Data de deposito: ${depTxt}`,
         `     Talao/comprovativo: ${talTxt}`,
         `     Situacao: ${situacao}`,
