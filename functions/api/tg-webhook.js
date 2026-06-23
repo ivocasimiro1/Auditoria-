@@ -135,10 +135,6 @@ function calcEstado(r, storeCfg) {
     }
   }
   const vencido = diasDesde >= prazo || span > prazo || vencidoPorDiaRecolha;
-  if (!r.foto) {
-    if (r.talao || r.data_deposito) return vencido ? { s: 'err' } : { s: 'warn' };
-    return vencido ? { s: 'err' } : { s: 'warn' };
-  }
   if (!r.talao || !r.data_deposito) return vencido ? { s: 'err' } : { s: 'warn' };
   const dd = new Date(r.data_deposito);
   const diasParaDep = Math.floor((dd - mr) / 86400000);
@@ -210,11 +206,10 @@ function storeComplianceMes(allRegs, sid, mes, storeCfg) {
 
 async function fetchRegsAndCfgs() {
   const mes = curMes();
+  // foto excluded — can be base64 (huge payload); bot doesn't need it
   const [pendRecs, curDepRecs, cfgs] = await Promise.all([
-    // Pending records WITHOUT sessoes — keeps payload tiny regardless of table size
-    sbGet('dep_registos', `select=id,store_id,loja,tipo,foto,data_deposito,talao,criado_em&data_deposito=is.null&limit=500`),
-    // This month deposited records WITH sessoes — small bounded set
-    sbGet('dep_registos', `select=id,store_id,loja,tipo,foto,data_deposito,sessoes,talao,criado_em&data_deposito=gte.${mes}-01&limit=500`),
+    sbGet('dep_registos', `select=id,store_id,loja,tipo,data_deposito,talao,criado_em&data_deposito=is.null&limit=500`),
+    sbGet('dep_registos', `select=id,store_id,loja,tipo,data_deposito,sessoes,talao,criado_em&data_deposito=gte.${mes}-01&limit=500`),
     sbGet('dep_config', `select=store_id,emp,prosegur_day,lomis_day,cambio_dia,lojas,mes_inicio`)
   ]);
   if (!Array.isArray(pendRecs)) return [pendRecs, cfgs];
