@@ -2974,21 +2974,29 @@ function rSASupervision(){
     const compPct=s.compliant!==null?s.compliant+'%':'N/D';
     const compSym=s.compliant===100?' (OK)':s.compliant>=80?' (OK)':s.compliant>=50?' (Atencao)':' (Critico)';
     const diffSym=Math.abs(diff2)<0.01?' (OK)':' (VERIFICAR)';
-    // Record lines — 2-line format, flags inline
-    const saRecLine=(r,i)=>{
-      const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();
-      const period=sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';
+    // Split records: problem (no deposit, late, no receipt) vs OK
+    const _probRecs=storeRecs.filter(r=>{const e=calcEstado(r,getRecordCfg(r));return!r.dataDeposito||e.s==='err'||e.s==='warn'||!r.talao;});
+    const _okRecs=storeRecs.filter(r=>{const e=calcEstado(r,getRecordCfg(r));return r.dataDeposito&&e.s==='ok'&&r.talao;});
+    const _period=r=>{const sm=(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean).sort();return sm.length>1?fd(sm[0]).slice(0,5)+' a '+fd(sm[sm.length-1]).slice(0,5):sm.length?fd(sm[0]).slice(0,5):'--';};
+    // Problem records: visually prominent with >>> prefix
+    const _probLine=r=>{
       const estR=calcEstado(r,getRecordCfg(r));
-      const flags=[];
-      if(estR.s==='err')flags.push('EM ATRASO (*)');
-      else if(estR.s==='warn')flags.push('Atencao');
-      if(!r.foto&&!r.talao)flags.push('SEM COMPROVATIVO (*)');
-      else if(!r.foto||!r.talao)flags.push('Comprovativo incompleto');
-      const flagStr=flags.length?'  ['+flags.join(' | ')+']':'';
-      const dep=r.dataDeposito?fd(r.dataDeposito).slice(0,5):'PENDENTE (*)';
-      const tal=r.talao?`  Talao: ${r.talao}`:'  Sem talao';
-      return`[${i+1}] ${period}  |  ${r.tipo||'--'}  |  ${saEur(totalValor(r))}${flagStr}\n    Depositado: ${dep}${tal}`;
+      const statusTxt=!r.dataDeposito?'DEPOSITO NAO REALIZADO':estR.s==='err'?'EM ATRASO':estR.s==='warn'?'ATENCAO':'Verificar';
+      const compTxt=r.talao?`Talao: ${r.talao}`:'SEM COMPROVATIVO';
+      const depTxt=r.dataDeposito?fd(r.dataDeposito).slice(0,5):'PENDENTE';
+      return[
+        `>>>`,
+        `>>> ${_period(r)}  |  ${r.tipo||'--'}  |  ${saEur(totalValor(r))}`,
+        `>>> ESTADO: ${statusTxt}`,
+        `>>> Depositado: ${depTxt}  |  ${compTxt}`,
+        `>>>`,
+      ].join('\n');
     };
+    // OK records: compact, clean
+    const _okLine=r=>[
+      `  ${_period(r)}  |  ${r.tipo||'--'}  |  ${saEur(totalValor(r))}`,
+      `  Depositado: ${fd(r.dataDeposito).slice(0,5)}  |  Talao: ${r.talao}`,
+    ].join('\n');
     const introLine=hasIssues
       ?`Segue a analise dos depositos de ${mesNomeEmail}.\nForam identificados ${saIssues.length} ponto(s) que requerem a sua atencao e regularizacao.`
       :`Os depositos de ${mesNomeEmail} estao em ordem. Obrigado pela regularidade.`;
@@ -3016,8 +3024,19 @@ function rSASupervision(){
       `-------------------------------------`,
       `DEPOSITOS DE ${mesNomeEmail.toUpperCase()}`,
       `-------------------------------------`,
-      ...(storeRecs.length>0?storeRecs.map(saRecLine):['  (sem registos este mes)']),
-      ``,
+      ...(_probRecs.length?[
+        ``,
+        `-- PENDENTES / EM ATRASO (${_probRecs.length}) --`,
+        ``,
+        ..._probRecs.map(_probLine),
+      ]:[]),
+      ...(_okRecs.length?[
+        `-- REGULARIZADOS (${_okRecs.length}) --`,
+        ``,
+        ..._okRecs.map(_okLine),
+        ``,
+      ]:[]),
+      ...(!storeRecs.length?['  (sem registos este mes)']:[] ),
       `-------------------------------------`,
       ...(hasIssues?[`Solicito regularizacao dos pontos acima ate ${prazoRespStr}.`]:[`Agradecemos a regularidade.`]),
       `Sistema: auditoria-25b.pages.dev/depositos`,
@@ -3030,7 +3049,9 @@ function rSASupervision(){
     const _autoCC=(window._saDefaultCC||'').trim();
     const ccParam=_autoCC?`cc=${encodeURIComponent(_autoCC)}&`:'';
     const todayLabel=new Date().toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'});
-    const subject=encodeURIComponent(`Depositos - ${s.empName} - ${mesNomeEmail} - ate ${todayLabel}`);
+    // Subject: includes "Irregularidades" only when there are issues
+    const subjSuffix=hasIssues?` - Irregularidades`:` - Verificado`;
+    const subject=encodeURIComponent(`Depositos - ${s.empName} - ${mesNomeEmail}${subjSuffix} - ate ${todayLabel}`);
     const mailtoSA=`mailto:${destEmail}?${ccParam}subject=${subject}&body=${encodeURIComponent(body)}`;
     if(mailtoSA.length>3800){
       const _ta2=document.createElement('textarea');_ta2.value=body;_ta2.style.cssText='position:fixed;top:-9999px;opacity:0';document.body.appendChild(_ta2);_ta2.focus();_ta2.select();let _cp2=false;try{_cp2=document.execCommand('copy');}catch(e){}document.body.removeChild(_ta2);
