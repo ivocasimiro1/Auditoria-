@@ -2501,6 +2501,12 @@ async function _buildPdfAsync(pw,loja,mes){
         const dateRange=sessMin===sessMax?fd(sessMin):(sessMin&&sessMax?fd(sessMin)+' – '+fd(sessMax):'—');
         const nsess=(r.sessoes||[]).length;
         const fotoRow=r.foto&&typeof r.foto==='string'?`<tr><td colspan="7" style="padding:2px 10px 10px;text-align:center;background:#f8fafc"><img src="${r.foto}" style="max-width:240px;max-height:130px;border-radius:8px;object-fit:contain;border:1px solid #e2e8f0" title="Comprovativo"></td></tr>`:'';
+        const sessSubRows=(r.sessoes||[]).filter(s=>s.dataVendas).sort((a,b)=>a.dataVendas<b.dataVendas?-1:1).map(s=>`<tr style="background:#f9fafb">
+          <td style="padding-left:22px;font-size:11px;color:#64748b;border-top:none">↳ ${fd(s.dataVendas)}</td>
+          <td style="font-size:11px;color:#64748b;border-top:none">Sess. ${s.sessao||'?'}</td>
+          <td style="text-align:right;font-size:11px;color:#475569;border-top:none">${fmt(s.valor||0)}</td>
+          <td colspan="4" style="border-top:none"></td>
+        </tr>`).join('');
         calRows.push(`<tr>
           <td>${dateRange}</td>
           <td>${r.tipo||'—'}</td>
@@ -2509,7 +2515,7 @@ async function _buildPdfAsync(pw,loja,mes){
           <td>${r.talao||'—'}</td>
           <td style="text-align:center">${nsess}</td>
           <td>${statusBadge(r)}</td>
-        </tr>${fotoRow}`);
+        </tr>${sessSubRows}${fotoRow}`);
       });
     } else if(!_coveredDays.has(ds)){
       // Empty day row — not covered by any record
