@@ -2982,8 +2982,8 @@ function rSASupervision(){
     // Session lines per record
     const _sessLines=r=>{
       const sess=(r.sessoes||[]).filter(x=>x.dataVendas).sort((a,b)=>a.dataVendas<b.dataVendas?-1:1);
-      const lines=[`  ${r.tipo||'Deposito'}:`];
-      sess.forEach(x=>lines.push(`    ${fd(x.dataVendas).slice(0,5)}  -  Sessao ${x.sessao||'—'}`));
+      const lines=[`  ${r.tipo||'Depósito'}:`];
+      sess.forEach(x=>lines.push(`    ${fd(x.dataVendas).slice(0,5)}  -  Sessão ${x.sessao||'—'}`));
       lines.push('');
       return lines;
     };
@@ -2993,44 +2993,44 @@ function rSASupervision(){
     const compLines=semCompRecs.map(r=>{
       const sess=(r.sessoes||[]).filter(x=>x.dataVendas).sort((a,b)=>a.dataVendas<b.dataVendas?-1:1);
       const period=sess.length>1?fd(sess[0].dataVendas).slice(0,5)+' a '+fd(sess[sess.length-1].dataVendas).slice(0,5):sess.length?fd(sess[0].dataVendas).slice(0,5):'—';
-      return`  ${r.tipo||'Deposito'} ${period}  (depositado em ${fd(r.dataDeposito).slice(0,5)})`;
+      return`  ${r.tipo||'Depósito'} ${period}  (depositado em ${fd(r.dataDeposito).slice(0,5)})`;
     });
     const body=[
-      `Exmo(a) Responsavel de ${s.empName},`,
+      `Exmo(a) Responsável de ${s.empName},`,
       ``,
       ...(gapRecs.length?[
-        `ATENCAO — SALTO DE DEPOSITO DETETADO:`,
-        `Foram realizados depositos mais recentes enquanto os seguintes registos mais antigos continuam por depositar. Confirmar urgentemente o que aconteceu a este dinheiro:`,
+        `ATENÇÃO — SALTO DE DEPÓSITO DETETADO:`,
+        `Foram realizados depósitos mais recentes enquanto os seguintes registos mais antigos continuam por depositar. Confirmar urgentemente o que aconteceu a este dinheiro:`,
         ``,
         ...gapRecs.flatMap(_sessLines),
       ]:[]),
       ...(normalPendRecs.length?[
-        `As seguintes sessoes de caixa de ${mesNomeEmail} ainda nao foram depositadas:`,
+        `As seguintes sessões de caixa de ${mesNomeEmail} ainda não foram depositadas:`,
         ``,
         ...normalPendRecs.flatMap(_sessLines),
       ]:[]),
       ...(allMissing.length?[
-        `Os seguintes dias de ${mesNomeEmail} nao tem registo de sessao de caixa no sistema:`,
+        `Os seguintes dias de ${mesNomeEmail} não têm registo de sessão de caixa no sistema:`,
         ``,
         ...missingLines,
         ``,
       ]:[]),
       ...(semCompRecs.length?[
-        `Os seguintes depositos foram realizados sem numero de talao/comprovativo registado:`,
+        `Os seguintes depósitos foram realizados sem número de talão/comprovativo registado:`,
         ``,
         ...compLines,
         ``,
       ]:[]),
-      `Solicitamos que regularize a situacao o mais rapidamente possivel.`,
+      `Solicitamos que regularize a situação o mais rapidamente possível.`,
       ``,
       `Cumprimentos,`,
-      `Gestao Financeira | Grupo Despomar`,
+      `Gestão Financeira | Grupo Despomar`,
     ].join('\n');
-    // CC automatico (supervisores / configurado nas Settings)
+    // CC automático (supervisores / configurado nas Settings)
     const _autoCC=(window._saDefaultCC||'').trim();
     const ccParam=_autoCC?`cc=${encodeURIComponent(_autoCC)}&`:'';
     const todayLabel=new Date().toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'});
-    const subject=encodeURIComponent(`Depositos em atraso - ${s.empName} - ${mesNomeEmail}`);
+    const subject=encodeURIComponent(`Depósitos em atraso - ${s.empName} - ${mesNomeEmail}`);
     const mailtoSA=`mailto:${destEmail}?${ccParam}subject=${subject}&body=${encodeURIComponent(body)}`;
     if(mailtoSA.length>3800){
       const _ta2=document.createElement('textarea');_ta2.value=body;_ta2.style.cssText='position:fixed;top:-9999px;opacity:0';document.body.appendChild(_ta2);_ta2.focus();_ta2.select();let _cp2=false;try{_cp2=document.execCommand('copy');}catch(e){}document.body.removeChild(_ta2);
