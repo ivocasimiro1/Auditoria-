@@ -1385,8 +1385,10 @@ async function afterLogin(user){
     }else{
       // Fallback: check dep_config for SA accounts — match by email (robust across multiple signUp attempts)
       // Look up by email-based store_id (format: sauser-email@domain.com)
-      const{data:saRow}=await SB.from('dep_config').select('*').eq('store_id','sauser-'+user.email.toLowerCase()).maybeSingle();
-      if(!saRow){const{data:all}=await SB.from('dep_config').select('store_id,email').like('store_id','sauser-%');alert('email='+user.email+'\nbuscou=sauser-'+user.email.toLowerCase()+'\nrows='+(all||[]).map(r=>r.store_id+'|'+r.email).join(' // '));await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;}
+      const{data:saRows}=await SB.from('dep_config').select('*').like('store_id','sauser-%');
+      const _em=user.email.toLowerCase();
+      const saRow=(saRows||[]).find(r=>r.store_id==='sauser-'+_em||(r.email&&r.email.toLowerCase()===_em));
+      if(!saRow){showAE('Conta sem permissões. Contacte o administrador.');await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;}
       sbProfile={id:user.id,role:'super_admin',store_id:'super',nome:saRow.emp||'Super Admin'};
       isSA=true;
     }
