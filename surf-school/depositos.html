@@ -2950,20 +2950,43 @@ function rSASupervision(){
     const storeRecs=regs.filter(r=>r.store_id===sid&&getRefDate(r).startsWith(mes.slice(0,7))).sort((a,b)=>getRefDate(a)<getRefDate(b)?-1:1);
     // Records not yet deposited
     const pendRecs=storeRecs.filter(r=>!r.dataDeposito);
-    // Days with no record at all — exclude days already covered by sessions in pending records
+    // Calculate cutoff using same logic as SA dashboard (respects prosegur/lomis/cambio schedule)
+    const _normCfg=cfg2b?{prosegurDay:cfg2b.prosegur_day||'',lomisDay:cfg2b.lomis_day||'',cambioDia:cfg2b.cambio_dia||''}:null;
+    const _hasWeekly=(_normCfg?.prosegurDay||'')!==''||(_normCfg?.lomisDay||'')!==''||(_normCfg?.cambioDia||'')!=='';
+    let _missCutoff;
+    if(!_hasWeekly){
+      _missCutoff=new Date(+new Date(todayStr)-2*86400000).toISOString().split('T')[0];
+    }else{
+      const _tDate=new Date(todayStr);const _tDow=_tDate.getDay();const _tDows=[];
+      if((_normCfg?.prosegurDay||'')!==''){const _d=parseInt(_normCfg.prosegurDay);if(!isNaN(_d))_tDows.push(_d);}
+      if((_normCfg?.lomisDay||'')!==''){const _d=parseInt(_normCfg.lomisDay);if(!isNaN(_d))_tDows.push(_d);}
+      if((_normCfg?.cambioDia||'')!==''){const _d=parseInt(_normCfg.cambioDia);if(!isNaN(_d))_tDows.push(_d);}
+      if(_tDows.length===0){
+        _missCutoff=new Date(+_tDate-7*86400000).toISOString().split('T')[0];
+      }else{
+        let _minDaysAgo=8;
+        _tDows.forEach(_dow=>{let _da=(_tDow-_dow+7)%7;if(_da===0)_da=7;if(_da<_minDaysAgo)_minDaysAgo=_da;});
+        _missCutoff=new Date(+_tDate-_minDaysAgo*86400000).toISOString().split('T')[0];
+      }
+    }
+    // Days with no record at all — exclude days covered by pending sessions AND after cutoff
     const coveredBySess=new Set(pendRecs.flatMap(r=>(r.sessoes||[]).map(x=>x.dataVendas).filter(Boolean)));
-    const allMissing=[...new Set(storeLojas.flatMap(l=>getMissingDays(mes,l)||[]))].sort().filter(d=>d<todayStr&&!coveredBySess.has(d));
+    const allMissing=[...new Set(storeLojas.flatMap(l=>getMissingDays(mes,l)||[]))].sort().filter(d=>d<=_missCutoff&&!coveredBySess.has(d));
+    // Detect deposit gaps: pending records older than the most recent deposited record
+    const newestDepDate=storeRecs.filter(r=>r.dataDeposito).map(r=>getRefDate(r)).sort().pop()||'';
+    const gapRecs=newestDepDate?pendRecs.filter(r=>getRefDate(r)<newestDepDate):[];
+    const normalPendRecs=pendRecs.filter(r=>!gapRecs.includes(r));
     // Records deposited but without comprovativo
     const semCompRecs=storeRecs.filter(r=>r.dataDeposito&&!r.talao);
-    const hasIssues=pendRecs.length>0||allMissing.length>0||semCompRecs.length>0;
-    // Session lines per pending record
-    const pendLines=[];
-    pendRecs.forEach(r=>{
+    const hasIssues=pendRecs.length>0||allMissing.length>0||semCompRecs.length>0||gapRecs.length>0;
+    // Session lines per record
+    const _sessLines=r=>{
       const sess=(r.sessoes||[]).filter(x=>x.dataVendas).sort((a,b)=>a.dataVendas<b.dataVendas?-1:1);
-      pendLines.push(`  ${r.tipo||'Deposito'}:`);
-      sess.forEach(x=>pendLines.push(`    ${fd(x.dataVendas).slice(0,5)}  -  Sessao ${x.sessao||'—'}`));
-      pendLines.push('');
-    });
+      const lines=[`  ${r.tipo||'Deposito'}:`];
+      sess.forEach(x=>lines.push(`    ${fd(x.dataVendas).slice(0,5)}  -  Sessao ${x.sessao||'—'}`));
+      lines.push('');
+      return lines;
+    };
     // Missing days lines
     const missingLines=allMissing.map(d=>`    ${fd(d).slice(0,5)}`);
     // Comprovativo missing lines
@@ -2975,10 +2998,16 @@ function rSASupervision(){
     const body=[
       `Exmo(a) Responsavel de ${s.empName},`,
       ``,
-      ...(pendRecs.length?[
+      ...(gapRecs.length?[
+        `ATENCAO — SALTO DE DEPOSITO DETETADO:`,
+        `Foram realizados depositos mais recentes enquanto os seguintes registos mais antigos continuam por depositar. Confirmar urgentemente o que aconteceu a este dinheiro:`,
+        ``,
+        ...gapRecs.flatMap(_sessLines),
+      ]:[]),
+      ...(normalPendRecs.length?[
         `As seguintes sessoes de caixa de ${mesNomeEmail} ainda nao foram depositadas:`,
         ``,
-        ...pendLines,
+        ...normalPendRecs.flatMap(_sessLines),
       ]:[]),
       ...(allMissing.length?[
         `Os seguintes dias de ${mesNomeEmail} nao tem registo de sessao de caixa no sistema:`,
