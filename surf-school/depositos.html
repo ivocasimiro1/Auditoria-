@@ -605,11 +605,10 @@ select{
       <div id="c-email-hint" style="display:none;font-size:11px;color:var(--g400);margin-top:4px;line-height:1.4"></div>
     </div>
     <div class="fg">
-      <label>👤 Email do Gerente da Loja — obrigatório</label>
-      <input type="email" id="c-emailcc" placeholder="gerente.loja@empresa.pt" oninput="sc()" required>
-      <div style="font-size:11px;color:var(--g400);margin-top:4px;line-height:1.4">O Ivo (super-admin) envia relatórios directamente para este email. É sempre incluído em CC nos emails da loja.</div>
+      <label>👤 CC — Gerente, Supervisor, Loja (separados por ;)</label>
+      <input type="text" id="c-emailcc" placeholder="gerente@loja.pt; supervisor@empresa.pt" oninput="sc()">
+      <div style="font-size:11px;color:var(--g400);margin-top:4px;line-height:1.4">Emails incluídos em CC nos relatórios. Separe múltiplos com ; (ponto e vírgula).</div>
     </div>
-    <div class="fg"><label>CC adicional da loja (opcional)</label><input type="email" id="c-emailcc2" placeholder="outro@empresa.pt" oninput="sc()"></div>
     <div class="fg"><label>NIF</label><input type="text" id="c-nif" placeholder="999999999" oninput="sc()"></div>
     <div style="font-size:11px;font-weight:700;color:var(--g500);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.4px">Serviços de depósito activos</div>
     <div class="fg"><label>Depósito Direto</label>
@@ -1205,7 +1204,7 @@ async function sbLoad(silent=false){
   try{
     if(!isSA){
       const{data:c}=await SB.from('dep_config').select('*').eq('store_id',sbProfile.store_id).maybeSingle();
-      if(c)cfg={emp:c.emp||'Despomar',email:c.email||'',emailCC:c.email_cc||'',emailCC2:c.email_cc2||'',nif:c.nif||'',cambioDia:c.cambio_dia||'',prosegurDay:c.prosegur_day||'',lomisDay:c.lomis_day||'',mesInicio:c.mes_inicio||'2026-06',lojas:c.lojas||[],resps:c.resps||[]};
+      if(c){const _cc=[c.email_cc,c.email_cc2].filter(Boolean).join('; ');cfg={emp:c.emp||'Despomar',email:c.email||'',emailCC:_cc,nif:c.nif||'',cambioDia:c.cambio_dia||'',prosegurDay:c.prosegur_day||'',lomisDay:c.lomis_day||'',mesInicio:c.mes_inicio||'2026-06',lojas:c.lojas||[],resps:c.resps||[]}}
     }else{
       // SA: load personal config from 'super' row + merge lojas/resps from all stores
       const[{data:saRow},{data:cs},{data:allUsers}]=await Promise.all([
@@ -1220,8 +1219,7 @@ async function sbLoad(silent=false){
         cfg={
           emp:saRow.emp||cfg.emp||'Despomar',
           email:saRow.email||cfg.email||'',
-          emailCC:saRow.email_cc||cfg.emailCC||'',
-          emailCC2:saRow.email_cc2||cfg.emailCC2||'',
+          emailCC:[saRow.email_cc,saRow.email_cc2].filter(Boolean).join('; ')||cfg.emailCC||'',
           nif:saRow.nif||cfg.nif||'',
           cambioDia:saRow.cambio_dia||cfg.cambioDia||'',
           prosegurDay:saRow.prosegur_day||cfg.prosegurDay||'',
@@ -1295,7 +1293,7 @@ async function sbSaveCfgSB(){
   if(!sbProfile){toast('⚠️ Sessão não activa — faça login novamente');return false;}
   const sid=isSA?'super':sbProfile.store_id;
   if(!sid){toast('⚠️ ID da loja em falta — contacte o suporte');return false;}
-  const body={store_id:sid,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:cfg.emailCC2||'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',mes_inicio:cfg.mesInicio||'',lojas:cfg.lojas||[],resps:cfg.resps||[]};
+  const body={store_id:sid,emp:cfg.emp||'',email:cfg.email||'',email_cc:cfg.emailCC||'',email_cc2:'',nif:cfg.nif||'',cambio_dia:cfg.cambioDia||'',prosegur_day:cfg.prosegurDay||'',lomis_day:cfg.lomisDay||'',mes_inicio:cfg.mesInicio||'',lojas:cfg.lojas||[],resps:cfg.resps||[]};
   try{
     // Try SB SDK first (SELECT→UPDATE/INSERT avoids onConflict constraint)
     const{data:ex,error:selErr}=await SB.from('dep_config').select('store_id').eq('store_id',sid).maybeSingle();
@@ -4343,7 +4341,7 @@ async function updEmailPrev(){
     exportCfg={
       emp:sc?.emp||selectedLoja||cfg.emp,
       email:dest,
-      emailCC:'',emailCC2:'',
+      emailCC:'',
       nif:sc?.nif||cfg.nif||''
     };
   }
@@ -4351,7 +4349,7 @@ async function updEmailPrev(){
   const empresa=activeCfg.emp||'Empresa';
   const nif=activeCfg.nif||'';
   if(!isSA)dest=activeCfg.email||'';
-  const cc=isSA?'—':[activeCfg.emailCC,activeCfg.emailCC2].filter(Boolean).join(', ')||'—';
+  const cc=isSA?'—':activeCfg.emailCC||'—';
   const cw=document.getElementById('ep-config-warn');
   if(cw)cw.style.display=dest?'none':'block';
   const ml=mesLabel(mes);
@@ -4780,7 +4778,8 @@ function expEmail(){
     return;
   }
   const ccRaw=(document.getElementById('ep-cc')?.textContent||'').trim();
-  const ccStr=(ccRaw&&ccRaw!=='—')?`&cc=${encodeURIComponent(ccRaw)}`:'';
+  const ccEmails=ccRaw&&ccRaw!=='—'?ccRaw.split(';').map(e=>e.trim()).filter(Boolean):[];
+  const ccStr=ccEmails.length?`&cc=${encodeURIComponent(ccEmails.join(','))}`:'';
   const encodedBody=encodeURIComponent(bodyRaw);
   const mailtoUrl=`mailto:${dest}?subject=${encodeURIComponent(subjRaw)}${ccStr}&body=${encodedBody}`;
   // Se o URL for muito longo (>3800 chars) usa clipboard em vez do body no URL
@@ -4999,7 +4998,6 @@ function rSettings(){
   document.getElementById('c-emp').value=cfg.emp||'';
   document.getElementById('c-email').value=cfg.email||'';
   const ccEl=document.getElementById('c-emailcc');if(ccEl)ccEl.value=cfg.emailCC||'';
-  const cc2El=document.getElementById('c-emailcc2');if(cc2El)cc2El.value=cfg.emailCC2||'';
   document.getElementById('c-nif').value=cfg.nif||'';
   const cdEl=document.getElementById('c-cambio-dia');if(cdEl)cdEl.value=cfg.cambioDia||'';
   const pdEl=document.getElementById('c-prosegur-dia');if(pdEl)pdEl.value=cfg.prosegurDay||'';
@@ -5075,7 +5073,7 @@ async function doChangePass(){
   showMsg('✓ Password alterada com sucesso! O administrador foi notificado.',true);
   npEl.value='';ncEl.value='';
 }
-function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.emailCC2=document.getElementById('c-emailcc2')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';cfg.prosegurDay=document.getElementById('c-prosegur-dia')?.value||'';cfg.lomisDay=document.getElementById('c-lomis-dia')?.value||'';cfg.mesInicio=document.getElementById('c-mes-inicio')?.value||'2026-06';cfg.usaDireto=document.getElementById('c-direto-ativo')?.value??'1';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
+function sc(){cfg.emp=document.getElementById('c-emp').value;cfg.email=document.getElementById('c-email').value;cfg.emailCC=document.getElementById('c-emailcc')?.value||'';cfg.nif=document.getElementById('c-nif').value;cfg.cambioDia=document.getElementById('c-cambio-dia')?.value||'';cfg.prosegurDay=document.getElementById('c-prosegur-dia')?.value||'';cfg.lomisDay=document.getElementById('c-lomis-dia')?.value||'';cfg.mesInicio=document.getElementById('c-mes-inicio')?.value||'2026-06';cfg.usaDireto=document.getElementById('c-direto-ativo')?.value??'1';saveCfg();document.getElementById('tsub').textContent=cfg.emp||'Depósitos'}
 
 function listaCSV(){
   const fm=document.getElementById('fl-mes').value;
@@ -5418,7 +5416,7 @@ init();
       </div>
       <div>
         <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px">Gerente (CC)</label>
-        <input id="nl-emailcc" type="email" placeholder="gerente@loja.pt" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
+        <input id="nl-emailcc" type="text" placeholder="gerente@loja.pt; supervisor@empresa.pt" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px">
       </div>
     </div>
 
