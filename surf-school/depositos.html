@@ -1384,16 +1384,9 @@ async function afterLogin(user){
       sbProfile=p;isSA=(p.role==='super_admin'||p.store_id==='super');
     }else{
       // Fallback: check dep_config for SA accounts — match by email (robust across multiple signUp attempts)
-      const{data:saRows,error:saErr}=await SB.from('dep_config').select('store_id,emp,email').like('store_id','sauser-%');
-      const saRow=(saRows||[]).find(r=>
-        (r.email&&r.email.toLowerCase()===user.email.toLowerCase())||
-        r.store_id==='sauser-'+user.id
-      );
-      if(!saRow){
-        const _dbg='UID: '+user.id+'\nEmail: '+user.email+'\nRows: '+(saRows?.length??'null')+'\n'+(saRows||[]).map(r=>r.store_id+'|'+r.email).join('\n')+(saErr?'\nErr: '+saErr.message:'');
-        alert(_dbg);
-        await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;
-      }
+      // Look up by email-based store_id (format: sauser-email@domain.com)
+      const{data:saRow}=await SB.from('dep_config').select('*').eq('store_id','sauser-'+user.email.toLowerCase()).maybeSingle();
+      if(!saRow){showAE('Conta sem permissões. Contacte o administrador.');await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;}
       sbProfile={id:user.id,role:'super_admin',store_id:'super',nome:saRow.emp||'Super Admin'};
       isSA=true;
     }
@@ -5101,16 +5094,16 @@ async function loadSAUsers(){
   const el=document.getElementById('sa-users-list');if(!el)return;
   const[{data:duData},{data:dcData}]=await Promise.all([
     SB.from('dep_users').select('id,nome,role,store_id').or('role.eq.super_admin,store_id.eq.super'),
-    SB.from('dep_config').select('store_id,emp').like('store_id','sauser-%')
+    SB.from('dep_config').select('store_id,emp,email').like('store_id','sauser-%')
   ]);
-  const me=sbUser?.id;
+  const me=sbUser?.email?.toLowerCase();
   const saList=[
-    ...(duData||[]).map(u=>({id:u.id,nome:u.nome||'Super-Admin',src:'du'})),
-    ...(dcData||[]).map(c=>({id:c.store_id.replace('sauser-',''),nome:c.emp||'Super-Admin',src:'dc'}))
+    ...(duData||[]).map(u=>({key:u.id,nome:u.nome||'Super-Admin',email:'',src:'du',isMe:u.id===sbUser?.id})),
+    ...(dcData||[]).filter(c=>!c.store_id.match(/sauser-[0-9a-f-]{36}$/)).map(c=>({key:c.store_id,nome:c.emp||'Super-Admin',email:c.email||c.store_id.replace('sauser-',''),src:'dc',isMe:c.email?.toLowerCase()===me}))
   ];
   el.innerHTML=saList.map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:9px 12px;font-size:13px">
-    <span style="font-weight:600">${u.nome}${u.id===me?' <span style="font-size:11px;color:#6b7280">(eu)</span>':''}</span>
-    ${u.id!==me?`<button onclick="removeSAUser('${u.id}','${u.nome.replace(/'/g,"\\'")}','${u.src}')" style="background:#fee2e2;color:#991b1b;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-weight:700">🗑 Remover</button>`:''}
+    <span style="font-weight:600">${u.nome}${u.isMe?' <span style="font-size:11px;color:#6b7280">(eu)</span>':''}<br><span style="font-size:11px;font-weight:400;color:var(--g400)">${u.email}</span></span>
+    ${!u.isMe?`<button onclick="removeSAUser('${u.key}','${u.nome.replace(/'/g,"\\'")}','${u.src}')" style="background:#fee2e2;color:#991b1b;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-weight:700">🗑 Remover</button>`:''}
   </div>`).join('')||'<div style="font-size:13px;color:var(--g400)">Nenhum super-admin registado</div>';
 }
 async function createSAUser(){
@@ -5129,8 +5122,8 @@ async function createSAUser(){
     if(ue)throw ue;
     const uid=ud?.user?.id;
     if(!uid)throw new Error('Não foi possível criar o utilizador');
-    // dep_users RLS blocks client inserts — store SA marker in dep_config (has allow_all)
-    const _sid='sauser-'+uid;
+    // Store SA marker in dep_config using email as key (immune to UUID mismatches)
+    const _sid='sauser-'+email.toLowerCase();
     const{data:_ex}=await SB.from('dep_config').select('store_id').eq('store_id',_sid).maybeSingle();
     const{error:ie}=_ex
       ?await SB.from('dep_config').update({emp:nome,email:email}).eq('store_id',_sid)
@@ -5143,10 +5136,10 @@ async function createSAUser(){
     loadSAUsers();
   }catch(e){showM('⚠️ Erro: '+(e.message||e),false);}
 }
-async function removeSAUser(uid,nome,src){
+async function removeSAUser(key,nome,src){
   if(!confirm(`Remover acesso de super-admin a "${nome}"?`))return;
-  if(src==='dc')await SB.from('dep_config').delete().eq('store_id','sauser-'+uid);
-  else await SB.from('dep_users').delete().eq('id',uid);
+  if(src==='dc')await SB.from('dep_config').delete().eq('store_id',key);
+  else await SB.from('dep_users').delete().eq('id',key);
   toast('✓ Acesso removido');
   loadSAUsers();
 }
