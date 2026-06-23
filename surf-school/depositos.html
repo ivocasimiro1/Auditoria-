@@ -4349,7 +4349,10 @@ async function updEmailPrev(){
   const empresa=activeCfg.emp||'Empresa';
   const nif=activeCfg.nif||'';
   if(!isSA)dest=activeCfg.email||'';
-  const cc=isSA?'—':activeCfg.emailCC||'—';
+  const _IVOEMAIL='ivo@despomar.com';
+  const _ccParts=(activeCfg.emailCC||'').split(';').map(e=>e.trim()).filter(Boolean);
+  if(!isSA&&!_ccParts.some(e=>e.toLowerCase()===_IVOEMAIL))_ccParts.push(_IVOEMAIL);
+  const cc=isSA?'—':(_ccParts.join('; ')||'—');
   const cw=document.getElementById('ep-config-warn');
   if(cw)cw.style.display=dest?'none':'block';
   const ml=mesLabel(mes);
