@@ -5107,7 +5107,9 @@ async function createSAUser(){
     if(ue)throw ue;
     const uid=ud?.user?.id;
     if(!uid)throw new Error('Não foi possível criar o utilizador');
-    const{error:ie}=await SB.from('dep_users').insert({id:uid,role:'super_admin',nome,store_id:'super'});
+    // Sign in as the new user so they can insert their own dep_users row (RLS: auth.uid()=id)
+    await _sb2.auth.signInWithPassword({email,password:pass});
+    const{error:ie}=await _sb2.from('dep_users').insert({id:uid,role:'super_admin',nome,store_id:'super'});
     if(ie)throw ie;
     showM('✓ Super-admin "'+nome+'" criado com sucesso!',true);
     document.getElementById('sa-new-nome').value='';
