@@ -695,6 +695,20 @@ select{
     <button class="btn" style="background:#f3f4f6;color:#4b5563;border:2px dashed #d1d5db" onclick="loadDemo()">🧪 Carregar Dados Demo</button>
     <button class="btn bd" onclick="clearAll()">🗑️ Limpar Todos os Dados</button>
   </div>
+  <div class="card sa-tab" style="display:none;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div class="ct" style="margin:0">👥 Super-Admins</div>
+      <button onclick="toggleAddSA()" style="background:#2563eb;color:#fff;border:none;border-radius:10px;padding:9px 18px;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap">+ Adicionar</button>
+    </div>
+    <div id="sa-users-list" style="margin-top:12px;display:flex;flex-direction:column;gap:6px"></div>
+    <div id="sa-add-form" style="display:none;margin-top:14px;display:none;flex-direction:column;gap:8px">
+      <input type="text" id="sa-new-nome" placeholder="Nome (ex: Supervisores)" style="padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px">
+      <input type="email" id="sa-new-email" placeholder="supervisores@despomar.com" style="padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px">
+      <input type="password" id="sa-new-pass" placeholder="Password (mín. 8 caracteres)" style="padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px" autocomplete="new-password">
+      <div id="sa-add-msg" style="display:none;border-radius:8px;padding:9px 12px;font-size:13px;font-weight:600"></div>
+      <button onclick="createSAUser()" style="background:#16a34a;color:#fff;border:none;border-radius:10px;padding:10px;font-weight:700;font-size:14px;cursor:pointer">✓ Criar Super-Admin</button>
+    </div>
+  </div>
   <div class="card sa-tab" id="change-email-card" style="display:none;flex-direction:column">
     <div class="ct">📧 Alterar Email de Login</div>
     <div id="ce-msg" style="display:none;border-radius:8px;padding:10px 13px;margin-bottom:12px;font-size:13px;font-weight:600"></div>
@@ -5045,6 +5059,7 @@ function rSettings(){
   }
   document.getElementById('ltags').innerHTML=cfg.lojas.map(l=>`<span class="tag">${l}<button onclick="remL('${l.replace(/'/g,"\\'")}')">×</button></span>`).join('');
   document.getElementById('rtags').innerHTML=cfg.resps.map(r=>`<span class="tag" style="background:var(--gl);color:var(--green)">${r}<button onclick="remR('${r.replace(/'/g,"\\'")}')">×</button></span>`).join('');
+  if(isSA)loadSAUsers();
 }
 async function scBtn(){
   const btn=document.querySelector('#page-settings .btn.bs');
@@ -5059,6 +5074,53 @@ async function scBtn(){
   }finally{
     if(btn){btn.disabled=false;btn.textContent='✓ Guardar Configurações';}
   }
+}
+function toggleAddSA(){
+  const f=document.getElementById('sa-add-form');
+  const show=f.style.display==='none'||f.style.display==='';
+  f.style.display=show?'flex':'none';
+  if(show){document.getElementById('sa-new-nome').focus();}
+  document.getElementById('sa-add-msg').style.display='none';
+}
+async function loadSAUsers(){
+  const el=document.getElementById('sa-users-list');if(!el)return;
+  const{data}=await SB.from('dep_users').select('user_id,nome,role,store_id').eq('role','super_admin');
+  const me=sbUser?.id;
+  el.innerHTML=(data||[]).map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:9px 12px;font-size:13px">
+    <span style="font-weight:600">${u.nome||'Super-Admin'}${u.user_id===me?' <span style="font-size:11px;color:#6b7280">(eu)</span>':''}</span>
+    ${u.user_id!==me?`<button onclick="removeSAUser('${u.user_id}','${(u.nome||'').replace(/'/g,"\\'")}')\" style="background:#fee2e2;color:#991b1b;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-weight:700">🗑 Remover</button>`:''}
+  </div>`).join('')||'<div style="font-size:13px;color:var(--g400)">Nenhum super-admin registado</div>';
+}
+async function createSAUser(){
+  const nome=document.getElementById('sa-new-nome').value.trim();
+  const email=document.getElementById('sa-new-email').value.trim();
+  const pass=document.getElementById('sa-new-pass').value;
+  const msgEl=document.getElementById('sa-add-msg');
+  function showM(t,ok){msgEl.textContent=t;msgEl.style.cssText=`display:block;border-radius:8px;padding:9px 12px;font-size:13px;font-weight:600;background:${ok?'#dcfce7':'#fee2e2'};color:${ok?'#166534':'#991b1b'}`;}
+  if(!nome){showM('⚠️ Introduza um nome',false);return;}
+  if(!email||!email.includes('@')){showM('⚠️ Email inválido',false);return;}
+  if(pass.length<8){showM('⚠️ Password deve ter pelo menos 8 caracteres',false);return;}
+  showM('A criar...', true);
+  try{
+    const _sb2=supabase.createClient(_SBURL,_SBKEY,{auth:{persistSession:false,autoRefreshToken:false}});
+    const{data:ud,error:ue}=await _sb2.auth.signUp({email,password:pass});
+    if(ue)throw ue;
+    const uid=ud?.user?.id;
+    if(!uid)throw new Error('Não foi possível criar o utilizador');
+    const{error:ie}=await SB.from('dep_users').insert({user_id:uid,role:'super_admin',nome,store_id:'super'});
+    if(ie)throw ie;
+    showM('✓ Super-admin "'+nome+'" criado com sucesso!',true);
+    document.getElementById('sa-new-nome').value='';
+    document.getElementById('sa-new-email').value='';
+    document.getElementById('sa-new-pass').value='';
+    loadSAUsers();
+  }catch(e){showM('⚠️ Erro: '+(e.message||e),false);}
+}
+async function removeSAUser(uid,nome){
+  if(!confirm(`Remover acesso de super-admin a "${nome}"?`))return;
+  await SB.from('dep_users').delete().eq('user_id',uid);
+  toast('✓ Acesso removido');
+  loadSAUsers();
 }
 async function doChangeEmail(){
   const el=document.getElementById('ce-new');
