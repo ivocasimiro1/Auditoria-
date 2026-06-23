@@ -4432,12 +4432,12 @@ async function updEmailPrev(){
       lines.push(`  Sessoes de caixa:`);
       (r.sessoes||[]).forEach(s=>{lines.push(`    ${fd(s.dataVendas||'').slice(0,5)}  —  Sess.${String(s.sessao||'?').padStart(5)}  —  ${eur(s.valor||0).padStart(12)}`);});
       lines.push('');
-      lines.push(`  ► ${_boldU('TOTAL: '+eur(totalValor(r)))}`);
+      lines.push(`  TOTAL: ${eur(totalValor(r))}`);
       if(r.obs)lines.push(`  Obs: ${r.obs}`);
       lines.push('');
     });
     lines.push('─────────────────────────────────────');
-    lines.push(_boldU(`TOTAL DEPOSITADO: ${eur(totalDep)}`));
+    lines.push(`TOTAL DEPOSITADO: ${eur(totalDep)}`);
     if(total-totalDep>0)lines.push(`POR DEPOSITAR:    ${eur(total-totalDep)}`);
     if(semComp)lines.push(`SEM COMPROVATIVO: ${semComp} deposito${semComp!==1?'s':''}`);
     lines.push('');
@@ -4589,7 +4589,7 @@ async function updEmailPrev(){
       sessBlocks.push(`  ${dv(s.dataVendas||'')}  —  Sess.${String(s.sessao||'?').padStart(5)}  —  ${eur(s.valor||0).padStart(12)}${dup?' *** DUPLIC.':''}`);
     });
     sessBlocks.push('');
-    sessBlocks.push(`  ► ${_boldU('TOTAL: '+eur(totalValor(r)))}`);
+    sessBlocks.push(`  TOTAL: ${eur(totalValor(r))}`);
     sessBlocks.push(`  Deposito: ${r.dataDeposito?fd(r.dataDeposito):'PENDENTE'}`);
     if(r.talao)sessBlocks.push(`  Comprovativo: ${r.talao}`);
     sessBlocks.push(`  Estado: ${estTxt}`);
@@ -4651,7 +4651,7 @@ async function updEmailPrev(){
       ''
     ]:[]),
     '--- RESUMO ---',
-    _boldU(`Depositado:     ${eur(totalDep)}`),
+    `Depositado:     ${eur(totalDep)}`,
     `Por depositar:  ${eur(total-totalDep)}`,
     `Depositos:      ${data.length}`,
     `Sessoes caixa:  ${allSess.length}`,
