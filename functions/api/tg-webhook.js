@@ -208,16 +208,24 @@ function storeComplianceMes(allRegs, sid, mes, storeCfg) {
   return { pct, allMissing, semDep };
 }
 
-async function fetchRegsAndCfgs(since) {
-  return Promise.all([
-    sbGet('dep_registos', `select=store_id,loja,tipo,foto,data_deposito,sessoes,talao,criado_em&criado_em=gte.${since}T00:00:00Z&limit=3000`),
+async function fetchRegsAndCfgs() {
+  const mes = curMes();
+  const since = sincePrevMonth();
+  // Split query: base (no sessoes, fast) + current month with sessoes (small)
+  const [regsBase, regsSess, cfgs] = await Promise.all([
+    sbGet('dep_registos', `select=id,store_id,loja,tipo,foto,data_deposito,talao,criado_em&criado_em=gte.${since}T00:00:00Z&limit=2000`),
+    sbGet('dep_registos', `select=id,store_id,loja,tipo,foto,data_deposito,sessoes,talao,criado_em&criado_em=gte.${mes}-01T00:00:00Z&limit=500`),
     sbGet('dep_config', `select=store_id,emp,prosegur_day,lomis_day,cambio_dia,lojas,mes_inicio`)
   ]);
+  if (!Array.isArray(regsBase)) return [regsBase, cfgs];
+  const sessById = Array.isArray(regsSess) ? new Map(regsSess.map(r => [r.id, r.sessoes || []])) : new Map();
+  const merged = regsBase.map(r => ({ ...r, sessoes: sessById.get(r.id) || [] }));
+  return [merged, cfgs];
 }
 
 async function buildRankingText() {
   const mes = curMes();
-  const [regs, cfgs] = await fetchRegsAndCfgs(sincePrevMonth());
+  const [regs, cfgs] = await fetchRegsAndCfgs();
   if (!Array.isArray(regs)) return `❌ Erro Supabase registos: ${JSON.stringify(regs).slice(0,120)}`;
   if (!Array.isArray(cfgs)) return `❌ Erro Supabase config: ${JSON.stringify(cfgs).slice(0,120)}`;
 
@@ -254,7 +262,7 @@ async function buildRankingText() {
 
 async function buildStatusText(query) {
   const mes = curMes();
-  const [regs, cfgs] = await fetchRegsAndCfgs(sincePrevMonth());
+  const [regs, cfgs] = await fetchRegsAndCfgs();
   if (!Array.isArray(regs)) return `❌ Erro registos: ${JSON.stringify(regs).slice(0,200)}`;
   if (!Array.isArray(cfgs)) return `❌ Erro config: ${JSON.stringify(cfgs).slice(0,200)}`;
   const norm = s => s.toLowerCase().replace(/[-_ ]/g, '');
