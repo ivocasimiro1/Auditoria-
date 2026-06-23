@@ -1390,7 +1390,8 @@ async function afterLogin(user){
         r.store_id==='sauser-'+user.id
       );
       if(!saRow){
-        showAE('Sem permissões\nUID: '+user.id+'\nEmail: '+user.email+'\nRows: '+(saRows?.length??'null')+'\n'+(saRows||[]).map(r=>r.store_id+'|'+r.email).join('\n')+(saErr?'\nDB err: '+saErr.message:''));
+        const _dbg='UID: '+user.id+'\nEmail: '+user.email+'\nRows: '+(saRows?.length??'null')+'\n'+(saRows||[]).map(r=>r.store_id+'|'+r.email).join('\n')+(saErr?'\nErr: '+saErr.message:'');
+        alert(_dbg);
         await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;
       }
       sbProfile={id:user.id,role:'super_admin',store_id:'super',nome:saRow.emp||'Super Admin'};
