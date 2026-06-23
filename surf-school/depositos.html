@@ -1379,9 +1379,16 @@ async function afterLogin(user){
   const btn=document.getElementById('auth-btn');
   try{
     sbUser=user;
-    const{data:p,error}=await SB.from('dep_users').select('*').eq('id',user.id).single();
-    if(error||!p){showAE('Conta sem permissões. Contacte o administrador. ('+(error?.message||'sem dados')+')');await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;}
-    sbProfile=p;isSA=(p.role==='super_admin'||p.store_id==='super');
+    const{data:p,error}=await SB.from('dep_users').select('*').eq('id',user.id).maybeSingle();
+    if(p){
+      sbProfile=p;isSA=(p.role==='super_admin'||p.store_id==='super');
+    }else{
+      // Fallback: check dep_config for SA accounts created via the app (store_id='sauser-<uid>')
+      const{data:saRow}=await SB.from('dep_config').select('*').eq('store_id','sauser-'+user.id).maybeSingle();
+      if(!saRow){showAE('Conta sem permissões. Contacte o administrador.');await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;}
+      sbProfile={id:user.id,role:'super_admin',store_id:'super',nome:saRow.emp||'Super Admin'};
+      isSA=true;
+    }
     await sbLoad();
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('tsub').textContent=isSA?('⭐ '+(p.nome||'Super Admin')):(p.nome||p.store_id||cfg.emp||'Depósitos');
@@ -5084,11 +5091,18 @@ function toggleAddSA(){
 }
 async function loadSAUsers(){
   const el=document.getElementById('sa-users-list');if(!el)return;
-  const{data}=await SB.from('dep_users').select('id,nome,role,store_id').or('role.eq.super_admin,store_id.eq.super');
+  const[{data:duData},{data:dcData}]=await Promise.all([
+    SB.from('dep_users').select('id,nome,role,store_id').or('role.eq.super_admin,store_id.eq.super'),
+    SB.from('dep_config').select('store_id,emp').like('store_id','sauser-%')
+  ]);
   const me=sbUser?.id;
-  el.innerHTML=(data||[]).map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:9px 12px;font-size:13px">
-    <span style="font-weight:600">${u.nome||'Super-Admin'}${u.id===me?' <span style="font-size:11px;color:#6b7280">(eu)</span>':''}</span>
-    ${u.id!==me?`<button onclick="removeSAUser('${u.id}','${(u.nome||'').replace(/'/g,"\\'")}')\" style="background:#fee2e2;color:#991b1b;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-weight:700">🗑 Remover</button>`:''}
+  const saList=[
+    ...(duData||[]).map(u=>({id:u.id,nome:u.nome||'Super-Admin',src:'du'})),
+    ...(dcData||[]).map(c=>({id:c.store_id.replace('sauser-',''),nome:c.emp||'Super-Admin',src:'dc'}))
+  ];
+  el.innerHTML=saList.map(u=>`<div style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:9px 12px;font-size:13px">
+    <span style="font-weight:600">${u.nome}${u.id===me?' <span style="font-size:11px;color:#6b7280">(eu)</span>':''}</span>
+    ${u.id!==me?`<button onclick="removeSAUser('${u.id}','${u.nome.replace(/'/g,"\\'")}','${u.src}')" style="background:#fee2e2;color:#991b1b;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;font-weight:700">🗑 Remover</button>`:''}
   </div>`).join('')||'<div style="font-size:13px;color:var(--g400)">Nenhum super-admin registado</div>';
 }
 async function createSAUser(){
@@ -5107,8 +5121,8 @@ async function createSAUser(){
     if(ue)throw ue;
     const uid=ud?.user?.id;
     if(!uid)throw new Error('Não foi possível criar o utilizador');
-    // Insert via Ivo's session using role='loja'+store_id='super' to pass the RLS INSERT policy
-    const{error:ie}=await SB.from('dep_users').insert({id:uid,role:'loja',store_id:'super',nome});
+    // dep_users RLS blocks client inserts — store SA marker in dep_config (has allow_all)
+    const{error:ie}=await SB.from('dep_config').insert({store_id:'sauser-'+uid,emp:nome,email:'',mes_inicio:'2026-06',lojas:[],resps:[]});
     if(ie)throw ie;
     showM('✓ Super-admin "'+nome+'" criado com sucesso!',true);
     document.getElementById('sa-new-nome').value='';
@@ -5117,9 +5131,10 @@ async function createSAUser(){
     loadSAUsers();
   }catch(e){showM('⚠️ Erro: '+(e.message||e),false);}
 }
-async function removeSAUser(uid,nome){
+async function removeSAUser(uid,nome,src){
   if(!confirm(`Remover acesso de super-admin a "${nome}"?`))return;
-  await SB.from('dep_users').delete().eq('id',uid);
+  if(src==='dc')await SB.from('dep_config').delete().eq('store_id','sauser-'+uid);
+  else await SB.from('dep_users').delete().eq('id',uid);
   toast('✓ Acesso removido');
   loadSAUsers();
 }
