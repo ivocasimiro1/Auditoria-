@@ -3,9 +3,10 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const TG_TOKEN = '8640253196:AAEP0aWxhijWwLnjOefiKbATvNkcLF1JH2Y';
 const TG_GROUP = '-5587765450'; // grupo principal Despomar
 
-async function sbGet(table, qs) {
+async function sbGet(table, qs, key) {
+  const k = key || SB_KEY;
   const r = await fetch(`${SB_URL}/rest/v1/${table}?${qs}`, {
-    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, Accept: 'application/json' }
+    headers: { apikey: k, Authorization: `Bearer ${k}`, Accept: 'application/json' }
   });
   return r.json();
 }
@@ -204,13 +205,13 @@ function storeComplianceMes(allRegs, sid, mes, storeCfg) {
   return { pct, allMissing, semDep };
 }
 
-async function fetchRegsAndCfgs() {
+async function fetchRegsAndCfgs(key) {
   const mes = curMes();
   // foto excluded — can be base64 (huge payload); bot doesn't need it
   const [pendRecs, curDepRecs, cfgs] = await Promise.all([
-    sbGet('dep_registos', `select=id,store_id,loja,tipo,data_deposito,talao,criado_em&data_deposito=is.null&limit=500`),
-    sbGet('dep_registos', `select=id,store_id,loja,tipo,data_deposito,sessoes,talao,criado_em&data_deposito=gte.${mes}-01&limit=500`),
-    sbGet('dep_config', `select=store_id,emp,prosegur_day,lomis_day,cambio_dia,lojas,mes_inicio`)
+    sbGet('dep_registos', `select=id,store_id,loja,tipo,data_deposito,talao,criado_em&data_deposito=is.null&limit=500`, key),
+    sbGet('dep_registos', `select=id,store_id,loja,tipo,data_deposito,sessoes,talao,criado_em&data_deposito=gte.${mes}-01&limit=500`, key),
+    sbGet('dep_config', `select=store_id,emp,prosegur_day,lomis_day,cambio_dia,lojas,mes_inicio`, key)
   ]);
   if (!Array.isArray(pendRecs)) return [pendRecs, cfgs];
   if (!Array.isArray(curDepRecs)) return [curDepRecs, cfgs];
@@ -222,9 +223,9 @@ async function fetchRegsAndCfgs() {
   return [merged, cfgs];
 }
 
-async function buildRankingText() {
+async function buildRankingText(key) {
   const mes = curMes();
-  const [regs, cfgs] = await fetchRegsAndCfgs();
+  const [regs, cfgs] = await fetchRegsAndCfgs(key);
   if (!Array.isArray(regs)) return `❌ Erro Supabase registos: ${JSON.stringify(regs).slice(0,120)}`;
   if (!Array.isArray(cfgs)) return `❌ Erro Supabase config: ${JSON.stringify(cfgs).slice(0,120)}`;
 
@@ -259,9 +260,9 @@ async function buildRankingText() {
   return `📊 *RANKING DEPÓSITOS — ${mesLabel(mes).toUpperCase()}*\n\n${lines.join('\n')}\n\n✅ ${ok} lojas OK  🔴 ${bad} com problemas\nActualizado às ${hhmm()}`;
 }
 
-async function buildStatusText(query) {
+async function buildStatusText(query, key) {
   const mes = curMes();
-  const [regs, cfgs] = await fetchRegsAndCfgs();
+  const [regs, cfgs] = await fetchRegsAndCfgs(key);
   if (!Array.isArray(regs)) return `❌ Erro registos: ${JSON.stringify(regs).slice(0,200)}`;
   if (!Array.isArray(cfgs)) return `❌ Erro config: ${JSON.stringify(cfgs).slice(0,200)}`;
   const norm = s => s.toLowerCase().replace(/[-_ ]/g, '');
@@ -308,6 +309,7 @@ async function buildStatusText(query) {
 
 // GET: setup webhook or health check
 export async function onRequestGet(context) {
+  const svcKey = context.env?.SB_SERVICE_KEY || SB_KEY;
   const url = new URL(context.request.url);
   if (url.searchParams.get('setup') === '1') {
     const webhookUrl = `${url.origin}/api/tg-webhook`;
@@ -318,7 +320,7 @@ export async function onRequestGet(context) {
   if (url.searchParams.get('debug') === '1') {
     const mes = curMes();
     const qs = `select=store_id,data_deposito,criado_em&data_deposito=gte.${mes}-01&limit=500`;
-    const rows = await sbGet('dep_registos', qs);
+    const rows = await sbGet('dep_registos', qs, svcKey);
     if (!Array.isArray(rows)) return new Response(JSON.stringify(rows), { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
     const byStore = {};
     for (const r of rows) {
@@ -339,6 +341,7 @@ export async function onRequestGet(context) {
 
 // POST: receive Telegram webhook updates
 export async function onRequestPost(context) {
+  const svcKey = context.env?.SB_SERVICE_KEY || SB_KEY;
   try {
     const body = await context.request.json();
 
@@ -350,7 +353,7 @@ export async function onRequestPost(context) {
       if (data.startsWith('status:')) {
         await tgAnswerCbq(cbq.id, '🔍 A carregar...');
         const query = data.slice(7);
-        const txt = await buildStatusText(query);
+        const txt = await buildStatusText(query, svcKey);
         if (txt && cbqChatId) {
           const btns = [
             { text: '📤 Partilhar no grupo', callback_data: `share:status:${query}` },
@@ -361,14 +364,14 @@ export async function onRequestPost(context) {
       } else {
         await tgAnswerCbq(cbq.id, '📤 A enviar para o grupo...');
         if (data === 'share:ranking') {
-          const txt = await buildRankingText();
+          const txt = await buildRankingText(svcKey);
           if (txt) {
             const waBtn = { text: '💬 Partilhar no WhatsApp', url: waUrl(txt) };
             await tgSend(TG_GROUP, txt, waBtn);
           }
         } else if (data.startsWith('share:status:')) {
           const query = data.slice(13);
-          const txt = await buildStatusText(query);
+          const txt = await buildStatusText(query, svcKey);
           if (txt) {
             const waBtn = { text: '💬 Partilhar no WhatsApp', url: waUrl(txt) };
             await tgSend(TG_GROUP, txt, waBtn);
@@ -389,7 +392,7 @@ export async function onRequestPost(context) {
       await tgSend(chatId, '📋 *Comandos disponíveis*\n\n/ranking — ranking do mês actual\n/status — lista todas as lojas\n/status [nome] — estado detalhado\n\nExemplos:\n`/status ericeira`\n`/status guia`\n`/status billabong`');
 
     } else if (text === '/ranking') {
-      const txt = await buildRankingText();
+      const txt = await buildRankingText(svcKey);
       if (!txt) { await tgSend(chatId, `📊 Sem dados para ${mesLabel(curMes())}`); return new Response('ok'); }
       const btns = isPrivate ? [
         { text: '📤 Partilhar no grupo', callback_data: 'share:ranking' },
@@ -400,7 +403,7 @@ export async function onRequestPost(context) {
     } else if (text.startsWith('/status')) {
       const query = text.slice(7).trim().toLowerCase();
       if (!query) {
-        const cfgs = await sbGet('dep_config', `select=store_id,emp&store_id=neq.super`);
+        const cfgs = await sbGet('dep_config', `select=store_id,emp&store_id=neq.super`, svcKey);
         const seen = new Set();
         const lojaLabel = c => {
           const sn = shortName(c.emp || c.store_id, c.store_id);
@@ -416,7 +419,7 @@ export async function onRequestPost(context) {
         const rows = unique.map(c => [{ text: lojaLabel(c), callback_data: `status:${c.store_id}` }]);
         await tgSend(chatId, '🏪 *Escolhe uma loja:*', rows);
       } else {
-        const txt = await buildStatusText(query);
+        const txt = await buildStatusText(query, svcKey);
         if (!txt) { await tgSend(chatId, `❓ Loja não encontrada: *${query}*\n\nUsa /status para ver todas as lojas.`); return new Response('ok'); }
         const btns = isPrivate ? [
           { text: '📤 Partilhar no grupo', callback_data: `share:status:${query}` },
