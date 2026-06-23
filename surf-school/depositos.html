@@ -383,18 +383,6 @@ select{
         Entrar
       </button>
       <div id="auth-ok" style="display:none;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:600;margin-top:12px;text-align:center"></div>
-      <button type="button" onclick="showReset()" style="background:none;border:none;color:#6b7280;font-size:13px;cursor:pointer;width:100%;margin-top:12px;padding:4px;text-decoration:underline;text-underline-offset:2px;touch-action:manipulation">
-        Esqueceu a password?
-      </button>
-    </div>
-    <div id="reset-body" style="display:none;padding:0 24px 24px">
-      <div style="font-size:13px;color:#374151;margin-bottom:14px;line-height:1.5">Introduz o teu email e enviamos um link para criares uma nova password.</div>
-      <div class="fg">
-        <label>Email</label>
-        <input type="email" id="reset-email" placeholder="loja@despomar.com" inputmode="email" autocomplete="email" onkeydown="if(event.key==='Enter')doReset()">
-      </div>
-      <button class="btn" id="reset-btn" onclick="doReset()" style="background:linear-gradient(135deg,#475569,#64748b);box-shadow:0 4px 12px rgba(71,85,105,.3)">Enviar link de recuperação</button>
-      <button type="button" onclick="hideReset()" style="background:none;border:none;color:#6b7280;font-size:13px;cursor:pointer;width:100%;margin-top:10px;padding:4px;touch-action:manipulation">← Voltar ao login</button>
     </div>
     <div class="auth-footer">Acesso restrito a colaboradores Despomar</div>
   </div>
@@ -1485,30 +1473,6 @@ async function doLogout(){
 }
 function showAE(m){const e=document.getElementById('auth-err');e.innerHTML='<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><span>'+m+'</span>';e.style.display='flex';}
 function hideAE(){document.getElementById('auth-err').style.display='none';}
-function showReset(){
-  document.querySelector('.auth-body').style.display='none';
-  document.getElementById('reset-body').style.display='block';
-  const em=document.getElementById('auth-email').value;
-  if(em)document.getElementById('reset-email').value=em;
-}
-function hideReset(){
-  document.getElementById('reset-body').style.display='none';
-  document.querySelector('.auth-body').style.display='block';
-}
-async function doReset(){
-  const email=document.getElementById('reset-email').value.trim();
-  if(!email){return;}
-  const btn=document.getElementById('reset-btn');
-  btn.textContent='A enviar...';btn.disabled=true;
-  const{error}=await SB.auth.resetPasswordForEmail(email,{redirectTo:'https://auditoria-25b.pages.dev/depositos'});
-  btn.textContent='Enviar link de recuperação';btn.disabled=false;
-  if(error){showAE(error.message||'Erro ao enviar email');hideReset();return;}
-  document.getElementById('reset-body').style.display='none';
-  document.querySelector('.auth-body').style.display='block';
-  const ok=document.getElementById('auth-ok');
-  ok.textContent='✓ Email enviado! Verifica a caixa de correio.';
-  ok.style.display='block';
-}
 
 // ─── STORAGE ─────────────────────────────────────────
 const DB={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
@@ -5399,14 +5363,6 @@ async function init(){
   const{data:{session}}=await SB.auth.getSession();
   if(session?.user){
     await afterLogin(session.user);
-    // Detect password recovery link (arrived from reset email)
-    if(window.location.hash.includes('type=recovery')){
-      sp('settings');
-      const cpc=document.getElementById('change-pass-card');
-      if(cpc){cpc.style.display='block';setTimeout(()=>cpc.scrollIntoView({behavior:'smooth'}),300);}
-      const msg=document.getElementById('cp-msg');
-      if(msg){msg.textContent='Define a tua nova password abaixo.';msg.style.cssText='display:block;background:#dbeafe;color:#1e40af;border-radius:8px;padding:10px 13px;margin-bottom:12px;font-size:13px;font-weight:600';}
-    }
   }
   else{document.getElementById('auth-screen').style.display='flex';}
 }
