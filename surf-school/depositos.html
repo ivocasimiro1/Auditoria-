@@ -1384,13 +1384,12 @@ async function afterLogin(user){
       sbProfile=p;isSA=(p.role==='super_admin'||p.store_id==='super');
     }else{
       // Fallback: check dep_config for SA accounts — match by email (robust across multiple signUp attempts)
-      const{data:saRows,error:saErr}=await SB.from('dep_config').select('store_id,emp,email').like('store_id','sauser-%');
-      const saRow=(saRows||[]).find(r=>r.email&&r.email.toLowerCase()===user.email.toLowerCase());
-      if(!saRow){
-        const dbg='Login: '+user.email+'\nRows encontradas: '+(saRows?.length||0)+'\n'+(saRows||[]).map(r=>r.store_id+'|'+r.email).join('\n')+(saErr?'\nErro: '+saErr.message:'');
-        showAE('Sem permissões.\n\n'+dbg);
-        await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;
-      }
+      const{data:saRows}=await SB.from('dep_config').select('store_id,emp,email').like('store_id','sauser-%');
+      const saRow=(saRows||[]).find(r=>
+        (r.email&&r.email.toLowerCase()===user.email.toLowerCase())||
+        r.store_id==='sauser-'+user.id
+      );
+      if(!saRow){showAE('Conta sem permissões. Contacte o administrador.');await SB.auth.signOut();if(btn){btn.textContent='Entrar';btn.disabled=false;}return;}
       sbProfile={id:user.id,role:'super_admin',store_id:'super',nome:saRow.emp||'Super Admin'};
       isSA=true;
     }
@@ -5127,8 +5126,11 @@ async function createSAUser(){
     const uid=ud?.user?.id;
     if(!uid)throw new Error('Não foi possível criar o utilizador');
     // dep_users RLS blocks client inserts — store SA marker in dep_config (has allow_all)
-    // Use email as lookup key (more reliable than uid across multiple signUp attempts)
-    const{error:ie}=await SB.from('dep_config').upsert({store_id:'sauser-'+uid,emp:nome,email:email,mes_inicio:'2026-06',lojas:[],resps:[]},{onConflict:'store_id'});
+    const _sid='sauser-'+uid;
+    const{data:_ex}=await SB.from('dep_config').select('store_id').eq('store_id',_sid).maybeSingle();
+    const{error:ie}=_ex
+      ?await SB.from('dep_config').update({emp:nome,email:email}).eq('store_id',_sid)
+      :await SB.from('dep_config').insert({store_id:_sid,emp:nome,email:email,mes_inicio:'2026-06',lojas:[],resps:[]});
     if(ie)throw ie;
     showM('✓ Super-admin "'+nome+'" criado com sucesso!',true);
     document.getElementById('sa-new-nome').value='';
