@@ -2968,7 +2968,7 @@ function rSASupervision(){
       saIssues.push(`(*) DEPOSITO FORA DE ORDEM: existe pelo menos um deposito recente registado enquanto registos de dias anteriores ainda nao foram depositados. Isto significa que ha dinheiro de dias mais antigos que devia ter sido entregue mas nao consta no sistema.${gapDays} Confirmar com o responsavel o que aconteceu a esse dinheiro.`);
     }
     if(saErrNoDep.length>0)saIssues.push(`(*) ${saErrNoDep.length === 1 ? 'Existe 1 registo de caixa cujo prazo de deposito foi ultrapassado' : `Existem ${saErrNoDep.length} registos de caixa cujos prazos de deposito foram ultrapassados`} e o deposito ainda nao foi realizado. O dinheiro continua por entregar. Ver detalhe abaixo.`);
-    if(saErrSemFoto.length>0)saIssues.push(`(*) ${saErrSemFoto.length === 1 ? 'Foi realizado 1 deposito' : `Foram realizados ${saErrSemFoto.length} depositos`} sem comprovativo associado no sistema (sem foto do talao). Nao e possivel confirmar a entrega junto do banco. Solicitar o talao ao responsavel.`);
+    if(saErrSemFoto.length>0)saIssues.push(`(*) ${saErrSemFoto.length === 1 ? 'Foi realizado 1 deposito com numero de talao registado mas sem foto do comprovativo associada' : `Foram realizados ${saErrSemFoto.length} depositos com numero de talao registado mas sem foto do comprovativo`}. A entrega nao pode ser confirmada sem imagem do talao bancario. Solicitar a foto do comprovativo ao responsavel de caixa.`);
     const hasIssues=saIssues.length>0;
     const prazoResp=new Date();prazoResp.setDate(prazoResp.getDate()+3);
     const prazoRespStr=prazoResp.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'});
