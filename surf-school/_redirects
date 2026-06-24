@@ -1,0 +1,27 @@
+# Redistribuicao de Stock
+/rotacao               /redistribuicao-stock.html  301
+/redistribuicao        /redistribuicao-stock.html  301
+
+# Depositos Despomar
+/depositos             /depositos.html         301
+/depositos.html        /depositos.html         301
+/manual-depositos      /manual-depositos.html  301
+/manual                /manual-depositos.html  301
+/mockups               /mockups-melhorias.html 301
+/teste-login           /teste-login.html       301
+
+# Surf School shortcuts
+/admin              /admin.html         301
+/admin.html         /admin.html         301
+/super-admin        /super-admin.html   301
+/super-admin.html   /super-admin.html   301
+/proposta           /proposta.html      301
+/proposta.html      /proposta.html      301
+/surf               /                   301
+/reservar           /                   301
+/onboarding         /onboarding.html    301
+/configurar         /onboarding.html    301
+/review             /review.html        301
+/avaliar            /review.html        301
+/parceiros          /parceiros.html     301
+/candidatura        /parceiros.html     301
