@@ -465,6 +465,11 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; }
       <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">
         Ficheiro de Stock
       </div>
+      <div class="alert alert-info" style="margin-bottom:12px">
+        ℹ️ <strong>Referência = Código + Cor + Tamanho.</strong>
+        O sistema agrupa por <strong>Código + Cor</strong> (o artigo) e analisa a curva de tamanhos completa.
+        Nunca sugere transferências que deixem únicos (qtd=1) na loja cedente.
+      </div>
       <div class="colmap-grid" id="colmap-stock"></div>
 
       <hr class="divider">
@@ -600,8 +605,9 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; }
 
       <!-- Tabs -->
       <div class="tabs">
-        <div class="tab active" onclick="switchTab('all',this)">Todas as Transferências</div>
-        <div class="tab" onclick="switchTab('byloja',this)">Por Loja de Origem</div>
+        <div class="tab active" onclick="switchTab('all',this)">Transferências</div>
+        <div class="tab" onclick="switchTab('unicos',this)">Únicos <span id="tab-unicos-badge" style="background:var(--red-dim);color:var(--red);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></div>
+        <div class="tab" onclick="switchTab('byloja',this)">Por Loja Cedente</div>
         <div class="tab" onclick="switchTab('bystores',this)">Painel de Lojas</div>
       </div>
 
@@ -639,6 +645,11 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; }
             <tbody id="results-tbody"></tbody>
           </table>
         </div>
+      </div>
+
+      <!-- Tab: Únicos -->
+      <div id="tab-unicos" class="hidden">
+        <div id="unicos-content"></div>
       </div>
 
       <!-- Tab: By source store -->
@@ -993,174 +1004,218 @@ function runAnalysis() {
 }
 
 function doAnalysis() {
-  const days = parseFloat(document.getElementById('p-days').value) || 60;
-  const minQty = parseFloat(document.getElementById('p-minqty').value) || 2;
-  const targetDays = parseFloat(document.getElementById('p-target').value) || 21;
-  const keepDays = parseFloat(document.getElementById('p-keep').value) || 14;
-  const excessDays = parseFloat(document.getElementById('p-excess').value) || 30;
-  const urgentDays = parseFloat(document.getElementById('p-urgent').value) || 10;
+  const days      = parseFloat(document.getElementById('p-days').value)    || 175;
+  const minQty    = parseFloat(document.getElementById('p-minqty').value)  || 2;
+  const targetDays= parseFloat(document.getElementById('p-target').value)  || 21;
+  const keepDays  = parseFloat(document.getElementById('p-keep').value)    || 14;
+  const excessDays= parseFloat(document.getElementById('p-excess').value)  || 30;
+  const urgentDays= parseFloat(document.getElementById('p-urgent').value)  || 10;
   const warehouseId = (document.getElementById('p-warehouse').value || '92').trim().toLowerCase();
 
   const stockData = parseStockData();
   const salesData = parseSalesData();
 
-  // Identify which loja name matches the warehouse
   const normLoja = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
-  const isWarehouse = loja => normLoja(loja) === warehouseId ||
-    normLoja(loja).includes(warehouseId) || warehouseId.includes(normLoja(loja));
+  const isWarehouse = loja => {
+    const n = normLoja(loja);
+    return n === warehouseId || n.includes(warehouseId) || warehouseId.includes(n);
+  };
 
-  // Build stock lookup: loja|ref|tam -> qty
-  // Separate warehouse stock from store stock
-  const warehouseStock = {};  // ref||tam -> qty (warehouse only)
-  const stockLookup = {};     // loja|ref|tam -> {qty,desc,cat}
+  // ── Build warehouse stock map (ref||cor||tam → qty)
+  // Also: ref||cor → qty (aggregate) to check if ANY size is in warehouse
+  const wStock = {};      // ref||cor||tam → qty in warehouse
+  const wStockArt = {};   // ref||cor → total qty in warehouse
+
+  // ── Build store stock: art_key(ref||cor) → loja → tam → qty
+  // artInfo: ref||cor → {desc, cat}
+  const artStock = {};    // ref||cor → {loja: {tam: qty}}
+  const artInfo  = {};    // ref||cor → {desc, cat}
+
   stockData.forEach(r => {
     if (!state.activeCats.has(r.categoria)) return;
-    const k = `${r.loja}||${r.referencia}||${r.tamanho}`;
-    const ik = `${r.referencia}||${r.tamanho}`;
+    const ak = `${r.referencia}||${r.cor}`;
+    const sk = `${r.referencia}||${r.cor}||${r.tamanho}`;
     if (isWarehouse(r.loja)) {
-      // This is the warehouse row
-      warehouseStock[ik] = (warehouseStock[ik] || 0) + r.quantidade;
+      wStock[sk]    = (wStock[sk]    || 0) + r.quantidade;
+      wStockArt[ak] = (wStockArt[ak] || 0) + r.quantidade;
     } else {
-      if (!stockLookup[k]) stockLookup[k] = {loja:r.loja, ref:r.referencia, desc:r.descricao, cat:r.categoria, tam:r.tamanho, cor:r.cor, qty:0};
-      stockLookup[k].qty += r.quantidade;
+      if (!artStock[ak]) artStock[ak] = {};
+      if (!artStock[ak][r.loja]) artStock[ak][r.loja] = {};
+      artStock[ak][r.loja][r.tamanho] = (artStock[ak][r.loja][r.tamanho] || 0) + r.quantidade;
+      if (!artInfo[ak]) artInfo[ak] = {desc: r.descricao, cat: r.categoria, ref: r.referencia, cor: r.cor};
     }
   });
 
-  // Build sales lookup: loja|ref|tam -> qtd_vendida_total
-  const salesLookup = {};
+  // ── Build sales map: ref||cor → loja → tam → qtd_vendida
+  const artSales = {};   // ref||cor → loja → tam → qtd
   salesData.forEach(r => {
     if (!state.activeCats.has(r.categoria)) return;
-    if (isWarehouse(r.loja)) return; // ignore warehouse sales
-    const k = `${r.loja}||${r.referencia}||${r.tamanho}`;
-    if (!salesLookup[k]) salesLookup[k] = 0;
-    salesLookup[k] += r.qtd_vendida;
+    if (isWarehouse(r.loja)) return;
+    const ak = `${r.referencia}||${r.cor}`;
+    if (!artSales[ak]) artSales[ak] = {};
+    if (!artSales[ak][r.loja]) artSales[ak][r.loja] = {};
+    artSales[ak][r.loja][r.tamanho] = (artSales[ak][r.loja][r.tamanho] || 0) + r.qtd_vendida;
   });
 
-  // KEY FILTER: only process items where warehouse has 0 stock (or warehouse not present)
-  // An item qualifies if: warehouseStock[ik] === 0 OR ik not in warehouseStock at all
-  const warehouseHasStock = ik => warehouseStock.hasOwnProperty(ik) && warehouseStock[ik] > 0;
-
-  // All unique item keys from stores (not warehouse)
-  const itemSet = new Set();
-  Object.keys(stockLookup).forEach(k => {
-    const parts = k.split('||'); const ik = parts[1] + '||' + parts[2];
-    if (!warehouseHasStock(ik)) itemSet.add(ik);
-  });
-  Object.keys(salesLookup).forEach(k => {
-    const parts = k.split('||'); const ik = parts[1] + '||' + parts[2];
-    if (!warehouseHasStock(ik) && !itemSet.has(ik)) {/* skip if no store stock */}
-  });
+  // ── KEY FILTER: armazém sem stock (ou artigo não existe no armazém)
+  const warehouseHasStock = ak => wStockArt[ak] > 0;
 
   const recommendations = [];
-  // Track how many items were skipped because warehouse still has stock
-  let skippedWarehouseStock = 0;
-  {
-    const allItemKeys = new Set([
-      ...Object.keys(stockLookup).map(k => { const p=k.split('||'); return p[1]+'||'+p[2]; }),
-      ...Object.keys(salesLookup).map(k => { const p=k.split('||'); return p[1]+'||'+p[2]; }),
-    ]);
-    allItemKeys.forEach(ik => { if (warehouseHasStock(ik)) skippedWarehouseStock++; });
-  }
-  if (skippedWarehouseStock > 0) {
-    console.info(`[Stock] ${skippedWarehouseStock} refs/tamanhos ignorados — armazém ainda tem stock`);
-  }
+  state.unicosMap = [];  // for the Únicos tab
 
-  for (const itemKey of itemSet) {
-    const [ref, tam] = itemKey.split('||');
+  for (const ak of Object.keys(artStock)) {
+    if (warehouseHasStock(ak)) continue; // armazém ainda tem → não redistribuir
 
-    // Collect all stores for this item
-    const allStores = new Set([
-      ...Object.keys(stockLookup).filter(k => k.includes('||'+ref+'||'+tam)).map(k => k.split('||')[0]),
-      ...Object.keys(salesLookup).filter(k => k.includes('||'+ref+'||'+tam)).map(k => k.split('||')[0]),
-    ]);
+    const info = artInfo[ak] || {desc: ak, cat:'', ref: ak, cor:''};
+    const lojaStock  = artStock[ak]  || {};  // loja → {tam: qty}
+    const lojaSales  = artSales[ak]  || {};  // loja → {tam: qty}
 
-    if (allStores.size < 2) continue; // Need at least 2 stores to transfer
+    // All sizes that exist across all stores for this article
+    const allSizes = new Set();
+    Object.values(lojaStock).forEach(s => Object.keys(s).forEach(t => allSizes.add(t)));
 
-    // Build store data for this item
-    const storeData = [];
-    for (const loja of allStores) {
-      const sk = `${loja}||${ref}||${tam}`;
-      const stockEntry = stockLookup[sk];
-      const qty = stockEntry ? stockEntry.qty : 0;
-      const qtdVendida = salesLookup[sk] || 0;
-      const salesRate = qtdVendida / days; // units/day
-      const coverage = salesRate > 0 ? qty / salesRate : (qty > 0 ? 9999 : 0);
+    // All stores that have stock of this article
+    const storesWithStock = Object.keys(lojaStock).filter(l =>
+      Object.values(lojaStock[l]).some(q => q > 0)
+    );
+    if (storesWithStock.length < 1) continue;
+
+    // ── Per-store summary for this article
+    const storeInfo = {};
+    for (const loja of [...storesWithStock, ...Object.keys(lojaSales)]) {
+      if (storeInfo[loja]) continue;
+      const stkBySz  = lojaStock[loja]  || {};
+      const slsBySz  = lojaSales[loja]  || {};
+      const totalStk = Object.values(stkBySz).reduce((a,b)=>a+b, 0);
+      const totalSls = Object.values(slsBySz).reduce((a,b)=>a+b, 0);
+      const salesRate= totalSls / days;
+      const coverage = salesRate > 0 ? totalStk / salesRate : (totalStk > 0 ? 9999 : 0);
       const priority = state.storePriority[loja] || 3;
-      const desc = stockEntry ? stockEntry.desc : '';
-      const cat = stockEntry ? stockEntry.cat : '';
-
-      storeData.push({loja, qty, qtdVendida, salesRate, coverage, priority, desc, cat});
+      // Únicos: sizes with qty === 1
+      const unicos   = Object.entries(stkBySz).filter(([,q]) => q === 1).map(([t]) => t);
+      storeInfo[loja] = {loja, stkBySz, slsBySz, totalStk, totalSls, salesRate, coverage, priority, unicos};
     }
 
-    // Working copies of qty
-    const qtyAvail = {};
-    storeData.forEach(s => qtyAvail[s.loja] = s.qty);
+    // ── Detect únicos (sizes with qty=1) — collect for the Únicos tab
+    for (const [loja, info2] of Object.entries(storeInfo)) {
+      if (info2.unicos && info2.unicos.length > 0) {
+        state.unicosMap.push({
+          loja,
+          ref: info.ref, cor: info.cor, desc: info.desc, cat: info.cat,
+          unicos: info2.unicos,
+          totalStk: info2.totalStk,
+          salesRate: info2.salesRate,
+          coverage: info2.coverage,
+          priority: info2.priority,
+          stkBySz: info2.stkBySz,
+        });
+      }
+    }
 
-    // Givers: excess stock (coverage > excessDays OR no sales but has stock)
-    // Receivers: need stock (high sales, low coverage < urgentDays, and high priority)
-    const givers = storeData
-      .filter(s => qtyAvail[s.loja] >= minQty && (s.salesRate === 0 ? s.qty >= minQty : s.coverage > excessDays))
-      .sort((a, b) => {
-        // Prefer: lowest priority (gives away), highest coverage
-        if (a.priority !== b.priority) return b.priority - a.priority;
-        return b.coverage - a.coverage;
-      });
+    // ── Transfer decisions at ARTICLE level (ref+cor)
+    // Giver: low sales + excess stock (or únicos with no sales)
+    // Receiver: high priority, high sales, low coverage
+    const givers = Object.values(storeInfo)
+      .filter(s => s.totalStk >= minQty &&
+        (s.salesRate === 0 ? true : s.coverage > excessDays))
+      .sort((a,b) => b.priority - a.priority || b.coverage - a.coverage);
 
-    const receivers = storeData
+    const receivers = Object.values(storeInfo)
       .filter(s => s.salesRate > 0 && s.coverage < urgentDays && s.priority <= 3)
-      .sort((a, b) => {
-        if (a.priority !== b.priority) return a.priority - b.priority;
-        return a.coverage - b.coverage;
-      });
+      .sort((a,b) => a.priority - b.priority || a.coverage - b.coverage);
+
+    // Working copy of stock by size per loja
+    const workStk = {};
+    Object.keys(storeInfo).forEach(l => {
+      workStk[l] = Object.assign({}, storeInfo[l].stkBySz);
+    });
 
     for (const rcvr of receivers) {
       for (const giver of givers) {
         if (giver.loja === rcvr.loja) continue;
-        const available = qtyAvail[giver.loja];
-        if (available < minQty) continue;
+        const giverTotal = Object.values(workStk[giver.loja]).reduce((a,b)=>a+b,0);
+        if (giverTotal < minQty) continue;
 
-        // How much does receiver need to reach target?
-        const need = Math.ceil(rcvr.salesRate * targetDays - rcvr.qty);
-        if (need <= 0) continue;
+        // Decide what to transfer: entire size curve, respecting "no únicos" rule
+        // For each size: transfer qty such that giver is left with 0 or ≥2 (never 1)
+        const sizesTransfer = {};
+        let totalTransfer = 0;
 
-        // How much can giver spare? Keep keepDays of their own coverage
-        const keepQty = Math.ceil(giver.salesRate * keepDays);
-        const canGive = Math.floor(available - keepQty);
-        if (canGive < minQty) continue;
+        for (const tam of allSizes) {
+          const avail = workStk[giver.loja][tam] || 0;
+          if (avail === 0) continue;
 
-        const transferQty = Math.min(need, canGive);
-        if (transferQty < minQty) continue;
+          // How many does giver need to keep? (based on their sales rate for this size)
+          const giverSalesRate = (storeInfo[giver.loja].slsBySz[tam] || 0) / days;
+          const keepQty = Math.ceil(giverSalesRate * keepDays);
 
-        const desc = rcvr.desc || giver.desc || storeData.find(s=>s.desc)?.desc || ref;
-        const cat = rcvr.cat || giver.cat || storeData.find(s=>s.cat)?.cat || '';
+          let send = avail - keepQty;
 
-        const urgencyScore = Math.max(0, Math.round(10 - rcvr.coverage));
+          // NO ÚNICOS RULE: if sending 'send' would leave qty=1, either send all or send 0
+          const wouldLeave = avail - send;
+          if (wouldLeave === 1) {
+            // Option A: send all (leave 0) — if giver has low/no sales for this size
+            if (giverSalesRate < 0.05) send = avail;
+            // Option B: send one less (leave 2) — if giver sells this size
+            else send = Math.max(0, avail - 2);
+          }
+
+          if (send <= 0) continue;
+          sizesTransfer[tam] = send;
+          totalTransfer += send;
+        }
+
+        if (totalTransfer < minQty) continue;
+
+        // Build size breakdown string
+        const sizeBreakdown = Object.entries(sizesTransfer)
+          .sort(([a],[b]) => sizeSortKey(a)-sizeSortKey(b))
+          .map(([t,q]) => `${t}:${q}`)
+          .join(' / ');
+
+        const urgencyScore = Math.max(0, Math.min(10, Math.round(10 - rcvr.coverage)));
 
         recommendations.push({
           from: giver.loja,
           to: rcvr.loja,
-          referencia: ref,
-          descricao: desc,
-          categoria: cat,
-          tamanho: tam,
-          qty: transferQty,
+          referencia: info.ref,
+          cor: info.cor,
+          descricao: info.desc,
+          categoria: info.cat,
+          tamanho: sizeBreakdown,   // full size curve
+          sizesTransfer,            // {tam: qty} for export
+          qty: totalTransfer,
           urgency: urgencyScore,
           from_coverage: giver.coverage,
           to_coverage: rcvr.coverage,
           to_sales_rate: rcvr.salesRate,
           to_sales_30d: Math.round(rcvr.salesRate * 30),
-          from_stock: available,
-          to_stock: rcvr.qty,
+          from_stock: giverTotal,
+          to_stock: rcvr.totalStk,
         });
 
-        qtyAvail[giver.loja] -= transferQty;
-        rcvr.qty += transferQty;
-        break; // one transfer per receiver per item (can adjust)
+        // Update working stock
+        Object.entries(sizesTransfer).forEach(([t,q]) => {
+          workStk[giver.loja][t] = (workStk[giver.loja][t] || 0) - q;
+          workStk[rcvr.loja] = workStk[rcvr.loja] || {};
+          workStk[rcvr.loja][t] = (workStk[rcvr.loja][t] || 0) + q;
+        });
+        rcvr.totalStk += totalTransfer;
+        rcvr.coverage = rcvr.salesRate > 0 ? rcvr.totalStk / rcvr.salesRate : 9999;
+        break;
       }
     }
   }
 
-  return recommendations.sort((a, b) => b.urgency - a.urgency || a.to_coverage - b.to_coverage);
+  return recommendations.sort((a,b) => b.urgency - a.urgency || a.to_coverage - b.to_coverage);
+}
+
+// Size sort order: numeric first, then alpha (XS<S<M<L<XL<XXL)
+function sizeSortKey(s) {
+  const alphaOrder = {XS:0,S:1,M:2,L:3,XL:4,XXL:5,XXXL:6};
+  if (alphaOrder[s.toUpperCase()] !== undefined) return 100 + alphaOrder[s.toUpperCase()];
+  const n = parseFloat(s);
+  return isNaN(n) ? 999 : n;
 }
 
 // ════════════════════════════════════════════════════
@@ -1176,6 +1231,7 @@ function renderResults() {
   const toStores = new Set(recs.map(r=>r.to));
   const urgent = recs.filter(r=>r.urgency >= 7).length;
   const cats = new Set(recs.map(r=>r.categoria));
+  const unicosCount = (state.unicosMap || []).length;
 
   document.getElementById('summary-grid').innerHTML = `
     <div class="stat-card accent"><div class="stat-value">${recs.length}</div><div class="stat-label">Transferências sugeridas</div></div>
@@ -1184,7 +1240,10 @@ function renderResults() {
     <div class="stat-card yellow"><div class="stat-value">${fromStores.size}</div><div class="stat-label">Lojas cedentes</div></div>
     <div class="stat-card"><div class="stat-value">${toStores.size}</div><div class="stat-label">Lojas receptoras</div></div>
     <div class="stat-card"><div class="stat-value">${cats.size}</div><div class="stat-label">Categorias</div></div>
+    <div class="stat-card" style="border-color:${unicosCount>0?'var(--red)':'var(--border)'}"><div class="stat-value" style="color:${unicosCount>0?'var(--red)':'var(--muted)'}">${unicosCount}</div><div class="stat-label">Únicos detectados</div></div>
   `;
+  const badge = document.getElementById('tab-unicos-badge');
+  if (badge) badge.textContent = unicosCount > 0 ? unicosCount : '';
 
   // Populate filters
   const catSel = document.getElementById('f-cat');
@@ -1200,6 +1259,78 @@ function renderResults() {
   renderTable();
   renderByLoja();
   renderByStores();
+  renderUnicos();
+}
+
+function renderUnicos() {
+  const unicos = state.unicosMap || [];
+  const badge = document.getElementById('tab-unicos-badge');
+  if (badge) badge.textContent = unicos.length > 0 ? unicos.length : '';
+
+  if (!unicos.length) {
+    document.getElementById('unicos-content').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">✅</div>
+        <div class="empty-title">Sem únicos detectados</div>
+        <div class="text-muted">Nenhuma loja tem artigos com quantidade = 1 nas categorias seleccionadas.</div>
+      </div>`;
+    return;
+  }
+
+  // Group by loja
+  const byLoja = {};
+  unicos.forEach(u => {
+    if (!byLoja[u.loja]) byLoja[u.loja] = [];
+    byLoja[u.loja].push(u);
+  });
+
+  const lojasSorted = Object.keys(byLoja).sort((a,b) => byLoja[b].length - byLoja[a].length);
+
+  document.getElementById('unicos-content').innerHTML = `
+    <div class="alert alert-warn" style="margin-bottom:16px">
+      ⚠️ <strong>${unicos.length} artigos com únicos</strong> — tamanhos com quantidade = 1 que não devem permanecer isolados nas lojas.
+      Estes devem ser <strong>completados</strong> (receber mais unidades) ou <strong>transferidos</strong> para uma loja com maior rotação.
+    </div>
+    <div class="table-wrap">
+      <table class="results-table">
+        <thead><tr>
+          <th>Loja</th>
+          <th>Ref.</th>
+          <th>Cor</th>
+          <th>Descrição</th>
+          <th>Categoria</th>
+          <th>Tamanhos únicos</th>
+          <th>Stock total</th>
+          <th>Cobertura</th>
+          <th>Acção sugerida</th>
+        </tr></thead>
+        <tbody>
+          ${lojasSorted.flatMap(loja => byLoja[loja].map(u => {
+            const cov = u.coverage >= 9999 ? '∞' : Math.round(u.coverage) + 'd';
+            const acção = u.salesRate === 0
+              ? '<span style="color:var(--red)">Transferir — sem vendas</span>'
+              : u.coverage > 30
+                ? '<span style="color:var(--yellow)">Transferir — excesso</span>'
+                : '<span style="color:var(--accent)">Completar — loja activa</span>';
+            const tamLine = Object.entries(u.stkBySz)
+              .sort(([a],[b]) => sizeSortKey(a)-sizeSortKey(b))
+              .map(([t,q]) => `<span style="color:${q===1?'var(--red)':'var(--text)'};font-weight:${q===1?700:400}">${t}:${q}</span>`)
+              .join(' ');
+            return `<tr>
+              <td class="fw-bold">${u.loja}</td>
+              <td>${u.ref}</td>
+              <td>${u.cor || '—'}</td>
+              <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(u.desc)}">${u.desc}</td>
+              <td style="color:var(--muted);font-size:11px">${u.cat}</td>
+              <td>${u.unicos.map(t=>`<span style="background:var(--red-dim);color:var(--red);border-radius:4px;padding:1px 6px;font-size:12px;font-weight:700;margin-right:4px">${t}</span>`).join('')}</td>
+              <td><span style="font-size:12px">${tamLine}</span></td>
+              <td style="color:${u.coverage<10?'var(--red)':u.coverage<20?'var(--yellow)':'var(--muted)'};">${cov}</td>
+              <td>${acção}</td>
+            </tr>`;
+          })).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 function getFilteredRecs() {
@@ -1403,46 +1534,68 @@ function exportLojaExcel(loja) {
 // ════════════════════════════════════════════════════
 
 function loadSampleData() {
-  const LOJAS = ['Évora','Beja','Viseu','Coimbra','Porto','Cascais','Albufeira','Lagos','Faro','Setúbal','Lisboa'];
-  const REFS = [
-    {ref:'CAL-001', desc:'Chinelo Rip Curl Pro', cat:'Calçado'},
-    {ref:'CAL-002', desc:'Sandália Billabong Summer', cat:'Calçado'},
-    {ref:'BIK-001', desc:'Biquíni Top Triangulo Azul', cat:'Biquínis'},
-    {ref:'BIK-002', desc:'Biquíni Bottom Franzido', cat:'Biquínis'},
-    {ref:'PDB-001', desc:'Calção Boardshort O\'Neill', cat:'Partes de Baixo'},
-    {ref:'PDB-002', desc:'Short Praia Quiksilver', cat:'Partes de Baixo'},
-    {ref:'APR-001', desc:'Canga Algodão Riscas', cat:'Artigos de Praia'},
-    {ref:'APR-002', desc:'Coolbox 25L Igloo', cat:'Artigos de Praia'},
-    {ref:'ACP-001', desc:'Óculos Sol Polarizados', cat:'Acessórios de Praia'},
-    {ref:'ACP-002', desc:'Saco Praia Impermeável', cat:'Acessórios de Praia'},
+  const LOJAS_CFG = [
+    {n:'Évora',        stk:7, sls:1, prio:4}, {n:'Beja',         stk:6, sls:0, prio:5},
+    {n:'Viseu',        stk:6, sls:1, prio:4}, {n:'Guarda',       stk:5, sls:0, prio:5},
+    {n:'Bragança',     stk:5, sls:0, prio:5}, {n:'Coimbra',      stk:4, sls:2, prio:3},
+    {n:'Aveiro',       stk:3, sls:3, prio:3}, {n:'Braga',        stk:3, sls:3, prio:3},
+    {n:'Viana Castelo',stk:3, sls:2, prio:3}, {n:'Vila Real',    stk:4, sls:1, prio:4},
+    {n:'Portalegre',   stk:5, sls:0, prio:5}, {n:'Santarém',     stk:3, sls:2, prio:3},
+    {n:'Leiria',       stk:2, sls:4, prio:3}, {n:'Setúbal',      stk:2, sls:5, prio:2},
+    {n:'Porto',        stk:1, sls:6, prio:2}, {n:'Lisboa CC',    stk:1, sls:7, prio:1},
+    {n:'Lisboa Baixa', stk:1, sls:8, prio:1}, {n:'Cascais',      stk:1, sls:9, prio:1},
+    {n:'Estoril',      stk:1, sls:7, prio:1}, {n:'Sintra',       stk:2, sls:5, prio:2},
+    {n:'Sesimbra',     stk:1, sls:8, prio:1}, {n:'Comporta',     stk:0, sls:9, prio:1},
+    {n:'Sines',        stk:1, sls:6, prio:2}, {n:'Sagres',       stk:0, sls:11,prio:1},
+    {n:'Lagos',        stk:0, sls:12,prio:1}, {n:'Portimão',     stk:0, sls:13,prio:1},
+    {n:'Albufeira',    stk:0, sls:14,prio:1}, {n:'Faro',         stk:0, sls:12,prio:1},
+    {n:'Tavira',       stk:1, sls:9, prio:1}, {n:'Vila Real SA', stk:1, sls:8, prio:1},
   ];
-  const SIZES = ['XS','S','M','L','XL','36','37','38','39','40','41','42','UNI'];
 
-  // Lojas reais + armazém
-  const WAREHOUSE = '92';
+  const REFS = [
+    {ref:'3410', cor:'BEGE', desc:'Chinelo Rip Curl Pro Bege',      cat:'Calçado',           sizes:['36','37','38','39','40','41','42']},
+    {ref:'3410', cor:'PRETO',desc:'Chinelo Rip Curl Pro Preto',     cat:'Calçado',           sizes:['37','38','39','40','41','42']},
+    {ref:'2810', cor:'AZL',  desc:'Sandália Billabong Summer Azul', cat:'Calçado',           sizes:['36','37','38','39','40']},
+    {ref:'5520', cor:'CORAL',desc:'Biquíni Top Triângulo Coral',    cat:'Biquínis',          sizes:['XS','S','M','L','XL']},
+    {ref:'5521', cor:'CORAL',desc:'Biquíni Bottom Franzido Coral',  cat:'Biquínis',          sizes:['XS','S','M','L','XL']},
+    {ref:'5520', cor:'PRETO',desc:'Biquíni Top Triângulo Preto',    cat:'Biquínis',          sizes:['XS','S','M','L']},
+    {ref:'4310', cor:'AZUL', desc:"Calção Boardshort O'Neill Azul", cat:'Partes de Baixo',   sizes:['S','M','L','XL','XXL']},
+    {ref:'4311', cor:'VERDE',desc:'Short Praia Quiksilver Verde',   cat:'Partes de Baixo',   sizes:['S','M','L','XL']},
+    {ref:'7100', cor:'UNI',  desc:'Canga Algodão Riscas',           cat:'Artigos de Praia',  sizes:['UNI']},
+    {ref:'7210', cor:'VERDE',desc:'Coolbox 25L Igloo Verde',        cat:'Artigos de Praia',  sizes:['UNI']},
+    {ref:'6510', cor:'PRETA',desc:'Óculos Sol Polarizados Preto',   cat:'Acessórios de Praia',sizes:['UNI']},
+    {ref:'6511', cor:'VERM', desc:'Óculos Sol Desportivos Vermelho',cat:'Acessórios de Praia',sizes:['UNI']},
+    {ref:'7310', cor:'AZL',  desc:'Saco Praia Impermeável Azul',    cat:'Artigos de Praia',  sizes:['UNI']},
+  ];
+
   const stockRows = [];
   const salesRows = [];
-  // Interior (cedentes) têm excesso; litoral (receptoras) têm pouco
-  const SEED_STOCK = {Évora:6,Beja:5,Viseu:4,Coimbra:3,Porto:2,Cascais:1,Albufeira:0,Lagos:1,Faro:0,Setúbal:2,Lisboa:1,'92':0};
-  const SEED_SALES = {Évora:1,Beja:0,Viseu:1,Coimbra:2,Porto:4,Cascais:8,Albufeira:12,Lagos:10,Faro:11,Setúbal:5,Lisboa:7};
-  const ALL_LOJAS = Object.keys(SEED_STOCK);
+  const rnd = (base, spread) => Math.max(0, base + Math.round((Math.random()-.4)*spread));
+
+  LOJAS_CFG.forEach(cfg => { state.storePriority[cfg.n] = cfg.prio; });
 
   REFS.forEach(item => {
-    const sizeSubset = SIZES.filter((_,i) => i % 2 === 0).slice(0,4);
-    sizeSubset.forEach(sz => {
-      ALL_LOJAS.forEach(loja => {
-        const baseStock = (SEED_STOCK[loja] || 0) + Math.round(Math.random()*2);
-        // Always include armazém with qty=0 to mark this as "sem reposição"
-        if (loja === WAREHOUSE) {
-          stockRows.push({Loja:loja, Referencia:item.ref, Descricao:item.desc, Categoria:item.cat, Tamanho:sz, Quantidade:0});
-          return;
+    item.sizes.forEach(sz => {
+      stockRows.push({Loja:'92', Codigo:item.ref, Cor:item.cor,
+        Referencia:item.ref+'-'+item.cor, Descricao:item.desc,
+        Categoria:item.cat, Tamanho:sz, Quantidade:0});
+    });
+
+    LOJAS_CFG.forEach(cfg => {
+      item.sizes.forEach(sz => {
+        const sizeBias = ['M','L','39','40','41'].includes(sz) ? 1.5 : 1;
+        const baseStk = Math.floor(cfg.stk * sizeBias + rnd(0,1));
+        const finalStk = baseStk === 2 && cfg.prio >= 4 && Math.random() > 0.5 ? 1 : baseStk;
+        if (finalStk > 0) {
+          stockRows.push({Loja:cfg.n, Codigo:item.ref, Cor:item.cor,
+            Referencia:item.ref+'-'+item.cor, Descricao:item.desc,
+            Categoria:item.cat, Tamanho:sz, Quantidade:finalStk});
         }
-        if (baseStock > 0 || Math.random() > 0.4) {
-          stockRows.push({Loja:loja, Referencia:item.ref, Descricao:item.desc, Categoria:item.cat, Tamanho:sz, Quantidade:baseStock});
-        }
-        const baseSales = (SEED_SALES[loja]||0) + Math.round(Math.random()*3 - 1);
-        if (baseSales > 0) {
-          salesRows.push({Loja:loja, Referencia:item.ref, Descricao:item.desc, Categoria:item.cat, Tamanho:sz, Qtd_Vendida:Math.max(0,baseSales)});
+        const baseSls = Math.floor(cfg.sls * sizeBias + rnd(0,2));
+        if (baseSls > 0) {
+          salesRows.push({Loja:cfg.n, Codigo:item.ref, Cor:item.cor,
+            Referencia:item.ref+'-'+item.cor, Descricao:item.desc,
+            Categoria:item.cat, Tamanho:sz, Qtd_Vendida:baseSls});
         }
       });
     });
@@ -1454,10 +1607,15 @@ function loadSampleData() {
   state.salesHeaders = Object.keys(salesRows[0]);
   state.stockMap = autoDetectCols(state.stockHeaders);
   state.salesMap = autoDetectCols(state.salesHeaders);
+  if (!state.stockMap.cor) state.stockMap.cor = 'Cor';
+  if (!state.salesMap.cor) state.salesMap.cor = 'Cor';
+  document.getElementById('p-days').value = 175;
+  document.getElementById('p-warehouse').value = '92';
 
-  updateDropZone('stock', 'exemplo-stock.xlsx', stockRows.length);
-  updateDropZone('sales', 'exemplo-vendas.xlsx', salesRows.length);
+  updateDropZone('stock', 'stock_lojas_Jun2026.xlsx', stockRows.length);
+  updateDropZone('sales', 'vendas_Jan_Jun2026.xlsx', salesRows.length);
   onFilesChanged();
+  setTimeout(() => runAnalysis(), 250);
 }
 
 // ════════════════════════════════════════════════════
@@ -1467,7 +1625,7 @@ function loadSampleData() {
 function switchTab(tab, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  ['tab-all','tab-byloja','tab-bystores'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  ['tab-all','tab-unicos','tab-byloja','tab-bystores'].forEach(id => document.getElementById(id).classList.add('hidden'));
   document.getElementById('tab-' + tab).classList.remove('hidden');
   state.activeTab = tab;
 }
