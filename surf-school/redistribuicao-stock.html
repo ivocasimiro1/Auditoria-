@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Redistribuição de Stock · Despomar</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #21262d;
+  --surface3: #2d333b;
+  --border: #30363d;
+  --accent: #388bfd;
+  --accent-dim: #1f3a6e;
+  --green: #3fb950;
+  --green-dim: #1a4a24;
+  --yellow: #d29922;
+  --yellow-dim: #4a3800;
+  --red: #f85149;
+  --red-dim: #4a1515;
+  --purple: #8b5cf6;
+  --purple-dim: #2e1b5e;
+  --text: #c9d1d9;
+  --text-bright: #f0f6fc;
+  --muted: #8b949e;
+  --radius: 8px;
+  --radius-lg: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── Header ── */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-logo { font-size: 20px; font-weight: 700; color: var(--text-bright); letter-spacing: -0.5px; }
+.header-logo span { color: var(--accent); }
+.header-sub { color: var(--muted); font-size: 13px; }
+.header-spacer { flex: 1; }
+.badge { background: var(--accent-dim); color: var(--accent); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+
+/* ── Layout ── */
+.main { max-width: 1400px; margin: 0 auto; padding: 24px; }
+.section { margin-bottom: 24px; }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card-title { font-weight: 600; color: var(--text-bright); font-size: 15px; }
+.card-body { padding: 20px; }
+.card-step {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  flex-shrink: 0;
+}
+.card-step.done { background: var(--green-dim); color: var(--green); }
+
+/* ── Upload Zone ── */
+.upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media(max-width:700px) { .upload-grid { grid-template-columns: 1fr; } }
+
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  background: var(--surface2);
+  position: relative;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.drop-zone.loaded { border-color: var(--green); border-style: solid; background: var(--green-dim); }
+.drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.drop-icon { font-size: 36px; margin-bottom: 10px; }
+.drop-label { font-weight: 600; color: var(--text-bright); margin-bottom: 6px; }
+.drop-hint { color: var(--muted); font-size: 12px; }
+.drop-filename { color: var(--green); font-weight: 600; font-size: 13px; margin-top: 8px; }
+.drop-cols { color: var(--muted); font-size: 11px; margin-top: 4px; }
+
+/* ── Column Mapping ── */
+.colmap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.colmap-row { display: flex; flex-direction: column; gap: 4px; }
+.colmap-label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.colmap-label .ok { color: var(--green); }
+.colmap-label .err { color: var(--red); }
+.colmap-select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 7px 10px;
+  font-size: 13px;
+  width: 100%;
+}
+.colmap-select.mapped { border-color: var(--green); }
+.colmap-select.required-missing { border-color: var(--red); }
+
+/* ── Settings ── */
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media(max-width:700px) { .settings-grid { grid-template-columns: 1fr; } }
+
+.cat-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.cat-chip {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+  transition: all .15s;
+  user-select: none;
+}
+.cat-chip.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+
+.param-group { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.param-row { display: flex; align-items: center; gap: 10px; }
+.param-label { color: var(--muted); font-size: 12px; flex: 1; }
+.param-input {
+  width: 80px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 6px 10px;
+  font-size: 13px;
+  text-align: right;
+}
+.param-unit { color: var(--muted); font-size: 11px; width: 40px; }
+
+.store-priority-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.store-priority-table th {
+  text-align: left; color: var(--muted); font-size: 11px; font-weight: 600;
+  padding: 6px 8px; border-bottom: 1px solid var(--border); text-transform: uppercase;
+}
+.store-priority-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); font-size: 12px; }
+.store-priority-table tr:last-child td { border-bottom: none; }
+.prio-select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 3px 6px;
+  font-size: 12px;
+}
+.prio-auto { color: var(--muted); font-size: 11px; }
+
+/* ── Buttons ── */
+.btn {
+  padding: 9px 18px;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; filter: none; }
+.btn-secondary {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-green { background: var(--green); color: #000; }
+.btn-green:hover { filter: brightness(1.1); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* ── Summary Cards ── */
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+.stat-value { font-size: 28px; font-weight: 700; color: var(--text-bright); }
+.stat-label { color: var(--muted); font-size: 11px; margin-top: 2px; text-transform: uppercase; }
+.stat-card.accent .stat-value { color: var(--accent); }
+.stat-card.green .stat-value { color: var(--green); }
+.stat-card.yellow .stat-value { color: var(--yellow); }
+.stat-card.red .stat-value { color: var(--red); }
+
+/* ── Results Table ── */
+.filter-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.filter-select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.filter-input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 7px 10px;
+  font-size: 12px;
+  flex: 1;
+  min-width: 180px;
+}
+.filter-input::placeholder { color: var(--muted); }
+.filter-count { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+.results-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.results-table th {
+  text-align: left;
+  padding: 9px 10px;
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.results-table th:hover { color: var(--text-bright); }
+.results-table th .sort-icon { margin-left: 4px; opacity: .4; }
+.results-table th.sort-asc .sort-icon::after { content: '▲'; opacity: 1; }
+.results-table th.sort-desc .sort-icon::after { content: '▼'; opacity: 1; }
+.results-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.results-table tr:hover td { background: var(--surface2); }
+.results-table tbody tr:last-child td { border-bottom: none; }
+
+.store-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.pill-from { background: var(--yellow-dim); color: var(--yellow); }
+.pill-to { background: var(--green-dim); color: var(--green); }
+
+.urgency-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.urgency-dots {
+  display: flex;
+  gap: 2px;
+}
+.urgency-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.urgency-dot.on { background: var(--accent); }
+.urgency-dot.on.high { background: var(--red); }
+.urgency-dot.on.med { background: var(--yellow); }
+
+.qty-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 13px;
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.coverage-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ── Empty / Error states ── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state .empty-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+
+.alert { padding: 12px 16px; border-radius: var(--radius); font-size: 13px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px; }
+.alert-warn { background: var(--yellow-dim); border: 1px solid var(--yellow); color: var(--yellow); }
+.alert-info { background: var(--accent-dim); border: 1px solid var(--accent); color: var(--accent); }
+.alert-err { background: var(--red-dim); border: 1px solid var(--red); color: var(--red); }
+
+/* ── Tabs ── */
+.tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.tab {
+  padding: 10px 16px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  transition: all .15s;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Misc ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+.text-muted { color: var(--muted); }
+.text-green { color: var(--green); }
+.text-red { color: var(--red); }
+.text-yellow { color: var(--yellow); }
+.text-accent { color: var(--accent); }
+.fw-bold { font-weight: 700; }
+.hidden { display: none !important; }
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+
+.loading-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999;
+  flex-direction: column;
+  gap: 12px;
+}
+.loading-spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { color: var(--text); font-size: 14px; }
+
+.table-wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">Despo<span>mar</span></div>
+  <div class="header-sub">Redistribuição de Stock</div>
+  <div class="header-spacer"></div>
+  <span class="badge" id="hdr-badge">Prontos</span>
+</div>
+
+<div class="main">
+
+<!-- ═══════════════════════════════════════════
+     STEP 1 — Upload
+════════════════════════════════════════════ -->
+<div class="section" id="step-upload">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-step" id="step1-badge">1</div>
+      <div class="card-title">Carregar Ficheiros Excel</div>
+    </div>
+    <div class="card-body">
+      <div id="upload-alerts"></div>
+      <div class="alert alert-info" style="margin-bottom:16px">
+        ℹ️ <strong>Lógica:</strong> O sistema analisa <strong>apenas artigos com stock zero no armazém central</strong> — redistribui o que está parado em lojas com menor venda para lojas com maior potencial.
+      </div>
+
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap;background:var(--surface2);padding:12px 16px;border-radius:var(--radius);border:1px solid var(--border);">
+        <span style="font-size:13px;color:var(--text-bright);font-weight:600;">Código/nome do armazém central:</span>
+        <input id="p-warehouse" class="param-input" style="width:120px;text-align:left" value="92" placeholder="ex: 92, ARM, Armazém">
+        <span style="font-size:12px;color:var(--muted)">Deve corresponder exactamente ao nome da loja no ficheiro de stock</span>
+      </div>
+
+      <div class="upload-grid">
+
+        <!-- Stock File -->
+        <div>
+          <div style="font-weight:600;color:var(--text-bright);margin-bottom:8px;font-size:13px;">
+            📦 Stock por Loja <span style="color:var(--muted);font-weight:400">(todas as lojas + armazém 92)</span>
+          </div>
+          <div class="drop-zone" id="dz-stock" onclick="document.getElementById('fi-stock').click()">
+            <input type="file" id="fi-stock" accept=".xlsx,.xls,.csv" onchange="handleFile('stock',this)">
+            <div class="drop-icon">📊</div>
+            <div class="drop-label">Arrastar ou clicar</div>
+            <div class="drop-hint">Stock actual de todas as lojas<br>Incluir Armazém 92 com stock = 0</div>
+            <div class="drop-filename hidden" id="fn-stock"></div>
+            <div class="drop-cols hidden" id="fc-stock"></div>
+          </div>
+        </div>
+
+        <!-- Sales File -->
+        <div>
+          <div style="font-weight:600;color:var(--text-bright);margin-bottom:8px;font-size:13px;">
+            📈 Vendas do Período <span style="color:var(--muted);font-weight:400">(todas as lojas)</span>
+          </div>
+          <div class="drop-zone" id="dz-sales" onclick="document.getElementById('fi-sales').click()">
+            <input type="file" id="fi-sales" accept=".xlsx,.xls,.csv" onchange="handleFile('sales',this)">
+            <div class="drop-icon">📉</div>
+            <div class="drop-label">Arrastar ou clicar</div>
+            <div class="drop-hint">Vendas últimos 30–90 dias por loja<br>Exportar do Power BI</div>
+            <div class="drop-filename hidden" id="fn-sales"></div>
+            <div class="drop-cols hidden" id="fc-sales"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div style="font-size:12px;color:var(--muted);">
+          ⓘ Colunas extra no Excel são ignoradas. Usa o mesmo código de loja nos dois ficheiros.
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadSampleData()">▶ Carregar dados de exemplo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     STEP 2 — Mapeamento de colunas
+════════════════════════════════════════════ -->
+<div class="section hidden" id="step-mapping">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-step" id="step2-badge">2</div>
+      <div class="card-title">Mapear Colunas</div>
+      <span style="color:var(--muted);font-size:12px;margin-left:auto;">Auto-detecção activa — verifica e corrige se necessário</span>
+    </div>
+    <div class="card-body">
+
+      <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">
+        Ficheiro de Stock
+      </div>
+      <div class="colmap-grid" id="colmap-stock"></div>
+
+      <hr class="divider">
+
+      <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">
+        Ficheiro de Vendas
+      </div>
+      <div class="colmap-grid" id="colmap-sales"></div>
+
+      <hr class="divider">
+
+      <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">
+        Período de vendas
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div class="param-row">
+          <span class="param-label">O ficheiro de vendas cobre:</span>
+          <input class="param-input" id="p-days" type="number" value="60" min="7" max="365">
+          <span class="param-unit">dias</span>
+        </div>
+        <span style="font-size:12px;color:var(--muted);">Se tiveres coluna de data, detecto automaticamente</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     STEP 3 — Configurações
+════════════════════════════════════════════ -->
+<div class="section hidden" id="step-settings">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-step" id="step3-badge">3</div>
+      <div class="card-title">Configurar Análise</div>
+    </div>
+    <div class="card-body">
+      <div class="settings-grid">
+
+        <!-- Left: Categories + Parameters -->
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">
+            Categorias a analisar
+          </div>
+          <div class="cat-grid" id="cat-grid"></div>
+
+          <hr class="divider">
+
+          <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;">
+            Parâmetros de transferência
+          </div>
+          <div class="param-group">
+            <div class="param-row">
+              <span class="param-label">Transferência mínima (unidades)</span>
+              <input class="param-input" id="p-minqty" type="number" value="2" min="1">
+              <span class="param-unit">un.</span>
+            </div>
+            <div class="param-row">
+              <span class="param-label">Cobertura alvo nas lojas receptoras</span>
+              <input class="param-input" id="p-target" type="number" value="21" min="7">
+              <span class="param-unit">dias</span>
+            </div>
+            <div class="param-row">
+              <span class="param-label">Cobertura mínima a manter na loja cedente</span>
+              <input class="param-input" id="p-keep" type="number" value="14" min="0">
+              <span class="param-unit">dias</span>
+            </div>
+            <div class="param-row">
+              <span class="param-label">Excesso da cedente (transfere se &gt;)</span>
+              <input class="param-input" id="p-excess" type="number" value="30" min="14">
+              <span class="param-unit">dias</span>
+            </div>
+            <div class="param-row">
+              <span class="param-label">Urgência da receptora (transfere se &lt;)</span>
+              <input class="param-input" id="p-urgent" type="number" value="10" min="1">
+              <span class="param-unit">dias</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Store priorities -->
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">
+            Prioridade das lojas receptoras
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+            Calculada automaticamente pelo volume de vendas. Ajusta se necessário.
+          </div>
+          <div style="max-height:340px;overflow-y:auto;">
+            <table class="store-priority-table" id="store-prio-table">
+              <thead>
+                <tr>
+                  <th>Loja</th>
+                  <th>Vendas (auto)</th>
+                  <th>Prioridade</th>
+                </tr>
+              </thead>
+              <tbody id="store-prio-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <hr class="divider">
+      <div class="btn-bar">
+        <button class="btn btn-primary" id="btn-analyze" onclick="runAnalysis()">
+          ▶ Analisar e Gerar Transferências
+        </button>
+        <span id="analyze-hint" style="font-size:12px;color:var(--muted);"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     STEP 4 — Results
+════════════════════════════════════════════ -->
+<div class="section hidden" id="step-results">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-step done" id="step4-badge">✓</div>
+      <div class="card-title">Transferências Sugeridas</div>
+      <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="runAnalysis()">↺ Recalcular</button>
+        <button class="btn btn-green btn-sm" onclick="exportExcel()">⬇ Exportar Excel</button>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <!-- Summary -->
+      <div class="summary-grid" id="summary-grid"></div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('all',this)">Todas as Transferências</div>
+        <div class="tab" onclick="switchTab('byloja',this)">Por Loja de Origem</div>
+        <div class="tab" onclick="switchTab('bystores',this)">Painel de Lojas</div>
+      </div>
+
+      <!-- Tab: All -->
+      <div id="tab-all">
+        <div class="filter-bar">
+          <select class="filter-select" id="f-cat" onchange="renderTable()">
+            <option value="">Todas as categorias</option>
+          </select>
+          <select class="filter-select" id="f-from" onchange="renderTable()">
+            <option value="">Todas as origens</option>
+          </select>
+          <select class="filter-select" id="f-to" onchange="renderTable()">
+            <option value="">Todos os destinos</option>
+          </select>
+          <input class="filter-input" id="f-search" placeholder="Pesquisar referência, descrição…" oninput="renderTable()">
+          <span class="filter-count" id="f-count"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th onclick="sortBy('urgency')" title="Urgência">Urgência<span class="sort-icon"></span></th>
+                <th onclick="sortBy('categoria')">Categoria<span class="sort-icon"></span></th>
+                <th onclick="sortBy('referencia')">Referência<span class="sort-icon"></span></th>
+                <th>Descrição</th>
+                <th>Tam.</th>
+                <th onclick="sortBy('from')">Origem<span class="sort-icon"></span></th>
+                <th onclick="sortBy('to')">Destino<span class="sort-icon"></span></th>
+                <th onclick="sortBy('qty')" style="text-align:right;">Qtd.<span class="sort-icon"></span></th>
+                <th>Cob. Origem</th>
+                <th>Cob. Destino</th>
+              </tr>
+            </thead>
+            <tbody id="results-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: By source store -->
+      <div id="tab-byloja" class="hidden">
+        <div id="byloja-content"></div>
+      </div>
+
+      <!-- Tab: Store panel -->
+      <div id="tab-bystores" class="hidden">
+        <div id="bystores-content"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- Loading overlay -->
+<div class="loading-overlay hidden" id="loading">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">A analisar…</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+//  CONSTANTS & STATE
+// ════════════════════════════════════════════════════
+
+const COL_ALIASES = {
+  loja:        ['loja','store','filial','estabelecimento','cod_loja','codigo_loja','loja_cod','descricao_loja','nome_loja','lj','armazem','armazém'],
+  referencia:  ['referencia','ref','reference','cod_artigo','artigo','codigo','sku','cod_ref','cod_prod','prod_ref','artigo_cod','ref_artigo'],
+  descricao:   ['descricao','description','desc','nome','designacao','artigo_desc','nome_artigo','desc_artigo','produto','descricao_artigo'],
+  categoria:   ['categoria','category','cat','familia','grupo','dept','departamento','seccao','secção','linha','classe'],
+  tamanho:     ['tamanho','size','tam','tamnho','dimensao','dimensão','talla'],
+  cor:         ['cor','color','colour','variante','cor_artigo'],
+  quantidade:  ['quantidade','qty','stock','quant','qtd','disponivel','disponível','saldo','und','unidades','stock_disponivel','qtd_stock','und_stock','existencias','existências'],
+  qtd_vendida: ['qtd_vendida','qty_sold','vendas','vendido','unidades_vendidas','total_vendas','quantidade_vendida','qtd_vend','vendas_qty','quantidade_vend','un_vendidas','vnd_qty'],
+  data:        ['data','date','periodo','data_venda','dt_venda','data_mov','dt_mov'],
+};
+
+const REQUIRED_STOCK = ['loja','referencia','quantidade'];
+const REQUIRED_SALES = ['loja','referencia','qtd_vendida'];
+
+let state = {
+  stockRaw: null, salesRaw: null,
+  stockHeaders: [], salesHeaders: [],
+  stockMap: {}, salesMap: {},    // column field -> header name
+  stockData: [], salesData: [],
+  categories: [],
+  activeCats: new Set(),
+  storeSales: {},      // loja -> total vendas
+  storePriority: {},   // loja -> 1-5 (1=max)
+  recommendations: [],
+  sortField: 'urgency', sortDir: -1,
+  activeTab: 'all',
+};
+
+// ════════════════════════════════════════════════════
+//  FILE HANDLING
+// ════════════════════════════════════════════════════
+
+function handleFile(type, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'binary', cellDates:true});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:'', raw:false});
+      if (!rows.length) { showAlert('upload-alerts','err','Ficheiro vazio ou sem dados na primeira folha.'); return; }
+
+      if (type === 'stock') {
+        state.stockRaw = rows;
+        state.stockHeaders = Object.keys(rows[0]);
+        state.stockMap = autoDetectCols(state.stockHeaders);
+        updateDropZone('stock', file.name, rows.length);
+      } else {
+        state.salesRaw = rows;
+        state.salesHeaders = Object.keys(rows[0]);
+        state.salesMap = autoDetectCols(state.salesHeaders);
+        autoDetectDays(rows, state.salesMap);
+        updateDropZone('sales', file.name, rows.length);
+      }
+      onFilesChanged();
+    } catch(err) {
+      showAlert('upload-alerts','err','Erro ao ler ficheiro: ' + err.message);
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function autoDetectCols(headers) {
+  const norm = h => h.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9_]/g,'_').replace(/_+/g,'_').trim('_');
+  const normMap = {};
+  headers.forEach(h => normMap[norm(h)] = h);
+
+  const result = {};
+  for (const [field, aliases] of Object.entries(COL_ALIASES)) {
+    let found = null;
+    for (const alias of aliases) {
+      const nAlias = norm(alias);
+      if (normMap[nAlias]) { found = normMap[nAlias]; break; }
+      // partial match
+      for (const [nh, oh] of Object.entries(normMap)) {
+        if (nh.includes(nAlias) || nAlias.includes(nh)) { found = oh; break; }
+      }
+      if (found) break;
+    }
+    result[field] = found || '';
+  }
+  return result;
+}
+
+function autoDetectDays(rows, colMap) {
+  const dateCol = colMap['data'];
+  if (!dateCol) return;
+  const dates = rows.map(r => new Date(r[dateCol])).filter(d => !isNaN(d));
+  if (dates.length < 2) return;
+  const minD = new Date(Math.min(...dates)), maxD = new Date(Math.max(...dates));
+  const days = Math.round((maxD - minD) / 86400000) + 1;
+  if (days > 0 && days <= 365) document.getElementById('p-days').value = days;
+}
+
+function updateDropZone(type, name, rows) {
+  const dz = document.getElementById('dz-' + type);
+  const fn = document.getElementById('fn-' + type);
+  const fc = document.getElementById('fc-' + type);
+  dz.classList.add('loaded');
+  fn.textContent = '✓ ' + name + ' (' + rows.toLocaleString('pt') + ' linhas)';
+  fn.classList.remove('hidden');
+  const cm = type === 'stock' ? state.stockMap : state.salesMap;
+  const detected = Object.entries(cm).filter(([,v]) => v).map(([k]) => k).join(', ');
+  fc.textContent = 'Detectado: ' + detected;
+  fc.classList.remove('hidden');
+}
+
+// Drag & drop support
+['dz-stock','dz-sales'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+  el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    el.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const type = id === 'dz-stock' ? 'stock' : 'sales';
+    const input = document.getElementById('fi-' + type);
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    handleFile(type, input);
+  });
+});
+
+function onFilesChanged() {
+  clearAlerts('upload-alerts');
+  const hasStock = !!state.stockRaw;
+  const hasSales = !!state.salesRaw;
+
+  if (!hasStock || !hasSales) return;
+
+  // Show mapping step
+  renderColMapping();
+  show('step-mapping');
+  renderSettings();
+  show('step-settings');
+  document.getElementById('step1-badge').classList.add('done');
+  document.getElementById('step1-badge').textContent = '✓';
+}
+
+// ════════════════════════════════════════════════════
+//  COLUMN MAPPING UI
+// ════════════════════════════════════════════════════
+
+function renderColMapping() {
+  renderColMapFor('colmap-stock', state.stockHeaders, state.stockMap, REQUIRED_STOCK, ['loja','referencia','descricao','categoria','tamanho','cor','quantidade']);
+  renderColMapFor('colmap-sales', state.salesHeaders, state.salesMap, REQUIRED_SALES, ['loja','referencia','descricao','categoria','tamanho','qtd_vendida','data']);
+}
+
+function renderColMapFor(containerId, headers, colMap, required, fields) {
+  const container = document.getElementById(containerId);
+  const opts = ['', ...headers].map(h => `<option value="${esc(h)}">${h || '— ignorar —'}</option>`).join('');
+  const fieldLabels = {
+    loja:'Loja', referencia:'Referência / Cód. Artigo', descricao:'Descrição',
+    categoria:'Categoria / Família', tamanho:'Tamanho', cor:'Cor',
+    quantidade:'Quantidade / Stock', qtd_vendida:'Qtd. Vendida', data:'Data'
+  };
+  container.innerHTML = fields.map(field => {
+    const isReq = required.includes(field);
+    const val = colMap[field] || '';
+    const ok = val ? '✓' : (isReq ? '✗' : '○');
+    const cls = val ? 'ok' : (isReq ? 'err' : '');
+    const selCls = val ? 'mapped' : (isReq ? 'required-missing' : '');
+    const selOpts = opts.replace(`value="${esc(val)}"`, `value="${esc(val)}" selected`);
+    return `<div class="colmap-row">
+      <label class="colmap-label">
+        <span class="${cls}">${ok}</span>
+        ${fieldLabels[field]}${isReq ? ' <span style="color:var(--red)">*</span>' : ''}
+      </label>
+      <select class="colmap-select ${selCls}" onchange="updateColMap('${containerId}','${field}',this.value)">
+        ${selOpts}
+      </select>
+    </div>`;
+  }).join('');
+}
+
+function updateColMap(containerId, field, value) {
+  if (containerId === 'colmap-stock') {
+    state.stockMap[field] = value;
+    renderColMapFor('colmap-stock', state.stockHeaders, state.stockMap, REQUIRED_STOCK, ['loja','referencia','descricao','categoria','tamanho','cor','quantidade']);
+  } else {
+    state.salesMap[field] = value;
+    renderColMapFor('colmap-sales', state.salesHeaders, state.salesMap, REQUIRED_SALES, ['loja','referencia','descricao','categoria','tamanho','qtd_vendida','data']);
+  }
+  renderSettings();
+}
+
+// ════════════════════════════════════════════════════
+//  SETTINGS: CATEGORIES + STORE PRIORITIES
+// ════════════════════════════════════════════════════
+
+function renderSettings() {
+  // Parse data to get categories and stores
+  const stockData = parseStockData();
+  const salesData = parseSalesData();
+
+  // Categories
+  const catSet = new Set();
+  stockData.forEach(r => r.categoria && catSet.add(r.categoria));
+  salesData.forEach(r => r.categoria && catSet.add(r.categoria));
+
+  const PRESET_CATS = ['Calçado','Praia','Partes de Baixo','Biquínis','Artigos de Praia','Acessórios de Praia','Vestuário'];
+  const allCats = [...new Set([...PRESET_CATS, ...catSet])].sort();
+
+  // Init activeCats
+  if (state.activeCats.size === 0) {
+    allCats.forEach(c => state.activeCats.add(c));
+  }
+  state.categories = allCats;
+
+  const catGrid = document.getElementById('cat-grid');
+  catGrid.innerHTML = allCats.map(c =>
+    `<div class="cat-chip ${state.activeCats.has(c) ? 'active' : ''}" onclick="toggleCat('${esc(c)}')">${c}</div>`
+  ).join('') + `<div class="cat-chip" onclick="toggleAllCats()">Todas / Nenhuma</div>`;
+
+  // Store ranking from sales
+  const storeSales = {};
+  salesData.forEach(r => {
+    if (!storeSales[r.loja]) storeSales[r.loja] = 0;
+    storeSales[r.loja] += r.qtd_vendida;
+  });
+  // Also add stores that only appear in stock
+  stockData.forEach(r => { if (!storeSales[r.loja]) storeSales[r.loja] = 0; });
+
+  state.storeSales = storeSales;
+  const stores = Object.keys(storeSales).sort((a,b) => storeSales[b] - storeSales[a]);
+
+  const tbody = document.getElementById('store-prio-body');
+  tbody.innerHTML = stores.map((s, i) => {
+    const prio = state.storePriority[s] || (i < 5 ? 1 : i < 12 ? 2 : i < 20 ? 3 : 4);
+    state.storePriority[s] = prio;
+    const vendas = storeSales[s];
+    return `<tr>
+      <td class="fw-bold">${s}</td>
+      <td>${vendas > 0 ? vendas.toLocaleString('pt') + ' un.' : '<span class="prio-auto">sem vendas</span>'}</td>
+      <td>
+        <select class="prio-select" onchange="state.storePriority['${esc(s)}']=parseInt(this.value)">
+          ${[1,2,3,4,5].map(p => `<option value="${p}" ${prio==p?'selected':''}>${p==1?'1 — Máxima':p==2?'2 — Alta':p==3?'3 — Média':p==4?'4 — Baixa':'5 — Mínima'}</option>`).join('')}
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function toggleCat(c) {
+  if (state.activeCats.has(c)) state.activeCats.delete(c);
+  else state.activeCats.add(c);
+  renderSettings();
+}
+function toggleAllCats() {
+  if (state.activeCats.size > 0) state.activeCats.clear();
+  else state.categories.forEach(c => state.activeCats.add(c));
+  renderSettings();
+}
+
+// ════════════════════════════════════════════════════
+//  DATA PARSING
+// ════════════════════════════════════════════════════
+
+function parseStockData() {
+  if (!state.stockRaw) return [];
+  const cm = state.stockMap;
+  return state.stockRaw
+    .filter(r => cm.loja && r[cm.loja] && cm.referencia && r[cm.referencia])
+    .map(r => ({
+      loja:      String(r[cm.loja] || '').trim(),
+      referencia:String(r[cm.referencia] || '').trim(),
+      descricao: String(r[cm.descricao] || r[cm.referencia] || '').trim(),
+      categoria: String(r[cm.categoria] || 'Sem categoria').trim(),
+      tamanho:   String(r[cm.tamanho] || 'UNI').trim(),
+      cor:       String(r[cm.cor] || '').trim(),
+      quantidade:parseFloat(String(r[cm.quantidade] || '0').replace(',','.')) || 0,
+    }));
+}
+
+function parseSalesData() {
+  if (!state.salesRaw) return [];
+  const cm = state.salesMap;
+  return state.salesRaw
+    .filter(r => cm.loja && r[cm.loja] && cm.referencia && r[cm.referencia])
+    .map(r => ({
+      loja:       String(r[cm.loja] || '').trim(),
+      referencia: String(r[cm.referencia] || '').trim(),
+      descricao:  String(r[cm.descricao] || r[cm.referencia] || '').trim(),
+      categoria:  String(r[cm.categoria] || 'Sem categoria').trim(),
+      tamanho:    String(r[cm.tamanho] || 'UNI').trim(),
+      qtd_vendida:parseFloat(String(r[cm.qtd_vendida] || '0').replace(',','.')) || 0,
+    }));
+}
+
+// ════════════════════════════════════════════════════
+//  ANALYSIS ENGINE
+// ════════════════════════════════════════════════════
+
+function runAnalysis() {
+  const missingStock = REQUIRED_STOCK.filter(f => !state.stockMap[f]);
+  const missingSales = REQUIRED_SALES.filter(f => !state.salesMap[f]);
+  if (missingStock.length || missingSales.length) {
+    showAlert('upload-alerts','err',`Colunas obrigatórias em falta: Stock→[${missingStock.join(', ')}] Vendas→[${missingSales.join(', ')}]. Verifica o mapeamento.`);
+    return;
+  }
+
+  showLoading('A processar dados…');
+
+  setTimeout(() => {
+    try {
+      const result = doAnalysis();
+      state.recommendations = result;
+      hideLoading();
+      renderResults();
+      show('step-results');
+      document.getElementById('step-results').scrollIntoView({behavior:'smooth'});
+    } catch(err) {
+      hideLoading();
+      showAlert('upload-alerts','err','Erro na análise: ' + err.message);
+      console.error(err);
+    }
+  }, 50);
+}
+
+function doAnalysis() {
+  const days = parseFloat(document.getElementById('p-days').value) || 60;
+  const minQty = parseFloat(document.getElementById('p-minqty').value) || 2;
+  const targetDays = parseFloat(document.getElementById('p-target').value) || 21;
+  const keepDays = parseFloat(document.getElementById('p-keep').value) || 14;
+  const excessDays = parseFloat(document.getElementById('p-excess').value) || 30;
+  const urgentDays = parseFloat(document.getElementById('p-urgent').value) || 10;
+  const warehouseId = (document.getElementById('p-warehouse').value || '92').trim().toLowerCase();
+
+  const stockData = parseStockData();
+  const salesData = parseSalesData();
+
+  // Identify which loja name matches the warehouse
+  const normLoja = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+  const isWarehouse = loja => normLoja(loja) === warehouseId ||
+    normLoja(loja).includes(warehouseId) || warehouseId.includes(normLoja(loja));
+
+  // Build stock lookup: loja|ref|tam -> qty
+  // Separate warehouse stock from store stock
+  const warehouseStock = {};  // ref||tam -> qty (warehouse only)
+  const stockLookup = {};     // loja|ref|tam -> {qty,desc,cat}
+  stockData.forEach(r => {
+    if (!state.activeCats.has(r.categoria)) return;
+    const k = `${r.loja}||${r.referencia}||${r.tamanho}`;
+    const ik = `${r.referencia}||${r.tamanho}`;
+    if (isWarehouse(r.loja)) {
+      // This is the warehouse row
+      warehouseStock[ik] = (warehouseStock[ik] || 0) + r.quantidade;
+    } else {
+      if (!stockLookup[k]) stockLookup[k] = {loja:r.loja, ref:r.referencia, desc:r.descricao, cat:r.categoria, tam:r.tamanho, cor:r.cor, qty:0};
+      stockLookup[k].qty += r.quantidade;
+    }
+  });
+
+  // Build sales lookup: loja|ref|tam -> qtd_vendida_total
+  const salesLookup = {};
+  salesData.forEach(r => {
+    if (!state.activeCats.has(r.categoria)) return;
+    if (isWarehouse(r.loja)) return; // ignore warehouse sales
+    const k = `${r.loja}||${r.referencia}||${r.tamanho}`;
+    if (!salesLookup[k]) salesLookup[k] = 0;
+    salesLookup[k] += r.qtd_vendida;
+  });
+
+  // KEY FILTER: only process items where warehouse has 0 stock (or warehouse not present)
+  // An item qualifies if: warehouseStock[ik] === 0 OR ik not in warehouseStock at all
+  const warehouseHasStock = ik => warehouseStock.hasOwnProperty(ik) && warehouseStock[ik] > 0;
+
+  // All unique item keys from stores (not warehouse)
+  const itemSet = new Set();
+  Object.keys(stockLookup).forEach(k => {
+    const parts = k.split('||'); const ik = parts[1] + '||' + parts[2];
+    if (!warehouseHasStock(ik)) itemSet.add(ik);
+  });
+  Object.keys(salesLookup).forEach(k => {
+    const parts = k.split('||'); const ik = parts[1] + '||' + parts[2];
+    if (!warehouseHasStock(ik) && !itemSet.has(ik)) {/* skip if no store stock */}
+  });
+
+  const recommendations = [];
+  // Track how many items were skipped because warehouse still has stock
+  let skippedWarehouseStock = 0;
+  {
+    const allItemKeys = new Set([
+      ...Object.keys(stockLookup).map(k => { const p=k.split('||'); return p[1]+'||'+p[2]; }),
+      ...Object.keys(salesLookup).map(k => { const p=k.split('||'); return p[1]+'||'+p[2]; }),
+    ]);
+    allItemKeys.forEach(ik => { if (warehouseHasStock(ik)) skippedWarehouseStock++; });
+  }
+  if (skippedWarehouseStock > 0) {
+    console.info(`[Stock] ${skippedWarehouseStock} refs/tamanhos ignorados — armazém ainda tem stock`);
+  }
+
+  for (const itemKey of itemSet) {
+    const [ref, tam] = itemKey.split('||');
+
+    // Collect all stores for this item
+    const allStores = new Set([
+      ...Object.keys(stockLookup).filter(k => k.includes('||'+ref+'||'+tam)).map(k => k.split('||')[0]),
+      ...Object.keys(salesLookup).filter(k => k.includes('||'+ref+'||'+tam)).map(k => k.split('||')[0]),
+    ]);
+
+    if (allStores.size < 2) continue; // Need at least 2 stores to transfer
+
+    // Build store data for this item
+    const storeData = [];
+    for (const loja of allStores) {
+      const sk = `${loja}||${ref}||${tam}`;
+      const stockEntry = stockLookup[sk];
+      const qty = stockEntry ? stockEntry.qty : 0;
+      const qtdVendida = salesLookup[sk] || 0;
+      const salesRate = qtdVendida / days; // units/day
+      const coverage = salesRate > 0 ? qty / salesRate : (qty > 0 ? 9999 : 0);
+      const priority = state.storePriority[loja] || 3;
+      const desc = stockEntry ? stockEntry.desc : '';
+      const cat = stockEntry ? stockEntry.cat : '';
+
+      storeData.push({loja, qty, qtdVendida, salesRate, coverage, priority, desc, cat});
+    }
+
+    // Working copies of qty
+    const qtyAvail = {};
+    storeData.forEach(s => qtyAvail[s.loja] = s.qty);
+
+    // Givers: excess stock (coverage > excessDays OR no sales but has stock)
+    // Receivers: need stock (high sales, low coverage < urgentDays, and high priority)
+    const givers = storeData
+      .filter(s => qtyAvail[s.loja] >= minQty && (s.salesRate === 0 ? s.qty >= minQty : s.coverage > excessDays))
+      .sort((a, b) => {
+        // Prefer: lowest priority (gives away), highest coverage
+        if (a.priority !== b.priority) return b.priority - a.priority;
+        return b.coverage - a.coverage;
+      });
+
+    const receivers = storeData
+      .filter(s => s.salesRate > 0 && s.coverage < urgentDays && s.priority <= 3)
+      .sort((a, b) => {
+        if (a.priority !== b.priority) return a.priority - b.priority;
+        return a.coverage - b.coverage;
+      });
+
+    for (const rcvr of receivers) {
+      for (const giver of givers) {
+        if (giver.loja === rcvr.loja) continue;
+        const available = qtyAvail[giver.loja];
+        if (available < minQty) continue;
+
+        // How much does receiver need to reach target?
+        const need = Math.ceil(rcvr.salesRate * targetDays - rcvr.qty);
+        if (need <= 0) continue;
+
+        // How much can giver spare? Keep keepDays of their own coverage
+        const keepQty = Math.ceil(giver.salesRate * keepDays);
+        const canGive = Math.floor(available - keepQty);
+        if (canGive < minQty) continue;
+
+        const transferQty = Math.min(need, canGive);
+        if (transferQty < minQty) continue;
+
+        const desc = rcvr.desc || giver.desc || storeData.find(s=>s.desc)?.desc || ref;
+        const cat = rcvr.cat || giver.cat || storeData.find(s=>s.cat)?.cat || '';
+
+        const urgencyScore = Math.max(0, Math.round(10 - rcvr.coverage));
+
+        recommendations.push({
+          from: giver.loja,
+          to: rcvr.loja,
+          referencia: ref,
+          descricao: desc,
+          categoria: cat,
+          tamanho: tam,
+          qty: transferQty,
+          urgency: urgencyScore,
+          from_coverage: giver.coverage,
+          to_coverage: rcvr.coverage,
+          to_sales_rate: rcvr.salesRate,
+          to_sales_30d: Math.round(rcvr.salesRate * 30),
+          from_stock: available,
+          to_stock: rcvr.qty,
+        });
+
+        qtyAvail[giver.loja] -= transferQty;
+        rcvr.qty += transferQty;
+        break; // one transfer per receiver per item (can adjust)
+      }
+    }
+  }
+
+  return recommendations.sort((a, b) => b.urgency - a.urgency || a.to_coverage - b.to_coverage);
+}
+
+// ════════════════════════════════════════════════════
+//  RESULTS RENDERING
+// ════════════════════════════════════════════════════
+
+function renderResults() {
+  const recs = state.recommendations;
+
+  // Summary
+  const totalQty = recs.reduce((s,r) => s+r.qty, 0);
+  const fromStores = new Set(recs.map(r=>r.from));
+  const toStores = new Set(recs.map(r=>r.to));
+  const urgent = recs.filter(r=>r.urgency >= 7).length;
+  const cats = new Set(recs.map(r=>r.categoria));
+
+  document.getElementById('summary-grid').innerHTML = `
+    <div class="stat-card accent"><div class="stat-value">${recs.length}</div><div class="stat-label">Transferências sugeridas</div></div>
+    <div class="stat-card green"><div class="stat-value">${totalQty.toLocaleString('pt')}</div><div class="stat-label">Unidades a mover</div></div>
+    <div class="stat-card red"><div class="stat-value">${urgent}</div><div class="stat-label">Urgentes (&lt;3 dias)</div></div>
+    <div class="stat-card yellow"><div class="stat-value">${fromStores.size}</div><div class="stat-label">Lojas cedentes</div></div>
+    <div class="stat-card"><div class="stat-value">${toStores.size}</div><div class="stat-label">Lojas receptoras</div></div>
+    <div class="stat-card"><div class="stat-value">${cats.size}</div><div class="stat-label">Categorias</div></div>
+  `;
+
+  // Populate filters
+  const catSel = document.getElementById('f-cat');
+  const fromSel = document.getElementById('f-from');
+  const toSel = document.getElementById('f-to');
+  const uniqueCats = [...new Set(recs.map(r=>r.categoria))].sort();
+  const uniqueFrom = [...new Set(recs.map(r=>r.from))].sort();
+  const uniqueTo = [...new Set(recs.map(r=>r.to))].sort();
+  catSel.innerHTML = `<option value="">Todas as categorias</option>` + uniqueCats.map(c=>`<option>${c}</option>`).join('');
+  fromSel.innerHTML = `<option value="">Todas as origens</option>` + uniqueFrom.map(s=>`<option>${s}</option>`).join('');
+  toSel.innerHTML = `<option value="">Todos os destinos</option>` + uniqueTo.map(s=>`<option>${s}</option>`).join('');
+
+  renderTable();
+  renderByLoja();
+  renderByStores();
+}
+
+function getFilteredRecs() {
+  const cat = document.getElementById('f-cat').value;
+  const from = document.getElementById('f-from').value;
+  const to = document.getElementById('f-to').value;
+  const search = document.getElementById('f-search').value.toLowerCase();
+  return state.recommendations.filter(r =>
+    (!cat || r.categoria === cat) &&
+    (!from || r.from === from) &&
+    (!to || r.to === to) &&
+    (!search || r.referencia.toLowerCase().includes(search) || r.descricao.toLowerCase().includes(search))
+  );
+}
+
+let sortField = 'urgency', sortDir = -1;
+function sortBy(field) {
+  if (sortField === field) sortDir *= -1;
+  else { sortField = field; sortDir = -1; }
+  renderTable();
+}
+
+function renderTable() {
+  let recs = getFilteredRecs();
+  recs = [...recs].sort((a,b) => {
+    const av = a[sortField] ?? 0, bv = b[sortField] ?? 0;
+    return typeof av === 'string' ? av.localeCompare(bv) * sortDir : (av - bv) * sortDir;
+  });
+
+  document.getElementById('f-count').textContent = recs.length + ' de ' + state.recommendations.length;
+
+  document.querySelectorAll('.results-table th').forEach(th => th.classList.remove('sort-asc','sort-desc'));
+
+  const tbody = document.getElementById('results-tbody');
+  if (!recs.length) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--muted)">Nenhuma transferência encontrada com os filtros actuais.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = recs.map(r => {
+    const urg = r.urgency;
+    const urgClass = urg >= 7 ? 'high' : urg >= 4 ? 'med' : '';
+    const dots = [1,2,3,4,5,6,7,8,9,10].map(i =>
+      `<div class="urgency-dot ${i<=urg ? 'on '+urgClass : ''}"></div>`
+    ).join('');
+    const cov = v => v >= 9990 ? '∞' : v > 0 ? Math.round(v) + 'd' : '—';
+    return `<tr>
+      <td><div class="urgency-bar"><div class="urgency-dots">${dots}</div><span style="font-size:11px;color:var(--muted)">${urg}/10</span></div></td>
+      <td><span style="font-size:11px;color:var(--muted)">${r.categoria}</span></td>
+      <td class="fw-bold">${r.referencia}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.descricao)}">${r.descricao}</td>
+      <td>${r.tamanho}</td>
+      <td><span class="store-pill pill-from">${r.from}</span></td>
+      <td><span class="store-pill pill-to">${r.to}</span></td>
+      <td style="text-align:right"><span class="qty-badge">${r.qty}</span></td>
+      <td><span class="coverage-tag">${cov(r.from_coverage)}</span></td>
+      <td><span class="coverage-tag" style="color:${r.to_coverage<3?'var(--red)':r.to_coverage<7?'var(--yellow)':'var(--muted)'}">${cov(r.to_coverage)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderByLoja() {
+  const groups = {};
+  state.recommendations.forEach(r => {
+    if (!groups[r.from]) groups[r.from] = [];
+    groups[r.from].push(r);
+  });
+
+  const sorted = Object.keys(groups).sort();
+  document.getElementById('byloja-content').innerHTML = sorted.map(loja => {
+    const items = groups[loja].sort((a,b) => b.urgency - a.urgency);
+    const totalQty = items.reduce((s,r) => s+r.qty, 0);
+    const rows = items.map(r => `
+      <tr>
+        <td class="fw-bold">${r.referencia}</td>
+        <td>${r.descricao}</td>
+        <td>${r.tamanho}</td>
+        <td>${r.categoria}</td>
+        <td><span class="store-pill pill-to">${r.to}</span></td>
+        <td style="text-align:right"><span class="qty-badge">${r.qty}</span></td>
+        <td style="color:${r.to_coverage<3?'var(--red)':r.to_coverage<7?'var(--yellow)':'var(--muted)'};font-size:12px">${r.to_coverage<9990?Math.round(r.to_coverage)+'d cob.':'∞'}</td>
+      </tr>`).join('');
+    return `
+      <div style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap">
+          <span style="font-weight:700;font-size:15px;color:var(--text-bright)">${loja}</span>
+          <span style="color:var(--muted);font-size:12px">cede ${items.length} referência(s) · ${totalQty} unidades</span>
+          <button class="btn btn-secondary btn-sm" onclick="exportLojaExcel('${esc(loja)}')">⬇ Exportar guia</button>
+        </div>
+        <div class="table-wrap">
+          <table class="results-table">
+            <thead><tr><th>Ref.</th><th>Descrição</th><th>Tam.</th><th>Categoria</th><th>Destino</th><th style="text-align:right">Qtd.</th><th>Cobertura destino</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }).join('') || '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Sem transferências</div></div>';
+}
+
+function renderByStores() {
+  // Build store stats
+  const stores = {};
+  state.recommendations.forEach(r => {
+    if (!stores[r.from]) stores[r.from] = {gives:0, receives:0, giveQty:0, rcvQty:0};
+    if (!stores[r.to]) stores[r.to] = {gives:0, receives:0, giveQty:0, rcvQty:0};
+    stores[r.from].gives++;
+    stores[r.from].giveQty += r.qty;
+    stores[r.to].receives++;
+    stores[r.to].rcvQty += r.qty;
+  });
+
+  const sorted = Object.keys(stores).sort((a,b) => stores[b].rcvQty - stores[a].rcvQty);
+  document.getElementById('bystores-content').innerHTML = `
+    <div class="table-wrap">
+      <table class="results-table">
+        <thead><tr>
+          <th>Loja</th>
+          <th>Prioridade</th>
+          <th style="text-align:right">Recebe (refs)</th>
+          <th style="text-align:right">Recebe (un.)</th>
+          <th style="text-align:right">Cede (refs)</th>
+          <th style="text-align:right">Cede (un.)</th>
+          <th>Balanço</th>
+        </tr></thead>
+        <tbody>
+          ${sorted.map(s => {
+            const d = stores[s];
+            const prio = state.storePriority[s] || 3;
+            const balance = d.rcvQty - d.giveQty;
+            const prioLabel = ['','Máxima','Alta','Média','Baixa','Mínima'][prio] || '';
+            const prioColor = prio<=2?'var(--green)':prio<=3?'var(--yellow)':'var(--muted)';
+            return `<tr>
+              <td class="fw-bold">${s}</td>
+              <td style="color:${prioColor};font-size:12px">${prioLabel}</td>
+              <td style="text-align:right;color:var(--green)">${d.receives || '—'}</td>
+              <td style="text-align:right"><span class="qty-badge" style="background:var(--green-dim);color:var(--green)">${d.rcvQty||'—'}</span></td>
+              <td style="text-align:right;color:var(--yellow)">${d.gives||'—'}</td>
+              <td style="text-align:right"><span class="qty-badge" style="background:var(--yellow-dim);color:var(--yellow)">${d.giveQty||'—'}</span></td>
+              <td style="color:${balance>0?'var(--green)':balance<0?'var(--yellow)':'var(--muted)'}">
+                ${balance>0?'+':''}${balance} un.
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════
+//  EXPORT TO EXCEL
+// ════════════════════════════════════════════════════
+
+function exportExcel() {
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: All transfers
+  const rows = [['Urgência','Categoria','Referência','Descrição','Tamanho','Origem','Destino','Qtd a Mover','Cob. Origem (dias)','Cob. Destino (dias)','Vendas/30d destino']];
+  state.recommendations.forEach(r => rows.push([
+    r.urgency, r.categoria, r.referencia, r.descricao, r.tamanho,
+    r.from, r.to, r.qty,
+    r.from_coverage >= 9990 ? '' : Math.round(r.from_coverage),
+    r.to_coverage >= 9990 ? '' : Math.round(r.to_coverage),
+    r.to_sales_30d,
+  ]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Todas as Transferências');
+
+  // Sheets per origin store
+  const groups = {};
+  state.recommendations.forEach(r => {
+    if (!groups[r.from]) groups[r.from] = [];
+    groups[r.from].push(r);
+  });
+  Object.keys(groups).sort().forEach(loja => {
+    const sheetRows = [['Referência','Descrição','Tamanho','Categoria','Destino','Qtd','Cob. Destino (dias)']];
+    groups[loja].forEach(r => sheetRows.push([
+      r.referencia, r.descricao, r.tamanho, r.categoria,
+      r.to, r.qty,
+      r.to_coverage >= 9990 ? '' : Math.round(r.to_coverage),
+    ]));
+    const safeName = loja.replace(/[\\\/\[\]*?:]/g, '_').slice(0, 31);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sheetRows), safeName);
+  });
+
+  const today = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `Redistribuicao_Stock_${today}.xlsx`);
+}
+
+function exportLojaExcel(loja) {
+  const wb = XLSX.utils.book_new();
+  const items = state.recommendations.filter(r => r.from === loja);
+  const rows = [['Referência','Descrição','Tamanho','Categoria','Destino','Qtd a Enviar','Cob. Destino (dias)','Urgência']];
+  items.forEach(r => rows.push([r.referencia, r.descricao, r.tamanho, r.categoria, r.to, r.qty,
+    r.to_coverage >= 9990 ? '' : Math.round(r.to_coverage), r.urgency]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Guia');
+  const today = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `Guia_${loja.replace(/\s+/g,'_')}_${today}.xlsx`);
+}
+
+// ════════════════════════════════════════════════════
+//  SAMPLE DATA
+// ════════════════════════════════════════════════════
+
+function loadSampleData() {
+  const LOJAS = ['Évora','Beja','Viseu','Coimbra','Porto','Cascais','Albufeira','Lagos','Faro','Setúbal','Lisboa'];
+  const REFS = [
+    {ref:'CAL-001', desc:'Chinelo Rip Curl Pro', cat:'Calçado'},
+    {ref:'CAL-002', desc:'Sandália Billabong Summer', cat:'Calçado'},
+    {ref:'BIK-001', desc:'Biquíni Top Triangulo Azul', cat:'Biquínis'},
+    {ref:'BIK-002', desc:'Biquíni Bottom Franzido', cat:'Biquínis'},
+    {ref:'PDB-001', desc:'Calção Boardshort O\'Neill', cat:'Partes de Baixo'},
+    {ref:'PDB-002', desc:'Short Praia Quiksilver', cat:'Partes de Baixo'},
+    {ref:'APR-001', desc:'Canga Algodão Riscas', cat:'Artigos de Praia'},
+    {ref:'APR-002', desc:'Coolbox 25L Igloo', cat:'Artigos de Praia'},
+    {ref:'ACP-001', desc:'Óculos Sol Polarizados', cat:'Acessórios de Praia'},
+    {ref:'ACP-002', desc:'Saco Praia Impermeável', cat:'Acessórios de Praia'},
+  ];
+  const SIZES = ['XS','S','M','L','XL','36','37','38','39','40','41','42','UNI'];
+
+  // Lojas reais + armazém
+  const WAREHOUSE = '92';
+  const stockRows = [];
+  const salesRows = [];
+  // Interior (cedentes) têm excesso; litoral (receptoras) têm pouco
+  const SEED_STOCK = {Évora:6,Beja:5,Viseu:4,Coimbra:3,Porto:2,Cascais:1,Albufeira:0,Lagos:1,Faro:0,Setúbal:2,Lisboa:1,'92':0};
+  const SEED_SALES = {Évora:1,Beja:0,Viseu:1,Coimbra:2,Porto:4,Cascais:8,Albufeira:12,Lagos:10,Faro:11,Setúbal:5,Lisboa:7};
+  const ALL_LOJAS = Object.keys(SEED_STOCK);
+
+  REFS.forEach(item => {
+    const sizeSubset = SIZES.filter((_,i) => i % 2 === 0).slice(0,4);
+    sizeSubset.forEach(sz => {
+      ALL_LOJAS.forEach(loja => {
+        const baseStock = (SEED_STOCK[loja] || 0) + Math.round(Math.random()*2);
+        // Always include armazém with qty=0 to mark this as "sem reposição"
+        if (loja === WAREHOUSE) {
+          stockRows.push({Loja:loja, Referencia:item.ref, Descricao:item.desc, Categoria:item.cat, Tamanho:sz, Quantidade:0});
+          return;
+        }
+        if (baseStock > 0 || Math.random() > 0.4) {
+          stockRows.push({Loja:loja, Referencia:item.ref, Descricao:item.desc, Categoria:item.cat, Tamanho:sz, Quantidade:baseStock});
+        }
+        const baseSales = (SEED_SALES[loja]||0) + Math.round(Math.random()*3 - 1);
+        if (baseSales > 0) {
+          salesRows.push({Loja:loja, Referencia:item.ref, Descricao:item.desc, Categoria:item.cat, Tamanho:sz, Qtd_Vendida:Math.max(0,baseSales)});
+        }
+      });
+    });
+  });
+
+  state.stockRaw = stockRows;
+  state.salesRaw = salesRows;
+  state.stockHeaders = Object.keys(stockRows[0]);
+  state.salesHeaders = Object.keys(salesRows[0]);
+  state.stockMap = autoDetectCols(state.stockHeaders);
+  state.salesMap = autoDetectCols(state.salesHeaders);
+
+  updateDropZone('stock', 'exemplo-stock.xlsx', stockRows.length);
+  updateDropZone('sales', 'exemplo-vendas.xlsx', salesRows.length);
+  onFilesChanged();
+}
+
+// ════════════════════════════════════════════════════
+//  UI HELPERS
+// ════════════════════════════════════════════════════
+
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  ['tab-all','tab-byloja','tab-bystores'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  document.getElementById('tab-' + tab).classList.remove('hidden');
+  state.activeTab = tab;
+}
+
+function showAlert(containerId, type, msg) {
+  const icons = {err:'❌', warn:'⚠️', info:'ℹ️'};
+  const el = document.getElementById(containerId);
+  el.innerHTML = `<div class="alert alert-${type}">${icons[type]||''} ${msg}</div>`;
+}
+function clearAlerts(id) { document.getElementById(id).innerHTML = ''; }
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+function showLoading(text) {
+  document.getElementById('loading-text').textContent = text || 'A processar…';
+  document.getElementById('loading').classList.remove('hidden');
+}
+function hideLoading() { document.getElementById('loading').classList.add('hidden'); }
+function esc(s) { return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+</script>
+</body>
+</html>
