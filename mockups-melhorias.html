@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockups — Melhorias Depósitos · Despomar</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f1f5f9;
+    color: #1e293b;
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  /* ── Page header ── */
+  .page-header {
+    background: linear-gradient(135deg, #0d1b3e 0%, #1e40af 100%);
+    color: #fff;
+    padding: 20px 16px 24px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(13,27,62,.5);
+  }
+  .page-header h1 { font-size: 18px; font-weight: 700; letter-spacing: .5px; }
+  .page-header p  { font-size: 12px; opacity: .7; margin-top: 4px; }
+  .back-btn {
+    display: inline-block;
+    margin-bottom: 12px;
+    background: rgba(255,255,255,.15);
+    color: #fff;
+    text-decoration: none;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.3);
+    backdrop-filter: blur(4px);
+    transition: background .2s;
+  }
+  .back-btn:hover { background: rgba(255,255,255,.25); }
+
+  /* ── Layout wrapper ── */
+  .content {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+
+  /* ── Section label ── */
+  .section-label {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #64748b;
+    text-transform: uppercase;
+    margin: 32px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::before, .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #cbd5e1;
+  }
+
+  /* ── White card wrapper ── */
+  .card-wrap {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    padding: 16px;
+    overflow: hidden;
+  }
+  .card-wrap h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0d1b3e;
+    margin-bottom: 4px;
+  }
+  .card-wrap .subtitle {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 14px;
+  }
+
+  /* ════════════════════════════════════════
+     MELHORIA 1 — Mês em Revisão
+  ════════════════════════════════════════ */
+  .wrapped-card {
+    background: linear-gradient(160deg, #0d1b3e 0%, #1e3a8a 40%, #4c1d95 80%, #1e1b4b 100%);
+    border-radius: 20px;
+    padding: 28px 20px 24px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .wrapped-card::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(99,102,241,.3) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .wrapped-card::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: -40px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(16,185,129,.2) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .wr-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+    position: relative; z-index: 1;
+  }
+  .wr-logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 0 0 3px rgba(255,255,255,.2);
+  }
+  .wr-title-block { flex: 1; }
+  .wr-title-block .label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    opacity: .6;
+    text-transform: uppercase;
+  }
+  .wr-title-block .month {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+
+  .wr-main-number {
+    font-size: 40px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    line-height: 1;
+    position: relative; z-index: 1;
+  }
+  .wr-main-number .currency {
+    font-size: 20px;
+    vertical-align: top;
+    margin-top: 6px;
+    display: inline-block;
+    opacity: .8;
+  }
+  .wr-main-label {
+    font-size: 11px;
+    opacity: .6;
+    margin-top: 2px;
+    letter-spacing: .5px;
+    position: relative; z-index: 1;
+  }
+  .wr-sub {
+    font-size: 13px;
+    opacity: .75;
+    margin-top: 4px;
+    position: relative; z-index: 1;
+  }
+
+  .wr-divider {
+    height: 1px;
+    background: rgba(255,255,255,.15);
+    margin: 20px 0;
+    position: relative; z-index: 1;
+  }
+
+  .wr-compliance {
+    position: relative; z-index: 1;
+    margin-bottom: 20px;
+  }
+  .wr-compliance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .wr-compliance-header .label { font-size: 11px; opacity: .6; text-transform: uppercase; letter-spacing: 1px; }
+  .wr-compliance-header .value { font-size: 22px; font-weight: 800; color: #34d399; }
+  .wr-bar-bg {
+    height: 8px;
+    background: rgba(255,255,255,.15);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .wr-bar-fill {
+    height: 100%;
+    width: 87%;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    border-radius: 99px;
+    box-shadow: 0 0 10px rgba(52,211,153,.5);
+  }
+
+  .wr-ranking {
+    position: relative; z-index: 1;
+    margin-bottom: 20px;
+  }
+  .wr-ranking .label { font-size: 10px; opacity: .5; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
+  .wr-rank-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.07);
+    margin-bottom: 6px;
+    backdrop-filter: blur(4px);
+  }
+  .wr-rank-medal { font-size: 18px; width: 24px; text-align: center; }
+  .wr-rank-name  { flex: 1; font-size: 13px; font-weight: 600; }
+  .wr-rank-pct   { font-size: 13px; font-weight: 700; }
+  .wr-rank-pct.gold   { color: #fbbf24; }
+  .wr-rank-pct.silver { color: #cbd5e1; }
+  .wr-rank-pct.bronze { color: #f97316; }
+
+  .wr-loja-mes {
+    position: relative; z-index: 1;
+    background: linear-gradient(135deg, rgba(251,191,36,.15), rgba(251,191,36,.05));
+    border: 1px solid rgba(251,191,36,.4);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+  }
+  .wr-loja-mes .badge {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #fbbf24;
+    margin-bottom: 4px;
+  }
+  .wr-loja-mes .name { font-size: 20px; font-weight: 900; color: #fef3c7; }
+  .wr-loja-mes .crown { font-size: 28px; position: absolute; top: 12px; right: 16px; }
+
+  .wr-footer {
+    position: relative; z-index: 1;
+    text-align: center;
+    font-size: 10px;
+    opacity: .4;
+    letter-spacing: .5px;
+  }
+
+  /* ════════════════════════════════════════
+     MELHORIA 2 — Gráfico Mensal por Loja
+  ════════════════════════════════════════ */
+  .chart-container {
+    background: #0f172a;
+    border-radius: 14px;
+    padding: 16px;
+  }
+  .chart-title { color: #f8fafc; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .chart-subtitle { color: #64748b; font-size: 11px; margin-bottom: 16px; }
+
+  .bar-chart {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    height: 140px;
+    padding-bottom: 28px;
+    position: relative;
+  }
+  .bar-chart::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    bottom: 28px;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent calc(33.33% - 1px),
+      rgba(255,255,255,.06) calc(33.33% - 1px),
+      rgba(255,255,255,.06) 33.33%
+    );
+    pointer-events: none;
+  }
+
+  .bar-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    position: relative;
+  }
+  .bar-group-bars {
+    display: flex;
+    gap: 2px;
+    align-items: flex-end;
+    height: 112px;
+    width: 100%;
+    justify-content: center;
+  }
+  .bar {
+    width: 10px;
+    border-radius: 3px 3px 0 0;
+    transition: opacity .2s;
+    position: relative;
+  }
+  .bar.highlighted { filter: brightness(1.3); box-shadow: 0 0 8px currentColor; }
+  .bar-label {
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: #64748b;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .tendencia-list { margin-top: 14px; }
+  .tendencia-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    background: rgba(255,255,255,.05);
+  }
+  .tendencia-store { font-size: 12px; color: #cbd5e1; }
+  .tendencia-change {
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .tendencia-change.up   { color: #34d399; }
+  .tendencia-change.down { color: #f87171; }
+  .tendencia-change.flat { color: #94a3b8; }
+
+  /* ════════════════════════════════════════
+     MELHORIA 3 — Score Mensal por Loja
+  ════════════════════════════════════════ */
+  .score-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .score-card {
+    background: #0f172a;
+    border-radius: 14px;
+    padding: 14px 12px;
+    border: 1px solid rgba(255,255,255,.07);
+    position: relative;
+    overflow: hidden;
+  }
+  .score-card .store-name {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .score-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .score-num {
+    font-size: 36px;
+    font-weight: 900;
+    line-height: 1;
+    color: #f8fafc;
+  }
+  .grade-badge {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .grade-a { background: #065f46; color: #34d399; border: 2px solid #10b981; }
+  .grade-b { background: #1e3a5f; color: #60a5fa; border: 2px solid #3b82f6; }
+  .grade-c { background: #713f12; color: #fbbf24; border: 2px solid #f59e0b; }
+  .grade-d { background: #7f1d1d; color: #f87171; border: 2px solid #ef4444; }
+
+  .score-bar-bg {
+    height: 5px;
+    background: rgba(255,255,255,.1);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+  }
+  .score-bar-fill.green  { background: linear-gradient(90deg,#10b981,#34d399); }
+  .score-bar-fill.yellow { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
+  .score-bar-fill.red    { background: linear-gradient(90deg,#ef4444,#f87171); }
+
+  .score-mini-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 8px;
+  }
+  .score-mini-stat {
+    font-size: 10px;
+    color: #64748b;
+  }
+  .score-mini-stat .val { color: #94a3b8; font-weight: 600; }
+
+  .score-trend {
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .score-trend.up   { color: #34d399; }
+  .score-trend.down { color: #f87171; }
+
+  .score-card.bad {
+    border-color: rgba(239,68,68,.25);
+    background: linear-gradient(135deg, #0f172a, #1a0a0a);
+  }
+  .score-card.bad::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 80% 20%, rgba(239,68,68,.08), transparent 60%);
+    pointer-events: none;
+  }
+
+  /* ════════════════════════════════════════
+     MELHORIA 4 — Telegram Bot
+  ════════════════════════════════════════ */
+  .phone-frame {
+    background: #0e1117;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 2px solid #1e293b;
+    box-shadow: 0 12px 40px rgba(0,0,0,.4);
+    max-width: 360px;
+    margin: 0 auto;
+  }
+  .tg-topbar {
+    background: #17212b;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .tg-avatar {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, #2b5278, #3a7bd5);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .tg-bot-info { flex: 1; }
+  .tg-bot-name { font-size: 14px; font-weight: 700; color: #fff; }
+  .tg-bot-status { font-size: 11px; color: #64748b; }
+  .tg-dots { color: #64748b; font-size: 18px; letter-spacing: 2px; cursor: pointer; }
+
+  .tg-messages {
+    padding: 16px 12px;
+    background: #0e1117;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 340px;
+  }
+
+  .tg-msg {
+    max-width: 82%;
+    padding: 8px 12px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.45;
+    position: relative;
+  }
+  .tg-msg .ts {
+    font-size: 10px;
+    opacity: .5;
+    display: block;
+    text-align: right;
+    margin-top: 4px;
+  }
+  .tg-sent {
+    align-self: flex-end;
+    background: #2b5278;
+    color: #e8f4fd;
+    border-bottom-right-radius: 4px;
+  }
+  .tg-recv {
+    align-self: flex-start;
+    background: #182533;
+    color: #e0e8f0;
+    border-bottom-left-radius: 4px;
+    border: 1px solid rgba(255,255,255,.05);
+  }
+  .tg-recv code {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    white-space: pre;
+    display: block;
+    line-height: 1.65;
+  }
+  .tg-recv .cmd-highlight { color: #60a5fa; font-weight: 700; }
+  .tg-recv .ok   { color: #34d399; }
+  .tg-recv .warn { color: #fbbf24; }
+  .tg-recv .err  { color: #f87171; }
+  .tg-recv .muted { color: #64748b; }
+
+  /* ════════════════════════════════════════
+     MELHORIA 5 — Alerta Preditivo
+  ════════════════════════════════════════ */
+  .tg-alert-frame {
+    background: #0e1117;
+    border-radius: 16px;
+    padding: 14px;
+    border: 1px solid rgba(255,255,255,.06);
+  }
+  .tg-alert-topbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .tg-alert-avatar {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, #7c3aed, #4c1d95);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .tg-alert-name { font-size: 13px; font-weight: 700; color: #a78bfa; }
+  .tg-alert-ts   { font-size: 10px; color: #475569; }
+
+  .tg-alert-msg {
+    background: #182533;
+    border-radius: 14px;
+    border-bottom-left-radius: 4px;
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #e0e8f0;
+    border: 1px solid rgba(99,102,241,.2);
+  }
+  .tg-alert-msg .title-line {
+    font-size: 14px;
+    font-weight: 800;
+    color: #a78bfa;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .tg-alert-msg .section-hdr { color: #60a5fa; font-weight: 700; }
+  .tg-alert-msg .ok   { color: #34d399; }
+  .tg-alert-msg .warn { color: #fbbf24; }
+  .tg-alert-msg .hist-item { color: #94a3b8; padding-left: 4px; }
+  .tg-alert-msg .suggestion {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: rgba(251,191,36,.08);
+    border-left: 3px solid #fbbf24;
+    border-radius: 6px;
+    color: #fef3c7;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+
+  /* ════════════════════════════════════════
+     MELHORIA 6 — Streak de Cumprimento
+  ════════════════════════════════════════ */
+  .streak-container {
+    background: #0f172a;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .streak-topbanner {
+    background: linear-gradient(135deg, rgba(124,58,237,.15), rgba(30,58,138,.2));
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .streak-trophy { font-size: 24px; }
+  .streak-topbanner .record-text { flex: 1; }
+  .streak-topbanner .record-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+  .streak-topbanner .record-val   { font-size: 15px; font-weight: 800; color: #fef3c7; }
+
+  .streak-list-hdr {
+    display: flex;
+    padding: 8px 16px;
+    font-size: 10px;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+  }
+  .streak-list-hdr .col-store  { flex: 1; }
+  .streak-list-hdr .col-streak { width: 130px; text-align: right; }
+
+  .streak-row {
+    display: flex;
+    align-items: center;
+    padding: 13px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+    position: relative;
+    overflow: hidden;
+  }
+  .streak-row.golden::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(251,191,36,.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .streak-row .store-info { flex: 1; }
+  .streak-row .store-nm { font-size: 13px; font-weight: 600; color: #f1f5f9; }
+  .streak-row .store-status {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 2px;
+  }
+  .streak-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 5px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .streak-badge.fire {
+    background: rgba(249,115,22,.15);
+    color: #fb923c;
+    border: 1px solid rgba(249,115,22,.3);
+  }
+  .streak-badge.golden-fire {
+    background: rgba(251,191,36,.15);
+    color: #fbbf24;
+    border: 1px solid rgba(251,191,36,.4);
+    box-shadow: 0 0 14px rgba(251,191,36,.25);
+  }
+  .streak-badge.broken {
+    background: rgba(100,116,139,.1);
+    color: #64748b;
+    border: 1px solid rgba(100,116,139,.2);
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  /* ── Footer ── */
+  .page-footer {
+    text-align: center;
+    margin-top: 48px;
+    padding: 0 16px 20px;
+    font-size: 11px;
+    color: #94a3b8;
+    letter-spacing: .3px;
+  }
+  .page-footer strong { color: #64748b; }
+</style>
+</head>
+<body>
+
+<!-- ── Page header ── -->
+<div class="page-header">
+  <a href="/depositos" class="back-btn">← Voltar à App</a>
+  <h1>Mockups — Melhorias Planeadas</h1>
+  <p>Sistema de Depósitos · Grupo Despomar · Jun 2026</p>
+</div>
+
+<div class="content">
+
+  <!-- ══════════════════════════════════════
+       MELHORIA 1 — Mês em Revisão
+  ══════════════════════════════════════ -->
+  <div class="section-label">— MELHORIA 1 · Mês em Revisão —</div>
+
+  <div class="card-wrap">
+    <h2>Mês em Revisão (Wrapped)</h2>
+    <p class="subtitle">Resumo visual automático gerado no fecho de cada mês</p>
+
+    <div class="wrapped-card">
+      <div class="wr-header">
+        <div class="wr-logo">🌊</div>
+        <div class="wr-title-block">
+          <div class="label">Despomar · Depósitos</div>
+          <div class="month">JUNHO 2026 &nbsp;·&nbsp; EM REVISÃO</div>
+        </div>
+      </div>
+
+      <div class="wr-main-label">CUMPRIMENTO GERAL</div>
+      <div class="wr-main-number">87%</div>
+      <div class="wr-sub">8 lojas &nbsp;·&nbsp; 127 depósitos &nbsp;·&nbsp; 214 dias cobertos</div>
+
+      <div class="wr-divider"></div>
+
+      <div class="wr-compliance">
+        <div class="wr-compliance-header">
+          <span class="label">Cumprimento Geral</span>
+          <span class="value">87%</span>
+        </div>
+        <div class="wr-bar-bg">
+          <div class="wr-bar-fill"></div>
+        </div>
+      </div>
+
+      <div class="wr-ranking">
+        <div class="label">Ranking de Lojas</div>
+        <div class="wr-rank-row">
+          <span class="wr-rank-medal">🥇</span>
+          <span class="wr-rank-name">ESS Guia</span>
+          <span class="wr-rank-pct gold">96%</span>
+        </div>
+        <div class="wr-rank-row">
+          <span class="wr-rank-medal">🥈</span>
+          <span class="wr-rank-name">ESS Peniche</span>
+          <span class="wr-rank-pct silver">91%</span>
+        </div>
+        <div class="wr-rank-row">
+          <span class="wr-rank-medal">🥉</span>
+          <span class="wr-rank-name">ESS Caparica</span>
+          <span class="wr-rank-pct bronze">82%</span>
+        </div>
+      </div>
+
+      <div class="wr-loja-mes" style="position:relative;">
+        <div class="badge">✨ Loja do Mês</div>
+        <div class="name">ESS Guia</div>
+        <div style="font-size:11px;color:#fbbf24;margin-top:2px;">96% cumprimento &nbsp;·&nbsp; 0 falhas</div>
+        <span class="crown">👑</span>
+      </div>
+
+      <div class="wr-footer">Gerado automaticamente &nbsp;·&nbsp; 1 Jul 2026</div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       MELHORIA 2 — Gráfico Mensal por Loja
+  ══════════════════════════════════════ -->
+  <div class="section-label">— MELHORIA 2 · RANKING MENSAL POR LOJA —</div>
+
+  <div class="card-wrap">
+    <h2>Ranking de Cumprimento</h2>
+    <p class="subtitle">Lojas ordenadas da melhor para a pior — painel de Supervisão</p>
+
+    <div style="background:#0d1b3e;border-radius:12px;padding:14px;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:700;color:#93c5fd">JUNHO 2026</div>
+        <div style="font-size:10px;color:#475569">vs. Maio</div>
+      </div>
+
+      <!-- Header row -->
+      <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:0 0 6px;border-bottom:1px solid rgba(255,255,255,.08);font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:.8px;font-weight:700">
+        <div>#</div><div>Loja</div><div style="text-align:center">Cump.</div><div style="text-align:center">Dias</div><div style="text-align:right">Tend.</div>
+      </div>
+
+      <!-- Rows sorted by compliance -->
+      <div style="display:flex;flex-direction:column;gap:0">
+        <!-- 1 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+          <div style="font-size:11px;color:#fbbf24;font-weight:800">🥇</div>
+          <div><div style="font-size:12px;font-weight:700;color:#fff">ESS Guia</div><div style="font-size:9px;color:#64748b">0 saltos · 0 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#10b981">96%</span></div>
+          <div style="text-align:center"><div style="background:rgba(16,185,129,.15);border-radius:4px;height:6px"><div style="background:#10b981;border-radius:4px;height:6px;width:96%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#10b981">↑ +2</div>
+        </div>
+        <!-- 2 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+          <div style="font-size:11px;color:#94a3b8;font-weight:800">🥈</div>
+          <div><div style="font-size:12px;font-weight:700;color:#fff">ESS Peniche</div><div style="font-size:9px;color:#64748b">1 salto · 0 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#10b981">91%</span></div>
+          <div style="text-align:center"><div style="background:rgba(16,185,129,.15);border-radius:4px;height:6px"><div style="background:#10b981;border-radius:4px;height:6px;width:91%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#10b981">↑ +16</div>
+        </div>
+        <!-- 3 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+          <div style="font-size:11px;color:#cd7f32;font-weight:800">🥉</div>
+          <div><div style="font-size:12px;font-weight:700;color:#fff">ESS Ericeira</div><div style="font-size:9px;color:#64748b">0 saltos · 1 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#10b981">87%</span></div>
+          <div style="text-align:center"><div style="background:rgba(16,185,129,.15);border-radius:4px;height:6px"><div style="background:#10b981;border-radius:4px;height:6px;width:87%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#94a3b8">→ −2</div>
+        </div>
+        <!-- 4 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+          <div style="font-size:11px;color:#64748b;font-weight:800">4</div>
+          <div><div style="font-size:12px;font-weight:700;color:#fff">ESS Caparica</div><div style="font-size:9px;color:#64748b">1 salto · 2 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#f59e0b">79%</span></div>
+          <div style="text-align:center"><div style="background:rgba(245,158,11,.15);border-radius:4px;height:6px"><div style="background:#f59e0b;border-radius:4px;height:6px;width:79%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#10b981">↑ +5</div>
+        </div>
+        <!-- 5 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+          <div style="font-size:11px;color:#64748b;font-weight:800">5</div>
+          <div><div style="font-size:12px;font-weight:700;color:#fff">ESS Matosinhos</div><div style="font-size:9px;color:#64748b">2 saltos · 1 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#f59e0b">74%</span></div>
+          <div style="text-align:center"><div style="background:rgba(245,158,11,.15);border-radius:4px;height:6px"><div style="background:#f59e0b;border-radius:4px;height:6px;width:74%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#10b981">↑ +3</div>
+        </div>
+        <!-- 6 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+          <div style="font-size:11px;color:#64748b;font-weight:800">6</div>
+          <div><div style="font-size:12px;font-weight:700;color:#fff">ESS Nazaré</div><div style="font-size:9px;color:#64748b">2 saltos · 3 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#f59e0b">71%</span></div>
+          <div style="text-align:center"><div style="background:rgba(245,158,11,.15);border-radius:4px;height:6px"><div style="background:#f59e0b;border-radius:4px;height:6px;width:71%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#94a3b8">→ 0</div>
+        </div>
+        <!-- 7 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:center">
+          <div style="font-size:11px;color:#64748b;font-weight:800">7</div>
+          <div><div style="font-size:12px;font-weight:700;color:#e2e8f0">ESS Sagres</div><div style="font-size:9px;color:#ef4444">3 saltos · 4 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#ef4444">58%</span></div>
+          <div style="text-align:center"><div style="background:rgba(239,68,68,.15);border-radius:4px;height:6px"><div style="background:#ef4444;border-radius:4px;height:6px;width:58%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#ef4444">↓ −8</div>
+        </div>
+        <!-- 8 -->
+        <div style="display:grid;grid-template-columns:18px 1fr 54px 52px 40px;gap:6px;padding:8px 0;align-items:center">
+          <div style="font-size:11px;color:#64748b;font-weight:800">8</div>
+          <div><div style="font-size:12px;font-weight:700;color:#e2e8f0">ESS Óbidos</div><div style="font-size:9px;color:#ef4444">5 saltos · 7 s/talão</div></div>
+          <div style="text-align:center"><span style="font-size:14px;font-weight:800;color:#ef4444">42%</span></div>
+          <div style="text-align:center"><div style="background:rgba(239,68,68,.15);border-radius:4px;height:6px"><div style="background:#ef4444;border-radius:4px;height:6px;width:42%"></div></div></div>
+          <div style="text-align:right;font-size:10px;font-weight:700;color:#ef4444">↓ −11</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       MELHORIA 3 — Score Mensal por Loja
+  ══════════════════════════════════════ -->
+  <div class="section-label">— MELHORIA 3 · Score / Nota Mensal —</div>
+
+  <div class="card-wrap">
+    <h2>Pontuação Mensal por Loja</h2>
+    <p class="subtitle">Nota automática baseada em cumprimento, talões e regularidade</p>
+
+    <div style="text-align:center;font-size:13px;font-weight:700;color:#0d1b3e;margin-bottom:12px;letter-spacing:.5px;text-transform:uppercase;">
+      Pontuação Junho 2026
+    </div>
+
+    <div class="score-grid">
+
+      <!-- ESS Guia — A -->
+      <div class="score-card">
+        <div class="store-name">ESS Guia</div>
+        <div class="score-main">
+          <div class="score-num">94</div>
+          <div class="grade-badge grade-a">A</div>
+        </div>
+        <div class="score-bar-bg"><div class="score-bar-fill green" style="width:94%;"></div></div>
+        <div class="score-mini-stats">
+          <div class="score-mini-stat">✓ <span class="val">28/30 dias</span></div>
+          <div class="score-mini-stat">📄 <span class="val">0 s/talão</span></div>
+          <div class="score-mini-stat">⚡ <span class="val">0 saltos</span></div>
+        </div>
+        <div class="score-trend up">↑ +3 pts vs Mai</div>
+      </div>
+
+      <!-- ESS Peniche — B -->
+      <div class="score-card">
+        <div class="store-name">ESS Peniche</div>
+        <div class="score-main">
+          <div class="score-num">81</div>
+          <div class="grade-badge grade-b">B</div>
+        </div>
+        <div class="score-bar-bg"><div class="score-bar-fill green" style="width:81%;"></div></div>
+        <div class="score-mini-stats">
+          <div class="score-mini-stat">✓ <span class="val">24/30 dias</span></div>
+          <div class="score-mini-stat">📄 <span class="val">1 s/talão</span></div>
+          <div class="score-mini-stat">⚡ <span class="val">1 salto</span></div>
+        </div>
+        <div class="score-trend up">↑ +6 pts vs Mai</div>
+      </div>
+
+      <!-- ESS Ericeira — C -->
+      <div class="score-card">
+        <div class="store-name">ESS Ericeira</div>
+        <div class="score-main">
+          <div class="score-num">67</div>
+          <div class="grade-badge grade-c">C</div>
+        </div>
+        <div class="score-bar-bg"><div class="score-bar-fill yellow" style="width:67%;"></div></div>
+        <div class="score-mini-stats">
+          <div class="score-mini-stat">✓ <span class="val">20/30 dias</span></div>
+          <div class="score-mini-stat">📄 <span class="val">3 s/talão</span></div>
+          <div class="score-mini-stat">⚡ <span class="val">2 saltos</span></div>
+        </div>
+        <div class="score-trend down">↓ −4 pts vs Mai</div>
+      </div>
+
+      <!-- ESS Óbidos — D (bad) -->
+      <div class="score-card bad">
+        <div class="store-name">ESS Óbidos</div>
+        <div class="score-main">
+          <div class="score-num" style="color:#f87171;">42</div>
+          <div class="grade-badge grade-d">D</div>
+        </div>
+        <div class="score-bar-bg"><div class="score-bar-fill red" style="width:42%;"></div></div>
+        <div class="score-mini-stats">
+          <div class="score-mini-stat" style="color:#f87171;">✗ <span class="val" style="color:#f87171;">13/30 dias</span></div>
+          <div class="score-mini-stat">📄 <span class="val">7 s/talão</span></div>
+          <div class="score-mini-stat">⚡ <span class="val">5 saltos</span></div>
+        </div>
+        <div class="score-trend down">↓ −11 pts vs Mai</div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       MELHORIA 4 — Telegram Bot
+  ══════════════════════════════════════ -->
+  <div class="section-label">— MELHORIA 4 · Bot Telegram Interactivo —</div>
+
+  <div class="card-wrap">
+    <h2>Bot Telegram — Comandos</h2>
+    <p class="subtitle">Consulta de estado por loja e ranking directamente no Telegram</p>
+
+    <div class="phone-frame">
+
+      <div class="tg-topbar">
+        <div class="tg-avatar">🤖</div>
+        <div class="tg-bot-info">
+          <div class="tg-bot-name">DepositosBot</div>
+          <div class="tg-bot-status">bot &nbsp;·&nbsp; online</div>
+        </div>
+        <div class="tg-dots">⋮</div>
+      </div>
+
+      <div class="tg-messages">
+
+        <div class="tg-msg tg-sent">
+          /status ESS Guia
+          <span class="ts">10:23</span>
+        </div>
+
+        <div class="tg-msg tg-recv">
+          <code><span class="cmd-highlight">🏪 ESS GUIA — Estado actual</span>
+<span class="ok">✅ MB Way     — em dia</span>
+<span class="ok">✅ Multibanco — em dia</span>
+<span class="warn">⚠️ Numerário  — prazo amanhã</span>
+<span class="muted">   Por depositar: 19/06, 20/06</span>
+
+<span class="warn">📄 1 depósito sem talão: 18/06</span>
+
+<span class="ok">📅 Junho: 24/26 dias cobertos · 92%</span></code>
+          <span class="ts">10:23</span>
+        </div>
+
+        <div class="tg-msg tg-sent">
+          /ranking
+          <span class="ts">10:24</span>
+        </div>
+
+        <div class="tg-msg tg-recv">
+          <code><span class="cmd-highlight">📊 RANKING JUNHO 2026</span>
+
+🥇 ESS Guia        <span class="ok">96%</span>
+🥈 ESS Peniche     <span class="ok">91%</span>
+🥉 ESS Ericeira    <span class="ok">87%</span>
+4️⃣  ESS Caparica   <span class="warn">79%</span>
+5️⃣  ESS Matosinhos <span class="warn">74%</span>
+6️⃣  ESS Nazaré     <span class="warn">71%</span>
+7️⃣  ESS Sagres     <span class="err">58%</span>
+8️⃣  ESS Óbidos     <span class="err">42%</span>
+
+<span class="muted">Actualizado às 10:24</span></code>
+          <span class="ts">10:24</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       MELHORIA 5 — Alerta Preditivo
+  ══════════════════════════════════════ -->
+  <div class="section-label">— MELHORIA 5 · Alerta Preditivo —</div>
+
+  <div class="card-wrap">
+    <h2>Alerta Preditivo Inteligente</h2>
+    <p class="subtitle">O bot detecta padrões e avisa antes de entrar em atraso oficial</p>
+
+    <div class="tg-alert-frame">
+      <div class="tg-alert-topbar">
+        <div class="tg-alert-avatar">🔮</div>
+        <div>
+          <div class="tg-alert-name">DepositosBot &nbsp;·&nbsp; Alerta Preditivo</div>
+          <div class="tg-alert-ts">Hoje às 09:15</div>
+        </div>
+      </div>
+
+      <div class="tg-alert-msg">
+        <span class="title-line">🔮 ALERTA PREDITIVO — ESS Óbidos</span>
+
+<span class="section-hdr">Padrão detectado:</span> esta loja deposita MB Way habitualmente às Terças-feiras.
+
+Hoje é <strong style="color:#f8fafc;">Quinta-feira</strong> e ainda não há depósito desta semana.
+
+<span class="warn">⏰ Prazo termina em: 2 dias</span>
+
+<span class="section-hdr">📅 Últimos depósitos MB Way:</span>
+<span class="hist-item">&nbsp;&nbsp;&nbsp;• Ter 10/06 ✓</span>
+<span class="hist-item">&nbsp;&nbsp;&nbsp;• Ter 03/06 ✓</span>
+<span class="hist-item">&nbsp;&nbsp;&nbsp;• Ter 27/05 ✓</span>
+        <div class="suggestion">💡 Sugestão: contactar o gerente antes de entrar em atraso oficial.</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       MELHORIA 6 — Streak de Cumprimento
+  ══════════════════════════════════════ -->
+  <div class="section-label">— MELHORIA 6 · Streak de Cumprimento —</div>
+
+  <div class="card-wrap">
+    <h2>Streak de Cumprimento</h2>
+    <p class="subtitle">Sequências sem falhas por loja — estilo Duolingo, no painel de Supervisão</p>
+
+    <div class="streak-container">
+
+      <!-- Record banner -->
+      <div class="streak-topbanner">
+        <div class="streak-trophy">🏆</div>
+        <div class="record-text">
+          <div class="record-label">Recorde Actual</div>
+          <div class="record-val">ESS Guia &nbsp;—&nbsp; 47 dias sem falha</div>
+        </div>
+        <div style="font-size:22px;">🔥</div>
+      </div>
+
+      <!-- Column headers -->
+      <div class="streak-list-hdr">
+        <span class="col-store">Loja</span>
+        <span class="col-streak">Streak</span>
+      </div>
+
+      <!-- ESS Guia — golden long streak -->
+      <div class="streak-row golden">
+        <div class="store-info">
+          <div class="store-nm">ESS Guia</div>
+          <div class="store-status" style="color:#fbbf24;font-size:10px;">Recorde em curso</div>
+        </div>
+        <div class="streak-badge golden-fire">🔥 47 dias</div>
+      </div>
+
+      <!-- ESS Peniche -->
+      <div class="streak-row">
+        <div class="store-info">
+          <div class="store-nm">ESS Peniche</div>
+          <div class="store-status">Sem falhas desde 28 Mai</div>
+        </div>
+        <div class="streak-badge fire">🔥 24 dias</div>
+      </div>
+
+      <!-- ESS Ericeira -->
+      <div class="streak-row">
+        <div class="store-info">
+          <div class="store-nm">ESS Ericeira</div>
+          <div class="store-status">Sem falhas desde 9 Jun</div>
+        </div>
+        <div class="streak-badge fire">🔥 12 dias</div>
+      </div>
+
+      <!-- ESS Caparica -->
+      <div class="streak-row">
+        <div class="store-info">
+          <div class="store-nm">ESS Caparica</div>
+          <div class="store-status">Sem falhas desde 17 Jun</div>
+        </div>
+        <div class="streak-badge fire">🔥 4 dias</div>
+      </div>
+
+      <!-- ESS Óbidos — broken streak -->
+      <div class="streak-row">
+        <div class="store-info">
+          <div class="store-nm">ESS Óbidos</div>
+          <div class="store-status" style="color:#ef4444;font-size:10px;">Falta detectada: MB Way</div>
+        </div>
+        <div class="streak-badge broken">💔 Streak quebrada hoje</div>
+      </div>
+
+      <!-- ESS Matosinhos — rebuilding -->
+      <div class="streak-row" style="border-bottom:none;">
+        <div class="store-info">
+          <div class="store-nm">ESS Matosinhos</div>
+          <div class="store-status">A reconstruir streak</div>
+        </div>
+        <div class="streak-badge fire">🔥 2 dias</div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<!-- ── Footer ── -->
+<div class="page-footer">
+  <strong>Estes são mockups visuais — nao funcional</strong><br>
+  Despomar &nbsp;·&nbsp; Grupo Depositos &nbsp;·&nbsp; Gerado Jun 2026
+</div>
+
+</body>
+</html>

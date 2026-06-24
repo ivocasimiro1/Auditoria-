@@ -1,0 +1,24 @@
+{
+  "name": "Controlo de Depósitos · Despomar",
+  "short_name": "Depósitos",
+  "description": "Gestão de depósitos bancários Despomar",
+  "start_url": "/depositos",
+  "display": "standalone",
+  "background_color": "#0f2460",
+  "theme_color": "#1a56db",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/surf-school/depositos-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/surf-school/depositos-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

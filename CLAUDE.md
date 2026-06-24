@@ -1,18 +1,42 @@
 # Plataforma Despomar — Documentação do Projeto
 
-## O que é isto
-Dois sistemas distintos no mesmo repositório/Supabase, geridos por Ivo Casimiro (ivo@despomar.com / ivocasimiro@gmail.com):
+## REGRAS CRÍTICAS PARA QUALQUER SESSÃO NOVA
 
-1. **SaaS Escolas de Surf** — Multi-tenant para escolas de surf (reservas de aulas)
-2. **58 Surf Alugueres** — Sistema de gestão de alugueres de pranchas e fatos para a cadeia 58 Surf (Grupo Despomar)
+**Este repo é o `ivocasimiro1/Auditoria-` — ferramentas internas do Grupo Despomar.**
+
+### O que NÃO fazer
+- **Nunca criar `surf-school/_redirects`** — o único `_redirects` válido é o da raiz do repo
+- **Nunca modificar o `_redirects` da raiz** sem adicionar as novas rotas no fim, mantendo todas as existentes
+- **Nunca apagar ou modificar** `surf-school/depositos.html`, `surf-school/manual-depositos.html`, `functions/api/tg-webhook.js`
+- **Nunca tocar** em ficheiros existentes ao criar uma ferramenta nova — só adicionar ficheiros novos
+
+### Como adicionar uma ferramenta nova
+1. Criar `surf-school/nome-ferramenta.html` (ficheiro novo)
+2. Adicionar rota no **fim** do `_redirects` da raiz: `/rota /surf-school/nome-ferramenta.html 301`
+3. Não tocar em mais nada
+
+### Sistemas activos (não partir)
+| URL | Ficheiro | Sistema |
+|---|---|---|
+| `/depositos` | `surf-school/depositos.html` | Controlo de depósitos Despomar ✅ |
+| `/manual-depositos` | `surf-school/manual-depositos.html` | Manual dos depósitos ✅ |
+| `/rotacao` | `surf-school/redistribuicao-stock.html` | Redistribuição de stock ✅ |
+| Bot Telegram | `functions/api/tg-webhook.js` | Ranking/status lojas ✅ |
+
+---
+
+## O que é isto
+Ferramentas internas do Grupo Despomar, geridas por Ivo Casimiro (ivo@despomar.com / ivocasimiro@gmail.com).
+
+O **SaaS Escolas de Surf** (reservas de aulas) vai ser separado para um repo próprio quando lançar comercialmente — por agora o código existe aqui mas não está em uso activo.
 
 ## URLs de produção
 **https://auditoria-25b.pages.dev**
-- `/surf` ou `/reservar` → Site de reservas público (aulas de surf)
-- `/admin` → Painel do dono da escola de surf
-- `/super-admin` → Painel do Ivo (super-admin escolas)
-- `/proposta` → Proposta comercial para atrair escolas
-- `/alugueres` ou `/58surf` → Painel de gestão de alugueres 58 Surf
+- `/depositos` → Sistema de controlo de depósitos (principal)
+- `/rotacao` → Ferramenta de redistribuição de stock
+- `/surf` ou `/reservar` → Site de reservas público (aulas de surf) — em standby
+- `/admin` → Painel do dono da escola de surf — em standby
+- `/super-admin` → Painel do Ivo (super-admin escolas) — em standby
 
 ## Infraestrutura
 - **Hosting**: Cloudflare Pages (deploy automático do branch `main`)
@@ -204,3 +228,136 @@ Sem preços — sistema de tracking apenas (entrega e recepção).
 - `color-scheme: dark` no `:root` necessário para dropdowns nativos em dark mode
 - Branch de produção: `main` (Cloudflare faz deploy automático)
 - Após cada push, aguardar ~2 min e fazer Ctrl+Shift+R para ver alterações
+
+---
+
+## Sistema Depósitos (depositos.html)
+
+### Ficheiro
+`surf-school/depositos.html` → `/depositos`
+
+Manual: `surf-school/manual-depositos.html` → `/manual-depositos`
+
+### Arquitectura geral
+Aplicação SPA single-file com Supabase Auth. Duas roles:
+- **Loja** (`role != 'super_admin'`): vê apenas os seus próprios registos
+- **Super-Admin** (`isSA=true`, `role='super_admin'`): vê todos os registos de todas as lojas
+
+### Base de dados — Tabelas
+**`dep_registos`** — registos de depósitos:
+- `id` UUID, `store_id` TEXT, `loja` TEXT (nome display)
+- `tipo` TEXT (MB Way, Multibanco, Numerário, etc.)
+- `sessoes` JSONB — array `[{dataVendas, sessao, valor}]`
+- `dataDeposito` DATE, `talao` TEXT (comprovativo/referência)
+- `criado_em` TIMESTAMPTZ
+- RLS: `allow_all` FOR ALL USING (true)
+
+**`dep_config`** — configurações por loja:
+- `store_id` TEXT (PK ou unique), `emp` TEXT, `email` TEXT
+- `email_cc` TEXT, `email_cc2` TEXT, `nif` TEXT
+- `cambio_dia` TEXT, `prosegur_day` TEXT, `lomis_day` TEXT
+- `mes_inicio` TEXT, `lojas` JSONB (array nomes), `resps` JSONB
+- SA tem `store_id='super'`
+- RLS: `allow_all` FOR ALL USING (true)
+
+### Auth
+- Supabase Auth (`SB.auth.signInWithPassword`)
+- `sbUser` = auth user object, `sbProfile` = dep_config row da loja
+- `isSA` = `sbProfile.role === 'super_admin'`
+- SA config tem `store_id='super'`
+
+### Config save — REGRA CRÍTICA
+**NÃO usar `{onConflict:'store_id'}` no upsert** — falha se `store_id` não tiver unique constraint.
+Usar sempre SELECT → UPDATE/INSERT:
+```javascript
+const{data:ex}=await SB.from('dep_config').select('store_id').eq('store_id',sid).maybeSingle();
+const{error}=ex
+  ?await SB.from('dep_config').update(body).eq('store_id',sid)
+  :await SB.from('dep_config').insert(body);
+```
+
+### Email — fluxo e regras
+
+**Loja envia para contabilidade (Ivo/Despomar):**
+- `To:` = `cfg.email` da loja (email contabilidade, campo "Email" nas Settings da loja)
+- `CC:` = `cfg.emailCC` (gerente + outros, campo CC nas Settings) + `window._saDefaultCC` (supervisores Despomar)
+- Corpo HTML preview + plain text para mailto
+- Assunto: `Depósitos – [Loja] – [Mês] – até DD/MM/YYYY`
+
+**SA envia alerta de depósitos em atraso (`_saAlertEmail`):**
+- Função: `window._saAlertEmail(sid)` — chamada ao clicar Email na card da loja no painel SA
+- `To:` = `cfg2b.email_cc` (gerente da loja) — fallback para `cfg2b.email` se não configurado
+- `CC:` = `cfg2b.email` (contabilidade da loja) + `window._saDefaultCC` (supervisores Despomar)
+- Assunto: `Depósitos em atraso - [Loja] - [Mês]`
+- Corpo plain text com acentos, inclui apenas o que está em atraso:
+  1. **Saltos de depósito** — registos mais antigos pendentes enquanto há mais recentes depositados (topo, em destaque)
+  2. **Sessões por depositar** — records sem `dataDeposito`, listados por tipo com data+sessão
+  3. **Dias sem registo** — dias sem qualquer sessão no sistema, filtrados por `_missCutoff` (respeita calendário Prosegur/Lomis/Câmbio)
+  4. **Sem comprovativo** — depositos realizados sem talão registado
+- `_missCutoff`: calculado igual ao painel SA — para lojas com schedule semanal, é o dia da última passagem da transportadora; sem schedule, hoje-2 dias
+- Assunto dinâmico: inclui "Irregularidades" se houver problemas, "Verificado" se tudo OK
+- Assinatura: `Gestão Financeira | Grupo Despomar` (sem nome pessoal)
+
+**`window._saDefaultCC`** — CC automático global:
+- Carregado do `dep_config.email_cc2` da row `store_id='super'` (SA config)
+- Configurável nas Settings do SA (campo "CC automático — todas as lojas")
+- Adicionado automaticamente a TODOS os emails enviados pelas lojas
+- Default inicial: `ivo@despomar.com`
+
+**Múltiplas contas SA:**
+- Conta original: `dep_users` row com `role='super_admin'`
+- Contas adicionais: `dep_config` rows com `store_id='sauser-<email>'`
+- Login fallback: se não encontra em `dep_users`, procura em `dep_config` por email
+- Criar via Settings SA → card "Super-Admins" → "+ Adicionar"
+- Email de confirmação redireciona para `/depositos` (não `/surf`)
+
+**Campos `dep_config` usados no email:**
+- `email` = contabilidade da loja (To nos emails da loja; CC nos emails SA)
+- `email_cc` = gerente da loja (CC nos emails da loja; To nos emails SA)
+- `email_cc2` = CC adicional (usado pelo SA para guardar `_saDefaultCC`)
+- `prosegur_day`, `lomis_day`, `cambio_dia` = dia da semana (0=Dom) da recolha — determina `_missCutoff`
+
+**Assunto sempre inclui:** `Depósitos – [Loja] – [Mês] – até DD/MM/YYYY`
+
+**`seExp('email')`**: Não existe `id="opt-email"` no HTML — usar null-guard:
+```javascript
+const _optEl=document.getElementById('opt-'+f);if(_optEl)_optEl.classList.add('sel');
+```
+
+**`expEmail()`**: Checks `ep-to`, `ep-sub`, `ep-body.dataset.body`. Body >3800 chars → copia para clipboard + abre mailto sem body.
+
+### Estados de depósito (`calcEstado`)
+- `ok` — verde — depositado dentro do prazo
+- `warn` — amarelo — aviso (ex: perto do prazo)
+- `err` — vermelho — em atraso
+- `prog` — cinza — agendado/programado
+
+### Mobile
+- `overscroll-behavior:none` no html/body para evitar iOS bounce
+- `-webkit-text-size-adjust:100%` para evitar rescaling
+- `.bnav` é `position:fixed` — body tem `padding-top` correspondente
+- Páginas usam `display:none/block` (não fixed) — scroll normal
+
+### Variáveis globais chave
+- `regs` — array de todos os registos (local + Supabase)
+- `cfg` — objecto de configuração activo
+- `isSA` — boolean super-admin
+- `sbProfile` — dep_config row do utilizador logado
+- `sbUser` — Supabase auth user
+- `expFmt` — 'email' ou 'print'
+- `exportCfg` — config da loja seleccionada (carregada async pelo SA; null = usar cfg próprio)
+
+### Funções chave
+- `updEmailPrev()` — async, gera preview do email, chama `seExp('email')`
+- `seExp(f)` — alterna entre email/print; null-guard no `opt-${f}`
+- `getFiltExp()` — filtra regs por loja+mês para export
+- `sbSaveCfgSB()` — guarda cfg no Supabase (SELECT→UPDATE/INSERT)
+- `scBtn()` — botão "Guardar Configurações" com feedback visual
+- `calcEstado(r, rcfg)` — calcula estado do depósito
+- `totalValor(r)` — soma valores de todas as sessões de um registo
+- `getRefDate(r)` — data de referência do registo (primeira sessão)
+
+### Manual (`manual-depositos.html`)
+Capítulos: 1-Intro, 2-Login, 3-Novo Depósito, 4-Dashboard, 5-Lista, 6-Mapa, 7-Email, 8-Config, 9-Dicas, 10-SA
+Cada capítulo deve ter mockups visuais ricos com dados reais de exemplo (ESS Guia, etc.)
+Capítulos pendentes de completar: 3, 5, 6, 7, 10
