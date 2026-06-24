@@ -7,21 +7,25 @@
 ### O que NÃO fazer
 - **Nunca criar `surf-school/_redirects`** — o único `_redirects` válido é o da raiz do repo
 - **Nunca modificar o `_redirects` da raiz** sem adicionar as novas rotas no fim, mantendo todas as existentes
-- **Nunca apagar ou modificar** `surf-school/depositos.html`, `surf-school/manual-depositos.html`, `functions/api/tg-webhook.js`
 - **Nunca tocar** em ficheiros existentes ao criar uma ferramenta nova — só adicionar ficheiros novos
+- **NÃO há ficheiros de depósitos aqui** — `depositos.html`, `manual-depositos.html` e `tg-webhook.js` foram migrados para o repo `ivocasimiro1/depositos-despomar`
 
 ### Como adicionar uma ferramenta nova
 1. Criar `surf-school/nome-ferramenta.html` (ficheiro novo)
 2. Adicionar rota no **fim** do `_redirects` da raiz: `/rota /surf-school/nome-ferramenta.html 301`
 3. Não tocar em mais nada
 
-### Sistemas activos (não partir)
+### Sistemas activos neste repo (não partir)
 | URL | Ficheiro | Sistema |
 |---|---|---|
-| `/depositos` | `surf-school/depositos.html` | Controlo de depósitos Despomar ✅ |
-| `/manual-depositos` | `surf-school/manual-depositos.html` | Manual dos depósitos ✅ |
 | `/rotacao` | `surf-school/redistribuicao-stock.html` | Redistribuição de stock ✅ |
-| Bot Telegram | `functions/api/tg-webhook.js` | Ranking/status lojas ✅ |
+
+### Sistemas noutros repos (NÃO estão aqui)
+| URL | Repo | Sistema |
+|---|---|---|
+| `/depositos` | `ivocasimiro1/depositos-despomar` → `depositos-despomar.pages.dev` | Controlo de depósitos ✅ |
+| `/manual-depositos` | `ivocasimiro1/depositos-despomar` | Manual dos depósitos ✅ |
+| Bot Telegram | `ivocasimiro1/depositos-despomar` → `functions/api/tg-webhook.js` | Ranking/status lojas ✅ |
 
 ---
 
