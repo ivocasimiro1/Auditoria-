@@ -1,3 +1,9 @@
+# Depósitos — redirecionar para novo domínio
+/depositos              https://depositos-despomar.pages.dev/depositos              301
+/depositos.html         https://depositos-despomar.pages.dev/depositos              301
+/manual-depositos       https://depositos-despomar.pages.dev/manual-depositos       301
+/manual                 https://depositos-despomar.pages.dev/manual-depositos       301
+
 # Redistribuição de Stock
 /rotacao               /surf-school/redistribuicao-stock.html  301
 /redistribuicao        /surf-school/redistribuicao-stock.html  301
