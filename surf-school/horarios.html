@@ -38,7 +38,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; }
 .header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 12px 20px;
+  padding: 10px 20px;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -47,26 +47,27 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; }
   z-index: 100;
   flex-wrap: wrap;
 }
-.header-logo { font-size: 19px; font-weight: 700; color: var(--text-bright); letter-spacing: -0.5px; }
+.header-logo { font-size: 18px; font-weight: 700; color: var(--text-bright); letter-spacing: -0.5px; }
 .header-logo span { color: var(--accent); }
-.header-sub { color: var(--muted); font-size: 13px; }
 .header-spacer { flex: 1; }
+.hdr-ctl { display:flex; gap:8px; align-items:center; }
+.hdr-ctl label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
 
-.tabs { display: flex; gap: 4px; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
 .tab {
-  padding: 7px 16px; border-radius: var(--radius); cursor: pointer;
+  padding: 7px 14px; border-radius: var(--radius); cursor: pointer;
   color: var(--muted); font-weight: 600; font-size: 13px; border: 1px solid transparent;
   background: none;
 }
 .tab:hover { color: var(--text); background: var(--surface2); }
 .tab.active { color: var(--accent); background: var(--accent-dim); border-color: var(--accent); }
 
-.main { max-width: 1500px; margin: 0 auto; padding: 20px; }
+.main { max-width: 1560px; margin: 0 auto; padding: 20px; }
 .page { display: none; }
 .page.active { display: block; }
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; margin-bottom: 18px; }
-.card h2 { font-size: 15px; color: var(--text-bright); margin-bottom: 12px; display:flex; align-items:center; gap:8px; }
+.card h2 { font-size: 15px; color: var(--text-bright); margin-bottom: 12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .card h2 .hint { font-size: 12px; color: var(--muted); font-weight: 400; }
 
 .btn {
@@ -105,6 +106,7 @@ table.hgrid { border-collapse: collapse; width: 100%; font-size: 12px; }
 .hgrid td.cell:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
 .hgrid td.cnt { background: var(--surface); color: var(--muted); font-size: 11px; }
 .hgrid td.cnt.bad { background: var(--red-dim); color: var(--red); font-weight: 700; }
+.hgrid td.ped { box-shadow: inset 0 0 0 2px var(--orange); }
 .c-M { background: #123a5e; color: #79c0ff; }
 .c-I { background: #3a2e12; color: #e3b341; }
 .c-N { background: #2e1b5e; color: #b394f9; }
@@ -124,13 +126,45 @@ td.viol { outline: 2px solid var(--red); outline-offset: -2px; }
 .viol-item.warn { background: var(--yellow-dim); color: var(--yellow); }
 .viol-ok { background: var(--green-dim); color: var(--green); padding: 8px 12px; border-radius: var(--radius); font-size: 13px; }
 
+/* ── Supervisor ── */
+.sup-strip { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
+.stat { background: var(--surface); border:1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 20px; min-width: 130px; }
+.stat .v { font-size: 26px; font-weight: 700; color: var(--text-bright); }
+.stat .v.ok { color: var(--green); } .stat .v.bad { color: var(--red); } .stat .v.wrn { color: var(--yellow); }
+.stat .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top:2px; }
+.sup-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+.sup-card { background: var(--surface); border:1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; }
+.sup-card.err { border-color: var(--red); }
+.sup-card.warn { border-color: var(--yellow); }
+.sup-card.ok { border-color: var(--green); }
+.sup-card h3 { font-size: 15px; color: var(--text-bright); display:flex; align-items:center; gap:8px; margin-bottom: 4px; }
+.sup-card .sub { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.badge { border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 700; }
+.badge.ok { background: var(--green-dim); color: var(--green); }
+.badge.err { background: var(--red-dim); color: var(--red); }
+.badge.warn { background: var(--yellow-dim); color: var(--yellow); }
+.badge.off { background: var(--surface3); color: var(--muted); }
+.sup-mini { display:flex; gap:10px; margin: 8px 0; flex-wrap:wrap; }
+.sup-mini span { font-size: 12px; color: var(--muted); }
+.sup-mini b { color: var(--text-bright); }
+.sup-viols { font-size: 12px; margin: 8px 0; }
+.sup-viols div { padding: 3px 8px; border-radius: 6px; margin-bottom: 3px; }
+.sup-viols .e { background: var(--red-dim); color: var(--red); }
+.sup-viols .w { background: var(--yellow-dim); color: var(--yellow); }
+.sup-actions { display:flex; gap:8px; margin-top: 10px; }
+.heat { display:grid; grid-template-columns: repeat(31, 1fr); gap:2px; margin:8px 0; }
+.heat i { display:block; height: 10px; border-radius: 2px; background: var(--surface3); }
+.heat i.ok { background: var(--green-dim); }
+.heat i.bad { background: var(--red); }
+.heat i.wrn { background: var(--yellow); }
+
 /* ── Resumo ── */
 table.sum { border-collapse: collapse; font-size: 12px; width: 100%; }
 .sum th, .sum td { border: 1px solid var(--border); padding: 4px 8px; text-align: center; }
 .sum th { background: var(--surface2); color: var(--text-bright); }
 .sum td.lbl { text-align: left; color: var(--muted); }
 
-/* ── Equipa / Regras tables ── */
+/* ── Tabelas ── */
 table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 .tbl th, .tbl td { border-bottom: 1px solid var(--border); padding: 8px 10px; text-align: left; }
 .tbl th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -155,48 +189,85 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 .flex { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .grow { flex: 1; }
 .mut { color: var(--muted); font-size: 12px; }
-.abs-row { display:flex; gap:8px; align-items:center; padding:4px 0; font-size:12px; }
+.abs-row { display:flex; gap:8px; align-items:center; padding:4px 0; font-size:12px; flex-wrap:wrap; }
+.chip { display:inline-flex; gap:6px; align-items:center; background:var(--surface2); border:1px solid var(--border); border-radius:16px; padding:3px 6px 3px 12px; font-size:12px; margin:2px; }
+.chip button { background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; }
+.chip button:hover { color: var(--red); }
 
+/* ── Impressão ── */
+.print-head { display: none; }
 @media print {
   :root { color-scheme: light; }
+  @page { size: A4 landscape; margin: 8mm; }
   body { background: #fff; color: #000; }
   .header, .toolbar, .viols, .no-print, #pop { display: none !important; }
   .main { max-width: none; padding: 0; }
-  .card { border: none; padding: 0; }
+  .card { border: none; padding: 0; margin: 0 0 10px; background: #fff; }
+  .card h2 { color: #000; font-size: 12px; }
+  .card h2 .hint { display: none; }
   .grid-wrap { border: none; overflow: visible; }
-  .hgrid th, .hgrid td { border: 1px solid #999; color: #000 !important; background: #fff !important; padding: 2px 4px; font-size: 10px; }
+  .hgrid th, .hgrid td, .sum th, .sum td { border: 1px solid #999; color: #000 !important; background: #fff !important; padding: 1px 3px; font-size: 8.5px; }
+  .hgrid thead th { position: static; }
   .c-M { background: #dbeafe !important; }
   .c-I { background: #fef3c7 !important; }
   .c-N { background: #ede9fe !important; }
   .c-FR { background: #dcfce7 !important; }
-  .print-head { display: block !important; }
+  .c-BX { background: #fee2e2 !important; }
+  .c-DO, .c-DC { background: #f3f4f6 !important; }
+  .tag { border: 1px solid #999; color: #000; background: #fff; }
+  .print-head { display: block; color: #000; margin-bottom: 8px; }
+  .print-head .ph-emp { font-size: 13px; font-weight: 700; }
+  .print-head .ph-l { font-size: 9px; }
+  .print-head .ph-map { font-size: 12px; font-weight: 700; margin-top: 4px; }
+  .print-head table { border-collapse: collapse; margin-top: 4px; }
+  .print-head td { border: 1px solid #999; padding: 2px 8px; font-size: 9px; }
+  .print-sign { display: flex !important; }
 }
-.print-head { display: none; font-size: 11px; color: #000; margin-bottom: 8px; }
+.print-sign { display: none; justify-content: space-between; margin-top: 24px; font-size: 9px; color: #000; }
+.print-sign div { width: 40%; border-top: 1px solid #000; padding-top: 4px; text-align: center; }
 </style>
 </head>
 <body>
 
 <div class="header">
   <div class="header-logo">DESPOMAR<span>·</span>Horários</div>
-  <div class="header-sub">Gerador de mapas de horário com turnos, folgas e regras</div>
+  <div class="hdr-ctl">
+    <label>Loja</label>
+    <select id="loja-sel" onchange="mudarLoja(this.value)"></select>
+  </div>
+  <div class="hdr-ctl">
+    <label>Mês</label>
+    <input type="month" id="mes" onchange="renderAll()">
+  </div>
   <div class="header-spacer"></div>
   <div class="tabs">
-    <button class="tab active" data-page="horario" onclick="goTab('horario')">📅 Horário</button>
+    <button class="tab active" data-page="sup" onclick="goTab('sup')">📊 Supervisor</button>
+    <button class="tab" data-page="horario" onclick="goTab('horario')">📅 Horário</button>
     <button class="tab" data-page="equipa" onclick="goTab('equipa')">👥 Equipa</button>
     <button class="tab" data-page="regras" onclick="goTab('regras')">⚙️ Regras</button>
+    <button class="tab" data-page="lojas" onclick="goTab('lojas')">🏢 Lojas</button>
   </div>
 </div>
 
 <div class="main">
 
+<!-- ═══════════ SUPERVISOR ═══════════ -->
+<div class="page active" id="page-sup">
+  <div class="toolbar">
+    <button class="btn primary" onclick="gerarTodas()">⚡ Gerar todas as lojas</button>
+    <button class="btn green" onclick="exportTodasXLSX()">⬇ Excel — todas as lojas</button>
+    <span class="mut" id="sup-mes-lbl"></span>
+  </div>
+  <div class="sup-strip" id="sup-strip"></div>
+  <div class="sup-grid" id="sup-grid"></div>
+</div>
+
 <!-- ═══════════ HORÁRIO ═══════════ -->
-<div class="page active" id="page-horario">
+<div class="page" id="page-horario">
   <div class="card">
     <div class="toolbar">
-      <label>Mês</label>
-      <input type="month" id="mes" onchange="renderGrid()">
       <button class="btn primary" onclick="gerarClick()">⚡ Gerar automático</button>
-      <button class="btn" onclick="validarClick()">✔ Validar</button>
+      <button class="btn" onclick="renderGrid()">✔ Validar</button>
       <button class="btn danger small" onclick="limparMes()">Limpar mês</button>
       <div class="header-spacer"></div>
       <button class="btn green" onclick="exportXLSX()">⬇ Excel</button>
@@ -206,25 +277,26 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
     <div class="grid-wrap" id="grid"></div>
     <div class="viols" id="viols"></div>
   </div>
-  <div class="card no-print">
+  <div class="card">
     <h2>Resumo por colaborador <span class="hint">M=Manhã · I=Intermédio · N=Noite · F=Folgas · Dom=Domingos trabalhados · DT=Dias trabalhados</span></h2>
     <div style="overflow-x:auto"><div id="resumo"></div></div>
   </div>
-  <div class="card no-print">
+  <div class="card">
     <h2>Legenda</h2>
     <div class="flex" id="legenda"></div>
+    <div class="print-sign"><div>O Responsável da Loja</div><div>A Gerência</div></div>
   </div>
 </div>
 
 <!-- ═══════════ EQUIPA ═══════════ -->
 <div class="page" id="page-equipa">
   <div class="card">
-    <h2>Colaboradores <span class="hint">padrão de folgas fixo (opcional): alterna semanalmente entre Padrão A e Padrão B</span></h2>
+    <h2><span id="eq-loja-nome"></span> — Colaboradores <span class="hint">padrão de folgas fixo (opcional): alterna semanalmente entre Padrão A e Padrão B</span></h2>
     <div style="overflow-x:auto"><table class="tbl" id="staff-tbl"></table></div>
     <div style="margin-top:12px"><button class="btn primary" onclick="addStaff()">+ Adicionar colaborador</button></div>
   </div>
   <div class="card">
-    <h2>Ausências <span class="hint">férias, baixas — bloqueiam os dias no gerador</span></h2>
+    <h2>Férias e ausências <span class="hint">bloqueiam os dias no gerador</span></h2>
     <div class="flex" style="margin-bottom:10px">
       <select id="abs-staff"></select>
       <select id="abs-tipo">
@@ -240,12 +312,21 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
     </div>
     <div id="abs-list"></div>
   </div>
+  <div class="card">
+    <h2>Folgas pedidas <span class="hint">dias específicos pedidos pelos colaboradores — o gerador tenta encaixar (marcados com contorno laranja na grelha)</span></h2>
+    <div class="flex" style="margin-bottom:10px">
+      <select id="ped-staff"></select>
+      <input type="date" id="ped-data">
+      <button class="btn primary small" onclick="addPedido()">+ Adicionar</button>
+    </div>
+    <div id="ped-list"></div>
+  </div>
 </div>
 
 <!-- ═══════════ REGRAS ═══════════ -->
 <div class="page" id="page-regras">
   <div class="card">
-    <h2>Turnos <span class="hint">tipo M=Manhã, I=Intermédio, N=Noite — o gerador usa o 1º turno activo de cada tipo</span></h2>
+    <h2><span id="rg-loja-nome"></span> — Turnos <span class="hint">tipo M=Manhã, I=Intermédio, N=Noite — o gerador usa o 1º turno activo de cada tipo</span></h2>
     <table class="tbl" id="shift-tbl" style="max-width:640px"></table>
     <div style="margin-top:12px"><button class="btn primary small" onclick="addShift()">+ Adicionar turno</button></div>
   </div>
@@ -264,24 +345,40 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
     </div>
   </div>
   <div class="card">
-    <h2>Feriados</h2>
+    <h2>Feriados <span class="hint">os 13 feriados nacionais (incl. Páscoa, Sexta-feira Santa e Corpo de Deus) são automáticos — aqui só precisas de adicionar os municipais/regionais de cada loja</span></h2>
     <div class="flex" style="margin-bottom:8px">
       <input type="date" id="fer-data">
       <input type="text" id="fer-nome" placeholder="Nome (ex: Feriado Municipal)">
+      <select id="fer-loja"></select>
       <button class="btn primary small" onclick="addFeriado()">+ Adicionar</button>
     </div>
     <div id="fer-list"></div>
   </div>
+</div>
+
+<!-- ═══════════ LOJAS ═══════════ -->
+<div class="page" id="page-lojas">
   <div class="card">
-    <h2>Loja / Empresa <span class="hint">aparece no cabeçalho da impressão e do Excel</span></h2>
-    <div class="flex" style="flex-direction:column; align-items:flex-start; gap:8px">
-      <label class="flex">Empresa <input type="text" id="c-empresa" size="40" onchange="saveMeta()"></label>
-      <label class="flex">Loja <input type="text" id="c-loja" size="30" onchange="saveMeta()"></label>
-      <label class="flex">NIF <input type="text" id="c-nif" size="15" onchange="saveMeta()"></label>
+    <h2>Lojas <span class="hint">cada loja tem a sua equipa, turnos, mínimos e horários</span></h2>
+    <div style="overflow-x:auto"><table class="tbl" id="lojas-tbl"></table></div>
+    <div class="flex" style="margin-top:12px">
+      <button class="btn primary" onclick="addLoja()">+ Nova loja</button>
+      <button class="btn" onclick="dupLoja()">⧉ Duplicar loja actual (equipa e regras)</button>
     </div>
   </div>
   <div class="card">
-    <h2>Dados <span class="hint">tudo é guardado localmente neste browser</span></h2>
+    <h2>Empresa <span class="hint">cabeçalho oficial do mapa impresso</span></h2>
+    <div class="flex" style="flex-direction:column; align-items:flex-start; gap:8px">
+      <label class="flex">Empresa <input type="text" id="c-empresa" size="45" onchange="saveEmpresa()"></label>
+      <label class="flex">Morada <input type="text" id="c-morada" size="45" onchange="saveEmpresa()"></label>
+      <label class="flex">IRCT <input type="text" id="c-irct" size="45" onchange="saveEmpresa()"></label>
+      <label class="flex">CAE <input type="text" id="c-cae" size="45" onchange="saveEmpresa()"></label>
+      <label class="flex">NIF <input type="text" id="c-nif" size="15" onchange="saveEmpresa()"></label>
+      <label class="flex">Actividade <input type="text" id="c-activ" size="30" onchange="saveEmpresa()"></label>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Dados <span class="hint">tudo é guardado localmente neste browser — faz backups regulares</span></h2>
     <div class="flex">
       <button class="btn" onclick="exportJSON()">⬇ Backup (JSON)</button>
       <button class="btn" onclick="document.getElementById('imp-json').click()">⬆ Restaurar backup</button>
@@ -297,55 +394,95 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 <script>
 'use strict';
 /* ══════════════════════ ESTADO ══════════════════════ */
-const LSKEY = 'despomar_horarios_v1';
+const LSKEY = 'despomar_horarios_v2';
+const LSKEY_V1 = 'despomar_horarios_v1';
 const DWS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const DWL = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const ABS_TIPOS = { FR:'Férias', BX:'Baixa', AV:'Aniversário', DCOMP:'Dia de Compensação' };
 
-function defaultState(){
+function defaultShifts(){
+  return [
+    { code:'V-F',   label:'10h-19h', tipo:'M', horas:8, ativo:true },
+    { code:'VIII-J',label:'12h-21h', tipo:'I', horas:8, ativo:false },
+    { code:'IX-L',  label:'13h-22h', tipo:'I', horas:8, ativo:true },
+    { code:'XII-L', label:'15h-00h', tipo:'N', horas:8, ativo:true },
+  ];
+}
+function defaultRegras(){ return { folgasJuntas:true, folgaTroca:true, gerenteManha:true, folgasSemana:2, domFolgaMin:1 }; }
+function novaLoja(nome){
   return {
-    meta: { empresa:'DESPOMAR, SA', loja:'ESS LAGOS', nif:'501823646' },
-    shifts: [
-      { code:'V-F',   label:'10h-19h', tipo:'M', horas:8, ativo:true },
-      { code:'VIII-J',label:'12h-21h', tipo:'I', horas:8, ativo:false },
-      { code:'IX-L',  label:'13h-22h', tipo:'I', horas:8, ativo:true },
-      { code:'XII-L', label:'15h-00h', tipo:'N', horas:8, ativo:true },
-    ],
-    // mínimos por dia da semana, índice 0=Dom … 6=Sáb
-    minM: [3,4,4,4,4,4,4],
-    minI: [0,0,0,0,0,0,0],
-    minN: [3,4,4,4,4,4,4],
-    regras: { folgasJuntas:true, folgaTroca:true, gerenteManha:true, folgasSemana:2, domFolgaMin:1 },
-    staff: [
-      { id:'s1',  nome:'Bruno Sobreiro',     gerente:true,  padA:null,  padB:null },
-      { id:'s2',  nome:'Inés Zambujo',       gerente:false, padA:[5,6], padB:[3,0] },
-      { id:'s3',  nome:'Mariana Figueiredo', gerente:false, padA:[1,6], padB:[3,0] },
-      { id:'s4',  nome:'Ana Hernández',      gerente:false, padA:[1,5], padB:[2,0] },
-      { id:'s5',  nome:'Miguel Reis',        gerente:false, padA:[3,4], padB:[2,6] },
-      { id:'s6',  nome:'Miguel Dias',        gerente:false, padA:null,  padB:null },
-      { id:'s7',  nome:'Salvador Glória',    gerente:false, padA:null,  padB:null },
-      { id:'s8',  nome:'Inês Coelho',        gerente:false, padA:[1,6], padB:[3,0] },
-      { id:'s9',  nome:'Adriana Sampaio',    gerente:false, padA:[1,5], padB:[2,0] },
-      { id:'s10', nome:'Alexandre Duarte',   gerente:false, padA:[3,4], padB:[2,6] },
-      { id:'s11', nome:'Rui Marreiros',      gerente:false, padA:null,  padB:null },
-      { id:'s12', nome:'Lucas Vaz',          gerente:false, padA:null,  padB:null },
-    ],
-    ausencias: [], // {staffId, tipo, inicio:'YYYY-MM-DD', fim:'YYYY-MM-DD'}
-    feriados: [],  // {data:'YYYY-MM-DD', nome}
-    meses: {},     // 'YYYY-MM' -> { staffId: { day(int): code } }
+    id: 'l' + Date.now() + Math.floor(Math.random()*1000),
+    nome, morada:'',
+    shifts: defaultShifts(),
+    minM: [3,4,4,4,4,4,4], minI: [0,0,0,0,0,0,0], minN: [3,4,4,4,4,4,4],
+    regras: defaultRegras(),
+    staff: [], ausencias: [], pedidos: [], meses: {},
+  };
+}
+function defaultState(){
+  const ess = novaLoja('ESS LAGOS');
+  ess.morada = 'Praça Gil Eanes, 25';
+  ess.staff = [
+    { id:'s1',  nome:'Bruno Sobreiro',     gerente:true,  padA:null,  padB:null },
+    { id:'s2',  nome:'Inés Zambujo',       gerente:false, padA:[5,6], padB:[3,0] },
+    { id:'s3',  nome:'Mariana Figueiredo', gerente:false, padA:[1,6], padB:[3,0] },
+    { id:'s4',  nome:'Ana Hernández',      gerente:false, padA:[1,5], padB:[2,0] },
+    { id:'s5',  nome:'Miguel Reis',        gerente:false, padA:[3,4], padB:[2,6] },
+    { id:'s6',  nome:'Miguel Dias',        gerente:false, padA:null,  padB:null },
+    { id:'s7',  nome:'Salvador Glória',    gerente:false, padA:null,  padB:null },
+    { id:'s8',  nome:'Inês Coelho',        gerente:false, padA:[1,6], padB:[3,0] },
+    { id:'s9',  nome:'Adriana Sampaio',    gerente:false, padA:[1,5], padB:[2,0] },
+    { id:'s10', nome:'Alexandre Duarte',   gerente:false, padA:[3,4], padB:[2,6] },
+    { id:'s11', nome:'Rui Marreiros',      gerente:false, padA:null,  padB:null },
+    { id:'s12', nome:'Lucas Vaz',          gerente:false, padA:null,  padB:null },
+  ];
+  return {
+    empresa: {
+      nome:'DESPOMAR, SA',
+      morada:'Av. São Sebastião 36-B',
+      irct:'IRCT - CCT entre a APED - Associação Portuguesa de Empresas de Distribuição',
+      cae:'CAE: 47640 – Comércio a retalho de artigos de desporto',
+      nif:'501823646',
+      atividade:'Comércio e Retalho',
+    },
+    feriados: [], // {data, nome, lojaId:'' = todas}
+    lojas: [ess],
+    lojaAtual: ess.id,
   };
 }
 
 let S = load();
 function load(){
-  try { const raw = localStorage.getItem(LSKEY); if (raw) return JSON.parse(raw); } catch(e){}
+  try {
+    const raw = localStorage.getItem(LSKEY);
+    if (raw) return JSON.parse(raw);
+    // migração da v1 (uma loja só)
+    const v1 = localStorage.getItem(LSKEY_V1);
+    if (v1){
+      const o = JSON.parse(v1);
+      const st = defaultState();
+      const l = st.lojas[0];
+      if (o.meta){ st.empresa.nome = o.meta.empresa || st.empresa.nome; st.empresa.nif = o.meta.nif || st.empresa.nif; l.nome = o.meta.loja || l.nome; }
+      if (o.shifts) l.shifts = o.shifts;
+      if (o.minM) l.minM = o.minM; if (o.minI) l.minI = o.minI; if (o.minN) l.minN = o.minN;
+      if (o.regras) l.regras = Object.assign(defaultRegras(), o.regras);
+      if (o.staff) l.staff = o.staff;
+      if (o.ausencias) l.ausencias = o.ausencias.map(a => ({staffId:a.staffId, tipo:a.tipo, inicio:a.inicio, fim:a.fim}));
+      if (o.meses) l.meses = o.meses;
+      if (o.feriados) st.feriados = o.feriados.map(f => ({data:f.data, nome:f.nome, lojaId:''}));
+      return st;
+    }
+  } catch(e){}
   return defaultState();
 }
 function save(){ localStorage.setItem(LSKEY, JSON.stringify(S)); }
+function L(){ return S.lojas.find(l => l.id === S.lojaAtual) || S.lojas[0]; }
 
 /* ══════════════════════ HELPERS ══════════════════════ */
 const pad2 = n => String(n).padStart(2,'0');
-function ymSel(){ return document.getElementById('mes').value; } // 'YYYY-MM'
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+function ymSel(){ return document.getElementById('mes').value; }
 function ymParts(){ const [y,m] = ymSel().split('-').map(Number); return {y, m}; }
 function daysInMonth(y,m){ return new Date(y, m, 0).getDate(); }
 function dow(y,m,d){ return new Date(y, m-1, d).getDay(); }
@@ -357,104 +494,163 @@ function isoWeek(y,m,d){
   const firstThu = new Date(Date.UTC(dt.getUTCFullYear(),0,4));
   return 1 + Math.round(((dt - firstThu)/86400000 - 3 + ((firstThu.getUTCDay()+6)%7))/7);
 }
-function feriadoNome(y,m,d){
+// feriados nacionais portugueses — automáticos para qualquer ano
+// (algoritmo de Butcher para a Páscoa; Sexta-feira Santa = -2, Corpo de Deus = +60)
+function easterMD(y){
+  const a=y%19, b=Math.floor(y/100), c=y%100, dd=Math.floor(b/4), e=b%4,
+    f=Math.floor((b+8)/25), g=Math.floor((b-f+1)/3), h=(19*a+b-dd-g+15)%30,
+    i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7, mm=Math.floor((a+11*h+22*l)/451);
+  return { m: Math.floor((h+l-7*mm+114)/31), d: ((h+l-7*mm+114)%31)+1 };
+}
+const _ferNacCache = {};
+function feriadosNacionais(y){
+  if (_ferNacCache[y]) return _ferNacCache[y];
+  const lst = [
+    [1,1,'Ano Novo'],[4,25,'Dia da Liberdade'],[5,1,'Dia do Trabalhador'],
+    [6,10,'Dia de Portugal'],[8,15,'Assunção de Nossa Senhora'],[10,5,'Implantação da República'],
+    [11,1,'Dia de Todos os Santos'],[12,1,'Restauração da Independência'],
+    [12,8,'Imaculada Conceição'],[12,25,'Natal'],
+  ].map(([m,d,nome]) => ({data: dateStr(y,m,d), nome}));
+  const e = easterMD(y);
+  const pascoa = new Date(y, e.m-1, e.d);
+  const off = days => { const dt = new Date(pascoa); dt.setDate(dt.getDate()+days); return dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate()); };
+  lst.push({data: off(-2), nome:'Sexta-feira Santa'});
+  lst.push({data: off(0),  nome:'Páscoa'});
+  lst.push({data: off(60), nome:'Corpo de Deus'});
+  _ferNacCache[y] = lst;
+  return lst;
+}
+function feriadoNome(loja,y,m,d){
   const ds = dateStr(y,m,d);
-  const f = S.feriados.find(f => f.data === ds);
+  const nac = feriadosNacionais(y).find(f => f.data === ds);
+  if (nac) return nac.nome;
+  const f = S.feriados.find(f => f.data === ds && (!f.lojaId || f.lojaId === loja.id));
   return f ? f.nome : null;
 }
-function absOn(staffId, y, m, d){
+function absOn(loja, staffId, y, m, d){
   const ds = dateStr(y,m,d);
-  const a = S.ausencias.find(a => a.staffId===staffId && a.inicio<=ds && ds<=a.fim);
+  const a = loja.ausencias.find(a => a.staffId===staffId && a.inicio<=ds && ds<=a.fim);
   return a ? a.tipo : null;
 }
-function shiftByCode(code){ return S.shifts.find(s => s.code===code); }
-function tipoOf(code){
+function pedidoOn(loja, staffId, y, m, d){
+  const ds = dateStr(y,m,d);
+  return loja.pedidos.some(p => p.staffId===staffId && p.data===ds);
+}
+function shiftByCode(loja, code){ return loja.shifts.find(s => s.code===code); }
+function tipoOf(loja, code){
   if (!code) return null;
-  if (['DO','DC'].includes(code)) return 'F';
+  if (code==='DO' || code==='DC') return 'F';
   if (ABS_TIPOS[code]) return 'A';
-  const s = shiftByCode(code);
+  const s = shiftByCode(loja, code);
   return s ? s.tipo : null;
 }
-function primShift(tipo){ const s = S.shifts.find(s => s.ativo && s.tipo===tipo); return s ? s.code : null; }
-function grid(){ const ym = ymSel(); if (!S.meses[ym]) S.meses[ym] = {}; return S.meses[ym]; }
+function primShift(loja, tipo){ const s = loja.shifts.find(s => s.ativo && s.tipo===tipo); return s ? s.code : null; }
+function gridOf(loja, ym){ if (!loja.meses[ym]) loja.meses[ym] = {}; return loja.meses[ym]; }
 function cellGet(g, sid, d){ return (g[sid] && g[sid][d]) || ''; }
 function cellSet(g, sid, d, v){ if (!g[sid]) g[sid] = {}; if (v) g[sid][d] = v; else delete g[sid][d]; }
+function mesVazio(loja, ym){
+  const g = loja.meses[ym];
+  return !g || !Object.keys(g).some(sid => Object.keys(g[sid]).length);
+}
 
-// semanas do mês (Seg–Dom), com dias parciais: devolve arrays de dias do mês
 function weeksOf(y,m){
   const n = daysInMonth(y,m), weeks = [];
   let cur = [];
   for (let d=1; d<=n; d++){
     cur.push(d);
-    if (dow(y,m,d) === 0){ weeks.push(cur); cur = []; } // fecha semana ao domingo
+    if (dow(y,m,d) === 0){ weeks.push(cur); cur = []; }
   }
   if (cur.length) weeks.push(cur);
   return weeks;
 }
-// nº de folgas devidas numa semana (parcial ou com ausências)
-// semanas parciais no início/fim do mês pedem menos folgas — a outra parte
-// da semana pertence ao mês anterior/seguinte
-function folgasDevidas(diasUteis){
-  const t = S.regras.folgasSemana;
+// nº de folgas devidas numa semana — semanas parciais no início/fim do mês
+// pedem menos (a outra parte da semana pertence ao mês anterior/seguinte)
+function folgasDevidas(loja, diasUteis){
+  const t = loja.regras.folgasSemana;
   if (diasUteis >= 6) return t;
   if (diasUteis >= 3) return Math.min(t, 1);
   return 0;
 }
 
 /* ══════════════════════ GERADOR ══════════════════════ */
-// RNG com seed — permite tentar várias variações e ficar com a melhor
 function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 let RND = () => 0;
 
-function gerarClick(){
-  const g = grid();
-  const temDados = Object.keys(g).some(sid => Object.keys(g[sid]).length);
-  if (temDados && !confirm('O mês já tem dados. Gerar de novo substitui tudo (excepto ausências). Continuar?')) return;
-  const ym = ymSel();
+// corre várias tentativas e fica com a melhor
+function gerarMelhor(loja, y, m){
+  const ym = y+'-'+pad2(m);
   let best = null, bestErr = Infinity;
   for (let i=0; i<30; i++){
     RND = i===0 ? (() => 0) : mulberry32(i*7919+13);
-    gerarHorario();
-    const v = validar();
+    gerarHorario(loja, y, m);
+    const v = validar(loja, y, m);
     const err = v.viols.filter(x=>x.sev==='err').length*10 + v.viols.length;
-    if (err < bestErr){ bestErr = err; best = JSON.stringify(S.meses[ym]); if (err===0) break; }
+    if (err < bestErr){ bestErr = err; best = JSON.stringify(loja.meses[ym]); if (err===0) break; }
   }
-  S.meses[ym] = JSON.parse(best);
+  loja.meses[ym] = JSON.parse(best);
   RND = () => 0;
+}
+
+function gerarClick(){
+  const {y, m} = ymParts();
+  const loja = L();
+  if (!loja.staff.length) return alert('Esta loja não tem colaboradores — adiciona-os no separador Equipa.');
+  if (!mesVazio(loja, ymSel()) && !confirm('O mês já tem dados. Gerar de novo substitui tudo (excepto ausências e pedidos). Continuar?')) return;
+  gerarMelhor(loja, y, m);
   save();
   renderGrid();
 }
 
-function gerarHorario(){
+function gerarTodas(){
   const {y, m} = ymParts();
-  const n = daysInMonth(y,m);
-  const ym = ymSel();
-  const g = {}; S.meses[ym] = g;
-  const staff = S.staff;
-  const weeks = weeksOf(y,m);
+  const comDados = S.lojas.filter(l => l.staff.length && !mesVazio(l, ymSel()));
+  if (comDados.length && !confirm(`${comDados.length} loja(s) já têm horário em ${MESES[m-1]}. Gerar de novo substitui tudo. Continuar?`)) return;
+  for (const loja of S.lojas){
+    if (loja.staff.length) gerarMelhor(loja, y, m);
+  }
+  save();
+  renderAll();
+}
 
-  // 1 ─ ausências
+function gerarHorario(loja, y, m){
+  const n = daysInMonth(y,m);
+  const ym = y+'-'+pad2(m);
+  const g = {}; loja.meses[ym] = g;
+  const staff = loja.staff;
+  const weeks = weeksOf(y,m);
+  const R = loja.regras;
+
+  // 1 ─ ausências (férias, baixas…)
   for (const st of staff)
     for (let d=1; d<=n; d++){
-      const a = absOn(st.id, y, m, d);
+      const a = absOn(loja, st.id, y, m, d);
       if (a) cellSet(g, st.id, d, a);
     }
 
-  // 2 ─ folgas
-  const domingos = []; for (let d=1; d<=n; d++) if (dow(y,m,d)===0) domingos.push(d);
   const domFolgas = {}; staff.forEach(st => domFolgas[st.id] = 0);
-  const lastPair = {}; // rotação: evitar repetir os mesmos dias de folga
-  const minTot = i => S.minM[i] + S.minI[i] + S.minN[i];
-  const folgasNoDia = d => staff.reduce((c,st) => c + (tipoOf(cellGet(g,st.id,d))==='F' ? 1 : 0), 0);
+
+  // 2 ─ folgas pedidas: colocadas primeiro, como compromisso
+  for (const st of staff)
+    for (let d=1; d<=n; d++)
+      if (pedidoOn(loja, st.id, y, m, d) && !cellGet(g, st.id, d)){
+        cellSet(g, st.id, d, dow(y,m,d)===0 ? 'DO' : 'DC');
+        if (dow(y,m,d)===0) domFolgas[st.id]++;
+      }
+
+  // 3 ─ folgas semanais
+  const lastPair = {};
+  const minTot = i => loja.minM[i] + loja.minI[i] + loja.minN[i];
+  const folgasNoDia = d => staff.reduce((c,st) => c + (tipoOf(loja, cellGet(g,st.id,d))==='F' ? 1 : 0), 0);
   const disponiveis = d => staff.reduce((c,st) => c + (ABS_TIPOS[cellGet(g,st.id,d)] ? 0 : 1), 0);
 
   weeks.forEach((week, wi) => {
-    // ordem rotativa para justiça na escolha
     const ordem = staff.slice(); for (let k=0; k<wi; k++) ordem.push(ordem.shift());
     for (const st of ordem){
-      const livres = week.filter(d => !cellGet(g, st.id, d));
-      const devidas = folgasDevidas(livres.length);
+      const uteis = week.filter(d => !ABS_TIPOS[cellGet(g,st.id,d)]);
+      const jaTem = week.filter(d => tipoOf(loja, cellGet(g,st.id,d))==='F').length;
+      const devidas = Math.max(0, folgasDevidas(loja, uteis.length) - jaTem);
       if (!devidas) continue;
+      const livres = week.filter(d => !cellGet(g, st.id, d));
 
       // padrão fixo: alterna A/B pela paridade da semana ISO
       if (st.padA && st.padB){
@@ -464,16 +660,15 @@ function gerarHorario(){
         for (const wd of pat){
           const d = week.find(d => dow(y,m,d)===wd && !cellGet(g,st.id,d));
           if (d !== undefined && usadas < devidas){
-            cellSet(g, st.id, d, usadas===0 ? 'DO' : 'DC');
+            cellSet(g, st.id, d, usadas===0 && jaTem===0 ? 'DO' : 'DC');
             if (dow(y,m,d)===0) domFolgas[st.id]++;
             usadas++;
           }
         }
-        // completa se o padrão caiu fora do mês
         while (usadas < devidas){
           const d = livres.find(d => !cellGet(g,st.id,d));
           if (d === undefined) break;
-          cellSet(g, st.id, d, usadas===0 ? 'DO' : 'DC');
+          cellSet(g, st.id, d, usadas===0 && jaTem===0 ? 'DO' : 'DC');
           if (dow(y,m,d)===0) domFolgas[st.id]++;
           usadas++;
         }
@@ -481,9 +676,8 @@ function gerarHorario(){
       }
 
       // automático: escolhe par (ou dia único)
-      const domRestantes = week.filter(d => dow(y,m,d)===0).length +
-        weeks.slice(wi+1).flat().filter(d => dow(y,m,d)===0).length;
-      const precisaDom = domFolgas[st.id] < S.regras.domFolgaMin && domRestantes <= (S.regras.domFolgaMin - domFolgas[st.id]) * 2;
+      const domRestantes = weeks.slice(wi).flat().filter(d => dow(y,m,d)===0).length;
+      const precisaDom = domFolgas[st.id] < R.domFolgaMin && domRestantes <= (R.domFolgaMin - domFolgas[st.id]) * 2;
 
       let candidatos = [];
       if (devidas === 2){
@@ -496,26 +690,26 @@ function gerarHorario(){
       for (const par of candidatos){
         let sc = 0;
         const seguidos = par.length===2 && par[1]-par[0]===1;
-        if (S.regras.folgasJuntas && par.length===2 && !seguidos) sc += 50;
+        if (R.folgasJuntas && par.length===2 && !seguidos) sc += 50;
         const temDom = par.some(d => dow(y,m,d)===0);
         if (precisaDom && !temDom) sc += 200;
-        if (!precisaDom && temDom && domFolgas[st.id] >= S.regras.domFolgaMin) sc += 15; // não gastar domingos à toa
+        if (!precisaDom && temDom && domFolgas[st.id] >= R.domFolgaMin) sc += 15;
         for (const d of par){
           const idx = dow(y,m,d);
           const cap = disponiveis(d) - minTot(idx);
           const jaFolgam = folgasNoDia(d);
-          if (jaFolgam >= cap) sc += 100 + (jaFolgam-cap)*40; // dia sem margem
+          if (jaFolgam >= cap) sc += 100 + (jaFolgam-cap)*40;
           else sc += jaFolgam * 6;
-          if (lastPair[st.id] && lastPair[st.id].includes(idx)) sc += 10; // variar dias
+          if (lastPair[st.id] && lastPair[st.id].includes(idx)) sc += 10;
         }
-        sc += RND() * 8; // variação entre tentativas
+        sc += RND() * 8;
         if (sc < bestScore){ bestScore = sc; best = par; }
       }
       if (best){
         best.sort((a,b)=>a-b);
         const domIdx = best.findIndex(d => dow(y,m,d)===0);
         best.forEach((d,i) => {
-          const isDO = domIdx>=0 ? i===domIdx : i===0;
+          const isDO = jaTem===0 && (domIdx>=0 ? i===domIdx : i===0);
           cellSet(g, st.id, d, isDO ? 'DO' : 'DC');
           if (dow(y,m,d)===0) domFolgas[st.id]++;
         });
@@ -524,14 +718,15 @@ function gerarHorario(){
     }
   });
 
-  // 3 ─ blocos de trabalho → turnos
+  // 4 ─ blocos de trabalho → turnos (bloco = dias seguidos entre folgas,
+  //     todos com o mesmo turno ⇒ nunca há troca de turno sem folga)
   const cM = Array(n+1).fill(0), cI = Array(n+1).fill(0), cN = Array(n+1).fill(0);
-  const tipos = ['M','I','N'].filter(t => primShift(t) &&
-    (t!=='I' || S.minI.some(v=>v>0))); // I só se tiver mínimos (senão fica para edição manual)
+  const tipos = ['M','I','N'].filter(t => primShift(loja, t) &&
+    (t!=='I' || loja.minI.some(v=>v>0)));
+  if (!tipos.length) return;
   const stTot = {}; staff.forEach(st => stTot[st.id] = {M:0,I:0,N:0});
   const stTemM = {}; staff.forEach(st => stTemM[st.id] = false);
 
-  // constrói blocos (runs de dias livres consecutivos)
   const blocos = [];
   for (const st of staff){
     let run = [];
@@ -543,63 +738,100 @@ function gerarHorario(){
   }
   blocos.sort((a,b) => a.dias[0]-b.dias[0]);
 
-  const cnt = {M:cM, I:cI, N:cN}, minT = {M:S.minM, I:S.minI, N:S.minN};
+  const cnt = {M:cM, I:cI, N:cN}, minT = {M:loja.minM, I:loja.minI, N:loja.minN};
   function scoreBloco(b, t){
     let sc = 0;
     for (const d of b.dias){
       const idx = dow(y,m,d);
       const falta = minT[t][idx] - cnt[t][d];
-      if (falta > 0) sc -= 12;           // ajuda a cobrir mínimo
-      else sc += 3;                       // excesso
-      // penaliza deixar OUTRO tipo descoberto
+      if (falta > 0) sc -= 12;
+      else sc += 3;
       for (const o of tipos) if (o!==t){
         const faltaO = minT[o][idx] - cnt[o][d];
         if (faltaO > 0) sc += 6;
       }
     }
-    sc += stTot[b.st.id][t] * 2;          // equilíbrio mensal M/N por pessoa
-    if (S.regras.gerenteManha && b.st.gerente && !stTemM[b.st.id] && t==='M') sc -= 8;
-    sc += RND() * 6;                      // variação entre tentativas
+    sc += stTot[b.st.id][t] * 2;
+    if (R.gerenteManha && b.st.gerente && !stTemM[b.st.id] && t==='M') sc -= 8;
+    sc += RND() * 6;
     return sc;
   }
   for (const b of blocos){
     let best = tipos[0], bestSc = Infinity;
     for (const t of tipos){ const sc = scoreBloco(b, t); if (sc < bestSc){ bestSc = sc; best = t; } }
     b.tipo = best;
-    for (const d of b.dias){ cnt[best][d]++; cellSet(g, b.st.id, d, primShift(best)); }
+    for (const d of b.dias){ cnt[best][d]++; cellSet(g, b.st.id, d, primShift(loja, best)); }
     stTot[b.st.id][best] += b.dias.length;
     if (best==='M') stTemM[b.st.id] = true;
   }
 
-  // 3b ─ gerente sem manhãs: força o bloco mais pequeno para M
-  if (S.regras.gerenteManha){
+  // 4b ─ gerente sem manhãs: força o bloco mais pequeno para M
+  if (R.gerenteManha){
     for (const st of staff.filter(s => s.gerente)){
       if (stTemM[st.id]) continue;
-      const meus = blocos.filter(b => b.st.id===st.id && b.tipo!=='M').sort((a,b)=>a.dias.length-b.dias.length);
+      const meus = blocos.filter(b => b.st.id===st.id && b.tipo && b.tipo!=='M').sort((a,b)=>a.dias.length-b.dias.length);
       if (meus.length){
         const b = meus[0];
-        for (const d of b.dias){ cnt[b.tipo][d]--; cnt.M[d]++; cellSet(g, st.id, d, primShift('M')); }
+        for (const d of b.dias){ cnt[b.tipo][d]--; cnt.M[d]++; cellSet(g, st.id, d, primShift(loja,'M')); }
         b.tipo = 'M';
       }
     }
   }
 
-  // 4 ─ reparação: dias abaixo do mínimo → troca blocos com folga no outro tipo
+  // 5 ─ reparação: dias abaixo do mínimo → troca blocos com folga no outro tipo
   for (let pass=0; pass<4; pass++){
     let mudou = false;
     for (let d=1; d<=n; d++){
       const idx = dow(y,m,d);
       for (const t of tipos){
         while (cnt[t][d] < minT[t][idx]){
-          // procura bloco que cubra o dia d, de outro tipo, cuja troca não crie défice
           const cand = blocos.filter(b => b.tipo && b.tipo!==t && b.dias.includes(d) &&
             b.dias.every(dd => cnt[b.tipo][dd] - 1 >= minT[b.tipo][dow(y,m,dd)] ||
                                minT[b.tipo][dow(y,m,dd)] === 0))
             .sort((a,b) => a.dias.length - b.dias.length);
           if (!cand.length) break;
           const b = cand[0];
-          for (const dd of b.dias){ cnt[b.tipo][dd]--; cnt[t][dd]++; cellSet(g, b.st.id, dd, primShift(t)); }
+          for (const dd of b.dias){ cnt[b.tipo][dd]--; cnt[t][dd]++; cellSet(g, b.st.id, dd, primShift(loja, t)); }
           b.tipo = t; mudou = true;
+        }
+      }
+    }
+    if (!mudou) break;
+  }
+
+  // 5b ─ reparação por troca de folga: dia em défice recebe alguém que estava
+  //      de folga; a folga muda para um dia da mesma semana com excedente
+  const tipoDia = (sid, d) => tipoOf(loja, cellGet(g, sid, d));
+  const domFolgasDe = sid => { let c=0; for (let d=1;d<=n;d++) if (dow(y,m,d)===0 && (tipoDia(sid,d)==='F'||tipoDia(sid,d)==='A')) c++; return c; };
+  for (let pass=0; pass<3; pass++){
+    let mudou = false;
+    for (let d=1; d<=n; d++){
+      const idx = dow(y,m,d);
+      for (const t of tipos){
+        while (cnt[t][d] < minT[t][idx]){
+          let done = false;
+          for (const st of staff){
+            const cd = cellGet(g, st.id, d);
+            if (cd!=='DC' && cd!=='DO') continue;
+            if (pedidoOn(loja, st.id, y, m, d)) continue;
+            if (st.padA && st.padB) continue;                  // não mexer em padrões fixos
+            if (dow(y,m,d)===0 && domFolgasDe(st.id) <= R.domFolgaMin) continue; // não roubar o domingo de folga
+            // vizinhos têm de ser compatíveis com o tipo t (regra da troca de turno)
+            const okViz = v => !v || v==='F' || v==='A' || v===t;
+            if (R.folgaTroca && (!okViz(d>1?tipoDia(st.id,d-1):null) || !okViz(d<n?tipoDia(st.id,d+1):null))) continue;
+            const week = weeks.find(w => w.includes(d)) || [];
+            for (const d2 of week){
+              if (d2===d) continue;
+              const t2 = tipoDia(st.id, d2);
+              if (t2!=='M' && t2!=='I' && t2!=='N') continue;
+              if (cnt[t2][d2] - 1 < minT[t2][dow(y,m,d2)]) continue; // criaria défice em d2
+              cellSet(g, st.id, d, primShift(loja, t)); cnt[t][d]++;
+              cellSet(g, st.id, d2, cd); cnt[t2][d2]--;
+              done = true; mudou = true; break;
+            }
+            if (done) break;
+          }
+          if (!done) break;
         }
       }
     }
@@ -608,21 +840,22 @@ function gerarHorario(){
 }
 
 /* ══════════════════════ VALIDAÇÃO ══════════════════════ */
-function validar(){
-  const {y, m} = ymParts();
+function validar(loja, y, m){
   const n = daysInMonth(y,m);
-  const g = grid();
+  const ym = y+'-'+pad2(m);
+  const g = gridOf(loja, ym);
   const viols = [], cells = new Set(), days = new Set();
-  const staff = S.staff;
+  const staff = loja.staff;
+  const R = loja.regras;
 
   // mínimos diários
   for (let d=1; d<=n; d++){
     const idx = dow(y,m,d);
     let cM=0, cI=0, cN=0;
-    for (const st of staff){ const t = tipoOf(cellGet(g,st.id,d)); if(t==='M')cM++; else if(t==='I')cI++; else if(t==='N')cN++; }
-    const chk = [['M',cM,S.minM[idx]],['I',cI,S.minI[idx]],['N',cN,S.minN[idx]]];
+    for (const st of staff){ const t = tipoOf(loja, cellGet(g,st.id,d)); if(t==='M')cM++; else if(t==='I')cI++; else if(t==='N')cN++; }
+    const chk = [['M',cM,loja.minM[idx]],['I',cI,loja.minI[idx]],['N',cN,loja.minN[idx]]];
     for (const [t,c,min] of chk) if (c < min){
-      viols.push({sev:'err', msg:`Dia ${d} (${DWS[idx]}): só ${c} de ${t} (mínimo ${min})`});
+      viols.push({sev:'err', msg:`Dia ${d} (${DWS[idx]}): só ${c} de ${t} (mínimo ${min})`, dia:d});
       days.add(d+':'+t);
     }
   }
@@ -630,11 +863,11 @@ function validar(){
   // folgas por semana
   for (const week of weeksOf(y,m)){
     for (const st of staff){
-      const livres = week.filter(d => !ABS_TIPOS[cellGet(g,st.id,d)]);
-      const devidas = folgasDevidas(livres.length);
-      const folgas = week.filter(d => tipoOf(cellGet(g,st.id,d))==='F').length;
+      const uteis = week.filter(d => !ABS_TIPOS[cellGet(g,st.id,d)]);
+      const devidas = folgasDevidas(loja, uteis.length);
+      const folgas = week.filter(d => tipoOf(loja, cellGet(g,st.id,d))==='F').length;
       const preenchidos = week.filter(d => cellGet(g,st.id,d)).length;
-      if (preenchidos < week.length) continue; // semana incompleta, não avaliar
+      if (preenchidos < week.length) continue;
       if (folgas < devidas)
         viols.push({sev:'err', msg:`${st.nome}: só ${folgas} folga(s) na semana de ${week[0]} a ${week[week.length-1]} (devia ter ${devidas})`});
       else if (folgas > devidas + 1)
@@ -643,14 +876,14 @@ function validar(){
   }
 
   // troca de turno sem folga
-  if (S.regras.folgaTroca){
+  if (R.folgaTroca){
     for (const st of staff){
       let prev = null, prevD = 0;
       for (let d=1; d<=n; d++){
-        const code = cellGet(g,st.id,d), t = tipoOf(code);
+        const code = cellGet(g,st.id,d), t = tipoOf(loja, code);
         if (t==='M' || t==='I' || t==='N'){
           if (prev && prev!==t && d === prevD+1){
-            viols.push({sev:'err', msg:`${st.nome}: troca de turno ${prev}→${t} no dia ${d} sem folga entre`});
+            viols.push({sev:'err', msg:`${st.nome}: troca de turno ${prev}→${t} no dia ${d} sem folga entre`, dia:d});
             cells.add(st.id+':'+d);
           }
           prev = t; prevD = d;
@@ -660,10 +893,10 @@ function validar(){
   }
 
   // gerente sem manhã
-  if (S.regras.gerenteManha){
+  if (R.gerenteManha){
     for (const st of staff.filter(s=>s.gerente)){
       let tem = false, trabalhou = false;
-      for (let d=1; d<=n; d++){ const t = tipoOf(cellGet(g,st.id,d)); if (t==='M') tem=true; if (t==='M'||t==='I'||t==='N') trabalhou=true; }
+      for (let d=1; d<=n; d++){ const t = tipoOf(loja, cellGet(g,st.id,d)); if (t==='M') tem=true; if (t==='M'||t==='I'||t==='N') trabalhou=true; }
       if (trabalhou && !tem) viols.push({sev:'err', msg:`${st.nome} (gerente): sem nenhuma manhã este mês`});
     }
   }
@@ -673,50 +906,162 @@ function validar(){
     let domF = 0, domTrab = 0;
     for (let d=1; d<=n; d++){
       if (dow(y,m,d)!==0) continue;
-      const t = tipoOf(cellGet(g,st.id,d));
+      const t = tipoOf(loja, cellGet(g,st.id,d));
       if (t==='F' || t==='A') domF++;
       else if (t) domTrab++;
     }
-    if (domF + domTrab > 0 && domF < S.regras.domFolgaMin)
-      viols.push({sev:'warn', msg:`${st.nome}: só ${domF} domingo(s) de folga (mínimo ${S.regras.domFolgaMin})`});
+    if (domF + domTrab > 0 && domF < R.domFolgaMin)
+      viols.push({sev:'warn', msg:`${st.nome}: só ${domF} domingo(s) de folga (mínimo ${R.domFolgaMin})`});
+  }
+
+  // folgas pedidas não respeitadas
+  for (const p of loja.pedidos){
+    const [py,pm,pd] = p.data.split('-').map(Number);
+    if (py!==y || pm!==m) continue;
+    const st = staff.find(s=>s.id===p.staffId);
+    if (!st) continue;
+    const t = tipoOf(loja, cellGet(g, p.staffId, pd));
+    if (t && t!=='F' && t!=='A'){
+      viols.push({sev:'warn', msg:`${st.nome}: folga pedida a ${pd}/${m} não foi respeitada`, dia:pd});
+      cells.add(p.staffId+':'+pd);
+    }
   }
 
   return {viols, cells, days};
 }
 
-function validarClick(){ renderGrid(true); }
+/* ══════════════════════ RENDER: SUPERVISOR ══════════════════════ */
+function renderSup(){
+  const {y, m} = ymParts();
+  const n = daysInMonth(y,m);
+  const ym = ymSel();
+  document.getElementById('sup-mes-lbl').textContent = `${MESES[m-1]} ${y} · ${S.lojas.length} loja(s)`;
+
+  let totStaff = 0, lojasOk = 0, lojasErr = 0, lojasVazias = 0, totErr = 0, totWarn = 0;
+  let cards = '';
+
+  for (const loja of S.lojas){
+    totStaff += loja.staff.length;
+    const vazio = mesVazio(loja, ym);
+    let estado = 'off', badge = '<span class="badge off">sem horário</span>', v = {viols:[]};
+    if (!loja.staff.length){ badge = '<span class="badge off">sem equipa</span>'; lojasVazias++; }
+    else if (vazio){ lojasVazias++; }
+    else {
+      v = validar(loja, y, m);
+      const errs = v.viols.filter(x=>x.sev==='err').length;
+      const warns = v.viols.length - errs;
+      totErr += errs; totWarn += warns;
+      if (errs){ estado = 'err'; badge = `<span class="badge err">⛔ ${errs} erro(s)</span>`; lojasErr++; }
+      else if (warns){ estado = 'warn'; badge = `<span class="badge warn">⚠ ${warns} aviso(s)</span>`; lojasOk++; }
+      else { estado = 'ok'; badge = '<span class="badge ok">✅ OK</span>'; lojasOk++; }
+    }
+
+    // mini-heatmap por dia + totais M/I/N/F
+    let heat = '', tM=0, tI=0, tN=0, tF=0;
+    if (!vazio && loja.staff.length){
+      const g = gridOf(loja, ym);
+      const diasErr = new Set(v.viols.filter(x=>x.dia).map(x=>x.dia));
+      for (let d=1; d<=n; d++){
+        let dM=0,dI=0,dN=0;
+        for (const st of loja.staff){
+          const t = tipoOf(loja, cellGet(g,st.id,d));
+          if(t==='M'){dM++;tM++;} else if(t==='I'){dI++;tI++;} else if(t==='N'){dN++;tN++;} else if(t==='F')tF++;
+        }
+        heat += `<i class="${diasErr.has(d) ? 'bad' : 'ok'}" title="Dia ${d}: M${dM} I${dI} N${dN}"></i>`;
+      }
+    }
+
+    const violsHtml = v.viols.slice(0,4).map(x =>
+      `<div class="${x.sev==='err'?'e':'w'}">${x.sev==='err'?'⛔':'⚠'} ${esc(x.msg)}</div>`).join('') +
+      (v.viols.length>4 ? `<div class="w">… mais ${v.viols.length-4} no separador Horário</div>` : '');
+
+    cards += `<div class="sup-card ${estado==='off'?'':estado}">
+      <h3>${esc(loja.nome)} ${badge}</h3>
+      <div class="sub">${loja.staff.length} colaborador(es)${loja.morada ? ' · '+esc(loja.morada) : ''}</div>
+      ${heat ? `<div class="heat" style="grid-template-columns:repeat(${n},1fr)">${heat}</div>` : ''}
+      ${!vazio ? `<div class="sup-mini"><span>Manhãs <b>${tM}</b></span><span>Interm. <b>${tI}</b></span><span>Noites <b>${tN}</b></span><span>Folgas <b>${tF}</b></span></div>` : ''}
+      ${violsHtml ? `<div class="sup-viols">${violsHtml}</div>` : ''}
+      <div class="sup-actions">
+        <button class="btn small primary" onclick="verLoja('${loja.id}')">Ver horário</button>
+        ${loja.staff.length ? `<button class="btn small" onclick="gerarLojaSup('${loja.id}')">⚡ Gerar</button>` : `<button class="btn small" onclick="verEquipa('${loja.id}')">+ Equipa</button>`}
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('sup-strip').innerHTML = `
+    <div class="stat"><div class="v">${S.lojas.length}</div><div class="l">Lojas</div></div>
+    <div class="stat"><div class="v">${totStaff}</div><div class="l">Colaboradores</div></div>
+    <div class="stat"><div class="v ok">${lojasOk}</div><div class="l">Lojas validadas</div></div>
+    <div class="stat"><div class="v ${lojasErr?'bad':'ok'}">${lojasErr}</div><div class="l">Lojas com erros</div></div>
+    <div class="stat"><div class="v ${totErr?'bad':'ok'}">${totErr}</div><div class="l">Erros</div></div>
+    <div class="stat"><div class="v ${totWarn?'wrn':'ok'}">${totWarn}</div><div class="l">Avisos</div></div>
+    <div class="stat"><div class="v">${lojasVazias}</div><div class="l">Sem horário</div></div>`;
+  document.getElementById('sup-grid').innerHTML = cards;
+}
+function verLoja(id){ S.lojaAtual = id; save(); syncLojaSel(); goTab('horario'); renderAll(); }
+function verEquipa(id){ S.lojaAtual = id; save(); syncLojaSel(); goTab('equipa'); renderAll(); }
+function gerarLojaSup(id){
+  const {y, m} = ymParts();
+  const loja = S.lojas.find(l=>l.id===id);
+  if (!mesVazio(loja, ymSel()) && !confirm(`${loja.nome} já tem horário. Substituir?`)) return;
+  gerarMelhor(loja, y, m);
+  save(); renderSup();
+}
 
 /* ══════════════════════ RENDER: HORÁRIO ══════════════════════ */
-function renderGrid(comViols){
+function renderGrid(){
   const ymv = ymSel(); if (!ymv) return;
   const {y, m} = ymParts();
   const n = daysInMonth(y,m);
-  const g = grid();
-  const staff = S.staff;
-  const v = validar();
+  const loja = L();
+  const g = gridOf(loja, ymv);
+  const staff = loja.staff;
+  const v = validar(loja, y, m);
 
-  document.getElementById('print-head').textContent =
-    `${S.meta.empresa} · ${S.meta.loja} · NIF ${S.meta.nif} — MAPA DE HORÁRIO ${pad2(m)}/${y}`;
+  const E = S.empresa;
+  document.getElementById('print-head').innerHTML = `
+    <div class="ph-emp">${esc(E.nome)}</div>
+    <div class="ph-l">${esc(E.morada)}</div>
+    <div class="ph-l">${esc(E.irct)}</div>
+    <div class="ph-l">${esc(E.cae)}</div>
+    <div class="ph-map">MAPA DE HORÁRIO — ${MESES[m-1].toUpperCase()} ${y}</div>
+    <table><tr>
+      <td><b>Loja:</b> ${esc(loja.nome)}</td>
+      <td><b>Morada:</b> ${esc(loja.morada || '—')}</td>
+      <td><b>Actividade:</b> ${esc(E.atividade)}</td>
+      <td><b>NIF:</b> ${esc(E.nif)}</td>
+      <td><b>Início:</b> 01/${pad2(m)}/${y}</td>
+      <td><b>Fim:</b> ${pad2(n)}/${pad2(m)}/${y}</td>
+    </tr></table>`;
+
+  if (!staff.length){
+    document.getElementById('grid').innerHTML = '<div style="padding:30px;text-align:center" class="mut">Esta loja ainda não tem colaboradores — adiciona-os no separador 👥 Equipa.</div>';
+    document.getElementById('viols').innerHTML = '';
+    document.getElementById('resumo').innerHTML = '';
+    renderLegenda();
+    return;
+  }
 
   let h = '<table class="hgrid"><thead><tr><th style="text-align:left">Dia</th>';
-  for (const st of staff) h += `<th>${st.nome.split(' ')[0]}<br><span style="font-weight:400;color:var(--muted)">${st.nome.split(' ').slice(1).join(' ')}</span></th>`;
+  for (const st of staff) h += `<th>${esc(st.nome.split(' ')[0])}<br><span style="font-weight:400;color:var(--muted)">${esc(st.nome.split(' ').slice(1).join(' '))}</span></th>`;
   h += '<th>M</th><th>I</th><th>N</th><th>F</th><th>T</th></tr></thead><tbody>';
 
   for (let d=1; d<=n; d++){
     const idx = dow(y,m,d);
-    const fer = feriadoNome(y,m,d);
+    const fer = feriadoNome(loja,y,m,d);
     const cls = fer ? 'holiday' : (idx===0||idx===6 ? 'weekend' : '');
-    h += `<tr class="${cls}"><td class="day-lbl">${d} <span class="dw">${DWS[idx]}${fer ? ' · '+fer : ''}</span></td>`;
+    h += `<tr class="${cls}"><td class="day-lbl">${d} <span class="dw">${DWS[idx]}${fer ? ' · '+esc(fer) : ''}</span></td>`;
     let cM=0,cI=0,cN=0,cF=0;
     for (const st of staff){
       const code = cellGet(g, st.id, d);
-      const t = tipoOf(code);
+      const t = tipoOf(loja, code);
       if (t==='M')cM++; else if(t==='I')cI++; else if(t==='N')cN++; else if(t==='F')cF++;
       let cc = 'c-empty';
       if (t==='M'||t==='I'||t==='N') cc = 'c-'+t;
       else if (code) cc = 'c-'+code;
-      const bad = comViols!==false && v.cells.has(st.id+':'+d) ? ' viol' : '';
-      h += `<td class="cell ${cc}${bad}" onclick="openPop(event,'${st.id}',${d})">${code || '·'}</td>`;
+      const bad = v.cells.has(st.id+':'+d) ? ' viol' : '';
+      const ped = pedidoOn(loja, st.id, y, m, d) ? ' ped' : '';
+      h += `<td class="cell ${cc}${bad}${ped}" onclick="openPop(event,'${st.id}',${d})">${code || '·'}</td>`;
     }
     const badM = v.days.has(d+':M')?' bad':'', badI = v.days.has(d+':I')?' bad':'', badN = v.days.has(d+':N')?' bad':'';
     h += `<td class="cnt${badM}">${cM}</td><td class="cnt${badI}">${cI}</td><td class="cnt${badN}">${cN}</td><td class="cnt">${cF}</td><td class="cnt">${cM+cI+cN}</td></tr>`;
@@ -724,32 +1069,31 @@ function renderGrid(comViols){
   h += '</tbody></table>';
   document.getElementById('grid').innerHTML = h;
 
-  // violações
   const vh = v.viols.length
-    ? v.viols.map(x => `<div class="viol-item ${x.sev}">${x.sev==='err'?'⛔':'⚠️'} <span>${x.msg}</span></div>`).join('')
+    ? v.viols.map(x => `<div class="viol-item ${x.sev}">${x.sev==='err'?'⛔':'⚠️'} <span>${esc(x.msg)}</span></div>`).join('')
     : '<div class="viol-ok">✅ Sem violações de regras detectadas</div>';
   document.getElementById('viols').innerHTML =
     `<div style="margin:10px 0 6px;font-size:13px;color:var(--muted)">Validação (${v.viols.length} aviso(s))</div>` + vh;
 
-  renderResumo(y,m,n,g,staff);
+  renderResumo(loja,y,m,n,g,staff);
   renderLegenda();
 }
 
-function renderResumo(y,m,n,g,staff){
+function renderResumo(loja,y,m,n,g,staff){
   const rows = [['M','Manhãs'],['I','Intermédios'],['N','Noites'],['F','Folgas'],['DOM','Domingos trab.'],['FD','Folgas domingo'],['FR','Férias/Ausên.'],['DT','Dias trab.'],['H','Horas']];
   const st2 = {};
   for (const st of staff){
     const r = {M:0,I:0,N:0,F:0,DOM:0,FD:0,FR:0,DT:0,H:0};
     for (let d=1; d<=n; d++){
-      const code = cellGet(g,st.id,d), t = tipoOf(code);
-      if (t==='M'||t==='I'||t==='N'){ r[t]++; r.DT++; const sh = shiftByCode(code); r.H += sh ? (sh.horas||8) : 8; if (dow(y,m,d)===0) r.DOM++; }
+      const code = cellGet(g,st.id,d), t = tipoOf(loja, code);
+      if (t==='M'||t==='I'||t==='N'){ r[t]++; r.DT++; const sh = shiftByCode(loja, code); r.H += sh ? (sh.horas||8) : 8; if (dow(y,m,d)===0) r.DOM++; }
       else if (t==='F'){ r.F++; if (dow(y,m,d)===0) r.FD++; }
       else if (t==='A'){ r.FR++; if (dow(y,m,d)===0) r.FD++; }
     }
     st2[st.id] = r;
   }
   let h = '<table class="sum"><tr><th style="text-align:left"></th>';
-  for (const st of staff) h += `<th>${st.nome.split(' ')[0]}${st.gerente?' 👔':''}</th>`;
+  for (const st of staff) h += `<th>${esc(st.nome.split(' ')[0])}${st.gerente?' 👔':''}</th>`;
   h += '</tr>';
   for (const [k,lbl] of rows){
     h += `<tr><td class="lbl">${lbl}</td>`;
@@ -761,19 +1105,20 @@ function renderResumo(y,m,n,g,staff){
 }
 
 function renderLegenda(){
+  const loja = L();
   let h = '';
-  for (const s of S.shifts.filter(s=>s.ativo))
-    h += `<span class="tag c-${s.tipo}" style="padding:4px 10px">${s.code} — ${s.label} (${s.tipo})</span>`;
+  for (const s of loja.shifts.filter(s=>s.ativo))
+    h += `<span class="tag c-${s.tipo}" style="padding:4px 10px">${esc(s.code)} — ${esc(s.label)} (${s.tipo}, ${s.horas}h)</span>`;
   h += `<span class="tag c-DO" style="padding:4px 10px">DO — Descanso Obrigatório</span>`;
   h += `<span class="tag c-DC" style="padding:4px 10px">DC — Descanso Complementar</span>`;
-  for (const [k,v] of Object.entries(ABS_TIPOS))
-    h += `<span class="tag c-${k}" style="padding:4px 10px">${k} — ${v}</span>`;
+  for (const [k,vv] of Object.entries(ABS_TIPOS))
+    h += `<span class="tag c-${k}" style="padding:4px 10px">${k} — ${vv}</span>`;
   document.getElementById('legenda').innerHTML = h;
 }
 
 function limparMes(){
-  if (!confirm('Limpar todo o horário deste mês?')) return;
-  S.meses[ymSel()] = {};
+  if (!confirm('Limpar todo o horário deste mês nesta loja?')) return;
+  L().meses[ymSel()] = {};
   save(); renderGrid();
 }
 
@@ -782,10 +1127,11 @@ let popCtx = null;
 function openPop(ev, sid, d){
   ev.stopPropagation();
   popCtx = {sid, d};
+  const loja = L();
   const pop = document.getElementById('pop');
   let h = '';
-  for (const s of S.shifts.filter(s=>s.ativo))
-    h += `<button class="c-${s.tipo}" onclick="popSet('${s.code}')">${s.code}</button>`;
+  for (const s of loja.shifts.filter(s=>s.ativo))
+    h += `<button class="c-${s.tipo}" onclick="popSet('${esc(s.code)}')">${esc(s.code)}</button>`;
   h += `<button class="c-DO" onclick="popSet('DO')">DO</button>`;
   h += `<button class="c-DC" onclick="popSet('DC')">DC</button>`;
   for (const k of Object.keys(ABS_TIPOS))
@@ -798,7 +1144,7 @@ function openPop(ev, sid, d){
   pop.style.top = (r.bottom + scrollY + 4) + 'px';
 }
 function popSet(code){
-  if (popCtx){ cellSet(grid(), popCtx.sid, popCtx.d, code); save(); renderGrid(); }
+  if (popCtx){ cellSet(gridOf(L(), ymSel()), popCtx.sid, popCtx.d, code); save(); renderGrid(); }
   closePop();
 }
 function closePop(){ document.getElementById('pop').classList.remove('open'); popCtx = null; }
@@ -807,15 +1153,17 @@ document.addEventListener('click', e => { if (!e.target.closest('#pop')) closePo
 /* ══════════════════════ RENDER: EQUIPA ══════════════════════ */
 function padSel(sid, key, val){
   const opts = ['<option value="">—</option>'];
-  DWS.forEach((n,i) => opts.push(`<option value="${i}" ${val===i?'selected':''}>${n}</option>`));
+  DWS.forEach((nm,i) => opts.push(`<option value="${i}" ${val===i?'selected':''}>${nm}</option>`));
   return `<select onchange="setPad('${sid}','${key}',this.value)">${opts.join('')}</select>`;
 }
 function renderStaff(){
+  const loja = L();
+  document.getElementById('eq-loja-nome').textContent = loja.nome;
   let h = '<tr><th>Nome</th><th>Gerente</th><th>Padrão A</th><th>Padrão B</th><th></th></tr>';
-  for (const st of S.staff){
+  for (const st of loja.staff){
     h += `<tr>
-      <td><input type="text" value="${st.nome.replace(/"/g,'&quot;')}" onchange="S.staff.find(s=>s.id==='${st.id}').nome=this.value;save();renderAll()"></td>
-      <td><input type="checkbox" ${st.gerente?'checked':''} onchange="S.staff.find(s=>s.id==='${st.id}').gerente=this.checked;save()"> ${st.gerente?'<span class="tag ger">gerente</span>':''}</td>
+      <td><input type="text" value="${esc(st.nome)}" onchange="stField('${st.id}','nome',this.value)"></td>
+      <td><input type="checkbox" ${st.gerente?'checked':''} onchange="stField('${st.id}','gerente',this.checked)"> ${st.gerente?'<span class="tag ger">gerente</span>':''}</td>
       <td>${padSel(st.id,'A0',st.padA?st.padA[0]:null)} ${padSel(st.id,'A1',st.padA?st.padA[1]:null)}</td>
       <td>${padSel(st.id,'B0',st.padB?st.padB[0]:null)} ${padSel(st.id,'B1',st.padB?st.padB[1]:null)}</td>
       <td><button class="btn danger small" onclick="delStaff('${st.id}')">✕</button></td>
@@ -823,142 +1171,257 @@ function renderStaff(){
   }
   document.getElementById('staff-tbl').innerHTML = h;
 
-  const sel = document.getElementById('abs-staff');
-  sel.innerHTML = S.staff.map(st => `<option value="${st.id}">${st.nome}</option>`).join('');
+  const opts = loja.staff.map(st => `<option value="${st.id}">${esc(st.nome)}</option>`).join('');
+  document.getElementById('abs-staff').innerHTML = opts;
+  document.getElementById('ped-staff').innerHTML = opts;
   renderAbs();
+  renderPedidos();
+}
+function stField(sid, f, v){
+  const st = L().staff.find(s=>s.id===sid);
+  st[f] = v; save();
+  if (f==='gerente') renderStaff();
 }
 function setPad(sid, key, val){
-  const st = S.staff.find(s=>s.id===sid);
+  const st = L().staff.find(s=>s.id===sid);
   const arr = key[0]==='A' ? 'padA' : 'padB', idx = +key[1];
   if (val===''){ st[arr] = null; }
   else {
     if (!st[arr]) st[arr] = [1,0];
     st[arr][idx] = +val;
   }
-  // padrão só funciona com A e B completos
   save(); renderStaff();
 }
 function addStaff(){
   const nome = prompt('Nome do colaborador:'); if (!nome) return;
-  S.staff.push({ id:'s'+Date.now(), nome, gerente:false, padA:null, padB:null });
+  L().staff.push({ id:'s'+Date.now(), nome, gerente:false, padA:null, padB:null });
   save(); renderStaff();
 }
 function delStaff(sid){
-  const st = S.staff.find(s=>s.id===sid);
+  const loja = L();
+  const st = loja.staff.find(s=>s.id===sid);
   if (!confirm(`Remover ${st.nome}?`)) return;
-  S.staff = S.staff.filter(s=>s.id!==sid);
-  S.ausencias = S.ausencias.filter(a=>a.staffId!==sid);
+  loja.staff = loja.staff.filter(s=>s.id!==sid);
+  loja.ausencias = loja.ausencias.filter(a=>a.staffId!==sid);
+  loja.pedidos = loja.pedidos.filter(p=>p.staffId!==sid);
   save(); renderStaff();
 }
 function addAbs(){
+  const loja = L();
   const staffId = document.getElementById('abs-staff').value;
   const tipo = document.getElementById('abs-tipo').value;
   const inicio = document.getElementById('abs-ini').value;
   const fim = document.getElementById('abs-fim').value || inicio;
   if (!staffId || !inicio) return alert('Escolhe colaborador e data de início');
-  S.ausencias.push({staffId, tipo, inicio, fim});
+  loja.ausencias.push({staffId, tipo, inicio, fim});
   save(); renderAbs();
 }
 function renderAbs(){
-  const h = S.ausencias.map((a,i) => {
-    const st = S.staff.find(s=>s.id===a.staffId);
+  const loja = L();
+  const h = loja.ausencias.map((a,i) => {
+    const st = loja.staff.find(s=>s.id===a.staffId);
     return `<div class="abs-row"><span class="tag c-${a.tipo}" style="padding:3px 8px">${a.tipo}</span>
-      <b>${st ? st.nome : '?'}</b> <span class="mut">${a.inicio} → ${a.fim}</span>
-      <button class="btn danger small" onclick="S.ausencias.splice(${i},1);save();renderAbs()">✕</button></div>`;
+      <b>${st ? esc(st.nome) : '?'}</b> <span class="mut">${a.inicio} → ${a.fim}</span>
+      <button class="btn danger small" onclick="delAbs(${i})">✕</button></div>`;
   }).join('');
   document.getElementById('abs-list').innerHTML = h || '<div class="mut">Sem ausências registadas</div>';
 }
+function delAbs(i){ L().ausencias.splice(i,1); save(); renderAbs(); }
+function addPedido(){
+  const loja = L();
+  const staffId = document.getElementById('ped-staff').value;
+  const data = document.getElementById('ped-data').value;
+  if (!staffId || !data) return alert('Escolhe colaborador e data');
+  if (!loja.pedidos.some(p=>p.staffId===staffId && p.data===data))
+    loja.pedidos.push({staffId, data});
+  save(); renderPedidos();
+}
+function renderPedidos(){
+  const loja = L();
+  const byStaff = {};
+  loja.pedidos.forEach((p,i) => { (byStaff[p.staffId] = byStaff[p.staffId] || []).push({p,i}); });
+  let h = '';
+  for (const [sid, lst] of Object.entries(byStaff)){
+    const st = loja.staff.find(s=>s.id===sid);
+    h += `<div class="abs-row"><b>${st ? esc(st.nome) : '?'}</b> ` +
+      lst.sort((a,b)=>a.p.data<b.p.data?-1:1).map(({p,i}) =>
+        `<span class="chip">${p.data}<button onclick="delPedido(${i})">✕</button></span>`).join('') +
+      `</div>`;
+  }
+  document.getElementById('ped-list').innerHTML = h || '<div class="mut">Sem folgas pedidas</div>';
+}
+function delPedido(i){ L().pedidos.splice(i,1); save(); renderPedidos(); }
 
 /* ══════════════════════ RENDER: REGRAS ══════════════════════ */
 function renderRegras(){
-  // turnos
+  const loja = L();
+  document.getElementById('rg-loja-nome').textContent = loja.nome;
   let h = '<tr><th>Código</th><th>Horário</th><th>Tipo</th><th>Horas</th><th>Activo</th><th></th></tr>';
-  S.shifts.forEach((s,i) => {
+  loja.shifts.forEach((s,i) => {
     h += `<tr>
-      <td><input type="text" value="${s.code}" size="7" onchange="S.shifts[${i}].code=this.value;save();renderGrid()"></td>
-      <td><input type="text" value="${s.label}" size="9" onchange="S.shifts[${i}].label=this.value;save()"></td>
-      <td><select onchange="S.shifts[${i}].tipo=this.value;save();renderGrid()">
+      <td><input type="text" value="${esc(s.code)}" size="7" onchange="shField(${i},'code',this.value)"></td>
+      <td><input type="text" value="${esc(s.label)}" size="9" onchange="shField(${i},'label',this.value)"></td>
+      <td><select onchange="shField(${i},'tipo',this.value)">
         <option value="M" ${s.tipo==='M'?'selected':''}>M Manhã</option>
         <option value="I" ${s.tipo==='I'?'selected':''}>I Interm.</option>
         <option value="N" ${s.tipo==='N'?'selected':''}>N Noite</option></select></td>
-      <td><input type="number" value="${s.horas}" min="1" max="12" onchange="S.shifts[${i}].horas=+this.value;save()"></td>
-      <td><input type="checkbox" ${s.ativo?'checked':''} onchange="S.shifts[${i}].ativo=this.checked;save();renderGrid()"></td>
-      <td><button class="btn danger small" onclick="if(confirm('Remover turno ${s.code}?')){S.shifts.splice(${i},1);save();renderRegras()}">✕</button></td>
+      <td><input type="number" value="${s.horas}" min="1" max="12" onchange="shField(${i},'horas',+this.value)"></td>
+      <td><input type="checkbox" ${s.ativo?'checked':''} onchange="shField(${i},'ativo',this.checked)"></td>
+      <td><button class="btn danger small" onclick="delShift(${i})">✕</button></td>
     </tr>`;
   });
   document.getElementById('shift-tbl').innerHTML = h;
 
-  // mínimos
   let mg = '<div></div>' + DWS.map(d=>`<div class="hd">${d}</div>`).join('');
   for (const [key,lbl] of [['minM','Manhã (M)'],['minI','Interm. (I)'],['minN','Noite (N)']]){
     mg += `<div class="mut" style="font-weight:600">${lbl}</div>`;
     for (let i=0;i<7;i++)
-      mg += `<input type="number" min="0" value="${S[key][i]}" onchange="S['${key}'][${i}]=+this.value;save();renderGrid()">`;
+      mg += `<input type="number" min="0" value="${loja[key][i]}" onchange="minField('${key}',${i},+this.value)">`;
   }
   document.getElementById('mins-grid').innerHTML = mg;
 
-  document.getElementById('r-juntas').checked = S.regras.folgasJuntas;
-  document.getElementById('r-troca').checked = S.regras.folgaTroca;
-  document.getElementById('r-gerente').checked = S.regras.gerenteManha;
-  document.getElementById('r-folgas').value = S.regras.folgasSemana;
-  document.getElementById('r-domfolga').value = S.regras.domFolgaMin;
+  document.getElementById('r-juntas').checked = loja.regras.folgasJuntas;
+  document.getElementById('r-troca').checked = loja.regras.folgaTroca;
+  document.getElementById('r-gerente').checked = loja.regras.gerenteManha;
+  document.getElementById('r-folgas').value = loja.regras.folgasSemana;
+  document.getElementById('r-domfolga').value = loja.regras.domFolgaMin;
 
-  document.getElementById('c-empresa').value = S.meta.empresa;
-  document.getElementById('c-loja').value = S.meta.loja;
-  document.getElementById('c-nif').value = S.meta.nif;
-
+  const fl = document.getElementById('fer-loja');
+  fl.innerHTML = '<option value="">🇵🇹 Nacional (todas)</option>' +
+    S.lojas.map(l => `<option value="${l.id}">${esc(l.nome)}</option>`).join('');
   renderFeriados();
 }
+function shField(i, f, v){ L().shifts[i][f] = v; save(); renderGrid(); }
+function delShift(i){ const loja = L(); if (confirm(`Remover turno ${loja.shifts[i].code}?`)){ loja.shifts.splice(i,1); save(); renderRegras(); } }
+function minField(key, i, v){ L()[key][i] = v; save(); renderGrid(); }
 function saveRegras(){
-  S.regras.folgasJuntas = document.getElementById('r-juntas').checked;
-  S.regras.folgaTroca = document.getElementById('r-troca').checked;
-  S.regras.gerenteManha = document.getElementById('r-gerente').checked;
-  S.regras.folgasSemana = +document.getElementById('r-folgas').value || 2;
-  S.regras.domFolgaMin = +document.getElementById('r-domfolga').value || 0;
+  const R = L().regras;
+  R.folgasJuntas = document.getElementById('r-juntas').checked;
+  R.folgaTroca = document.getElementById('r-troca').checked;
+  R.gerenteManha = document.getElementById('r-gerente').checked;
+  R.folgasSemana = +document.getElementById('r-folgas').value || 2;
+  R.domFolgaMin = +document.getElementById('r-domfolga').value || 0;
   save(); renderGrid();
 }
-function saveMeta(){
-  S.meta.empresa = document.getElementById('c-empresa').value;
-  S.meta.loja = document.getElementById('c-loja').value;
-  S.meta.nif = document.getElementById('c-nif').value;
-  save();
-}
 function addShift(){
-  S.shifts.push({code:'NOVO', label:'0h-0h', tipo:'M', horas:8, ativo:true});
+  L().shifts.push({code:'NOVO', label:'0h-0h', tipo:'M', horas:8, ativo:true});
   save(); renderRegras();
 }
 function addFeriado(){
   const data = document.getElementById('fer-data').value;
   const nome = document.getElementById('fer-nome').value || 'Feriado';
+  const lojaId = document.getElementById('fer-loja').value;
   if (!data) return;
-  S.feriados.push({data, nome});
+  S.feriados.push({data, nome, lojaId});
   S.feriados.sort((a,b)=>a.data<b.data?-1:1);
   save(); renderFeriados(); renderGrid();
 }
 function renderFeriados(){
-  const h = S.feriados.map((f,i) =>
-    `<div class="abs-row"><b>${f.data}</b> <span class="mut">${f.nome}</span>
-     <button class="btn danger small" onclick="S.feriados.splice(${i},1);save();renderFeriados();renderGrid()">✕</button></div>`).join('');
+  const {y} = ymParts();
+  const nac = feriadosNacionais(y).slice().sort((a,b)=>a.data<b.data?-1:1).map(f =>
+    `<div class="abs-row"><b>${f.data}</b> <span class="mut">${esc(f.nome)}</span>
+     <span class="tag" style="padding:2px 8px">🇵🇹 Nacional · automático</span></div>`).join('');
+  const h = nac + S.feriados.map((f,i) => {
+    const l = f.lojaId ? S.lojas.find(l=>l.id===f.lojaId) : null;
+    return `<div class="abs-row"><b>${f.data}</b> <span class="mut">${esc(f.nome)}</span>
+     <span class="tag ${l?'ger':''}" style="padding:2px 8px">${l ? esc(l.nome) : '🇵🇹 Nacional'}</span>
+     <button class="btn danger small" onclick="delFeriado(${i})">✕</button></div>`;
+  }).join('');
   document.getElementById('fer-list').innerHTML = h || '<div class="mut">Sem feriados registados</div>';
+}
+function delFeriado(i){ S.feriados.splice(i,1); save(); renderFeriados(); renderGrid(); }
+
+/* ══════════════════════ RENDER: LOJAS ══════════════════════ */
+function renderLojas(){
+  let h = '<tr><th>Nome</th><th>Morada</th><th>Colaboradores</th><th>Meses com horário</th><th></th></tr>';
+  for (const l of S.lojas){
+    const meses = Object.keys(l.meses).filter(ym => !mesVazio(l, ym)).sort().reverse().slice(0,4).join(', ');
+    h += `<tr>
+      <td><input type="text" value="${esc(l.nome)}" onchange="lojaField('${l.id}','nome',this.value)"></td>
+      <td><input type="text" value="${esc(l.morada||'')}" size="28" onchange="lojaField('${l.id}','morada',this.value)"></td>
+      <td>${l.staff.length}</td>
+      <td class="mut">${meses || '—'}</td>
+      <td><button class="btn danger small" onclick="delLoja('${l.id}')">✕</button></td>
+    </tr>`;
+  }
+  document.getElementById('lojas-tbl').innerHTML = h;
+
+  const E = S.empresa;
+  document.getElementById('c-empresa').value = E.nome;
+  document.getElementById('c-morada').value = E.morada;
+  document.getElementById('c-irct').value = E.irct;
+  document.getElementById('c-cae').value = E.cae;
+  document.getElementById('c-nif').value = E.nif;
+  document.getElementById('c-activ').value = E.atividade;
+}
+function lojaField(id, f, v){ S.lojas.find(l=>l.id===id)[f] = v; save(); syncLojaSel(); renderLojas(); }
+function addLoja(){
+  const nome = prompt('Nome da loja (ex: ESS PORTIMÃO):'); if (!nome) return;
+  const l = novaLoja(nome);
+  S.lojas.push(l);
+  S.lojaAtual = l.id;
+  save(); syncLojaSel(); renderAll();
+  goTab('equipa');
+}
+function dupLoja(){
+  const src = L();
+  const nome = prompt(`Nome da nova loja (cópia de ${src.nome}):`); if (!nome) return;
+  const l = novaLoja(nome);
+  l.shifts = JSON.parse(JSON.stringify(src.shifts));
+  l.minM = src.minM.slice(); l.minI = src.minI.slice(); l.minN = src.minN.slice();
+  l.regras = JSON.parse(JSON.stringify(src.regras));
+  l.staff = src.staff.map((st,i) => ({...st, id:'s'+Date.now()+'_'+i}));
+  S.lojas.push(l);
+  S.lojaAtual = l.id;
+  save(); syncLojaSel(); renderAll();
+}
+function delLoja(id){
+  if (S.lojas.length===1) return alert('Tem de existir pelo menos uma loja.');
+  const l = S.lojas.find(l=>l.id===id);
+  if (!confirm(`Apagar a loja ${l.nome} e todos os seus horários? Esta acção não pode ser anulada.`)) return;
+  S.lojas = S.lojas.filter(x=>x.id!==id);
+  if (S.lojaAtual===id) S.lojaAtual = S.lojas[0].id;
+  save(); syncLojaSel(); renderAll();
+}
+function saveEmpresa(){
+  const E = S.empresa;
+  E.nome = document.getElementById('c-empresa').value;
+  E.morada = document.getElementById('c-morada').value;
+  E.irct = document.getElementById('c-irct').value;
+  E.cae = document.getElementById('c-cae').value;
+  E.nif = document.getElementById('c-nif').value;
+  E.atividade = document.getElementById('c-activ').value;
+  save();
+}
+function mudarLoja(id){ S.lojaAtual = id; save(); renderAll(); }
+function syncLojaSel(){
+  const sel = document.getElementById('loja-sel');
+  sel.innerHTML = S.lojas.map(l => `<option value="${l.id}" ${l.id===S.lojaAtual?'selected':''}>${esc(l.nome)}</option>`).join('');
 }
 
 /* ══════════════════════ EXPORT ══════════════════════ */
-function exportXLSX(){
-  const {y, m} = ymParts();
+function sheetLoja(loja, y, m){
   const n = daysInMonth(y,m);
-  const g = grid();
-  const staff = S.staff;
+  const ym = y+'-'+pad2(m);
+  const g = gridOf(loja, ym);
+  const staff = loja.staff;
+  const E = S.empresa;
   const aoa = [];
-  aoa.push([S.meta.empresa, '', '', `MAPA DE HORÁRIO — ${pad2(m)}/${y}`]);
-  aoa.push([S.meta.loja, '', '', 'NIF:', S.meta.nif]);
+  aoa.push([E.nome, '', '', `MAPA DE HORÁRIO — ${MESES[m-1].toUpperCase()} ${y}`]);
+  aoa.push([E.morada]);
+  aoa.push([E.irct]);
+  aoa.push([E.cae]);
+  aoa.push([loja.nome, '', '', 'Actividade:', E.atividade, '', 'NIF:', E.nif]);
+  aoa.push([loja.morada || '']);
+  aoa.push(['DATA INÍCIO:', dateStr(y,m,1), 'FIM MÊS:', dateStr(y,m,n)]);
   aoa.push([]);
   aoa.push(['DIA','DATA','FERIADO', ...staff.map(s=>s.nome), 'M','I','N','F','T']);
   for (let d=1; d<=n; d++){
     const idx = dow(y,m,d);
     let cM=0,cI=0,cN=0,cF=0;
-    const row = [DWL[idx], dateStr(y,m,d), feriadoNome(y,m,d)||''];
+    const row = [DWL[idx], dateStr(y,m,d), feriadoNome(loja,y,m,d)||''];
     for (const st of staff){
-      const code = cellGet(g,st.id,d), t = tipoOf(code);
+      const code = cellGet(g,st.id,d), t = tipoOf(loja, code);
       if(t==='M')cM++; else if(t==='I')cI++; else if(t==='N')cN++; else if(t==='F')cF++;
       row.push(code);
     }
@@ -966,7 +1429,6 @@ function exportXLSX(){
     aoa.push(row);
   }
   aoa.push([]);
-  // resumo
   const met = [['M','Manhãs'],['I','Intermédios'],['N','Noites'],['F','Folgas'],['DOM','Domingos Trab.'],['FD','Folgas Domingos'],['DT','Dias Trab.']];
   aoa.push(['RESUMO','','', ...staff.map(s=>s.nome)]);
   for (const [k,lbl] of met){
@@ -974,7 +1436,7 @@ function exportXLSX(){
     for (const st of staff){
       let c = 0;
       for (let d=1; d<=n; d++){
-        const t = tipoOf(cellGet(g,st.id,d));
+        const t = tipoOf(loja, cellGet(g,st.id,d));
         if (k==='DT'){ if(t==='M'||t==='I'||t==='N') c++; }
         else if (k==='DOM'){ if((t==='M'||t==='I'||t==='N') && dow(y,m,d)===0) c++; }
         else if (k==='FD'){ if((t==='F'||t==='A') && dow(y,m,d)===0) c++; }
@@ -986,15 +1448,32 @@ function exportXLSX(){
   }
   aoa.push([]);
   aoa.push(['LEGENDA TURNOS']);
-  for (const s of S.shifts.filter(s=>s.ativo)) aoa.push([s.code, s.label, s.tipo, s.horas+'h']);
+  for (const s of loja.shifts.filter(s=>s.ativo)) aoa.push([s.code, s.label, s.tipo, s.horas+'h']);
   aoa.push(['DO','Descanso Obrigatório'],['DC','Descanso Complementar']);
-  for (const [k,v] of Object.entries(ABS_TIPOS)) aoa.push([k, v]);
+  for (const [k,vv] of Object.entries(ABS_TIPOS)) aoa.push([k, vv]);
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   ws['!cols'] = [{wch:14},{wch:11},{wch:10}, ...staff.map(()=>({wch:9})), {wch:4},{wch:4},{wch:4},{wch:4},{wch:4}];
+  return ws;
+}
+function exportXLSX(){
+  const {y, m} = ymParts();
+  const loja = L();
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, `Hor ${pad2(m)}-${y}`);
-  XLSX.writeFile(wb, `Horario_${S.meta.loja.replace(/\s+/g,'_')}_${pad2(m)}_${y}.xlsx`);
+  XLSX.utils.book_append_sheet(wb, sheetLoja(loja, y, m), `Hor ${pad2(m)}-${y}`.slice(0,31));
+  XLSX.writeFile(wb, `Horario_${loja.nome.replace(/\s+/g,'_')}_${pad2(m)}_${y}.xlsx`);
+}
+function exportTodasXLSX(){
+  const {y, m} = ymParts();
+  const wb = XLSX.utils.book_new();
+  let added = 0;
+  for (const loja of S.lojas){
+    if (!loja.staff.length) continue;
+    XLSX.utils.book_append_sheet(wb, sheetLoja(loja, y, m), loja.nome.replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31));
+    added++;
+  }
+  if (!added) return alert('Nenhuma loja com equipa para exportar.');
+  XLSX.writeFile(wb, `Horarios_Todas_Lojas_${pad2(m)}_${y}.xlsx`);
 }
 
 function exportJSON(){
@@ -1010,8 +1489,8 @@ function importJSON(inp){
   r.onload = () => {
     try {
       const data = JSON.parse(r.result);
-      if (!data.staff || !data.shifts) throw new Error('formato inválido');
-      S = data; save(); renderAll();
+      if (!data.lojas || !data.empresa) throw new Error('formato inválido');
+      S = data; save(); syncLojaSel(); renderAll();
       alert('Backup restaurado ✅');
     } catch(e){ alert('Erro ao ler o ficheiro: '+e.message); }
   };
@@ -1024,12 +1503,13 @@ function goTab(p){
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.page===p));
   document.querySelectorAll('.page').forEach(pg => pg.classList.toggle('active', pg.id==='page-'+p));
 }
-function renderAll(){ renderStaff(); renderRegras(); renderGrid(); }
+function renderAll(){ renderSup(); renderStaff(); renderRegras(); renderLojas(); renderGrid(); }
 
 (function init(){
   const now = new Date();
   const next = new Date(now.getFullYear(), now.getMonth()+1, 1);
   document.getElementById('mes').value = next.getFullYear()+'-'+pad2(next.getMonth()+1);
+  syncLojaSel();
   renderAll();
 })();
 </script>
