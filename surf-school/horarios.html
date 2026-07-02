@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mapa de Horários · Despomar</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #21262d;
+  --surface3: #2d333b;
+  --border: #30363d;
+  --accent: #388bfd;
+  --accent-dim: #1f3a6e;
+  --green: #3fb950;
+  --green-dim: #1a4a24;
+  --yellow: #d29922;
+  --yellow-dim: #4a3800;
+  --red: #f85149;
+  --red-dim: #4a1515;
+  --purple: #8b5cf6;
+  --purple-dim: #2e1b5e;
+  --orange: #f0883e;
+  --text: #c9d1d9;
+  --text-bright: #f0f6fc;
+  --muted: #8b949e;
+  --radius: 8px;
+  --radius-lg: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-wrap: wrap;
+}
+.header-logo { font-size: 19px; font-weight: 700; color: var(--text-bright); letter-spacing: -0.5px; }
+.header-logo span { color: var(--accent); }
+.header-sub { color: var(--muted); font-size: 13px; }
+.header-spacer { flex: 1; }
+
+.tabs { display: flex; gap: 4px; }
+.tab {
+  padding: 7px 16px; border-radius: var(--radius); cursor: pointer;
+  color: var(--muted); font-weight: 600; font-size: 13px; border: 1px solid transparent;
+  background: none;
+}
+.tab:hover { color: var(--text); background: var(--surface2); }
+.tab.active { color: var(--accent); background: var(--accent-dim); border-color: var(--accent); }
+
+.main { max-width: 1500px; margin: 0 auto; padding: 20px; }
+.page { display: none; }
+.page.active { display: block; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; margin-bottom: 18px; }
+.card h2 { font-size: 15px; color: var(--text-bright); margin-bottom: 12px; display:flex; align-items:center; gap:8px; }
+.card h2 .hint { font-size: 12px; color: var(--muted); font-weight: 400; }
+
+.btn {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  padding: 8px 16px; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 600;
+}
+.btn:hover { background: var(--surface3); }
+.btn.primary { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.btn.primary:hover { background: var(--accent); color: #fff; }
+.btn.green { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.btn.green:hover { background: var(--green); color: #fff; }
+.btn.danger { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+.btn.small { padding: 4px 10px; font-size: 12px; }
+
+input, select {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  padding: 7px 10px; border-radius: var(--radius); font-size: 13px;
+}
+input:focus, select:focus { outline: none; border-color: var(--accent); }
+input[type=number] { width: 64px; }
+input[type=checkbox] { width: auto; accent-color: var(--accent); }
+label { font-size: 12px; color: var(--muted); }
+
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+
+/* ── Grid horário ── */
+.grid-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); }
+table.hgrid { border-collapse: collapse; width: 100%; font-size: 12px; }
+.hgrid th, .hgrid td { border: 1px solid var(--border); padding: 4px 6px; text-align: center; white-space: nowrap; }
+.hgrid thead th { background: var(--surface2); color: var(--text-bright); position: sticky; top: 0; z-index: 2; }
+.hgrid td.day-lbl { text-align: left; background: var(--surface); font-weight: 600; }
+.hgrid td.day-lbl .dw { color: var(--muted); font-weight: 400; font-size: 11px; }
+.hgrid tr.weekend td.day-lbl { color: var(--orange); }
+.hgrid tr.holiday td.day-lbl { color: var(--purple); }
+.hgrid td.cell { cursor: pointer; min-width: 52px; font-weight: 600; }
+.hgrid td.cell:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
+.hgrid td.cnt { background: var(--surface); color: var(--muted); font-size: 11px; }
+.hgrid td.cnt.bad { background: var(--red-dim); color: var(--red); font-weight: 700; }
+.c-M { background: #123a5e; color: #79c0ff; }
+.c-I { background: #3a2e12; color: #e3b341; }
+.c-N { background: #2e1b5e; color: #b394f9; }
+.c-DO { background: var(--surface3); color: var(--muted); }
+.c-DC { background: var(--surface2); color: var(--muted); font-style: italic; }
+.c-FR { background: var(--green-dim); color: var(--green); }
+.c-BX { background: var(--red-dim); color: var(--red); }
+.c-AV { background: #4a1a3a; color: #f778ba; }
+.c-DCOMP { background: var(--surface3); color: var(--orange); }
+.c-empty { color: var(--surface3); }
+td.viol { outline: 2px solid var(--red); outline-offset: -2px; }
+
+/* ── Violações ── */
+.viols { margin-top: 14px; }
+.viol-item { padding: 7px 12px; border-radius: var(--radius); margin-bottom: 5px; font-size: 13px; display:flex; gap:8px; align-items:baseline; }
+.viol-item.err { background: var(--red-dim); color: var(--red); }
+.viol-item.warn { background: var(--yellow-dim); color: var(--yellow); }
+.viol-ok { background: var(--green-dim); color: var(--green); padding: 8px 12px; border-radius: var(--radius); font-size: 13px; }
+
+/* ── Resumo ── */
+table.sum { border-collapse: collapse; font-size: 12px; width: 100%; }
+.sum th, .sum td { border: 1px solid var(--border); padding: 4px 8px; text-align: center; }
+.sum th { background: var(--surface2); color: var(--text-bright); }
+.sum td.lbl { text-align: left; color: var(--muted); }
+
+/* ── Equipa / Regras tables ── */
+table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
+.tbl th, .tbl td { border-bottom: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+.tbl th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.tbl select, .tbl input { padding: 5px 8px; font-size: 12px; }
+.tag { display:inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.tag.ger { background: var(--purple-dim); color: var(--purple); }
+
+/* ── Popover ── */
+#pop {
+  position: absolute; z-index: 500; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 8px; display: none; box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  grid-template-columns: repeat(3, 1fr); gap: 4px;
+}
+#pop.open { display: grid; }
+#pop button { border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; cursor: pointer; font-size: 12px; font-weight: 600; background: var(--surface3); color: var(--text); }
+#pop button:hover { outline: 2px solid var(--accent); }
+
+.mins-grid { display: grid; grid-template-columns: 90px repeat(7, 1fr); gap: 6px; align-items: center; max-width: 720px; }
+.mins-grid .hd { text-align: center; font-size: 11px; color: var(--muted); font-weight: 700; }
+.mins-grid input { width: 100%; text-align: center; }
+
+.flex { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.grow { flex: 1; }
+.mut { color: var(--muted); font-size: 12px; }
+.abs-row { display:flex; gap:8px; align-items:center; padding:4px 0; font-size:12px; }
+
+@media print {
+  :root { color-scheme: light; }
+  body { background: #fff; color: #000; }
+  .header, .toolbar, .viols, .no-print, #pop { display: none !important; }
+  .main { max-width: none; padding: 0; }
+  .card { border: none; padding: 0; }
+  .grid-wrap { border: none; overflow: visible; }
+  .hgrid th, .hgrid td { border: 1px solid #999; color: #000 !important; background: #fff !important; padding: 2px 4px; font-size: 10px; }
+  .c-M { background: #dbeafe !important; }
+  .c-I { background: #fef3c7 !important; }
+  .c-N { background: #ede9fe !important; }
+  .c-FR { background: #dcfce7 !important; }
+  .print-head { display: block !important; }
+}
+.print-head { display: none; font-size: 11px; color: #000; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">DESPOMAR<span>·</span>Horários</div>
+  <div class="header-sub">Gerador de mapas de horário com turnos, folgas e regras</div>
+  <div class="header-spacer"></div>
+  <div class="tabs">
+    <button class="tab active" data-page="horario" onclick="goTab('horario')">📅 Horário</button>
+    <button class="tab" data-page="equipa" onclick="goTab('equipa')">👥 Equipa</button>
+    <button class="tab" data-page="regras" onclick="goTab('regras')">⚙️ Regras</button>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ═══════════ HORÁRIO ═══════════ -->
+<div class="page active" id="page-horario">
+  <div class="card">
+    <div class="toolbar">
+      <label>Mês</label>
+      <input type="month" id="mes" onchange="renderGrid()">
+      <button class="btn primary" onclick="gerarClick()">⚡ Gerar automático</button>
+      <button class="btn" onclick="validarClick()">✔ Validar</button>
+      <button class="btn danger small" onclick="limparMes()">Limpar mês</button>
+      <div class="header-spacer"></div>
+      <button class="btn green" onclick="exportXLSX()">⬇ Excel</button>
+      <button class="btn" onclick="window.print()">🖨 Imprimir</button>
+    </div>
+    <div class="print-head" id="print-head"></div>
+    <div class="grid-wrap" id="grid"></div>
+    <div class="viols" id="viols"></div>
+  </div>
+  <div class="card no-print">
+    <h2>Resumo por colaborador <span class="hint">M=Manhã · I=Intermédio · N=Noite · F=Folgas · Dom=Domingos trabalhados · DT=Dias trabalhados</span></h2>
+    <div style="overflow-x:auto"><div id="resumo"></div></div>
+  </div>
+  <div class="card no-print">
+    <h2>Legenda</h2>
+    <div class="flex" id="legenda"></div>
+  </div>
+</div>
+
+<!-- ═══════════ EQUIPA ═══════════ -->
+<div class="page" id="page-equipa">
+  <div class="card">
+    <h2>Colaboradores <span class="hint">padrão de folgas fixo (opcional): alterna semanalmente entre Padrão A e Padrão B</span></h2>
+    <div style="overflow-x:auto"><table class="tbl" id="staff-tbl"></table></div>
+    <div style="margin-top:12px"><button class="btn primary" onclick="addStaff()">+ Adicionar colaborador</button></div>
+  </div>
+  <div class="card">
+    <h2>Ausências <span class="hint">férias, baixas — bloqueiam os dias no gerador</span></h2>
+    <div class="flex" style="margin-bottom:10px">
+      <select id="abs-staff"></select>
+      <select id="abs-tipo">
+        <option value="FR">Férias</option>
+        <option value="BX">Baixa</option>
+        <option value="AV">Aniversário</option>
+        <option value="DCOMP">Dia de Compensação</option>
+      </select>
+      <input type="date" id="abs-ini">
+      <span class="mut">até</span>
+      <input type="date" id="abs-fim">
+      <button class="btn primary small" onclick="addAbs()">+ Adicionar</button>
+    </div>
+    <div id="abs-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════ REGRAS ═══════════ -->
+<div class="page" id="page-regras">
+  <div class="card">
+    <h2>Turnos <span class="hint">tipo M=Manhã, I=Intermédio, N=Noite — o gerador usa o 1º turno activo de cada tipo</span></h2>
+    <table class="tbl" id="shift-tbl" style="max-width:640px"></table>
+    <div style="margin-top:12px"><button class="btn primary small" onclick="addShift()">+ Adicionar turno</button></div>
+  </div>
+  <div class="card">
+    <h2>Mínimos de pessoal por dia da semana</h2>
+    <div class="mins-grid" id="mins-grid"></div>
+  </div>
+  <div class="card">
+    <h2>Regras do gerador</h2>
+    <div class="flex" style="flex-direction:column; align-items:flex-start; gap:12px">
+      <label class="flex"><input type="checkbox" id="r-juntas" onchange="saveRegras()"> Folgas juntas (2 dias seguidos) quando o colaborador não tem padrão fixo</label>
+      <label class="flex"><input type="checkbox" id="r-troca" onchange="saveRegras()"> Exigir folga entre troca de turno (Manhã ↔ Noite)</label>
+      <label class="flex"><input type="checkbox" id="r-gerente" onchange="saveRegras()"> Gerentes têm de fazer pelo menos 1 bloco de manhãs por mês</label>
+      <label class="flex">Folgas por semana <input type="number" id="r-folgas" min="1" max="3" onchange="saveRegras()"></label>
+      <label class="flex">Mínimo de domingos de folga por mês <input type="number" id="r-domfolga" min="0" max="5" onchange="saveRegras()"></label>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Feriados</h2>
+    <div class="flex" style="margin-bottom:8px">
+      <input type="date" id="fer-data">
+      <input type="text" id="fer-nome" placeholder="Nome (ex: Feriado Municipal)">
+      <button class="btn primary small" onclick="addFeriado()">+ Adicionar</button>
+    </div>
+    <div id="fer-list"></div>
+  </div>
+  <div class="card">
+    <h2>Loja / Empresa <span class="hint">aparece no cabeçalho da impressão e do Excel</span></h2>
+    <div class="flex" style="flex-direction:column; align-items:flex-start; gap:8px">
+      <label class="flex">Empresa <input type="text" id="c-empresa" size="40" onchange="saveMeta()"></label>
+      <label class="flex">Loja <input type="text" id="c-loja" size="30" onchange="saveMeta()"></label>
+      <label class="flex">NIF <input type="text" id="c-nif" size="15" onchange="saveMeta()"></label>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Dados <span class="hint">tudo é guardado localmente neste browser</span></h2>
+    <div class="flex">
+      <button class="btn" onclick="exportJSON()">⬇ Backup (JSON)</button>
+      <button class="btn" onclick="document.getElementById('imp-json').click()">⬆ Restaurar backup</button>
+      <input type="file" id="imp-json" accept=".json" style="display:none" onchange="importJSON(this)">
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div id="pop"></div>
+
+<script>
+'use strict';
+/* ══════════════════════ ESTADO ══════════════════════ */
+const LSKEY = 'despomar_horarios_v1';
+const DWS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const DWL = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+const ABS_TIPOS = { FR:'Férias', BX:'Baixa', AV:'Aniversário', DCOMP:'Dia de Compensação' };
+
+function defaultState(){
+  return {
+    meta: { empresa:'DESPOMAR, SA', loja:'ESS LAGOS', nif:'501823646' },
+    shifts: [
+      { code:'V-F',   label:'10h-19h', tipo:'M', horas:8, ativo:true },
+      { code:'VIII-J',label:'12h-21h', tipo:'I', horas:8, ativo:false },
+      { code:'IX-L',  label:'13h-22h', tipo:'I', horas:8, ativo:true },
+      { code:'XII-L', label:'15h-00h', tipo:'N', horas:8, ativo:true },
+    ],
+    // mínimos por dia da semana, índice 0=Dom … 6=Sáb
+    minM: [3,4,4,4,4,4,4],
+    minI: [0,0,0,0,0,0,0],
+    minN: [3,4,4,4,4,4,4],
+    regras: { folgasJuntas:true, folgaTroca:true, gerenteManha:true, folgasSemana:2, domFolgaMin:1 },
+    staff: [
+      { id:'s1',  nome:'Bruno Sobreiro',     gerente:true,  padA:null,  padB:null },
+      { id:'s2',  nome:'Inés Zambujo',       gerente:false, padA:[5,6], padB:[3,0] },
+      { id:'s3',  nome:'Mariana Figueiredo', gerente:false, padA:[1,6], padB:[3,0] },
+      { id:'s4',  nome:'Ana Hernández',      gerente:false, padA:[1,5], padB:[2,0] },
+      { id:'s5',  nome:'Miguel Reis',        gerente:false, padA:[3,4], padB:[2,6] },
+      { id:'s6',  nome:'Miguel Dias',        gerente:false, padA:null,  padB:null },
+      { id:'s7',  nome:'Salvador Glória',    gerente:false, padA:null,  padB:null },
+      { id:'s8',  nome:'Inês Coelho',        gerente:false, padA:[1,6], padB:[3,0] },
+      { id:'s9',  nome:'Adriana Sampaio',    gerente:false, padA:[1,5], padB:[2,0] },
+      { id:'s10', nome:'Alexandre Duarte',   gerente:false, padA:[3,4], padB:[2,6] },
+      { id:'s11', nome:'Rui Marreiros',      gerente:false, padA:null,  padB:null },
+      { id:'s12', nome:'Lucas Vaz',          gerente:false, padA:null,  padB:null },
+    ],
+    ausencias: [], // {staffId, tipo, inicio:'YYYY-MM-DD', fim:'YYYY-MM-DD'}
+    feriados: [],  // {data:'YYYY-MM-DD', nome}
+    meses: {},     // 'YYYY-MM' -> { staffId: { day(int): code } }
+  };
+}
+
+let S = load();
+function load(){
+  try { const raw = localStorage.getItem(LSKEY); if (raw) return JSON.parse(raw); } catch(e){}
+  return defaultState();
+}
+function save(){ localStorage.setItem(LSKEY, JSON.stringify(S)); }
+
+/* ══════════════════════ HELPERS ══════════════════════ */
+const pad2 = n => String(n).padStart(2,'0');
+function ymSel(){ return document.getElementById('mes').value; } // 'YYYY-MM'
+function ymParts(){ const [y,m] = ymSel().split('-').map(Number); return {y, m}; }
+function daysInMonth(y,m){ return new Date(y, m, 0).getDate(); }
+function dow(y,m,d){ return new Date(y, m-1, d).getDay(); }
+function dateStr(y,m,d){ return y+'-'+pad2(m)+'-'+pad2(d); }
+function isoWeek(y,m,d){
+  const dt = new Date(Date.UTC(y, m-1, d));
+  const dayNum = (dt.getUTCDay()+6)%7;
+  dt.setUTCDate(dt.getUTCDate() - dayNum + 3);
+  const firstThu = new Date(Date.UTC(dt.getUTCFullYear(),0,4));
+  return 1 + Math.round(((dt - firstThu)/86400000 - 3 + ((firstThu.getUTCDay()+6)%7))/7);
+}
+function feriadoNome(y,m,d){
+  const ds = dateStr(y,m,d);
+  const f = S.feriados.find(f => f.data === ds);
+  return f ? f.nome : null;
+}
+function absOn(staffId, y, m, d){
+  const ds = dateStr(y,m,d);
+  const a = S.ausencias.find(a => a.staffId===staffId && a.inicio<=ds && ds<=a.fim);
+  return a ? a.tipo : null;
+}
+function shiftByCode(code){ return S.shifts.find(s => s.code===code); }
+function tipoOf(code){
+  if (!code) return null;
+  if (['DO','DC'].includes(code)) return 'F';
+  if (ABS_TIPOS[code]) return 'A';
+  const s = shiftByCode(code);
+  return s ? s.tipo : null;
+}
+function primShift(tipo){ const s = S.shifts.find(s => s.ativo && s.tipo===tipo); return s ? s.code : null; }
+function grid(){ const ym = ymSel(); if (!S.meses[ym]) S.meses[ym] = {}; return S.meses[ym]; }
+function cellGet(g, sid, d){ return (g[sid] && g[sid][d]) || ''; }
+function cellSet(g, sid, d, v){ if (!g[sid]) g[sid] = {}; if (v) g[sid][d] = v; else delete g[sid][d]; }
+
+// semanas do mês (Seg–Dom), com dias parciais: devolve arrays de dias do mês
+function weeksOf(y,m){
+  const n = daysInMonth(y,m), weeks = [];
+  let cur = [];
+  for (let d=1; d<=n; d++){
+    cur.push(d);
+    if (dow(y,m,d) === 0){ weeks.push(cur); cur = []; } // fecha semana ao domingo
+  }
+  if (cur.length) weeks.push(cur);
+  return weeks;
+}
+// nº de folgas devidas numa semana (parcial ou com ausências)
+// semanas parciais no início/fim do mês pedem menos folgas — a outra parte
+// da semana pertence ao mês anterior/seguinte
+function folgasDevidas(diasUteis){
+  const t = S.regras.folgasSemana;
+  if (diasUteis >= 6) return t;
+  if (diasUteis >= 3) return Math.min(t, 1);
+  return 0;
+}
+
+/* ══════════════════════ GERADOR ══════════════════════ */
+// RNG com seed — permite tentar várias variações e ficar com a melhor
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+let RND = () => 0;
+
+function gerarClick(){
+  const g = grid();
+  const temDados = Object.keys(g).some(sid => Object.keys(g[sid]).length);
+  if (temDados && !confirm('O mês já tem dados. Gerar de novo substitui tudo (excepto ausências). Continuar?')) return;
+  const ym = ymSel();
+  let best = null, bestErr = Infinity;
+  for (let i=0; i<30; i++){
+    RND = i===0 ? (() => 0) : mulberry32(i*7919+13);
+    gerarHorario();
+    const v = validar();
+    const err = v.viols.filter(x=>x.sev==='err').length*10 + v.viols.length;
+    if (err < bestErr){ bestErr = err; best = JSON.stringify(S.meses[ym]); if (err===0) break; }
+  }
+  S.meses[ym] = JSON.parse(best);
+  RND = () => 0;
+  save();
+  renderGrid();
+}
+
+function gerarHorario(){
+  const {y, m} = ymParts();
+  const n = daysInMonth(y,m);
+  const ym = ymSel();
+  const g = {}; S.meses[ym] = g;
+  const staff = S.staff;
+  const weeks = weeksOf(y,m);
+
+  // 1 ─ ausências
+  for (const st of staff)
+    for (let d=1; d<=n; d++){
+      const a = absOn(st.id, y, m, d);
+      if (a) cellSet(g, st.id, d, a);
+    }
+
+  // 2 ─ folgas
+  const domingos = []; for (let d=1; d<=n; d++) if (dow(y,m,d)===0) domingos.push(d);
+  const domFolgas = {}; staff.forEach(st => domFolgas[st.id] = 0);
+  const lastPair = {}; // rotação: evitar repetir os mesmos dias de folga
+  const minTot = i => S.minM[i] + S.minI[i] + S.minN[i];
+  const folgasNoDia = d => staff.reduce((c,st) => c + (tipoOf(cellGet(g,st.id,d))==='F' ? 1 : 0), 0);
+  const disponiveis = d => staff.reduce((c,st) => c + (ABS_TIPOS[cellGet(g,st.id,d)] ? 0 : 1), 0);
+
+  weeks.forEach((week, wi) => {
+    // ordem rotativa para justiça na escolha
+    const ordem = staff.slice(); for (let k=0; k<wi; k++) ordem.push(ordem.shift());
+    for (const st of ordem){
+      const livres = week.filter(d => !cellGet(g, st.id, d));
+      const devidas = folgasDevidas(livres.length);
+      if (!devidas) continue;
+
+      // padrão fixo: alterna A/B pela paridade da semana ISO
+      if (st.padA && st.padB){
+        const par = isoWeek(y, m, week[0]) % 2 === 0;
+        const pat = par ? st.padB : st.padA;
+        let usadas = 0;
+        for (const wd of pat){
+          const d = week.find(d => dow(y,m,d)===wd && !cellGet(g,st.id,d));
+          if (d !== undefined && usadas < devidas){
+            cellSet(g, st.id, d, usadas===0 ? 'DO' : 'DC');
+            if (dow(y,m,d)===0) domFolgas[st.id]++;
+            usadas++;
+          }
+        }
+        // completa se o padrão caiu fora do mês
+        while (usadas < devidas){
+          const d = livres.find(d => !cellGet(g,st.id,d));
+          if (d === undefined) break;
+          cellSet(g, st.id, d, usadas===0 ? 'DO' : 'DC');
+          if (dow(y,m,d)===0) domFolgas[st.id]++;
+          usadas++;
+        }
+        continue;
+      }
+
+      // automático: escolhe par (ou dia único)
+      const domRestantes = week.filter(d => dow(y,m,d)===0).length +
+        weeks.slice(wi+1).flat().filter(d => dow(y,m,d)===0).length;
+      const precisaDom = domFolgas[st.id] < S.regras.domFolgaMin && domRestantes <= (S.regras.domFolgaMin - domFolgas[st.id]) * 2;
+
+      let candidatos = [];
+      if (devidas === 2){
+        for (let i=0; i<livres.length; i++)
+          for (let j=i+1; j<livres.length; j++)
+            candidatos.push([livres[i], livres[j]]);
+      } else candidatos = livres.map(d => [d]);
+
+      let best = null, bestScore = Infinity;
+      for (const par of candidatos){
+        let sc = 0;
+        const seguidos = par.length===2 && par[1]-par[0]===1;
+        if (S.regras.folgasJuntas && par.length===2 && !seguidos) sc += 50;
+        const temDom = par.some(d => dow(y,m,d)===0);
+        if (precisaDom && !temDom) sc += 200;
+        if (!precisaDom && temDom && domFolgas[st.id] >= S.regras.domFolgaMin) sc += 15; // não gastar domingos à toa
+        for (const d of par){
+          const idx = dow(y,m,d);
+          const cap = disponiveis(d) - minTot(idx);
+          const jaFolgam = folgasNoDia(d);
+          if (jaFolgam >= cap) sc += 100 + (jaFolgam-cap)*40; // dia sem margem
+          else sc += jaFolgam * 6;
+          if (lastPair[st.id] && lastPair[st.id].includes(idx)) sc += 10; // variar dias
+        }
+        sc += RND() * 8; // variação entre tentativas
+        if (sc < bestScore){ bestScore = sc; best = par; }
+      }
+      if (best){
+        best.sort((a,b)=>a-b);
+        const domIdx = best.findIndex(d => dow(y,m,d)===0);
+        best.forEach((d,i) => {
+          const isDO = domIdx>=0 ? i===domIdx : i===0;
+          cellSet(g, st.id, d, isDO ? 'DO' : 'DC');
+          if (dow(y,m,d)===0) domFolgas[st.id]++;
+        });
+        lastPair[st.id] = best.map(d => dow(y,m,d));
+      }
+    }
+  });
+
+  // 3 ─ blocos de trabalho → turnos
+  const cM = Array(n+1).fill(0), cI = Array(n+1).fill(0), cN = Array(n+1).fill(0);
+  const tipos = ['M','I','N'].filter(t => primShift(t) &&
+    (t!=='I' || S.minI.some(v=>v>0))); // I só se tiver mínimos (senão fica para edição manual)
+  const stTot = {}; staff.forEach(st => stTot[st.id] = {M:0,I:0,N:0});
+  const stTemM = {}; staff.forEach(st => stTemM[st.id] = false);
+
+  // constrói blocos (runs de dias livres consecutivos)
+  const blocos = [];
+  for (const st of staff){
+    let run = [];
+    for (let d=1; d<=n+1; d++){
+      const livre = d<=n && !cellGet(g, st.id, d);
+      if (livre) run.push(d);
+      else if (run.length){ blocos.push({st, dias:run}); run = []; }
+    }
+  }
+  blocos.sort((a,b) => a.dias[0]-b.dias[0]);
+
+  const cnt = {M:cM, I:cI, N:cN}, minT = {M:S.minM, I:S.minI, N:S.minN};
+  function scoreBloco(b, t){
+    let sc = 0;
+    for (const d of b.dias){
+      const idx = dow(y,m,d);
+      const falta = minT[t][idx] - cnt[t][d];
+      if (falta > 0) sc -= 12;           // ajuda a cobrir mínimo
+      else sc += 3;                       // excesso
+      // penaliza deixar OUTRO tipo descoberto
+      for (const o of tipos) if (o!==t){
+        const faltaO = minT[o][idx] - cnt[o][d];
+        if (faltaO > 0) sc += 6;
+      }
+    }
+    sc += stTot[b.st.id][t] * 2;          // equilíbrio mensal M/N por pessoa
+    if (S.regras.gerenteManha && b.st.gerente && !stTemM[b.st.id] && t==='M') sc -= 8;
+    sc += RND() * 6;                      // variação entre tentativas
+    return sc;
+  }
+  for (const b of blocos){
+    let best = tipos[0], bestSc = Infinity;
+    for (const t of tipos){ const sc = scoreBloco(b, t); if (sc < bestSc){ bestSc = sc; best = t; } }
+    b.tipo = best;
+    for (const d of b.dias){ cnt[best][d]++; cellSet(g, b.st.id, d, primShift(best)); }
+    stTot[b.st.id][best] += b.dias.length;
+    if (best==='M') stTemM[b.st.id] = true;
+  }
+
+  // 3b ─ gerente sem manhãs: força o bloco mais pequeno para M
+  if (S.regras.gerenteManha){
+    for (const st of staff.filter(s => s.gerente)){
+      if (stTemM[st.id]) continue;
+      const meus = blocos.filter(b => b.st.id===st.id && b.tipo!=='M').sort((a,b)=>a.dias.length-b.dias.length);
+      if (meus.length){
+        const b = meus[0];
+        for (const d of b.dias){ cnt[b.tipo][d]--; cnt.M[d]++; cellSet(g, st.id, d, primShift('M')); }
+        b.tipo = 'M';
+      }
+    }
+  }
+
+  // 4 ─ reparação: dias abaixo do mínimo → troca blocos com folga no outro tipo
+  for (let pass=0; pass<4; pass++){
+    let mudou = false;
+    for (let d=1; d<=n; d++){
+      const idx = dow(y,m,d);
+      for (const t of tipos){
+        while (cnt[t][d] < minT[t][idx]){
+          // procura bloco que cubra o dia d, de outro tipo, cuja troca não crie défice
+          const cand = blocos.filter(b => b.tipo && b.tipo!==t && b.dias.includes(d) &&
+            b.dias.every(dd => cnt[b.tipo][dd] - 1 >= minT[b.tipo][dow(y,m,dd)] ||
+                               minT[b.tipo][dow(y,m,dd)] === 0))
+            .sort((a,b) => a.dias.length - b.dias.length);
+          if (!cand.length) break;
+          const b = cand[0];
+          for (const dd of b.dias){ cnt[b.tipo][dd]--; cnt[t][dd]++; cellSet(g, b.st.id, dd, primShift(t)); }
+          b.tipo = t; mudou = true;
+        }
+      }
+    }
+    if (!mudou) break;
+  }
+}
+
+/* ══════════════════════ VALIDAÇÃO ══════════════════════ */
+function validar(){
+  const {y, m} = ymParts();
+  const n = daysInMonth(y,m);
+  const g = grid();
+  const viols = [], cells = new Set(), days = new Set();
+  const staff = S.staff;
+
+  // mínimos diários
+  for (let d=1; d<=n; d++){
+    const idx = dow(y,m,d);
+    let cM=0, cI=0, cN=0;
+    for (const st of staff){ const t = tipoOf(cellGet(g,st.id,d)); if(t==='M')cM++; else if(t==='I')cI++; else if(t==='N')cN++; }
+    const chk = [['M',cM,S.minM[idx]],['I',cI,S.minI[idx]],['N',cN,S.minN[idx]]];
+    for (const [t,c,min] of chk) if (c < min){
+      viols.push({sev:'err', msg:`Dia ${d} (${DWS[idx]}): só ${c} de ${t} (mínimo ${min})`});
+      days.add(d+':'+t);
+    }
+  }
+
+  // folgas por semana
+  for (const week of weeksOf(y,m)){
+    for (const st of staff){
+      const livres = week.filter(d => !ABS_TIPOS[cellGet(g,st.id,d)]);
+      const devidas = folgasDevidas(livres.length);
+      const folgas = week.filter(d => tipoOf(cellGet(g,st.id,d))==='F').length;
+      const preenchidos = week.filter(d => cellGet(g,st.id,d)).length;
+      if (preenchidos < week.length) continue; // semana incompleta, não avaliar
+      if (folgas < devidas)
+        viols.push({sev:'err', msg:`${st.nome}: só ${folgas} folga(s) na semana de ${week[0]} a ${week[week.length-1]} (devia ter ${devidas})`});
+      else if (folgas > devidas + 1)
+        viols.push({sev:'warn', msg:`${st.nome}: ${folgas} folgas na semana de ${week[0]} a ${week[week.length-1]}`});
+    }
+  }
+
+  // troca de turno sem folga
+  if (S.regras.folgaTroca){
+    for (const st of staff){
+      let prev = null, prevD = 0;
+      for (let d=1; d<=n; d++){
+        const code = cellGet(g,st.id,d), t = tipoOf(code);
+        if (t==='M' || t==='I' || t==='N'){
+          if (prev && prev!==t && d === prevD+1){
+            viols.push({sev:'err', msg:`${st.nome}: troca de turno ${prev}→${t} no dia ${d} sem folga entre`});
+            cells.add(st.id+':'+d);
+          }
+          prev = t; prevD = d;
+        }
+      }
+    }
+  }
+
+  // gerente sem manhã
+  if (S.regras.gerenteManha){
+    for (const st of staff.filter(s=>s.gerente)){
+      let tem = false, trabalhou = false;
+      for (let d=1; d<=n; d++){ const t = tipoOf(cellGet(g,st.id,d)); if (t==='M') tem=true; if (t==='M'||t==='I'||t==='N') trabalhou=true; }
+      if (trabalhou && !tem) viols.push({sev:'err', msg:`${st.nome} (gerente): sem nenhuma manhã este mês`});
+    }
+  }
+
+  // domingos de folga
+  for (const st of staff){
+    let domF = 0, domTrab = 0;
+    for (let d=1; d<=n; d++){
+      if (dow(y,m,d)!==0) continue;
+      const t = tipoOf(cellGet(g,st.id,d));
+      if (t==='F' || t==='A') domF++;
+      else if (t) domTrab++;
+    }
+    if (domF + domTrab > 0 && domF < S.regras.domFolgaMin)
+      viols.push({sev:'warn', msg:`${st.nome}: só ${domF} domingo(s) de folga (mínimo ${S.regras.domFolgaMin})`});
+  }
+
+  return {viols, cells, days};
+}
+
+function validarClick(){ renderGrid(true); }
+
+/* ══════════════════════ RENDER: HORÁRIO ══════════════════════ */
+function renderGrid(comViols){
+  const ymv = ymSel(); if (!ymv) return;
+  const {y, m} = ymParts();
+  const n = daysInMonth(y,m);
+  const g = grid();
+  const staff = S.staff;
+  const v = validar();
+
+  document.getElementById('print-head').textContent =
+    `${S.meta.empresa} · ${S.meta.loja} · NIF ${S.meta.nif} — MAPA DE HORÁRIO ${pad2(m)}/${y}`;
+
+  let h = '<table class="hgrid"><thead><tr><th style="text-align:left">Dia</th>';
+  for (const st of staff) h += `<th>${st.nome.split(' ')[0]}<br><span style="font-weight:400;color:var(--muted)">${st.nome.split(' ').slice(1).join(' ')}</span></th>`;
+  h += '<th>M</th><th>I</th><th>N</th><th>F</th><th>T</th></tr></thead><tbody>';
+
+  for (let d=1; d<=n; d++){
+    const idx = dow(y,m,d);
+    const fer = feriadoNome(y,m,d);
+    const cls = fer ? 'holiday' : (idx===0||idx===6 ? 'weekend' : '');
+    h += `<tr class="${cls}"><td class="day-lbl">${d} <span class="dw">${DWS[idx]}${fer ? ' · '+fer : ''}</span></td>`;
+    let cM=0,cI=0,cN=0,cF=0;
+    for (const st of staff){
+      const code = cellGet(g, st.id, d);
+      const t = tipoOf(code);
+      if (t==='M')cM++; else if(t==='I')cI++; else if(t==='N')cN++; else if(t==='F')cF++;
+      let cc = 'c-empty';
+      if (t==='M'||t==='I'||t==='N') cc = 'c-'+t;
+      else if (code) cc = 'c-'+code;
+      const bad = comViols!==false && v.cells.has(st.id+':'+d) ? ' viol' : '';
+      h += `<td class="cell ${cc}${bad}" onclick="openPop(event,'${st.id}',${d})">${code || '·'}</td>`;
+    }
+    const badM = v.days.has(d+':M')?' bad':'', badI = v.days.has(d+':I')?' bad':'', badN = v.days.has(d+':N')?' bad':'';
+    h += `<td class="cnt${badM}">${cM}</td><td class="cnt${badI}">${cI}</td><td class="cnt${badN}">${cN}</td><td class="cnt">${cF}</td><td class="cnt">${cM+cI+cN}</td></tr>`;
+  }
+  h += '</tbody></table>';
+  document.getElementById('grid').innerHTML = h;
+
+  // violações
+  const vh = v.viols.length
+    ? v.viols.map(x => `<div class="viol-item ${x.sev}">${x.sev==='err'?'⛔':'⚠️'} <span>${x.msg}</span></div>`).join('')
+    : '<div class="viol-ok">✅ Sem violações de regras detectadas</div>';
+  document.getElementById('viols').innerHTML =
+    `<div style="margin:10px 0 6px;font-size:13px;color:var(--muted)">Validação (${v.viols.length} aviso(s))</div>` + vh;
+
+  renderResumo(y,m,n,g,staff);
+  renderLegenda();
+}
+
+function renderResumo(y,m,n,g,staff){
+  const rows = [['M','Manhãs'],['I','Intermédios'],['N','Noites'],['F','Folgas'],['DOM','Domingos trab.'],['FD','Folgas domingo'],['FR','Férias/Ausên.'],['DT','Dias trab.'],['H','Horas']];
+  const st2 = {};
+  for (const st of staff){
+    const r = {M:0,I:0,N:0,F:0,DOM:0,FD:0,FR:0,DT:0,H:0};
+    for (let d=1; d<=n; d++){
+      const code = cellGet(g,st.id,d), t = tipoOf(code);
+      if (t==='M'||t==='I'||t==='N'){ r[t]++; r.DT++; const sh = shiftByCode(code); r.H += sh ? (sh.horas||8) : 8; if (dow(y,m,d)===0) r.DOM++; }
+      else if (t==='F'){ r.F++; if (dow(y,m,d)===0) r.FD++; }
+      else if (t==='A'){ r.FR++; if (dow(y,m,d)===0) r.FD++; }
+    }
+    st2[st.id] = r;
+  }
+  let h = '<table class="sum"><tr><th style="text-align:left"></th>';
+  for (const st of staff) h += `<th>${st.nome.split(' ')[0]}${st.gerente?' 👔':''}</th>`;
+  h += '</tr>';
+  for (const [k,lbl] of rows){
+    h += `<tr><td class="lbl">${lbl}</td>`;
+    for (const st of staff) h += `<td>${st2[st.id][k]}</td>`;
+    h += '</tr>';
+  }
+  h += '</table>';
+  document.getElementById('resumo').innerHTML = h;
+}
+
+function renderLegenda(){
+  let h = '';
+  for (const s of S.shifts.filter(s=>s.ativo))
+    h += `<span class="tag c-${s.tipo}" style="padding:4px 10px">${s.code} — ${s.label} (${s.tipo})</span>`;
+  h += `<span class="tag c-DO" style="padding:4px 10px">DO — Descanso Obrigatório</span>`;
+  h += `<span class="tag c-DC" style="padding:4px 10px">DC — Descanso Complementar</span>`;
+  for (const [k,v] of Object.entries(ABS_TIPOS))
+    h += `<span class="tag c-${k}" style="padding:4px 10px">${k} — ${v}</span>`;
+  document.getElementById('legenda').innerHTML = h;
+}
+
+function limparMes(){
+  if (!confirm('Limpar todo o horário deste mês?')) return;
+  S.meses[ymSel()] = {};
+  save(); renderGrid();
+}
+
+/* ══════════════════════ POPOVER ══════════════════════ */
+let popCtx = null;
+function openPop(ev, sid, d){
+  ev.stopPropagation();
+  popCtx = {sid, d};
+  const pop = document.getElementById('pop');
+  let h = '';
+  for (const s of S.shifts.filter(s=>s.ativo))
+    h += `<button class="c-${s.tipo}" onclick="popSet('${s.code}')">${s.code}</button>`;
+  h += `<button class="c-DO" onclick="popSet('DO')">DO</button>`;
+  h += `<button class="c-DC" onclick="popSet('DC')">DC</button>`;
+  for (const k of Object.keys(ABS_TIPOS))
+    h += `<button class="c-${k}" onclick="popSet('${k}')">${k}</button>`;
+  h += `<button onclick="popSet('')">✕ limpar</button>`;
+  pop.innerHTML = h;
+  pop.classList.add('open');
+  const r = ev.target.getBoundingClientRect();
+  pop.style.left = Math.min(r.left + scrollX, innerWidth - 200 + scrollX) + 'px';
+  pop.style.top = (r.bottom + scrollY + 4) + 'px';
+}
+function popSet(code){
+  if (popCtx){ cellSet(grid(), popCtx.sid, popCtx.d, code); save(); renderGrid(); }
+  closePop();
+}
+function closePop(){ document.getElementById('pop').classList.remove('open'); popCtx = null; }
+document.addEventListener('click', e => { if (!e.target.closest('#pop')) closePop(); });
+
+/* ══════════════════════ RENDER: EQUIPA ══════════════════════ */
+function padSel(sid, key, val){
+  const opts = ['<option value="">—</option>'];
+  DWS.forEach((n,i) => opts.push(`<option value="${i}" ${val===i?'selected':''}>${n}</option>`));
+  return `<select onchange="setPad('${sid}','${key}',this.value)">${opts.join('')}</select>`;
+}
+function renderStaff(){
+  let h = '<tr><th>Nome</th><th>Gerente</th><th>Padrão A</th><th>Padrão B</th><th></th></tr>';
+  for (const st of S.staff){
+    h += `<tr>
+      <td><input type="text" value="${st.nome.replace(/"/g,'&quot;')}" onchange="S.staff.find(s=>s.id==='${st.id}').nome=this.value;save();renderAll()"></td>
+      <td><input type="checkbox" ${st.gerente?'checked':''} onchange="S.staff.find(s=>s.id==='${st.id}').gerente=this.checked;save()"> ${st.gerente?'<span class="tag ger">gerente</span>':''}</td>
+      <td>${padSel(st.id,'A0',st.padA?st.padA[0]:null)} ${padSel(st.id,'A1',st.padA?st.padA[1]:null)}</td>
+      <td>${padSel(st.id,'B0',st.padB?st.padB[0]:null)} ${padSel(st.id,'B1',st.padB?st.padB[1]:null)}</td>
+      <td><button class="btn danger small" onclick="delStaff('${st.id}')">✕</button></td>
+    </tr>`;
+  }
+  document.getElementById('staff-tbl').innerHTML = h;
+
+  const sel = document.getElementById('abs-staff');
+  sel.innerHTML = S.staff.map(st => `<option value="${st.id}">${st.nome}</option>`).join('');
+  renderAbs();
+}
+function setPad(sid, key, val){
+  const st = S.staff.find(s=>s.id===sid);
+  const arr = key[0]==='A' ? 'padA' : 'padB', idx = +key[1];
+  if (val===''){ st[arr] = null; }
+  else {
+    if (!st[arr]) st[arr] = [1,0];
+    st[arr][idx] = +val;
+  }
+  // padrão só funciona com A e B completos
+  save(); renderStaff();
+}
+function addStaff(){
+  const nome = prompt('Nome do colaborador:'); if (!nome) return;
+  S.staff.push({ id:'s'+Date.now(), nome, gerente:false, padA:null, padB:null });
+  save(); renderStaff();
+}
+function delStaff(sid){
+  const st = S.staff.find(s=>s.id===sid);
+  if (!confirm(`Remover ${st.nome}?`)) return;
+  S.staff = S.staff.filter(s=>s.id!==sid);
+  S.ausencias = S.ausencias.filter(a=>a.staffId!==sid);
+  save(); renderStaff();
+}
+function addAbs(){
+  const staffId = document.getElementById('abs-staff').value;
+  const tipo = document.getElementById('abs-tipo').value;
+  const inicio = document.getElementById('abs-ini').value;
+  const fim = document.getElementById('abs-fim').value || inicio;
+  if (!staffId || !inicio) return alert('Escolhe colaborador e data de início');
+  S.ausencias.push({staffId, tipo, inicio, fim});
+  save(); renderAbs();
+}
+function renderAbs(){
+  const h = S.ausencias.map((a,i) => {
+    const st = S.staff.find(s=>s.id===a.staffId);
+    return `<div class="abs-row"><span class="tag c-${a.tipo}" style="padding:3px 8px">${a.tipo}</span>
+      <b>${st ? st.nome : '?'}</b> <span class="mut">${a.inicio} → ${a.fim}</span>
+      <button class="btn danger small" onclick="S.ausencias.splice(${i},1);save();renderAbs()">✕</button></div>`;
+  }).join('');
+  document.getElementById('abs-list').innerHTML = h || '<div class="mut">Sem ausências registadas</div>';
+}
+
+/* ══════════════════════ RENDER: REGRAS ══════════════════════ */
+function renderRegras(){
+  // turnos
+  let h = '<tr><th>Código</th><th>Horário</th><th>Tipo</th><th>Horas</th><th>Activo</th><th></th></tr>';
+  S.shifts.forEach((s,i) => {
+    h += `<tr>
+      <td><input type="text" value="${s.code}" size="7" onchange="S.shifts[${i}].code=this.value;save();renderGrid()"></td>
+      <td><input type="text" value="${s.label}" size="9" onchange="S.shifts[${i}].label=this.value;save()"></td>
+      <td><select onchange="S.shifts[${i}].tipo=this.value;save();renderGrid()">
+        <option value="M" ${s.tipo==='M'?'selected':''}>M Manhã</option>
+        <option value="I" ${s.tipo==='I'?'selected':''}>I Interm.</option>
+        <option value="N" ${s.tipo==='N'?'selected':''}>N Noite</option></select></td>
+      <td><input type="number" value="${s.horas}" min="1" max="12" onchange="S.shifts[${i}].horas=+this.value;save()"></td>
+      <td><input type="checkbox" ${s.ativo?'checked':''} onchange="S.shifts[${i}].ativo=this.checked;save();renderGrid()"></td>
+      <td><button class="btn danger small" onclick="if(confirm('Remover turno ${s.code}?')){S.shifts.splice(${i},1);save();renderRegras()}">✕</button></td>
+    </tr>`;
+  });
+  document.getElementById('shift-tbl').innerHTML = h;
+
+  // mínimos
+  let mg = '<div></div>' + DWS.map(d=>`<div class="hd">${d}</div>`).join('');
+  for (const [key,lbl] of [['minM','Manhã (M)'],['minI','Interm. (I)'],['minN','Noite (N)']]){
+    mg += `<div class="mut" style="font-weight:600">${lbl}</div>`;
+    for (let i=0;i<7;i++)
+      mg += `<input type="number" min="0" value="${S[key][i]}" onchange="S['${key}'][${i}]=+this.value;save();renderGrid()">`;
+  }
+  document.getElementById('mins-grid').innerHTML = mg;
+
+  document.getElementById('r-juntas').checked = S.regras.folgasJuntas;
+  document.getElementById('r-troca').checked = S.regras.folgaTroca;
+  document.getElementById('r-gerente').checked = S.regras.gerenteManha;
+  document.getElementById('r-folgas').value = S.regras.folgasSemana;
+  document.getElementById('r-domfolga').value = S.regras.domFolgaMin;
+
+  document.getElementById('c-empresa').value = S.meta.empresa;
+  document.getElementById('c-loja').value = S.meta.loja;
+  document.getElementById('c-nif').value = S.meta.nif;
+
+  renderFeriados();
+}
+function saveRegras(){
+  S.regras.folgasJuntas = document.getElementById('r-juntas').checked;
+  S.regras.folgaTroca = document.getElementById('r-troca').checked;
+  S.regras.gerenteManha = document.getElementById('r-gerente').checked;
+  S.regras.folgasSemana = +document.getElementById('r-folgas').value || 2;
+  S.regras.domFolgaMin = +document.getElementById('r-domfolga').value || 0;
+  save(); renderGrid();
+}
+function saveMeta(){
+  S.meta.empresa = document.getElementById('c-empresa').value;
+  S.meta.loja = document.getElementById('c-loja').value;
+  S.meta.nif = document.getElementById('c-nif').value;
+  save();
+}
+function addShift(){
+  S.shifts.push({code:'NOVO', label:'0h-0h', tipo:'M', horas:8, ativo:true});
+  save(); renderRegras();
+}
+function addFeriado(){
+  const data = document.getElementById('fer-data').value;
+  const nome = document.getElementById('fer-nome').value || 'Feriado';
+  if (!data) return;
+  S.feriados.push({data, nome});
+  S.feriados.sort((a,b)=>a.data<b.data?-1:1);
+  save(); renderFeriados(); renderGrid();
+}
+function renderFeriados(){
+  const h = S.feriados.map((f,i) =>
+    `<div class="abs-row"><b>${f.data}</b> <span class="mut">${f.nome}</span>
+     <button class="btn danger small" onclick="S.feriados.splice(${i},1);save();renderFeriados();renderGrid()">✕</button></div>`).join('');
+  document.getElementById('fer-list').innerHTML = h || '<div class="mut">Sem feriados registados</div>';
+}
+
+/* ══════════════════════ EXPORT ══════════════════════ */
+function exportXLSX(){
+  const {y, m} = ymParts();
+  const n = daysInMonth(y,m);
+  const g = grid();
+  const staff = S.staff;
+  const aoa = [];
+  aoa.push([S.meta.empresa, '', '', `MAPA DE HORÁRIO — ${pad2(m)}/${y}`]);
+  aoa.push([S.meta.loja, '', '', 'NIF:', S.meta.nif]);
+  aoa.push([]);
+  aoa.push(['DIA','DATA','FERIADO', ...staff.map(s=>s.nome), 'M','I','N','F','T']);
+  for (let d=1; d<=n; d++){
+    const idx = dow(y,m,d);
+    let cM=0,cI=0,cN=0,cF=0;
+    const row = [DWL[idx], dateStr(y,m,d), feriadoNome(y,m,d)||''];
+    for (const st of staff){
+      const code = cellGet(g,st.id,d), t = tipoOf(code);
+      if(t==='M')cM++; else if(t==='I')cI++; else if(t==='N')cN++; else if(t==='F')cF++;
+      row.push(code);
+    }
+    row.push(cM,cI,cN,cF,cM+cI+cN);
+    aoa.push(row);
+  }
+  aoa.push([]);
+  // resumo
+  const met = [['M','Manhãs'],['I','Intermédios'],['N','Noites'],['F','Folgas'],['DOM','Domingos Trab.'],['FD','Folgas Domingos'],['DT','Dias Trab.']];
+  aoa.push(['RESUMO','','', ...staff.map(s=>s.nome)]);
+  for (const [k,lbl] of met){
+    const row = [k, lbl, ''];
+    for (const st of staff){
+      let c = 0;
+      for (let d=1; d<=n; d++){
+        const t = tipoOf(cellGet(g,st.id,d));
+        if (k==='DT'){ if(t==='M'||t==='I'||t==='N') c++; }
+        else if (k==='DOM'){ if((t==='M'||t==='I'||t==='N') && dow(y,m,d)===0) c++; }
+        else if (k==='FD'){ if((t==='F'||t==='A') && dow(y,m,d)===0) c++; }
+        else if (t===k) c++;
+      }
+      row.push(c);
+    }
+    aoa.push(row);
+  }
+  aoa.push([]);
+  aoa.push(['LEGENDA TURNOS']);
+  for (const s of S.shifts.filter(s=>s.ativo)) aoa.push([s.code, s.label, s.tipo, s.horas+'h']);
+  aoa.push(['DO','Descanso Obrigatório'],['DC','Descanso Complementar']);
+  for (const [k,v] of Object.entries(ABS_TIPOS)) aoa.push([k, v]);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:14},{wch:11},{wch:10}, ...staff.map(()=>({wch:9})), {wch:4},{wch:4},{wch:4},{wch:4},{wch:4}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `Hor ${pad2(m)}-${y}`);
+  XLSX.writeFile(wb, `Horario_${S.meta.loja.replace(/\s+/g,'_')}_${pad2(m)}_${y}.xlsx`);
+}
+
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(S, null, 1)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `horarios_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+function importJSON(inp){
+  const f = inp.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result);
+      if (!data.staff || !data.shifts) throw new Error('formato inválido');
+      S = data; save(); renderAll();
+      alert('Backup restaurado ✅');
+    } catch(e){ alert('Erro ao ler o ficheiro: '+e.message); }
+  };
+  r.readAsText(f);
+  inp.value = '';
+}
+
+/* ══════════════════════ NAV / INIT ══════════════════════ */
+function goTab(p){
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.page===p));
+  document.querySelectorAll('.page').forEach(pg => pg.classList.toggle('active', pg.id==='page-'+p));
+}
+function renderAll(){ renderStaff(); renderRegras(); renderGrid(); }
+
+(function init(){
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth()+1, 1);
+  document.getElementById('mes').value = next.getFullYear()+'-'+pad2(next.getMonth()+1);
+  renderAll();
+})();
+</script>
+</body>
+</html>
