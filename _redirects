@@ -27,3 +27,5 @@
 # Mapa de Horários (turnos/folgas)
 /horarios           /surf-school/horarios.html      301
 /horario            /surf-school/horarios.html      301
+/horarios-despomar  /surf-school/horarios-despomar.html 301
+/hd                 /surf-school/horarios-despomar.html 301

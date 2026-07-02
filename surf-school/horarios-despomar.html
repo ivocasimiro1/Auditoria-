@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Horários Despomar</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #eef2f7;
+  --surface: #ffffff;
+  --surface2: #f1f4f9;
+  --surface3: #e2e8f0;
+  --border: #d9e0ea;
+  --accent: #2563eb;
+  --accent-dim: #dbeafe;
+  --green: #15803d;
+  --green-dim: #dcfce7;
+  --yellow: #a16207;
+  --yellow-dim: #fef9c3;
+  --red: #dc2626;
+  --red-dim: #fee2e2;
+  --purple: #7c3aed;
+  --purple-dim: #ede9fe;
+  --orange: #ea580c;
+  --text: #334155;
+  --text-bright: #0f172a;
+  --muted: #64748b;
+  --radius: 8px;
+  --radius-lg: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(16,24,40,.06);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-wrap: wrap;
+}
+.header-logo { font-size: 18px; font-weight: 800; color: var(--text-bright); letter-spacing: -0.5px; display:flex; align-items:center; gap:9px; }
+.header-logo span { color: var(--accent); }
+.logo-mark { width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-weight:900; font-size:16px; font-family:Georgia,serif; }
+.header-spacer { flex: 1; }
+.hdr-ctl { display:flex; gap:8px; align-items:center; }
+.hdr-ctl label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tab {
+  padding: 7px 14px; border-radius: var(--radius); cursor: pointer;
+  color: var(--muted); font-weight: 600; font-size: 13px; border: 1px solid transparent;
+  background: none;
+}
+.tab:hover { color: var(--text); background: var(--surface2); }
+.tab.active { color: var(--accent); background: var(--accent-dim); border-color: var(--accent); }
+
+.main { max-width: 1560px; margin: 0 auto; padding: 20px; }
+.page { display: none; }
+.page.active { display: block; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(16,24,40,.05); }
+.card h2 { font-size: 15px; color: var(--text-bright); margin-bottom: 12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.card h2 .hint { font-size: 12px; color: var(--muted); font-weight: 400; }
+
+.btn {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  padding: 8px 16px; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 600;
+}
+.btn:hover { background: var(--surface3); }
+.btn.primary { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.btn.primary:hover { background: var(--accent); color: #fff; }
+.btn.green { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.btn.green:hover { background: var(--green); color: #fff; }
+.btn.danger { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+.btn.small { padding: 4px 10px; font-size: 12px; }
+
+input, select {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  padding: 7px 10px; border-radius: var(--radius); font-size: 13px;
+}
+input:focus, select:focus { outline: none; border-color: var(--accent); }
+input[type=number] { width: 64px; }
+input[type=checkbox] { width: auto; accent-color: var(--accent); }
+label { font-size: 12px; color: var(--muted); }
+
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+
+/* ── Grid horário ── */
+.grid-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); }
+table.hgrid { border-collapse: collapse; width: 100%; font-size: 12px; }
+.hgrid th, .hgrid td { border: 1px solid var(--border); padding: 4px 6px; text-align: center; white-space: nowrap; }
+.hgrid thead th { background: var(--surface2); color: var(--text-bright); position: sticky; top: 0; z-index: 3; }
+.hgrid thead th:first-child { left: 0; z-index: 4; }
+.hgrid td.day-lbl {
+  text-align: left; background: var(--surface); font-weight: 600;
+  position: sticky; left: 0; z-index: 2; min-width: 120px; padding: 4px 10px;
+  border-right: 2px solid var(--border);
+}
+.hgrid td.day-lbl .dnum { font-size: 16px; font-weight: 800; color: var(--text-bright); margin-right: 4px; }
+.hgrid td.day-lbl .dw { color: var(--muted); font-weight: 600; font-size: 12px; }
+.hgrid tr.weekend td.day-lbl { background: #fff7ed; }
+.hgrid tr.weekend td.day-lbl .dnum, .hgrid tr.weekend td.day-lbl .dw { color: var(--orange); }
+.hgrid tr.holiday td.day-lbl { background: var(--purple-dim); }
+.hgrid tr.holiday td.day-lbl .dnum, .hgrid tr.holiday td.day-lbl .dw { color: var(--purple); }
+.hgrid td.cell { cursor: pointer; min-width: 52px; font-weight: 700; }
+.hgrid td.cell:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
+.hgrid td.cnt { background: var(--surface2); color: var(--text); font-size: 12px; font-weight: 700; }
+.hgrid td.cnt.bad { background: var(--red-dim); color: var(--red); }
+.hgrid td.ped { box-shadow: inset 0 0 0 2px var(--orange); }
+.c-M { background: #dbeafe; color: #1d4ed8; }
+.c-I { background: #fef3c7; color: #92400e; }
+.c-N { background: #ede9fe; color: #6d28d9; }
+.c-DO { background: #e2e8f0; color: #475569; }
+.c-DC { background: #f1f5f9; color: #64748b; font-style: italic; }
+.c-FR { background: #dcfce7; color: #15803d; }
+.c-BX { background: #fee2e2; color: #b91c1c; }
+.c-AV { background: #fce7f3; color: #be185d; }
+.c-DCOMP { background: #ffedd5; color: #c2410c; }
+.c-empty { color: #cbd5e1; }
+td.viol { outline: 2px solid var(--red); outline-offset: -2px; }
+
+/* ── Violações ── */
+.viols { margin-top: 14px; }
+.viol-item { padding: 7px 12px; border-radius: var(--radius); margin-bottom: 5px; font-size: 13px; display:flex; gap:8px; align-items:baseline; }
+.viol-item.err { background: var(--red-dim); color: var(--red); }
+.viol-item.warn { background: var(--yellow-dim); color: var(--yellow); }
+.viol-ok { background: var(--green-dim); color: var(--green); padding: 8px 12px; border-radius: var(--radius); font-size: 13px; }
+
+/* ── Supervisor ── */
+.sup-strip { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
+.stat { background: var(--surface); border:1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 20px; min-width: 130px; }
+.stat .v { font-size: 26px; font-weight: 700; color: var(--text-bright); }
+.stat .v.ok { color: var(--green); } .stat .v.bad { color: var(--red); } .stat .v.wrn { color: var(--yellow); }
+.stat .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top:2px; }
+.sup-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+.sup-card { background: var(--surface); border:1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; }
+.sup-card.err { border-color: var(--red); }
+.sup-card.warn { border-color: var(--yellow); }
+.sup-card.ok { border-color: var(--green); }
+.sup-card h3 { font-size: 15px; color: var(--text-bright); display:flex; align-items:center; gap:8px; margin-bottom: 4px; }
+.sup-card .sub { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.badge { border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 700; }
+.badge.ok { background: var(--green-dim); color: var(--green); }
+.badge.err { background: var(--red-dim); color: var(--red); }
+.badge.warn { background: var(--yellow-dim); color: var(--yellow); }
+.badge.off { background: var(--surface3); color: var(--muted); }
+.sup-mini { display:flex; gap:10px; margin: 8px 0; flex-wrap:wrap; }
+.sup-mini span { font-size: 12px; color: var(--muted); }
+.sup-mini b { color: var(--text-bright); }
+.sup-viols { font-size: 12px; margin: 8px 0; }
+.sup-viols div { padding: 3px 8px; border-radius: 6px; margin-bottom: 3px; }
+.sup-viols .e { background: var(--red-dim); color: var(--red); }
+.sup-viols .w { background: var(--yellow-dim); color: var(--yellow); }
+.sup-actions { display:flex; gap:8px; margin-top: 10px; }
+.heat { display:grid; grid-template-columns: repeat(31, 1fr); gap:2px; margin:8px 0; }
+.heat i { display:block; height: 10px; border-radius: 2px; background: var(--surface3); }
+.heat i.ok { background: var(--green-dim); }
+.heat i.bad { background: var(--red); }
+.heat i.wrn { background: var(--yellow); }
+
+/* ── Resumo ── */
+table.sum { border-collapse: collapse; font-size: 12px; width: 100%; }
+.sum th, .sum td { border: 1px solid var(--border); padding: 4px 8px; text-align: center; }
+.sum th { background: var(--surface2); color: var(--text-bright); }
+.sum td.lbl { text-align: left; color: var(--muted); }
+
+/* ── Tabelas ── */
+table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
+.tbl th, .tbl td { border-bottom: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+.tbl th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.tbl select, .tbl input { padding: 5px 8px; font-size: 12px; }
+.tag { display:inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.tag.ger { background: var(--purple-dim); color: var(--purple); }
+
+/* ── Popover ── */
+#pop {
+  position: absolute; z-index: 500; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 8px; display: none; box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  grid-template-columns: repeat(3, 1fr); gap: 4px;
+}
+#pop.open { display: grid; }
+#pop button { border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; cursor: pointer; font-size: 12px; font-weight: 600; background: var(--surface3); color: var(--text); }
+#pop button:hover { outline: 2px solid var(--accent); }
+
+.mins-grid { display: grid; grid-template-columns: 90px repeat(7, 1fr); gap: 6px; align-items: center; max-width: 720px; }
+.mins-grid .hd { text-align: center; font-size: 11px; color: var(--muted); font-weight: 700; }
+.mins-grid input { width: 100%; text-align: center; }
+
+.flex { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.grow { flex: 1; }
+.mut { color: var(--muted); font-size: 12px; }
+.abs-row { display:flex; gap:8px; align-items:center; padding:4px 0; font-size:12px; flex-wrap:wrap; }
+.chip { display:inline-flex; gap:6px; align-items:center; background:var(--surface2); border:1px solid var(--border); border-radius:16px; padding:3px 6px 3px 12px; font-size:12px; margin:2px; }
+.chip button { background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; }
+.chip button:hover { color: var(--red); }
+
+/* ── Impressão ── */
+.print-head { display: none; }
+@media print {
+  :root { color-scheme: light; }
+  @page { size: A4 landscape; margin: 8mm; }
+  body { background: #fff; color: #000; }
+  .header, .toolbar, .viols, .no-print, #pop { display: none !important; }
+  .main { max-width: none; padding: 0; }
+  .card { border: none; padding: 0; margin: 0 0 10px; background: #fff; }
+  .card h2 { color: #000; font-size: 12px; }
+  .card h2 .hint { display: none; }
+  .grid-wrap { border: none; overflow: visible; }
+  .hgrid th, .hgrid td, .sum th, .sum td { border: 1px solid #999; color: #000 !important; background: #fff !important; padding: 1px 3px; font-size: 8.5px; }
+  .hgrid thead th { position: static; }
+  .c-M { background: #dbeafe !important; }
+  .c-I { background: #fef3c7 !important; }
+  .c-N { background: #ede9fe !important; }
+  .c-FR { background: #dcfce7 !important; }
+  .c-BX { background: #fee2e2 !important; }
+  .c-DO, .c-DC { background: #f3f4f6 !important; }
+  .tag { border: 1px solid #999; color: #000; background: #fff; }
+  .print-head { display: flex; gap: 12px; align-items: flex-start; color: #000; margin-bottom: 8px; }
+  .print-head .ph-logo { flex: none; width: 42px; height: 42px; border-radius: 9px; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 26px; font-family: Georgia, serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .print-head .ph-emp { font-size: 14px; font-weight: 800; letter-spacing: .5px; }
+  .print-head .ph-l { font-size: 8.5px; color: #333; }
+  .print-head .ph-map { font-size: 13px; font-weight: 800; margin-top: 3px; }
+  .print-head table { border-collapse: collapse; margin-top: 4px; }
+  .print-head td { border: 1px solid #999; padding: 2px 8px; font-size: 9px; }
+  .print-sign { display: flex !important; }
+}
+.print-sign { display: none; justify-content: space-between; margin-top: 24px; font-size: 9px; color: #000; }
+.print-sign div { width: 40%; border-top: 1px solid #000; padding-top: 4px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo"><span class="logo-mark">D</span>Horários <span>Despomar</span></div>
+  <div class="hdr-ctl">
+    <label>Loja</label>
+    <select id="loja-sel" onchange="mudarLoja(this.value)"></select>
+  </div>
+  <div class="hdr-ctl">
+    <label>Mês</label>
+    <input type="month" id="mes" onchange="renderAll()">
+  </div>
+  <div class="header-spacer"></div>
+  <div class="tabs">
+    <button class="tab active" data-page="horario" onclick="goTab('horario')">📅 Horário</button>
+    <button class="tab" data-page="equipa" onclick="goTab('equipa')">👥 Equipa</button>
+    <button class="tab" data-page="regras" onclick="goTab('regras')">⚙️ Regras</button>
+    <button class="tab" data-page="lojas" onclick="goTab('lojas')">🏢 Lojas</button>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ═══════════ HORÁRIO ═══════════ -->
+<div class="page active" id="page-horario">
+  <div class="card">
+    <div class="toolbar">
+      <button class="btn primary" onclick="gerarClick()">⚡ Sugerir horário</button>
+      <button class="btn primary" onclick="completarClick()" title="Preenche só as células vazias, mantendo tudo o que já preencheste">✚ Completar vazios</button>
+      <button class="btn" onclick="renderGrid()">✔ Validar</button>
+      <button class="btn danger small" onclick="limparMes()">Limpar mês</button>
+      <div class="header-spacer"></div>
+      <button class="btn green" onclick="exportXLSX()">⬇ Excel</button>
+      <button class="btn" onclick="window.print()">🖨 Imprimir</button>
+    </div>
+    <div class="print-head" id="print-head"></div>
+    <div class="grid-wrap" id="grid"></div>
+    <div class="viols" id="viols"></div>
+  </div>
+  <div class="card">
+    <h2>Resumo por colaborador <span class="hint">M=Manhã · I=Intermédio · N=Noite · F=Folgas · Dom=Domingos trabalhados · DT=Dias trabalhados</span></h2>
+    <div style="overflow-x:auto"><div id="resumo"></div></div>
+  </div>
+  <div class="card">
+    <h2>Legenda</h2>
+    <div class="flex" id="legenda"></div>
+    <div class="print-sign"><div>O Responsável da Loja</div><div>A Gerência</div></div>
+  </div>
+</div>
+
+<!-- ═══════════ EQUIPA ═══════════ -->
+<div class="page" id="page-equipa">
+  <div class="card">
+    <h2><span id="eq-loja-nome"></span> — Colaboradores <span class="hint">padrão de folgas fixo (opcional): alterna semanalmente entre Padrão A e Padrão B</span></h2>
+    <div style="overflow-x:auto"><table class="tbl" id="staff-tbl"></table></div>
+    <div style="margin-top:12px"><button class="btn primary" onclick="addStaff()">+ Adicionar colaborador</button></div>
+  </div>
+  <div class="card">
+    <h2>Férias e ausências <span class="hint">bloqueiam os dias no gerador</span></h2>
+    <div class="flex" style="margin-bottom:10px">
+      <select id="abs-staff"></select>
+      <select id="abs-tipo">
+        <option value="FR">Férias</option>
+        <option value="BX">Baixa</option>
+        <option value="AV">Aniversário</option>
+        <option value="DCOMP">Dia de Compensação</option>
+      </select>
+      <input type="date" id="abs-ini">
+      <span class="mut">até</span>
+      <input type="date" id="abs-fim">
+      <button class="btn primary small" onclick="addAbs()">+ Adicionar</button>
+    </div>
+    <div id="abs-list"></div>
+  </div>
+  <div class="card">
+    <h2>Folgas pedidas <span class="hint">dias específicos pedidos pelos colaboradores — o gerador tenta encaixar (marcados com contorno laranja na grelha)</span></h2>
+    <div class="flex" style="margin-bottom:10px">
+      <select id="ped-staff"></select>
+      <input type="date" id="ped-data">
+      <button class="btn primary small" onclick="addPedido()">+ Adicionar</button>
+    </div>
+    <div id="ped-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════ REGRAS ═══════════ -->
+<div class="page" id="page-regras">
+  <div class="card">
+    <h2><span id="rg-loja-nome"></span> — Turnos <span class="hint">cada loja tem os seus turnos e nomenclatura (10h-19h, 15h-24h, …) — tipo M=Manhã, I=Intermédio, N=Noite serve para as regras e contadores</span></h2>
+    <table class="tbl" id="shift-tbl" style="max-width:640px"></table>
+    <div style="margin-top:12px"><button class="btn primary small" onclick="addShift()">+ Adicionar turno</button></div>
+  </div>
+  <div class="card">
+    <h2>Mínimo e ideal de pessoal por turno <span class="hint">Mínimo = obrigatório (erro se falhar) · Ideal = objectivo (aviso se ficar abaixo) — o gerador tenta chegar ao ideal sem nunca furar o mínimo</span></h2>
+    <div id="shift-mins"></div>
+  </div>
+  <div class="card">
+    <h2>Regras do gerador</h2>
+    <div class="flex" style="flex-direction:column; align-items:flex-start; gap:12px">
+      <label class="flex"><input type="checkbox" id="r-juntas" onchange="saveRegras()"> Folgas juntas (2 dias seguidos) quando o colaborador não tem padrão fixo</label>
+      <label class="flex"><input type="checkbox" id="r-troca" onchange="saveRegras()"> Exigir folga entre troca de turno (Manhã ↔ Noite)</label>
+      <label class="flex"><input type="checkbox" id="r-gerente" onchange="saveRegras()"> Gerentes têm de fazer pelo menos 1 bloco de manhãs por mês</label>
+      <label class="flex">Folgas por semana <input type="number" id="r-folgas" min="1" max="3" onchange="saveRegras()"></label>
+      <label class="flex">Mínimo de domingos de folga por mês <input type="number" id="r-domfolga" min="0" max="5" onchange="saveRegras()"></label>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Feriados <span class="hint">os 13 feriados nacionais (incl. Páscoa, Sexta-feira Santa e Corpo de Deus) são automáticos — aqui só precisas de adicionar os municipais/regionais de cada loja</span></h2>
+    <div class="flex" style="margin-bottom:8px">
+      <input type="date" id="fer-data">
+      <input type="text" id="fer-nome" placeholder="Nome (ex: Feriado Municipal)">
+      <select id="fer-loja"></select>
+      <button class="btn primary small" onclick="addFeriado()">+ Adicionar</button>
+    </div>
+    <div id="fer-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════ LOJAS ═══════════ -->
+<div class="page" id="page-lojas">
+  <div class="card">
+    <h2>Lojas <span class="hint">cada loja tem a sua equipa, turnos, mínimos e horários</span></h2>
+    <div style="overflow-x:auto"><table class="tbl" id="lojas-tbl"></table></div>
+    <div class="flex" style="margin-top:12px">
+      <button class="btn primary" onclick="addLoja()">+ Nova loja</button>
+      <button class="btn" onclick="dupLoja()">⧉ Duplicar loja actual (equipa e regras)</button>
+      <button class="btn" onclick="gerarTodas()">⚡ Gerar todas as lojas (mês seleccionado)</button>
+      <button class="btn green" onclick="exportTodasXLSX()">⬇ Excel — todas as lojas</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Empresa <span class="hint">cabeçalho oficial do mapa impresso</span></h2>
+    <div class="flex" style="flex-direction:column; align-items:flex-start; gap:8px">
+      <label class="flex">Empresa <input type="text" id="c-empresa" size="45" onchange="saveEmpresa()"></label>
+      <label class="flex">Morada <input type="text" id="c-morada" size="45" onchange="saveEmpresa()"></label>
+      <label class="flex">IRCT <input type="text" id="c-irct" size="45" onchange="saveEmpresa()"></label>
+      <label class="flex">CAE <input type="text" id="c-cae" size="45" onchange="saveEmpresa()"></label>
+      <label class="flex">NIF <input type="text" id="c-nif" size="15" onchange="saveEmpresa()"></label>
+      <label class="flex">Actividade <input type="text" id="c-activ" size="30" onchange="saveEmpresa()"></label>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Dados <span class="hint">tudo é guardado localmente neste browser — faz backups regulares</span></h2>
+    <div class="flex">
+      <button class="btn" onclick="exportJSON()">⬇ Backup (JSON)</button>
+      <button class="btn" onclick="document.getElementById('imp-json').click()">⬆ Restaurar backup</button>
+      <input type="file" id="imp-json" accept=".json" style="display:none" onchange="importJSON(this)">
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div id="pop"></div>
+
+<script>
+'use strict';
+/* ══════════════════════ ESTADO ══════════════════════ */
+const LSKEY = 'horarios_despomar_v1';
+const LSKEY_OLD = 'despomar_horarios_v2';
+const DWS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const DWL = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const ABS_TIPOS = { FR:'Férias', BX:'Baixa', AV:'Aniversário', DCOMP:'Dia de Compensação' };
+
+// cada turno tem mínimo e ideal por dia da semana (índice 0=Dom … 6=Sáb)
+// — porque a nomenclatura e os horários dos turnos variam de loja para loja
+function defaultShifts(){
+  return [
+    { code:'V-F',   label:'10h-19h', tipo:'M', horas:8, ativo:true,  min:[3,4,4,4,4,4,4], ideal:[3,4,4,4,4,4,4] },
+    { code:'VIII-J',label:'12h-21h', tipo:'I', horas:8, ativo:false, min:[0,0,0,0,0,0,0], ideal:[0,0,0,0,0,0,0] },
+    { code:'IX-L',  label:'13h-22h', tipo:'I', horas:8, ativo:true,  min:[0,0,0,0,0,0,0], ideal:[0,0,0,0,0,0,0] },
+    { code:'XII-L', label:'15h-00h', tipo:'N', horas:8, ativo:true,  min:[3,4,4,4,4,4,4], ideal:[3,4,4,4,4,4,4] },
+  ];
+}
+function defaultRegras(){ return { folgasJuntas:true, folgaTroca:true, gerenteManha:true, folgasSemana:2, domFolgaMin:1 }; }
+function novaLoja(nome){
+  return {
+    id: 'l' + Date.now() + Math.floor(Math.random()*1000),
+    nome, morada:'',
+    shifts: defaultShifts(),
+    regras: defaultRegras(),
+    staff: [], ausencias: [], pedidos: [], meses: {},
+  };
+}
+function defaultState(){
+  const faro = novaLoja('ESS FARO');
+  faro.morada = 'Forum Algarve - Lj. 1.28, Estrada Nacional 125';
+  faro.shifts = [
+    { code:'V F',   label:'10h-19h', tipo:'M', horas:8, ativo:true, min:[2,2,2,2,2,2,2], ideal:[2,3,3,3,3,3,3] },
+    { code:'VIII H',label:'12h-21h', tipo:'I', horas:8, ativo:true, min:[0,0,0,0,0,0,0], ideal:[0,0,0,0,0,0,0] },
+    { code:'X L',   label:'14h-23h', tipo:'N', horas:8, ativo:true, min:[2,2,2,2,2,2,2], ideal:[2,2,2,2,2,2,2] },
+    { code:'XII L', label:'15h-24h', tipo:'N', horas:8, ativo:true, min:[0,0,0,0,0,0,0], ideal:[0,0,0,0,0,0,0] },
+  ];
+  faro.staff = [
+    { id:'f1', nome:'João Alves',     gerente:true,  padA:null, padB:null },
+    { id:'f2', nome:'João Queirós',   gerente:false, padA:null, padB:null },
+    { id:'f3', nome:'Alina Ramos',    gerente:false, padA:null, padB:null },
+    { id:'f4', nome:'Nuno Esmael',    gerente:false, padA:null, padB:null },
+    { id:'f5', nome:'Rui Rosa',       gerente:false, padA:null, padB:null },
+    { id:'f6', nome:'Ruben Rico',     gerente:false, padA:null, padB:null },
+    { id:'f7', nome:'Iara Santos',    gerente:false, padA:null, padB:null },
+    { id:'f8', nome:'Nicole Vasques', gerente:false, padA:null, padB:null },
+  ];
+  const ess = novaLoja('ESS LAGOS');
+  ess.morada = 'Praça Gil Eanes, 25';
+  ess.staff = [
+    { id:'s1',  nome:'Bruno Sobreiro',     gerente:true,  padA:null,  padB:null },
+    { id:'s2',  nome:'Inés Zambujo',       gerente:false, padA:[5,6], padB:[3,0] },
+    { id:'s3',  nome:'Mariana Figueiredo', gerente:false, padA:[1,6], padB:[3,0] },
+    { id:'s4',  nome:'Ana Hernández',      gerente:false, padA:[1,5], padB:[2,0] },
+    { id:'s5',  nome:'Miguel Reis',        gerente:false, padA:[3,4], padB:[2,6] },
+    { id:'s6',  nome:'Miguel Dias',        gerente:false, padA:null,  padB:null },
+    { id:'s7',  nome:'Salvador Glória',    gerente:false, padA:null,  padB:null },
+    { id:'s8',  nome:'Inês Coelho',        gerente:false, padA:[1,6], padB:[3,0] },
+    { id:'s9',  nome:'Adriana Sampaio',    gerente:false, padA:[1,5], padB:[2,0] },
+    { id:'s10', nome:'Alexandre Duarte',   gerente:false, padA:[3,4], padB:[2,6] },
+    { id:'s11', nome:'Rui Marreiros',      gerente:false, padA:null,  padB:null },
+    { id:'s12', nome:'Lucas Vaz',          gerente:false, padA:null,  padB:null },
+  ];
+  return {
+    empresa: {
+      nome:'DESPOMAR, SA',
+      morada:'Av. São Sebastião 36-B, 2655-482 Ericeira',
+      irct:'IRCT - CCT entre a APED - Associação Portuguesa de Empresas de Distribuição',
+      cae:'CAE: 47640 – Comércio a retalho de artigos de desporto',
+      nif:'501823646',
+      atividade:'Comércio e Retalho',
+    },
+    feriados: [
+      { data:'2026-09-07', nome:'Feriado Municipal Faro', lojaId: faro.id },
+      { data:'2026-10-27', nome:'Feriado Municipal Lagos', lojaId: ess.id },
+    ],
+    lojas: [ess, faro],
+    lojaAtual: ess.id,
+  };
+}
+
+let S = load();
+function load(){
+  try {
+    const raw = localStorage.getItem(LSKEY);
+    if (raw) return JSON.parse(raw);
+    // migração da versão anterior (mínimos por categoria M/I/N → por turno)
+    const old = localStorage.getItem(LSKEY_OLD);
+    if (old){
+      const o = JSON.parse(old);
+      if (o.lojas){
+        for (const l of o.lojas){
+          const minPorTipo = { M: l.minM || [0,0,0,0,0,0,0], I: l.minI || [0,0,0,0,0,0,0], N: l.minN || [0,0,0,0,0,0,0] };
+          const primeiroDoTipo = {};
+          for (const s of l.shifts){
+            if (s.ativo && !primeiroDoTipo[s.tipo]){ primeiroDoTipo[s.tipo] = true; s.min = minPorTipo[s.tipo].slice(); }
+            else s.min = [0,0,0,0,0,0,0];
+            s.ideal = s.min.slice();
+          }
+          delete l.minM; delete l.minI; delete l.minN;
+        }
+        return o;
+      }
+    }
+  } catch(e){}
+  return defaultState();
+}
+function save(){ localStorage.setItem(LSKEY, JSON.stringify(S)); }
+function L(){ return S.lojas.find(l => l.id === S.lojaAtual) || S.lojas[0]; }
+
+/* ══════════════════════ HELPERS ══════════════════════ */
+const pad2 = n => String(n).padStart(2,'0');
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+function ymSel(){ return document.getElementById('mes').value; }
+function ymParts(){ const [y,m] = ymSel().split('-').map(Number); return {y, m}; }
+function daysInMonth(y,m){ return new Date(y, m, 0).getDate(); }
+function dow(y,m,d){ return new Date(y, m-1, d).getDay(); }
+function dateStr(y,m,d){ return y+'-'+pad2(m)+'-'+pad2(d); }
+function isoWeek(y,m,d){
+  const dt = new Date(Date.UTC(y, m-1, d));
+  const dayNum = (dt.getUTCDay()+6)%7;
+  dt.setUTCDate(dt.getUTCDate() - dayNum + 3);
+  const firstThu = new Date(Date.UTC(dt.getUTCFullYear(),0,4));
+  return 1 + Math.round(((dt - firstThu)/86400000 - 3 + ((firstThu.getUTCDay()+6)%7))/7);
+}
+// feriados nacionais portugueses — automáticos para qualquer ano
+// (algoritmo de Butcher para a Páscoa; Sexta-feira Santa = -2, Corpo de Deus = +60)
+function easterMD(y){
+  const a=y%19, b=Math.floor(y/100), c=y%100, dd=Math.floor(b/4), e=b%4,
+    f=Math.floor((b+8)/25), g=Math.floor((b-f+1)/3), h=(19*a+b-dd-g+15)%30,
+    i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7, mm=Math.floor((a+11*h+22*l)/451);
+  return { m: Math.floor((h+l-7*mm+114)/31), d: ((h+l-7*mm+114)%31)+1 };
+}
+const _ferNacCache = {};
+function feriadosNacionais(y){
+  if (_ferNacCache[y]) return _ferNacCache[y];
+  const lst = [
+    [1,1,'Ano Novo'],[4,25,'Dia da Liberdade'],[5,1,'Dia do Trabalhador'],
+    [6,10,'Dia de Portugal'],[8,15,'Assunção de Nossa Senhora'],[10,5,'Implantação da República'],
+    [11,1,'Dia de Todos os Santos'],[12,1,'Restauração da Independência'],
+    [12,8,'Imaculada Conceição'],[12,25,'Natal'],
+  ].map(([m,d,nome]) => ({data: dateStr(y,m,d), nome}));
+  const e = easterMD(y);
+  const pascoa = new Date(y, e.m-1, e.d);
+  const off = days => { const dt = new Date(pascoa); dt.setDate(dt.getDate()+days); return dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate()); };
+  lst.push({data: off(-2), nome:'Sexta-feira Santa'});
+  lst.push({data: off(0),  nome:'Páscoa'});
+  lst.push({data: off(60), nome:'Corpo de Deus'});
+  _ferNacCache[y] = lst;
+  return lst;
+}
+function feriadoNome(loja,y,m,d){
+  const ds = dateStr(y,m,d);
+  const nac = feriadosNacionais(y).find(f => f.data === ds);
+  if (nac) return nac.nome;
+  const f = S.feriados.find(f => f.data === ds && (!f.lojaId || f.lojaId === loja.id));
+  return f ? f.nome : null;
+}
+function absOn(loja, staffId, y, m, d){
+  const ds = dateStr(y,m,d);
+  const a = loja.ausencias.find(a => a.staffId===staffId && a.inicio<=ds && ds<=a.fim);
+  return a ? a.tipo : null;
+}
+function pedidoOn(loja, staffId, y, m, d){
+  const ds = dateStr(y,m,d);
+  return loja.pedidos.some(p => p.staffId===staffId && p.data===ds);
+}
+function shiftByCode(loja, code){ return loja.shifts.find(s => s.code===code); }
+function tipoOf(loja, code){
+  if (!code) return null;
+  if (code==='DO' || code==='DC') return 'F';
+  if (ABS_TIPOS[code]) return 'A';
+  const s = shiftByCode(loja, code);
+  return s ? s.tipo : null;
+}
+function primShift(loja, tipo){ const s = loja.shifts.find(s => s.ativo && s.tipo===tipo); return s ? s.code : null; }
+function ativos(loja){ return loja.shifts.filter(s => s.ativo); }
+function minTotDia(loja, idx){ return ativos(loja).reduce((c,s) => c + (s.min[idx]||0), 0); }
+function gridOf(loja, ym){ if (!loja.meses[ym]) loja.meses[ym] = {}; return loja.meses[ym]; }
+function cellGet(g, sid, d){ return (g[sid] && g[sid][d]) || ''; }
+function cellSet(g, sid, d, v){ if (!g[sid]) g[sid] = {}; if (v) g[sid][d] = v; else delete g[sid][d]; }
+function mesVazio(loja, ym){
+  const g = loja.meses[ym];
+  return !g || !Object.keys(g).some(sid => Object.keys(g[sid]).length);
+}
+// assim que se muda de mês, as férias/ausências registadas aparecem logo
+// preenchidas na grelha (sem precisar de gerar)
+function sincAusencias(loja, y, m){
+  const ym = y+'-'+pad2(m);
+  const g = gridOf(loja, ym);
+  const n = daysInMonth(y,m);
+  let mudou = false;
+  for (const st of loja.staff)
+    for (let d=1; d<=n; d++){
+      const a = absOn(loja, st.id, y, m, d);
+      if (a && !cellGet(g, st.id, d)){ cellSet(g, st.id, d, a); mudou = true; }
+    }
+  return mudou;
+}
+
+function weeksOf(y,m){
+  const n = daysInMonth(y,m), weeks = [];
+  let cur = [];
+  for (let d=1; d<=n; d++){
+    cur.push(d);
+    if (dow(y,m,d) === 0){ weeks.push(cur); cur = []; }
+  }
+  if (cur.length) weeks.push(cur);
+  return weeks;
+}
+// nº de folgas devidas numa semana — semanas parciais no início/fim do mês
+// pedem menos (a outra parte da semana pertence ao mês anterior/seguinte)
+function folgasDevidas(loja, diasUteis){
+  const t = loja.regras.folgasSemana;
+  if (diasUteis >= 6) return t;
+  if (diasUteis >= 3) return Math.min(t, 1);
+  return 0;
+}
+
+/* ══════════════════════ GERADOR ══════════════════════ */
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+let RND = () => 0;
+
+// corre várias tentativas e fica com a melhor
+// manter=true: sugestão semi-automática — preserva tudo o que já está
+// preenchido e só completa as células vazias
+function gerarMelhor(loja, y, m, manter){
+  const ym = y+'-'+pad2(m);
+  const base = manter ? JSON.stringify(gridOf(loja, ym)) : null;
+  let best = null, bestErr = Infinity;
+  for (let i=0; i<30; i++){
+    RND = i===0 ? (() => 0) : mulberry32(i*7919+13);
+    if (manter) loja.meses[ym] = JSON.parse(base);
+    gerarHorario(loja, y, m, manter);
+    const v = validar(loja, y, m);
+    const err = v.viols.filter(x=>x.sev==='err').length*10 + v.viols.length;
+    if (err < bestErr){ bestErr = err; best = JSON.stringify(loja.meses[ym]); if (err===0) break; }
+  }
+  loja.meses[ym] = JSON.parse(best);
+  RND = () => 0;
+}
+
+function gerarClick(){
+  const {y, m} = ymParts();
+  const loja = L();
+  if (!loja.staff.length) return alert('Esta loja não tem colaboradores — adiciona-os no separador Equipa.');
+  if (!ativos(loja).length) return alert('Esta loja não tem turnos activos — configura-os no separador Regras.');
+  if (!mesVazio(loja, ymSel()) && !confirm('O mês já tem dados. Sugerir de novo substitui tudo (excepto ausências e pedidos). Para manter o que preencheste, usa "Completar vazios". Continuar?')) return;
+  gerarMelhor(loja, y, m, false);
+  save();
+  renderGrid();
+}
+
+function completarClick(){
+  const {y, m} = ymParts();
+  const loja = L();
+  if (!loja.staff.length) return alert('Esta loja não tem colaboradores — adiciona-os no separador Equipa.');
+  if (!ativos(loja).length) return alert('Esta loja não tem turnos activos — configura-os no separador Regras.');
+  gerarMelhor(loja, y, m, true);
+  save();
+  renderGrid();
+}
+
+function gerarTodas(){
+  const {y, m} = ymParts();
+  const comDados = S.lojas.filter(l => l.staff.length && !mesVazio(l, ymSel()));
+  if (comDados.length && !confirm(`${comDados.length} loja(s) já têm horário em ${MESES[m-1]}. Gerar de novo substitui tudo. Continuar?`)) return;
+  for (const loja of S.lojas){
+    if (loja.staff.length && ativos(loja).length) gerarMelhor(loja, y, m, false);
+  }
+  save();
+  renderAll();
+}
+
+function gerarHorario(loja, y, m, manter){
+  const n = daysInMonth(y,m);
+  const ym = y+'-'+pad2(m);
+  if (!manter) loja.meses[ym] = {};
+  const g = gridOf(loja, ym);
+  const staff = loja.staff;
+  const weeks = weeksOf(y,m);
+  const R = loja.regras;
+  const turnos = ativos(loja).filter(s => s.min.some(v=>v>0) || s.ideal.some(v=>v>0));
+  if (!turnos.length) turnos.push(...ativos(loja));
+  if (!turnos.length) return;
+
+  // 1 ─ ausências (férias, baixas…) — não pisam células já preenchidas à mão
+  for (const st of staff)
+    for (let d=1; d<=n; d++){
+      const a = absOn(loja, st.id, y, m, d);
+      if (a && !cellGet(g, st.id, d)) cellSet(g, st.id, d, a);
+    }
+
+  const domFolgas = {}; staff.forEach(st => domFolgas[st.id] = 0);
+  for (const st of staff)
+    for (let d=1; d<=n; d++){
+      const t = tipoOf(loja, cellGet(g, st.id, d));
+      if (dow(y,m,d)===0 && (t==='F'||t==='A')) domFolgas[st.id]++;
+    }
+
+  // 2 ─ folgas pedidas: colocadas primeiro, como compromisso
+  for (const st of staff)
+    for (let d=1; d<=n; d++)
+      if (pedidoOn(loja, st.id, y, m, d) && !cellGet(g, st.id, d)){
+        cellSet(g, st.id, d, dow(y,m,d)===0 ? 'DO' : 'DC');
+        if (dow(y,m,d)===0) domFolgas[st.id]++;
+      }
+
+  // 3 ─ folgas semanais
+  const lastPair = {};
+  const folgasNoDia = d => staff.reduce((c,st) => c + (tipoOf(loja, cellGet(g,st.id,d))==='F' ? 1 : 0), 0);
+  const disponiveis = d => staff.reduce((c,st) => c + (ABS_TIPOS[cellGet(g,st.id,d)] ? 0 : 1), 0);
+
+  weeks.forEach((week, wi) => {
+    const ordem = staff.slice(); for (let k=0; k<wi; k++) ordem.push(ordem.shift());
+    for (const st of ordem){
+      const uteis = week.filter(d => !ABS_TIPOS[cellGet(g,st.id,d)]);
+      const jaTem = week.filter(d => tipoOf(loja, cellGet(g,st.id,d))==='F').length;
+      const devidas = Math.max(0, folgasDevidas(loja, uteis.length) - jaTem);
+      if (!devidas) continue;
+      const livres = week.filter(d => !cellGet(g, st.id, d));
+
+      // padrão fixo: alterna A/B pela paridade da semana ISO
+      if (st.padA && st.padB){
+        const par = isoWeek(y, m, week[0]) % 2 === 0;
+        const pat = par ? st.padB : st.padA;
+        let usadas = 0;
+        for (const wd of pat){
+          const d = week.find(d => dow(y,m,d)===wd && !cellGet(g,st.id,d));
+          if (d !== undefined && usadas < devidas){
+            cellSet(g, st.id, d, usadas===0 && jaTem===0 ? 'DO' : 'DC');
+            if (dow(y,m,d)===0) domFolgas[st.id]++;
+            usadas++;
+          }
+        }
+        while (usadas < devidas){
+          const d = livres.find(d => !cellGet(g,st.id,d));
+          if (d === undefined) break;
+          cellSet(g, st.id, d, usadas===0 && jaTem===0 ? 'DO' : 'DC');
+          if (dow(y,m,d)===0) domFolgas[st.id]++;
+          usadas++;
+        }
+        continue;
+      }
+
+      // automático: escolhe par (ou dia único)
+      const domRestantes = weeks.slice(wi).flat().filter(d => dow(y,m,d)===0).length;
+      const precisaDom = domFolgas[st.id] < R.domFolgaMin && domRestantes <= (R.domFolgaMin - domFolgas[st.id]) * 2;
+
+      let candidatos = [];
+      if (devidas === 2){
+        for (let i=0; i<livres.length; i++)
+          for (let j=i+1; j<livres.length; j++)
+            candidatos.push([livres[i], livres[j]]);
+      } else candidatos = livres.map(d => [d]);
+
+      let best = null, bestScore = Infinity;
+      for (const par of candidatos){
+        let sc = 0;
+        const seguidos = par.length===2 && par[1]-par[0]===1;
+        if (R.folgasJuntas && par.length===2 && !seguidos) sc += 50;
+        const temDom = par.some(d => dow(y,m,d)===0);
+        if (precisaDom && !temDom) sc += 200;
+        if (!precisaDom && temDom && domFolgas[st.id] >= R.domFolgaMin) sc += 15;
+        for (const d of par){
+          const idx = dow(y,m,d);
+          const cap = disponiveis(d) - minTotDia(loja, idx);
+          const jaFolgam = folgasNoDia(d);
+          if (jaFolgam >= cap) sc += 100 + (jaFolgam-cap)*40;
+          else sc += jaFolgam * 6;
+          if (lastPair[st.id] && lastPair[st.id].includes(idx)) sc += 10;
+        }
+        sc += RND() * 8;
+        if (sc < bestScore){ bestScore = sc; best = par; }
+      }
+      if (best){
+        best.sort((a,b)=>a-b);
+        const domIdx = best.findIndex(d => dow(y,m,d)===0);
+        best.forEach((d,i) => {
+          const isDO = jaTem===0 && (domIdx>=0 ? i===domIdx : i===0);
+          cellSet(g, st.id, d, isDO ? 'DO' : 'DC');
+          if (dow(y,m,d)===0) domFolgas[st.id]++;
+        });
+        lastPair[st.id] = best.map(d => dow(y,m,d));
+      }
+    }
+  });
+
+  // 4 ─ blocos de trabalho → turnos (bloco = dias seguidos entre folgas,
+  //     todos com o mesmo turno ⇒ nunca há troca de turno sem folga)
+  //     contagens por CÓDIGO de turno — cada loja tem os seus
+  const cnt = {}; for (const s of turnos) cnt[s.code] = Array(n+1).fill(0);
+  // células já preenchidas (modo completar / edição manual) contam
+  for (const st of staff)
+    for (let d=1; d<=n; d++){
+      const c = cellGet(g, st.id, d);
+      if (cnt[c] !== undefined) cnt[c][d]++;
+    }
+  const stTot = {}; staff.forEach(st => stTot[st.id] = {M:0,I:0,N:0});
+  const stTemM = {};
+  staff.forEach(st => {
+    stTemM[st.id] = false;
+    for (let d=1; d<=n; d++){
+      const t = tipoOf(loja, cellGet(g, st.id, d));
+      if (t==='M'||t==='I'||t==='N'){ stTot[st.id][t]++; if (t==='M') stTemM[st.id] = true; }
+    }
+  });
+
+  const workTipo = (sid, d) => {
+    const t = tipoOf(loja, cellGet(g, sid, d));
+    return (t==='M'||t==='I'||t==='N') ? t : null;
+  };
+
+  const blocos = [];
+  for (const st of staff){
+    let run = [];
+    for (let d=1; d<=n+1; d++){
+      const livre = d<=n && !cellGet(g, st.id, d);
+      if (livre) run.push(d);
+      else if (run.length){ blocos.push({st, dias:run}); run = []; }
+    }
+  }
+  blocos.sort((a,b) => a.dias[0]-b.dias[0]);
+
+  function scoreBloco(b, s){
+    let sc = 0;
+    for (const d of b.dias){
+      const idx = dow(y,m,d);
+      if (cnt[s.code][d] < s.min[idx]) sc -= 12;        // ajuda a cobrir o mínimo
+      else if (cnt[s.code][d] < s.ideal[idx]) sc -= 4;  // aproxima do ideal
+      else sc += 3;                                      // excesso
+      for (const o of turnos) if (o.code!==s.code && cnt[o.code][d] < o.min[idx]) sc += 6;
+    }
+    sc += (stTot[b.st.id][s.tipo]||0) * 2;               // equilíbrio mensal por pessoa
+    if (R.gerenteManha && b.st.gerente && !stTemM[b.st.id] && s.tipo==='M') sc -= 8;
+    // fronteiras com células fixas (modo completar): não trocar de tipo sem folga
+    if (R.folgaTroca){
+      const tPrev = b.dias[0]>1 ? workTipo(b.st.id, b.dias[0]-1) : null;
+      const tNext = b.dias[b.dias.length-1]<n ? workTipo(b.st.id, b.dias[b.dias.length-1]+1) : null;
+      if (tPrev && tPrev!==s.tipo) sc += 500;
+      if (tNext && tNext!==s.tipo) sc += 500;
+    }
+    sc += RND() * 6;
+    return sc;
+  }
+  for (const b of blocos){
+    let best = turnos[0], bestSc = Infinity;
+    for (const s of turnos){ const sc = scoreBloco(b, s); if (sc < bestSc){ bestSc = sc; best = s; } }
+    b.sh = best;
+    for (const d of b.dias){ cnt[best.code][d]++; cellSet(g, b.st.id, d, best.code); }
+    stTot[b.st.id][best.tipo] = (stTot[b.st.id][best.tipo]||0) + b.dias.length;
+    if (best.tipo==='M') stTemM[b.st.id] = true;
+  }
+
+  const boundaryOk = (b, s) => {
+    if (!R.folgaTroca) return true;
+    const tPrev = b.dias[0]>1 ? workTipo(b.st.id, b.dias[0]-1) : null;
+    const tNext = b.dias[b.dias.length-1]<n ? workTipo(b.st.id, b.dias[b.dias.length-1]+1) : null;
+    // nota: os dias do próprio bloco vão mudar todos juntos, por isso só
+    // interessam os vizinhos imediatamente fora do bloco
+    return (!tPrev || tPrev===s.tipo) && (!tNext || tNext===s.tipo);
+  };
+
+  // 4b ─ gerente sem manhãs: força o bloco mais pequeno para um turno M
+  if (R.gerenteManha){
+    const turnoM = turnos.find(s => s.tipo==='M');
+    if (turnoM){
+      for (const st of staff.filter(s => s.gerente)){
+        if (stTemM[st.id]) continue;
+        const meus = blocos.filter(b => b.st.id===st.id && b.sh && b.sh.tipo!=='M' && boundaryOk(b, turnoM))
+          .sort((a,b)=>a.dias.length-b.dias.length);
+        if (meus.length){
+          const b = meus[0];
+          for (const d of b.dias){ cnt[b.sh.code][d]--; cnt[turnoM.code][d]++; cellSet(g, st.id, d, turnoM.code); }
+          b.sh = turnoM;
+        }
+      }
+    }
+  }
+
+  // 5 ─ reparação: dias abaixo do mínimo → vira blocos de turnos com excedente
+  for (let pass=0; pass<4; pass++){
+    let mudou = false;
+    for (let d=1; d<=n; d++){
+      const idx = dow(y,m,d);
+      for (const s of turnos){
+        while (cnt[s.code][d] < s.min[idx]){
+          const cand = blocos.filter(b => b.sh && b.sh.code!==s.code && b.dias.includes(d) &&
+            boundaryOk(b, s) &&
+            b.dias.every(dd => cnt[b.sh.code][dd] - 1 >= b.sh.min[dow(y,m,dd)] ||
+                               b.sh.min[dow(y,m,dd)] === 0))
+            .sort((a,b) => a.dias.length - b.dias.length);
+          if (!cand.length) break;
+          const b = cand[0];
+          for (const dd of b.dias){ cnt[b.sh.code][dd]--; cnt[s.code][dd]++; cellSet(g, b.st.id, dd, s.code); }
+          b.sh = s; mudou = true;
+        }
+      }
+    }
+    if (!mudou) break;
+  }
+
+  // 5b ─ reparação por troca de folga: dia em défice recebe alguém que estava
+  //      de folga; a folga muda para um dia da mesma semana com excedente
+  const tipoDia = (sid, d) => tipoOf(loja, cellGet(g, sid, d));
+  const domFolgasDe = sid => { let c=0; for (let d=1;d<=n;d++) if (dow(y,m,d)===0 && (tipoDia(sid,d)==='F'||tipoDia(sid,d)==='A')) c++; return c; };
+  for (let pass=0; pass<3; pass++){
+    let mudou = false;
+    for (let d=1; d<=n; d++){
+      const idx = dow(y,m,d);
+      for (const s of turnos){
+        while (cnt[s.code][d] < s.min[idx]){
+          let done = false;
+          for (const st of staff){
+            const cd = cellGet(g, st.id, d);
+            if (cd!=='DC' && cd!=='DO') continue;
+            if (pedidoOn(loja, st.id, y, m, d)) continue;
+            if (st.padA && st.padB) continue;                  // não mexer em padrões fixos
+            if (dow(y,m,d)===0 && domFolgasDe(st.id) <= R.domFolgaMin) continue; // não roubar o domingo de folga
+            // vizinhos têm de ser compatíveis com o tipo do turno (regra da troca)
+            const okViz = v => !v || v==='F' || v==='A' || v===s.tipo;
+            if (R.folgaTroca && (!okViz(d>1?tipoDia(st.id,d-1):null) || !okViz(d<n?tipoDia(st.id,d+1):null))) continue;
+            const week = weeks.find(w => w.includes(d)) || [];
+            for (const d2 of week){
+              if (d2===d) continue;
+              const c2 = cellGet(g, st.id, d2);
+              const s2 = turnos.find(x => x.code===c2);
+              if (!s2) continue;
+              if (cnt[c2][d2] - 1 < s2.min[dow(y,m,d2)]) continue; // criaria défice em d2
+              cellSet(g, st.id, d, s.code); cnt[s.code][d]++;
+              cellSet(g, st.id, d2, cd); cnt[c2][d2]--;
+              done = true; mudou = true; break;
+            }
+            if (done) break;
+          }
+          if (!done) break;
+        }
+      }
+    }
+    if (!mudou) break;
+  }
+}
+
+/* ══════════════════════ VALIDAÇÃO ══════════════════════ */
+function validar(loja, y, m){
+  const n = daysInMonth(y,m);
+  const ym = y+'-'+pad2(m);
+  const g = gridOf(loja, ym);
+  const viols = [], cells = new Set(), days = new Set();
+  const staff = loja.staff;
+  const R = loja.regras;
+
+  // mínimos e ideais diários — por turno
+  const turnos = ativos(loja);
+  for (let d=1; d<=n; d++){
+    const idx = dow(y,m,d);
+    const cont = {};
+    for (const st of staff){ const c = cellGet(g,st.id,d); if (c) cont[c] = (cont[c]||0) + 1; }
+    for (const s of turnos){
+      const c = cont[s.code] || 0;
+      if (c < s.min[idx]){
+        viols.push({sev:'err', msg:`Dia ${d} (${DWS[idx]}): só ${c}× ${s.code} ${s.label} (mínimo ${s.min[idx]})`, dia:d});
+        days.add(d+':'+s.tipo);
+      } else if (c < s.ideal[idx]){
+        viols.push({sev:'warn', msg:`Dia ${d} (${DWS[idx]}): ${c}× ${s.code} ${s.label} (ideal ${s.ideal[idx]})`, dia:d});
+      }
+    }
+  }
+
+  // folgas por semana
+  for (const week of weeksOf(y,m)){
+    for (const st of staff){
+      const uteis = week.filter(d => !ABS_TIPOS[cellGet(g,st.id,d)]);
+      const devidas = folgasDevidas(loja, uteis.length);
+      const folgas = week.filter(d => tipoOf(loja, cellGet(g,st.id,d))==='F').length;
+      const preenchidos = week.filter(d => cellGet(g,st.id,d)).length;
+      if (preenchidos < week.length) continue;
+      if (folgas < devidas)
+        viols.push({sev:'err', msg:`${st.nome}: só ${folgas} folga(s) na semana de ${week[0]} a ${week[week.length-1]} (devia ter ${devidas})`});
+      else if (folgas > devidas + 1)
+        viols.push({sev:'warn', msg:`${st.nome}: ${folgas} folgas na semana de ${week[0]} a ${week[week.length-1]}`});
+    }
+  }
+
+  // troca de turno sem folga
+  if (R.folgaTroca){
+    for (const st of staff){
+      let prev = null, prevD = 0;
+      for (let d=1; d<=n; d++){
+        const code = cellGet(g,st.id,d), t = tipoOf(loja, code);
+        if (t==='M' || t==='I' || t==='N'){
+          if (prev && prev!==t && d === prevD+1){
+            viols.push({sev:'err', msg:`${st.nome}: troca de turno ${prev}→${t} no dia ${d} sem folga entre`, dia:d});
+            cells.add(st.id+':'+d);
+          }
+          prev = t; prevD = d;
+        }
+      }
+    }
+  }
+
+  // gerente sem manhã
+  if (R.gerenteManha){
+    for (const st of staff.filter(s=>s.gerente)){
+      let tem = false, trabalhou = false;
+      for (let d=1; d<=n; d++){ const t = tipoOf(loja, cellGet(g,st.id,d)); if (t==='M') tem=true; if (t==='M'||t==='I'||t==='N') trabalhou=true; }
+      if (trabalhou && !tem) viols.push({sev:'err', msg:`${st.nome} (gerente): sem nenhuma manhã este mês`});
+    }
+  }
+
+  // domingos de folga
+  for (const st of staff){
+    let domF = 0, domTrab = 0;
+    for (let d=1; d<=n; d++){
+      if (dow(y,m,d)!==0) continue;
+      const t = tipoOf(loja, cellGet(g,st.id,d));
+      if (t==='F' || t==='A') domF++;
+      else if (t) domTrab++;
+    }
+    if (domF + domTrab > 0 && domF < R.domFolgaMin)
+      viols.push({sev:'warn', msg:`${st.nome}: só ${domF} domingo(s) de folga (mínimo ${R.domFolgaMin})`});
+  }
+
+  // folgas pedidas não respeitadas
+  for (const p of loja.pedidos){
+    const [py,pm,pd] = p.data.split('-').map(Number);
+    if (py!==y || pm!==m) continue;
+    const st = staff.find(s=>s.id===p.staffId);
+    if (!st) continue;
+    const t = tipoOf(loja, cellGet(g, p.staffId, pd));
+    if (t && t!=='F' && t!=='A'){
+      viols.push({sev:'warn', msg:`${st.nome}: folga pedida a ${pd}/${m} não foi respeitada`, dia:pd});
+      cells.add(p.staffId+':'+pd);
+    }
+  }
+
+  return {viols, cells, days};
+}
+
+/* ══════════════════════ RENDER: HORÁRIO ══════════════════════ */
+function renderGrid(){
+  const ymv = ymSel(); if (!ymv) return;
+  const {y, m} = ymParts();
+  const n = daysInMonth(y,m);
+  const loja = L();
+  // férias/ausências registadas aparecem logo na grelha ao mudar de mês
+  if (loja.staff.length && sincAusencias(loja, y, m)) save();
+  const g = gridOf(loja, ymv);
+  const staff = loja.staff;
+  const v = validar(loja, y, m);
+
+  const E = S.empresa;
+  document.getElementById('print-head').innerHTML = `
+    <div class="ph-logo">D</div>
+    <div>
+      <div class="ph-emp">${esc(E.nome)}</div>
+      <div class="ph-l">${esc(E.morada)} · NIF ${esc(E.nif)}</div>
+      <div class="ph-l">${esc(E.irct)}</div>
+      <div class="ph-l">${esc(E.cae)}</div>
+      <div class="ph-map">MAPA DE HORÁRIO — ${esc(loja.nome)} — ${MESES[m-1].toUpperCase()} ${y}</div>
+      <table><tr>
+        <td><b>Loja:</b> ${esc(loja.nome)}</td>
+        <td><b>Morada:</b> ${esc(loja.morada || '—')}</td>
+        <td><b>Actividade:</b> ${esc(E.atividade)}</td>
+        <td><b>Início:</b> 01/${pad2(m)}/${y}</td>
+        <td><b>Fim:</b> ${pad2(n)}/${pad2(m)}/${y}</td>
+      </tr></table>
+    </div>`;
+
+  if (!staff.length){
+    document.getElementById('grid').innerHTML = '<div style="padding:30px;text-align:center" class="mut">Esta loja ainda não tem colaboradores — adiciona-os no separador 👥 Equipa.</div>';
+    document.getElementById('viols').innerHTML = '';
+    document.getElementById('resumo').innerHTML = '';
+    renderLegenda();
+    return;
+  }
+
+  let h = '<table class="hgrid"><thead><tr><th style="text-align:left">Dia</th>';
+  for (const st of staff) h += `<th>${esc(st.nome.split(' ')[0])}<br><span style="font-weight:400;color:var(--muted)">${esc(st.nome.split(' ').slice(1).join(' '))}</span></th>`;
+  h += '<th>M</th><th>I</th><th>N</th><th>F</th><th>T</th></tr></thead><tbody>';
+
+  for (let d=1; d<=n; d++){
+    const idx = dow(y,m,d);
+    const fer = feriadoNome(loja,y,m,d);
+    const cls = fer ? 'holiday' : (idx===0||idx===6 ? 'weekend' : '');
+    h += `<tr class="${cls}"><td class="day-lbl"><span class="dnum">${d}</span><span class="dw">${DWS[idx]}${fer ? ' · '+esc(fer) : ''}</span></td>`;
+    let cM=0,cI=0,cN=0,cF=0;
+    for (const st of staff){
+      const code = cellGet(g, st.id, d);
+      const t = tipoOf(loja, code);
+      if (t==='M')cM++; else if(t==='I')cI++; else if(t==='N')cN++; else if(t==='F')cF++;
+      let cc = 'c-empty';
+      if (t==='M'||t==='I'||t==='N') cc = 'c-'+t;
+      else if (code) cc = 'c-'+code;
+      const bad = v.cells.has(st.id+':'+d) ? ' viol' : '';
+      const ped = pedidoOn(loja, st.id, y, m, d) ? ' ped' : '';
+      h += `<td class="cell ${cc}${bad}${ped}" onclick="openPop(event,'${st.id}',${d})">${code || '·'}</td>`;
+    }
+    const badM = v.days.has(d+':M')?' bad':'', badI = v.days.has(d+':I')?' bad':'', badN = v.days.has(d+':N')?' bad':'';
+    h += `<td class="cnt${badM}">${cM}</td><td class="cnt${badI}">${cI}</td><td class="cnt${badN}">${cN}</td><td class="cnt">${cF}</td><td class="cnt">${cM+cI+cN}</td></tr>`;
+  }
+  h += '</tbody></table>';
+  document.getElementById('grid').innerHTML = h;
+
+  const vh = v.viols.length
+    ? v.viols.map(x => `<div class="viol-item ${x.sev}">${x.sev==='err'?'⛔':'⚠️'} <span>${esc(x.msg)}</span></div>`).join('')
+    : '<div class="viol-ok">✅ Sem violações de regras detectadas</div>';
+  document.getElementById('viols').innerHTML =
+    `<div style="margin:10px 0 6px;font-size:13px;color:var(--muted)">Validação (${v.viols.length} aviso(s))</div>` + vh;
+
+  renderResumo(loja,y,m,n,g,staff);
+  renderLegenda();
+}
+
+function renderResumo(loja,y,m,n,g,staff){
+  const rows = [['M','Manhãs'],['I','Intermédios'],['N','Noites'],['F','Folgas'],['DOM','Domingos trab.'],['FD','Folgas domingo'],['FR','Férias/Ausên.'],['DT','Dias trab.'],['H','Horas']];
+  const st2 = {};
+  for (const st of staff){
+    const r = {M:0,I:0,N:0,F:0,DOM:0,FD:0,FR:0,DT:0,H:0};
+    for (let d=1; d<=n; d++){
+      const code = cellGet(g,st.id,d), t = tipoOf(loja, code);
+      if (t==='M'||t==='I'||t==='N'){ r[t]++; r.DT++; const sh = shiftByCode(loja, code); r.H += sh ? (sh.horas||8) : 8; if (dow(y,m,d)===0) r.DOM++; }
+      else if (t==='F'){ r.F++; if (dow(y,m,d)===0) r.FD++; }
+      else if (t==='A'){ r.FR++; if (dow(y,m,d)===0) r.FD++; }
+    }
+    st2[st.id] = r;
+  }
+  let h = '<table class="sum"><tr><th style="text-align:left"></th>';
+  for (const st of staff) h += `<th>${esc(st.nome.split(' ')[0])}${st.gerente?' 👔':''}</th>`;
+  h += '</tr>';
+  for (const [k,lbl] of rows){
+    h += `<tr><td class="lbl">${lbl}</td>`;
+    for (const st of staff) h += `<td>${st2[st.id][k]}</td>`;
+    h += '</tr>';
+  }
+  h += '</table>';
+  document.getElementById('resumo').innerHTML = h;
+}
+
+function renderLegenda(){
+  const loja = L();
+  let h = '';
+  for (const s of loja.shifts.filter(s=>s.ativo))
+    h += `<span class="tag c-${s.tipo}" style="padding:4px 10px">${esc(s.code)} — ${esc(s.label)} (${s.tipo}, ${s.horas}h)</span>`;
+  h += `<span class="tag c-DO" style="padding:4px 10px">DO — Descanso Obrigatório</span>`;
+  h += `<span class="tag c-DC" style="padding:4px 10px">DC — Descanso Complementar</span>`;
+  for (const [k,vv] of Object.entries(ABS_TIPOS))
+    h += `<span class="tag c-${k}" style="padding:4px 10px">${k} — ${vv}</span>`;
+  document.getElementById('legenda').innerHTML = h;
+}
+
+function limparMes(){
+  if (!confirm('Limpar todo o horário deste mês nesta loja?')) return;
+  L().meses[ymSel()] = {};
+  save(); renderGrid();
+}
+
+/* ══════════════════════ POPOVER ══════════════════════ */
+let popCtx = null;
+function openPop(ev, sid, d){
+  ev.stopPropagation();
+  popCtx = {sid, d};
+  const loja = L();
+  const pop = document.getElementById('pop');
+  let h = '';
+  for (const s of loja.shifts.filter(s=>s.ativo))
+    h += `<button class="c-${s.tipo}" onclick="popSet('${esc(s.code)}')">${esc(s.code)}</button>`;
+  h += `<button class="c-DO" onclick="popSet('DO')">DO</button>`;
+  h += `<button class="c-DC" onclick="popSet('DC')">DC</button>`;
+  for (const k of Object.keys(ABS_TIPOS))
+    h += `<button class="c-${k}" onclick="popSet('${k}')">${k}</button>`;
+  h += `<button onclick="popSet('')">✕ limpar</button>`;
+  pop.innerHTML = h;
+  pop.classList.add('open');
+  const r = ev.target.getBoundingClientRect();
+  pop.style.left = Math.min(r.left + scrollX, innerWidth - 200 + scrollX) + 'px';
+  pop.style.top = (r.bottom + scrollY + 4) + 'px';
+}
+function popSet(code){
+  if (popCtx){ cellSet(gridOf(L(), ymSel()), popCtx.sid, popCtx.d, code); save(); renderGrid(); }
+  closePop();
+}
+function closePop(){ document.getElementById('pop').classList.remove('open'); popCtx = null; }
+document.addEventListener('click', e => { if (!e.target.closest('#pop')) closePop(); });
+
+/* ══════════════════════ RENDER: EQUIPA ══════════════════════ */
+function padSel(sid, key, val){
+  const opts = ['<option value="">—</option>'];
+  DWS.forEach((nm,i) => opts.push(`<option value="${i}" ${val===i?'selected':''}>${nm}</option>`));
+  return `<select onchange="setPad('${sid}','${key}',this.value)">${opts.join('')}</select>`;
+}
+function renderStaff(){
+  const loja = L();
+  document.getElementById('eq-loja-nome').textContent = loja.nome;
+  let h = '<tr><th>Nome</th><th>Gerente</th><th>Padrão A</th><th>Padrão B</th><th></th></tr>';
+  for (const st of loja.staff){
+    h += `<tr>
+      <td><input type="text" value="${esc(st.nome)}" onchange="stField('${st.id}','nome',this.value)"></td>
+      <td><input type="checkbox" ${st.gerente?'checked':''} onchange="stField('${st.id}','gerente',this.checked)"> ${st.gerente?'<span class="tag ger">gerente</span>':''}</td>
+      <td>${padSel(st.id,'A0',st.padA?st.padA[0]:null)} ${padSel(st.id,'A1',st.padA?st.padA[1]:null)}</td>
+      <td>${padSel(st.id,'B0',st.padB?st.padB[0]:null)} ${padSel(st.id,'B1',st.padB?st.padB[1]:null)}</td>
+      <td><button class="btn danger small" onclick="delStaff('${st.id}')">✕</button></td>
+    </tr>`;
+  }
+  document.getElementById('staff-tbl').innerHTML = h;
+
+  const opts = loja.staff.map(st => `<option value="${st.id}">${esc(st.nome)}</option>`).join('');
+  document.getElementById('abs-staff').innerHTML = opts;
+  document.getElementById('ped-staff').innerHTML = opts;
+  renderAbs();
+  renderPedidos();
+}
+function stField(sid, f, v){
+  const st = L().staff.find(s=>s.id===sid);
+  st[f] = v; save();
+  if (f==='gerente') renderStaff();
+}
+function setPad(sid, key, val){
+  const st = L().staff.find(s=>s.id===sid);
+  const arr = key[0]==='A' ? 'padA' : 'padB', idx = +key[1];
+  if (val===''){ st[arr] = null; }
+  else {
+    if (!st[arr]) st[arr] = [1,0];
+    st[arr][idx] = +val;
+  }
+  save(); renderStaff();
+}
+function addStaff(){
+  const nome = prompt('Nome do colaborador:'); if (!nome) return;
+  L().staff.push({ id:'s'+Date.now(), nome, gerente:false, padA:null, padB:null });
+  save(); renderStaff();
+}
+function delStaff(sid){
+  const loja = L();
+  const st = loja.staff.find(s=>s.id===sid);
+  if (!confirm(`Remover ${st.nome}?`)) return;
+  loja.staff = loja.staff.filter(s=>s.id!==sid);
+  loja.ausencias = loja.ausencias.filter(a=>a.staffId!==sid);
+  loja.pedidos = loja.pedidos.filter(p=>p.staffId!==sid);
+  save(); renderStaff();
+}
+function addAbs(){
+  const loja = L();
+  const staffId = document.getElementById('abs-staff').value;
+  const tipo = document.getElementById('abs-tipo').value;
+  const inicio = document.getElementById('abs-ini').value;
+  const fim = document.getElementById('abs-fim').value || inicio;
+  if (!staffId || !inicio) return alert('Escolhe colaborador e data de início');
+  loja.ausencias.push({staffId, tipo, inicio, fim});
+  save(); renderAbs();
+}
+function renderAbs(){
+  const loja = L();
+  const h = loja.ausencias.map((a,i) => {
+    const st = loja.staff.find(s=>s.id===a.staffId);
+    return `<div class="abs-row"><span class="tag c-${a.tipo}" style="padding:3px 8px">${a.tipo}</span>
+      <b>${st ? esc(st.nome) : '?'}</b> <span class="mut">${a.inicio} → ${a.fim}</span>
+      <button class="btn danger small" onclick="delAbs(${i})">✕</button></div>`;
+  }).join('');
+  document.getElementById('abs-list').innerHTML = h || '<div class="mut">Sem ausências registadas</div>';
+}
+function delAbs(i){ L().ausencias.splice(i,1); save(); renderAbs(); }
+function addPedido(){
+  const loja = L();
+  const staffId = document.getElementById('ped-staff').value;
+  const data = document.getElementById('ped-data').value;
+  if (!staffId || !data) return alert('Escolhe colaborador e data');
+  if (!loja.pedidos.some(p=>p.staffId===staffId && p.data===data))
+    loja.pedidos.push({staffId, data});
+  save(); renderPedidos();
+}
+function renderPedidos(){
+  const loja = L();
+  const byStaff = {};
+  loja.pedidos.forEach((p,i) => { (byStaff[p.staffId] = byStaff[p.staffId] || []).push({p,i}); });
+  let h = '';
+  for (const [sid, lst] of Object.entries(byStaff)){
+    const st = loja.staff.find(s=>s.id===sid);
+    h += `<div class="abs-row"><b>${st ? esc(st.nome) : '?'}</b> ` +
+      lst.sort((a,b)=>a.p.data<b.p.data?-1:1).map(({p,i}) =>
+        `<span class="chip">${p.data}<button onclick="delPedido(${i})">✕</button></span>`).join('') +
+      `</div>`;
+  }
+  document.getElementById('ped-list').innerHTML = h || '<div class="mut">Sem folgas pedidas</div>';
+}
+function delPedido(i){ L().pedidos.splice(i,1); save(); renderPedidos(); }
+
+/* ══════════════════════ RENDER: REGRAS ══════════════════════ */
+function renderRegras(){
+  const loja = L();
+  document.getElementById('rg-loja-nome').textContent = loja.nome;
+  let h = '<tr><th>Código</th><th>Horário</th><th>Tipo</th><th>Horas</th><th>Activo</th><th></th></tr>';
+  loja.shifts.forEach((s,i) => {
+    h += `<tr>
+      <td><input type="text" value="${esc(s.code)}" size="7" onchange="shField(${i},'code',this.value)"></td>
+      <td><input type="text" value="${esc(s.label)}" size="9" onchange="shField(${i},'label',this.value)"></td>
+      <td><select onchange="shField(${i},'tipo',this.value)">
+        <option value="M" ${s.tipo==='M'?'selected':''}>M Manhã</option>
+        <option value="I" ${s.tipo==='I'?'selected':''}>I Interm.</option>
+        <option value="N" ${s.tipo==='N'?'selected':''}>N Noite</option></select></td>
+      <td><input type="number" value="${s.horas}" min="1" max="12" onchange="shField(${i},'horas',+this.value)"></td>
+      <td><input type="checkbox" ${s.ativo?'checked':''} onchange="shField(${i},'ativo',this.checked)"></td>
+      <td><button class="btn danger small" onclick="delShift(${i})">✕</button></td>
+    </tr>`;
+  });
+  document.getElementById('shift-tbl').innerHTML = h;
+
+  let mg = '';
+  loja.shifts.forEach((s,i) => {
+    if (!s.ativo) return;
+    mg += `<div style="margin-bottom:16px">
+      <div style="margin-bottom:6px"><span class="tag c-${s.tipo}" style="padding:3px 10px">${esc(s.code)} — ${esc(s.label)}</span></div>
+      <div class="mins-grid">
+        <div></div>${DWS.map(d=>`<div class="hd">${d}</div>`).join('')}
+        <div class="mut" style="font-weight:600">Mínimo</div>
+        ${[0,1,2,3,4,5,6].map(j=>`<input type="number" min="0" value="${s.min[j]}" onchange="smField(${i},'min',${j},+this.value)">`).join('')}
+        <div class="mut" style="font-weight:600">Ideal</div>
+        ${[0,1,2,3,4,5,6].map(j=>`<input type="number" min="0" value="${s.ideal[j]}" onchange="smField(${i},'ideal',${j},+this.value)">`).join('')}
+      </div>
+    </div>`;
+  });
+  document.getElementById('shift-mins').innerHTML = mg || '<div class="mut">Sem turnos activos</div>';
+
+  document.getElementById('r-juntas').checked = loja.regras.folgasJuntas;
+  document.getElementById('r-troca').checked = loja.regras.folgaTroca;
+  document.getElementById('r-gerente').checked = loja.regras.gerenteManha;
+  document.getElementById('r-folgas').value = loja.regras.folgasSemana;
+  document.getElementById('r-domfolga').value = loja.regras.domFolgaMin;
+
+  const fl = document.getElementById('fer-loja');
+  fl.innerHTML = '<option value="">🇵🇹 Nacional (todas)</option>' +
+    S.lojas.map(l => `<option value="${l.id}">${esc(l.nome)}</option>`).join('');
+  renderFeriados();
+}
+function shField(i, f, v){ L().shifts[i][f] = v; save(); if (f==='ativo'||f==='tipo'||f==='code') renderRegras(); renderGrid(); }
+function delShift(i){ const loja = L(); if (confirm(`Remover turno ${loja.shifts[i].code}?`)){ loja.shifts.splice(i,1); save(); renderRegras(); } }
+function smField(i, key, j, v){ L().shifts[i][key][j] = v; save(); renderGrid(); }
+function saveRegras(){
+  const R = L().regras;
+  R.folgasJuntas = document.getElementById('r-juntas').checked;
+  R.folgaTroca = document.getElementById('r-troca').checked;
+  R.gerenteManha = document.getElementById('r-gerente').checked;
+  R.folgasSemana = +document.getElementById('r-folgas').value || 2;
+  R.domFolgaMin = +document.getElementById('r-domfolga').value || 0;
+  save(); renderGrid();
+}
+function addShift(){
+  L().shifts.push({code:'NOVO', label:'0h-0h', tipo:'M', horas:8, ativo:true, min:[0,0,0,0,0,0,0], ideal:[0,0,0,0,0,0,0]});
+  save(); renderRegras();
+}
+function addFeriado(){
+  const data = document.getElementById('fer-data').value;
+  const nome = document.getElementById('fer-nome').value || 'Feriado';
+  const lojaId = document.getElementById('fer-loja').value;
+  if (!data) return;
+  S.feriados.push({data, nome, lojaId});
+  S.feriados.sort((a,b)=>a.data<b.data?-1:1);
+  save(); renderFeriados(); renderGrid();
+}
+function renderFeriados(){
+  const {y} = ymParts();
+  const nac = feriadosNacionais(y).slice().sort((a,b)=>a.data<b.data?-1:1).map(f =>
+    `<div class="abs-row"><b>${f.data}</b> <span class="mut">${esc(f.nome)}</span>
+     <span class="tag" style="padding:2px 8px">🇵🇹 Nacional · automático</span></div>`).join('');
+  const h = nac + S.feriados.map((f,i) => {
+    const l = f.lojaId ? S.lojas.find(l=>l.id===f.lojaId) : null;
+    return `<div class="abs-row"><b>${f.data}</b> <span class="mut">${esc(f.nome)}</span>
+     <span class="tag ${l?'ger':''}" style="padding:2px 8px">${l ? esc(l.nome) : '🇵🇹 Nacional'}</span>
+     <button class="btn danger small" onclick="delFeriado(${i})">✕</button></div>`;
+  }).join('');
+  document.getElementById('fer-list').innerHTML = h || '<div class="mut">Sem feriados registados</div>';
+}
+function delFeriado(i){ S.feriados.splice(i,1); save(); renderFeriados(); renderGrid(); }
+
+/* ══════════════════════ RENDER: LOJAS ══════════════════════ */
+function renderLojas(){
+  let h = '<tr><th>Nome</th><th>Morada</th><th>Colaboradores</th><th>Meses com horário</th><th></th></tr>';
+  for (const l of S.lojas){
+    const meses = Object.keys(l.meses).filter(ym => !mesVazio(l, ym)).sort().reverse().slice(0,4).join(', ');
+    h += `<tr>
+      <td><input type="text" value="${esc(l.nome)}" onchange="lojaField('${l.id}','nome',this.value)"></td>
+      <td><input type="text" value="${esc(l.morada||'')}" size="28" onchange="lojaField('${l.id}','morada',this.value)"></td>
+      <td>${l.staff.length}</td>
+      <td class="mut">${meses || '—'}</td>
+      <td><button class="btn danger small" onclick="delLoja('${l.id}')">✕</button></td>
+    </tr>`;
+  }
+  document.getElementById('lojas-tbl').innerHTML = h;
+
+  const E = S.empresa;
+  document.getElementById('c-empresa').value = E.nome;
+  document.getElementById('c-morada').value = E.morada;
+  document.getElementById('c-irct').value = E.irct;
+  document.getElementById('c-cae').value = E.cae;
+  document.getElementById('c-nif').value = E.nif;
+  document.getElementById('c-activ').value = E.atividade;
+}
+function lojaField(id, f, v){ S.lojas.find(l=>l.id===id)[f] = v; save(); syncLojaSel(); renderLojas(); }
+function addLoja(){
+  const nome = prompt('Nome da loja (ex: ESS PORTIMÃO):'); if (!nome) return;
+  const l = novaLoja(nome);
+  S.lojas.push(l);
+  S.lojaAtual = l.id;
+  save(); syncLojaSel(); renderAll();
+  goTab('equipa');
+}
+function dupLoja(){
+  const src = L();
+  const nome = prompt(`Nome da nova loja (cópia de ${src.nome}):`); if (!nome) return;
+  const l = novaLoja(nome);
+  l.shifts = JSON.parse(JSON.stringify(src.shifts));
+  l.minM = src.minM.slice(); l.minI = src.minI.slice(); l.minN = src.minN.slice();
+  l.regras = JSON.parse(JSON.stringify(src.regras));
+  l.staff = src.staff.map((st,i) => ({...st, id:'s'+Date.now()+'_'+i}));
+  S.lojas.push(l);
+  S.lojaAtual = l.id;
+  save(); syncLojaSel(); renderAll();
+}
+function delLoja(id){
+  if (S.lojas.length===1) return alert('Tem de existir pelo menos uma loja.');
+  const l = S.lojas.find(l=>l.id===id);
+  if (!confirm(`Apagar a loja ${l.nome} e todos os seus horários? Esta acção não pode ser anulada.`)) return;
+  S.lojas = S.lojas.filter(x=>x.id!==id);
+  if (S.lojaAtual===id) S.lojaAtual = S.lojas[0].id;
+  save(); syncLojaSel(); renderAll();
+}
+function saveEmpresa(){
+  const E = S.empresa;
+  E.nome = document.getElementById('c-empresa').value;
+  E.morada = document.getElementById('c-morada').value;
+  E.irct = document.getElementById('c-irct').value;
+  E.cae = document.getElementById('c-cae').value;
+  E.nif = document.getElementById('c-nif').value;
+  E.atividade = document.getElementById('c-activ').value;
+  save();
+}
+function mudarLoja(id){ S.lojaAtual = id; save(); renderAll(); }
+function syncLojaSel(){
+  const sel = document.getElementById('loja-sel');
+  sel.innerHTML = S.lojas.map(l => `<option value="${l.id}" ${l.id===S.lojaAtual?'selected':''}>${esc(l.nome)}</option>`).join('');
+}
+
+/* ══════════════════════ EXPORT ══════════════════════ */
+function sheetLoja(loja, y, m){
+  const n = daysInMonth(y,m);
+  const ym = y+'-'+pad2(m);
+  const g = gridOf(loja, ym);
+  const staff = loja.staff;
+  const E = S.empresa;
+  const aoa = [];
+  aoa.push([E.nome, '', '', `MAPA DE HORÁRIO — ${MESES[m-1].toUpperCase()} ${y}`]);
+  aoa.push([E.morada]);
+  aoa.push([E.irct]);
+  aoa.push([E.cae]);
+  aoa.push([loja.nome, '', '', 'Actividade:', E.atividade, '', 'NIF:', E.nif]);
+  aoa.push([loja.morada || '']);
+  aoa.push(['DATA INÍCIO:', dateStr(y,m,1), 'FIM MÊS:', dateStr(y,m,n)]);
+  aoa.push([]);
+  aoa.push(['DIA','DATA','FERIADO', ...staff.map(s=>s.nome), 'M','I','N','F','T']);
+  for (let d=1; d<=n; d++){
+    const idx = dow(y,m,d);
+    let cM=0,cI=0,cN=0,cF=0;
+    const row = [DWL[idx], dateStr(y,m,d), feriadoNome(loja,y,m,d)||''];
+    for (const st of staff){
+      const code = cellGet(g,st.id,d), t = tipoOf(loja, code);
+      if(t==='M')cM++; else if(t==='I')cI++; else if(t==='N')cN++; else if(t==='F')cF++;
+      row.push(code);
+    }
+    row.push(cM,cI,cN,cF,cM+cI+cN);
+    aoa.push(row);
+  }
+  aoa.push([]);
+  const met = [['M','Manhãs'],['I','Intermédios'],['N','Noites'],['F','Folgas'],['DOM','Domingos Trab.'],['FD','Folgas Domingos'],['DT','Dias Trab.']];
+  aoa.push(['RESUMO','','', ...staff.map(s=>s.nome)]);
+  for (const [k,lbl] of met){
+    const row = [k, lbl, ''];
+    for (const st of staff){
+      let c = 0;
+      for (let d=1; d<=n; d++){
+        const t = tipoOf(loja, cellGet(g,st.id,d));
+        if (k==='DT'){ if(t==='M'||t==='I'||t==='N') c++; }
+        else if (k==='DOM'){ if((t==='M'||t==='I'||t==='N') && dow(y,m,d)===0) c++; }
+        else if (k==='FD'){ if((t==='F'||t==='A') && dow(y,m,d)===0) c++; }
+        else if (t===k) c++;
+      }
+      row.push(c);
+    }
+    aoa.push(row);
+  }
+  aoa.push([]);
+  aoa.push(['LEGENDA TURNOS']);
+  for (const s of loja.shifts.filter(s=>s.ativo)) aoa.push([s.code, s.label, s.tipo, s.horas+'h']);
+  aoa.push(['DO','Descanso Obrigatório'],['DC','Descanso Complementar']);
+  for (const [k,vv] of Object.entries(ABS_TIPOS)) aoa.push([k, vv]);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:14},{wch:11},{wch:10}, ...staff.map(()=>({wch:9})), {wch:4},{wch:4},{wch:4},{wch:4},{wch:4}];
+  return ws;
+}
+function exportXLSX(){
+  const {y, m} = ymParts();
+  const loja = L();
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheetLoja(loja, y, m), `Hor ${pad2(m)}-${y}`.slice(0,31));
+  XLSX.writeFile(wb, `Horario_${loja.nome.replace(/\s+/g,'_')}_${pad2(m)}_${y}.xlsx`);
+}
+function exportTodasXLSX(){
+  const {y, m} = ymParts();
+  const wb = XLSX.utils.book_new();
+  let added = 0;
+  for (const loja of S.lojas){
+    if (!loja.staff.length) continue;
+    XLSX.utils.book_append_sheet(wb, sheetLoja(loja, y, m), loja.nome.replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31));
+    added++;
+  }
+  if (!added) return alert('Nenhuma loja com equipa para exportar.');
+  XLSX.writeFile(wb, `Horarios_Todas_Lojas_${pad2(m)}_${y}.xlsx`);
+}
+
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(S, null, 1)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `horarios_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+function importJSON(inp){
+  const f = inp.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result);
+      if (!data.lojas || !data.empresa) throw new Error('formato inválido');
+      S = data; save(); syncLojaSel(); renderAll();
+      alert('Backup restaurado ✅');
+    } catch(e){ alert('Erro ao ler o ficheiro: '+e.message); }
+  };
+  r.readAsText(f);
+  inp.value = '';
+}
+
+/* ══════════════════════ NAV / INIT ══════════════════════ */
+function goTab(p){
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.page===p));
+  document.querySelectorAll('.page').forEach(pg => pg.classList.toggle('active', pg.id==='page-'+p));
+}
+function renderAll(){ renderStaff(); renderRegras(); renderLojas(); renderGrid(); }
+
+(function init(){
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth()+1, 1);
+  document.getElementById('mes').value = next.getFullYear()+'-'+pad2(next.getMonth()+1);
+  syncLojaSel();
+  renderAll();
+})();
+</script>
+</body>
+</html>
