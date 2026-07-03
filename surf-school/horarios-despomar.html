@@ -358,7 +358,7 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
     <div style="margin-top:12px"><button class="btn primary" onclick="addStaff()">+ Adicionar colaborador</button></div>
   </div>
   <div class="card">
-    <h2>Férias e ausências <span class="hint">bloqueiam os dias no gerador</span></h2>
+    <h2>Férias e ausências <span class="hint">vários períodos por colaborador (ex: 1ª quinzena de Agosto + Natal) — bloqueiam os dias no gerador e aparecem logo na grelha</span></h2>
     <div class="flex" style="margin-bottom:10px">
       <select id="abs-staff"></select>
       <select id="abs-tipo">
@@ -1561,13 +1561,18 @@ function addAbs(){
 }
 function renderAbs(){
   const loja = L();
-  const h = loja.ausencias.map((a,i) => {
-    const st = loja.staff.find(s=>s.id===a.staffId);
-    return `<div class="abs-row"><span class="tag c-${a.tipo}" style="padding:3px 8px">${a.tipo}</span>
-      <b>${st ? esc(st.nome) : '?'}</b> <span class="mut">${a.inicio} → ${a.fim}</span>
-      <button class="btn danger small" onclick="delAbs(${i})">✕</button></div>`;
-  }).join('');
-  document.getElementById('abs-list').innerHTML = h || '<div class="mut">Sem ausências registadas</div>';
+  // agrupado por colaborador — cada pessoa pode ter VÁRIOS períodos
+  const porStaff = {};
+  loja.ausencias.forEach((a,i) => { (porStaff[a.staffId] = porStaff[a.staffId] || []).push({a,i}); });
+  let h = '';
+  for (const st of loja.staff){
+    const lst = porStaff[st.id];
+    if (!lst) continue;
+    lst.sort((x,y) => x.a.inicio < y.a.inicio ? -1 : 1);
+    h += `<div class="abs-row"><b style="min-width:140px">${esc(st.nome)}</b>` + lst.map(({a,i}) =>
+      `<span class="chip"><span class="tag c-${a.tipo}" style="padding:1px 7px">${a.tipo}</span>&nbsp;${a.inicio} → ${a.fim}<button onclick="delAbs(${i})" title="Remover este período">✕</button></span>`).join('') + `</div>`;
+  }
+  document.getElementById('abs-list').innerHTML = h || '<div class="mut">Sem ausências registadas — escolhe colaborador, tipo e datas em cima. Podes adicionar vários períodos à mesma pessoa (ex: férias em Agosto E em Dezembro).</div>';
 }
 function delAbs(i){ L().ausencias.splice(i,1); save(); renderAbs(); }
 function addPedido(){
