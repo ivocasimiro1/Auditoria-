@@ -336,8 +336,7 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
       <button class="btn" onclick="renderGrid()">✔ Validar</button>
       <button class="btn danger small" onclick="limparMes()">Limpar mês</button>
       <div class="header-spacer"></div>
-      <button class="btn" onclick="window.print()">🖨 Imprimir</button>
-      <button class="btn primary" onclick="enviarSupervisor()">📧 Enviar ao supervisor</button>
+      <button class="btn primary" onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
     </div>
     <div class="print-head" id="print-head"></div>
     <div class="grid-wrap" id="grid"></div>
@@ -1605,6 +1604,9 @@ function renderGrid(){
   const staff = staffDoMes(loja, y, m);
   const v = validar(loja, y, m);
 
+  // o browser sugere o <title> da página como nome ao "Guardar como PDF"
+  document.title = `Horario_${loja.nome.replace(/\s+/g,'_')}_${pad2(m)}_${y}`;
+
   const E = S.empresa;
   document.getElementById('print-head').innerHTML = `
     <div class="ph-logo"><img src="${LOGO_DATA}" alt="" style="width:50px;height:50px;border-radius:10px"></div>
@@ -2017,14 +2019,13 @@ function delFeriado(i){ S.feriados.splice(i,1); save(); renderFeriados(); render
 
 /* ══════════════════════ RENDER: LOJAS ══════════════════════ */
 function renderLojas(){
-  let h = '<tr><th>Nome</th><th>Morada</th><th>Feriado municipal</th><th>Email supervisor</th><th>Colaboradores</th><th>Meses com horário</th><th></th></tr>';
+  let h = '<tr><th>Nome</th><th>Morada</th><th>Feriado municipal</th><th>Colaboradores</th><th>Meses com horário</th><th></th></tr>';
   for (const l of S.lojas){
     const meses = Object.keys(l.meses).filter(ym => !mesVazio(l, ym)).sort().reverse().slice(0,4).join(', ');
     h += `<tr>
       <td><input type="text" value="${esc(l.nome)}" onchange="lojaField('${l.id}','nome',this.value)"></td>
       <td><input type="text" value="${esc(l.morada||'')}" size="28" onchange="lojaField('${l.id}','morada',this.value)"></td>
       <td><input type="text" value="${esc(l.ferMunicipal||'')}" size="5" placeholder="MM-DD" title="Mês-dia do feriado municipal, repete todos os anos (ex: 10-27)" onchange="lojaField('${l.id}','ferMunicipal',this.value)"></td>
-      <td><input type="email" value="${esc(l.supervisorEmail||'')}" size="20" placeholder="supervisor@despomar.com" onchange="lojaField('${l.id}','supervisorEmail',this.value)"></td>
       <td>${l.staff.length}</td>
       <td class="mut">${meses || '—'}</td>
       <td><button class="btn danger small" onclick="delLoja('${l.id}')">✕</button></td>
@@ -2078,24 +2079,6 @@ function saveEmpresa(){
   E.nif = document.getElementById('c-nif').value;
   E.atividade = document.getElementById('c-activ').value;
   save();
-}
-// Um browser não consegue anexar um ficheiro a um email sozinho — por isso
-// o fluxo é: 1) Imprimir → Guardar como PDF, 2) este botão abre o email já
-// preenchido (destinatário, assunto, corpo) e o utilizador só anexa o PDF
-async function enviarSupervisor(){
-  const loja = L();
-  const {y, m} = ymParts();
-  if (!loja.supervisorEmail){
-    const email = await pedir(`Ainda não há email de supervisor guardado para ${loja.nome}. Introduz o email (fica guardado para as próximas vezes):`, {input:true, placeholder:'supervisor@despomar.com'});
-    if (!email) return;
-    loja.supervisorEmail = email.trim();
-    save(); renderLojas();
-  }
-  const assunto = `Horário ${loja.nome} — ${MESES[m-1]} ${y}`;
-  const corpo = `Olá,\n\nSegue o horário de ${loja.nome} referente a ${MESES[m-1]} de ${y}, para validação.\n\n(Lembrete: anexa o PDF — Imprimir → Guardar como PDF, antes de enviar)\n\nObrigado.`;
-  const url = `mailto:${encodeURIComponent(loja.supervisorEmail)}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
-  window.open(url, '_blank');
-  toast('Email aberto — não te esqueças de anexar o PDF (Imprimir → Guardar como PDF)');
 }
 function mudarLoja(id){ S.lojaAtual = id; save(); renderAll(); }
 function syncLojaSel(){
