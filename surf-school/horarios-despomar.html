@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Horários Despomar</title>
-<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0.3"><stop offset="0" stop-color="%233D7BE4"/><stop offset="1" stop-color="%234B3BC0"/></linearGradient><clipPath id="c"><circle cx="32" cy="32" r="30"/></clipPath></defs><circle cx="32" cy="32" r="30" fill="url(%23g)"/><g clip-path="url(%23c)" stroke="white" stroke-width="5" fill="none" stroke-linecap="round"><path d="M-2 38 C 16 20, 34 46, 66 12"/><path d="M2 48 C 18 32, 32 54, 64 22"/><path d="M8 58 C 24 44, 38 62, 64 34"/></g></svg>'>
+<link rel="icon" id="favicon">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 :root {
@@ -117,6 +117,8 @@ table.hgrid { border-collapse: collapse; width: 100%; font-size: 12px; }
 }
 .hgrid td.day-lbl .dnum { font-size: 13px; font-weight: 800; color: var(--text-bright); margin-right: 5px; display:inline-block; min-width: 17px; }
 .hgrid td.day-lbl .dw { color: var(--muted); font-weight: 600; font-size: 11px; }
+.hgrid td.day-lbl { overflow: hidden; }
+.ferlbl { display: block; max-width: 100%; font-size: 9px; font-weight: 700; color: var(--purple); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
 /* início de semana (segunda) — separador entre semanas */
 .hgrid tr.wstart td { border-top: 2px solid #8896ad; }
 /* sábado, domingo e feriado — linha inteira diferenciada */
@@ -264,20 +266,7 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 <body>
 
 <div class="header">
-  <div class="header-logo"><svg viewBox="0 0 64 64" width="30" height="30" aria-hidden="true">
-    <defs>
-      <linearGradient id="dg1" x1="0" y1="0" x2="1" y2="0.3">
-        <stop offset="0" stop-color="#3D7BE4"/><stop offset="1" stop-color="#4B3BC0"/>
-      </linearGradient>
-      <clipPath id="dc1"><circle cx="32" cy="32" r="30"/></clipPath>
-    </defs>
-    <circle cx="32" cy="32" r="30" fill="url(#dg1)"/>
-    <g clip-path="url(#dc1)" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round">
-      <path d="M-2 38 C 16 20, 34 46, 66 12"/>
-      <path d="M2 48 C 18 32, 32 54, 64 22"/>
-      <path d="M8 58 C 24 44, 38 62, 64 34"/>
-    </g>
-  </svg>Horários <span>Despomar</span></div>
+  <div class="header-logo"><img id="app-logo" alt="Despomar" style="width:34px;height:34px;border-radius:9px">Horários <span>Despomar</span></div>
   <div class="hdr-ctl">
     <label>Loja</label>
     <select id="loja-sel" onchange="mudarLoja(this.value)"></select>
@@ -451,6 +440,7 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 
 <script>
 'use strict';
+const LOGO_DATA = 'data:image/jpeg;base64,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';
 /* ══════════════════════ ESTADO ══════════════════════ */
 const LSKEY = 'horarios_despomar_v1';
 const LSKEY_OLD = 'despomar_horarios_v2';
@@ -1173,20 +1163,7 @@ function renderGrid(){
 
   const E = S.empresa;
   document.getElementById('print-head').innerHTML = `
-    <div class="ph-logo"><svg viewBox="0 0 64 64" width="46" height="46">
-      <defs>
-        <linearGradient id="dg2" x1="0" y1="0" x2="1" y2="0.3">
-          <stop offset="0" stop-color="#3D7BE4"/><stop offset="1" stop-color="#4B3BC0"/>
-        </linearGradient>
-        <clipPath id="dc2"><circle cx="32" cy="32" r="30"/></clipPath>
-      </defs>
-      <circle cx="32" cy="32" r="30" fill="url(#dg2)"/>
-      <g clip-path="url(#dc2)" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round">
-        <path d="M-2 38 C 16 20, 34 46, 66 12"/>
-        <path d="M2 48 C 18 32, 32 54, 64 22"/>
-        <path d="M8 58 C 24 44, 38 62, 64 34"/>
-      </g>
-    </svg></div>
+    <div class="ph-logo"><img src="${LOGO_DATA}" alt="" style="width:50px;height:50px;border-radius:10px"></div>
     <div>
       <div class="ph-emp">${esc(E.nome)}</div>
       <div class="ph-l">${esc(E.morada)} · NIF ${esc(E.nif)}</div>
@@ -1228,7 +1205,7 @@ function renderGrid(){
       fer ? 'holiday' : (idx===0 ? 'weekend sunday' : idx===6 ? 'weekend' : ''),
       idx===1 ? 'wstart' : '',
     ].join(' ').trim();
-    h += `<tr class="${cls}"><td class="day-lbl"><span class="dnum">${d}</span><span class="dw">${DWS[idx]}${fer ? ' · '+esc(fer) : ''}</span></td>`;
+    h += `<tr class="${cls}"><td class="day-lbl"><span class="dnum">${d}</span><span class="dw">${DWS[idx]}</span>${fer ? `<span class="ferlbl" title="${esc(fer)}">${esc(fer)}</span>` : ''}</td>`;
     let cM=0,cI=0,cN=0,cF=0;
     for (const st of staff){
       const code = cellGet(g, st.id, d);
@@ -1841,6 +1818,8 @@ function goTab(p){
 function renderAll(){ renderStaff(); renderRegras(); renderVendas(); renderLojas(); renderGrid(); }
 
 (function init(){
+  document.getElementById('app-logo').src = LOGO_DATA;
+  document.getElementById('favicon').href = LOGO_DATA;
   const now = new Date();
   const next = new Date(now.getFullYear(), now.getMonth()+1, 1);
   document.getElementById('mes').value = next.getFullYear()+'-'+pad2(next.getMonth()+1);
