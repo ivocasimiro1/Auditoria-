@@ -124,13 +124,17 @@ table.hgrid { border-collapse: collapse; width: 100%; font-size: 12px; }
 .ferlbl { display: block; max-width: 100%; font-size: 9px; font-weight: 700; color: var(--purple); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
 /* início de semana (segunda) — separador entre semanas */
 .hgrid tr.wstart td { border-top: 2px solid #8896ad; }
-/* sábado, domingo e feriado — linha inteira diferenciada */
-.hgrid tr.weekend td { background-image: linear-gradient(rgba(60,70,166,.05), rgba(60,70,166,.05)); }
-.hgrid tr.sunday td { background-image: linear-gradient(rgba(60,70,166,.10), rgba(60,70,166,.10)); }
-.hgrid tr.holiday td { background-image: linear-gradient(rgba(109,40,217,.08), rgba(109,40,217,.08)); }
-.hgrid tr.weekend td.day-lbl .dnum, .hgrid tr.weekend td.day-lbl .dw { color: #3c46a6; }
-.hgrid tr.sunday td.day-lbl .dnum, .hgrid tr.sunday td.day-lbl .dw { color: #b91c1c; }
-.hgrid tr.holiday td.day-lbl .dnum, .hgrid tr.holiday td.day-lbl .dw { color: var(--purple); }
+/* sábado, domingo e feriado — linha inteira em destaque */
+.hgrid tr.weekend td { background-image: linear-gradient(rgba(60,70,166,.11), rgba(60,70,166,.11)); }
+.hgrid tr.sunday td { background-image: linear-gradient(rgba(60,70,166,.19), rgba(60,70,166,.19)); }
+.hgrid tr.holiday td { background-image: linear-gradient(rgba(109,40,217,.16), rgba(109,40,217,.16)); }
+.hgrid tr.weekend td, .hgrid tr.holiday td { border-top-color: #c3c9de; border-bottom-color: #c3c9de; }
+.hgrid tr.weekend td.day-lbl { box-shadow: inset 4px 0 0 #3c46a6; }
+.hgrid tr.sunday td.day-lbl { box-shadow: inset 4px 0 0 #b91c1c; }
+.hgrid tr.holiday td.day-lbl { box-shadow: inset 4px 0 0 var(--purple); }
+.hgrid tr.weekend td.day-lbl .dnum, .hgrid tr.weekend td.day-lbl .dw { color: #2e3684; font-weight: 800; }
+.hgrid tr.sunday td.day-lbl .dnum, .hgrid tr.sunday td.day-lbl .dw { color: #b91c1c; font-weight: 800; }
+.hgrid tr.holiday td.day-lbl .dnum, .hgrid tr.holiday td.day-lbl .dw { color: var(--purple); font-weight: 800; }
 .hgrid td.cell { cursor: pointer; min-width: 50px; font-weight: 700; }
 .hgrid td.cell:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
 .hgrid td.cnt { background: var(--surface2); color: var(--text); font-size: 12px; font-weight: 700; }
@@ -250,8 +254,10 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
   .c-DO, .c-DC { background: #f3f4f6 !important; }
   .hgrid tr.wstart td { border-top: 2px solid #444; }
   .hgrid thead th span { color: #444 !important; }
-  .hgrid tr.weekend td.day-lbl, .hgrid tr.weekend td.cnt { background: #eef0f4 !important; }
-  .hgrid tr.holiday td.day-lbl { background: #f0ebfc !important; }
+  .hgrid tr.weekend td.day-lbl, .hgrid tr.weekend td.cnt { background: #dfe3ec !important; font-weight: 700; }
+  .hgrid tr.sunday td.day-lbl, .hgrid tr.sunday td.cnt { background: #d3d9e8 !important; }
+  .hgrid tr.holiday td.day-lbl, .hgrid tr.holiday td.cnt { background: #e4dcf6 !important; }
+  .hgrid tr.weekend td, .hgrid tr.holiday td { border-top: 1.5px solid #777; border-bottom: 1.5px solid #777; }
   .tag { border: 1px solid #999; color: #000; background: #fff; }
   .print-head { display: flex; gap: 12px; align-items: flex-start; color: #000; margin-bottom: 8px; }
   .print-head .ph-logo { flex: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
