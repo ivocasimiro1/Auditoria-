@@ -769,7 +769,10 @@ async function gerarClick(btn){
   await ocupado(btn, () => gerarMelhor(loja, y, m, false));
   save();
   renderGrid();
-  toast('Horário sugerido — vê a validação e corrige à vontade ✅');
+  const v = validar(loja, y, m);
+  const errs = v.viols.filter(x=>x.sev==='err').length, warns = v.viols.length - errs;
+  if (!v.viols.length) toast('Horário sugerido — todas as regras cumpridas ✅');
+  else toast(`Horário sugerido — ${errs} erro(s) e ${warns} aviso(s) por resolver (vê a lista em baixo). Nem sempre é possível cumprir tudo — corrige à mão o que fizer sentido.`, errs===0);
 }
 
 async function completarClick(btn){
@@ -780,7 +783,9 @@ async function completarClick(btn){
   await ocupado(btn, () => gerarMelhor(loja, y, m, true));
   save();
   renderGrid();
-  toast('Células vazias completadas ✅');
+  const v = validar(loja, y, m);
+  const errs = v.viols.filter(x=>x.sev==='err').length;
+  toast(errs ? `Completado — ${errs} erro(s) por resolver (lista em baixo)` : 'Células vazias completadas ✅', errs===0);
 }
 
 async function gerarTodas(btn){
