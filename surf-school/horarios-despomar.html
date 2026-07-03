@@ -354,7 +354,7 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 <!-- ═══════════ EQUIPA ═══════════ -->
 <div class="page" id="page-equipa">
   <div class="card">
-    <h2><span id="eq-loja-nome"></span> — Colaboradores <span class="hint">Entrada/Saída controlam quando a pessoa aparece no horário (saídas mantêm o histórico). Padrão de folgas fixo é opcional: alterna semanalmente entre A e B; vazio = automático</span></h2>
+    <h2><span id="eq-loja-nome"></span> — Colaboradores <span class="hint">Aniversário (MM-DD) marca AV automaticamente todos os anos. Entrada/Saída controlam quando a pessoa aparece no horário (saídas mantêm o histórico). Padrão de folgas fixo é opcional: alterna semanalmente entre A e B; vazio = automático</span></h2>
     <div style="overflow-x:auto"><table class="tbl" id="staff-tbl"></table></div>
     <div style="margin-top:12px"><button class="btn primary" onclick="addStaff()">+ Adicionar colaborador</button></div>
   </div>
@@ -770,6 +770,11 @@ function absOn(loja, staffId, y, m, d){
   const a = loja.ausencias.find(a => a.staffId===staffId && a.inicio<=ds && ds<=a.fim);
   return a ? a.tipo : null;
 }
+// aniversário do colaborador (MM-DD) — recorrente todos os anos, como o
+// feriado municipal da loja; conta como ausência (AV) automática
+function aniversarioOn(st, y, m, d){
+  return !!(st.aniversario && st.aniversario === `${pad2(m)}-${pad2(d)}`);
+}
 function pedidoOn(loja, staffId, y, m, d){
   const ds = dateStr(y,m,d);
   return loja.pedidos.some(p => p.staffId===staffId && p.data===ds);
@@ -843,6 +848,7 @@ function sincAusencias(loja, y, m){
       if (diaFechado(y, m, d) && !cellGet(g, st.id, d)){ cellSet(g, st.id, d, 'ENC'); mudou = true; continue; }
       const a = absOn(loja, st.id, y, m, d);
       if (a && !cellGet(g, st.id, d)){ cellSet(g, st.id, d, a); mudou = true; }
+      else if (!cellGet(g, st.id, d) && aniversarioOn(st, y, m, d)){ cellSet(g, st.id, d, 'AV'); mudou = true; }
     }
   return mudou;
 }
@@ -977,6 +983,7 @@ function gerarHorario(loja, y, m, manter){
       if (diaFechado(y, m, d) && !cellGet(g, st.id, d)){ cellSet(g, st.id, d, 'ENC'); continue; }
       const a = absOn(loja, st.id, y, m, d);
       if (a && !cellGet(g, st.id, d)) cellSet(g, st.id, d, a);
+      else if (!cellGet(g, st.id, d) && aniversarioOn(st, y, m, d)) cellSet(g, st.id, d, 'AV');
     }
 
   const domFolgas = {}; staff.forEach(st => domFolgas[st.id] = 0);
@@ -1651,12 +1658,13 @@ function padSel(sid, key, val){
 function renderStaff(){
   const loja = L();
   document.getElementById('eq-loja-nome').textContent = loja.nome;
-  let h = '<tr><th>Nome</th><th>Gerente</th><th>Entrada</th><th>Saída</th><th>Padrão A</th><th>Padrão B</th><th></th></tr>';
+  let h = '<tr><th>Nome</th><th>Gerente</th><th>Aniversário</th><th>Entrada</th><th>Saída</th><th>Padrão A</th><th>Padrão B</th><th></th></tr>';
   for (const st of loja.staff){
     const saiu = st.fim && st.fim < new Date().toISOString().slice(0,10);
     h += `<tr${saiu ? ' style="opacity:.55"' : ''}>
       <td><input type="text" value="${esc(st.nome)}" onchange="stField('${st.id}','nome',this.value)"></td>
       <td><input type="checkbox" ${st.gerente?'checked':''} onchange="stField('${st.id}','gerente',this.checked)"> ${st.gerente?'<span class="tag ger">gerente</span>':''}</td>
+      <td><input type="text" value="${esc(st.aniversario||'')}" size="5" placeholder="MM-DD" title="Mês-dia de nascimento, repete todos os anos — marca AV automaticamente" onchange="stField('${st.id}','aniversario',this.value)"></td>
       <td><input type="date" value="${st.inicio||''}" onchange="stField('${st.id}','inicio',this.value)" title="Data de entrada — vazio = desde sempre"></td>
       <td><input type="date" value="${st.fim||''}" onchange="stField('${st.id}','fim',this.value)" title="Data de saída — vazio = sem fim"></td>
       <td>${padSel(st.id,'A0',st.padA?st.padA[0]:null)} ${padSel(st.id,'A1',st.padA?st.padA[1]:null)}</td>
@@ -1676,7 +1684,7 @@ function stField(sid, f, v){
   const st = L().staff.find(s=>s.id===sid);
   st[f] = v; save();
   if (f==='gerente') renderStaff();
-  if (f==='inicio' || f==='fim') renderGrid();
+  if (f==='inicio' || f==='fim' || f==='aniversario') renderGrid();
 }
 function setPad(sid, key, val){
   const st = L().staff.find(s=>s.id===sid);
