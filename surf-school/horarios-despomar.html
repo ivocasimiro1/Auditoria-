@@ -376,9 +376,10 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
     <div id="abs-list"></div>
   </div>
   <div class="card">
-    <h2>Folgas pedidas <span class="hint">dias específicos pedidos pelos colaboradores — o gerador tenta encaixar (marcados com contorno laranja na grelha)</span></h2>
+    <h2>Pedidos dos colaboradores <span class="hint">um dia de folga OU um turno específico numa data — o gerador tenta encaixar (contorno laranja na grelha)</span></h2>
     <div class="flex" style="margin-bottom:10px">
       <select id="ped-staff"></select>
+      <select id="ped-tipo"><option value="folga">Folga</option></select>
       <input type="date" id="ped-data">
       <button class="btn primary small" onclick="addPedido()">+ Adicionar</button>
     </div>
@@ -773,6 +774,13 @@ function pedidoOn(loja, staffId, y, m, d){
   const ds = dateStr(y,m,d);
   return loja.pedidos.some(p => p.staffId===staffId && p.data===ds);
 }
+// tipo do pedido nessa data: 'folga' (ou ausência de tipo, compatibilidade)
+// ou o código de um turno específico pedido
+function pedidoTipo(loja, staffId, y, m, d){
+  const ds = dateStr(y,m,d);
+  const p = loja.pedidos.find(p => p.staffId===staffId && p.data===ds);
+  return p ? (p.tipo || 'folga') : null;
+}
 function shiftByCode(loja, code){ return loja.shifts.find(s => s.code===code); }
 function tipoOf(loja, code){
   if (!code) return null;
@@ -978,13 +986,20 @@ function gerarHorario(loja, y, m, manter){
       if (dow(y,m,d)===0 && (t==='F'||t==='A')) domFolgas[st.id]++;
     }
 
-  // 2 ─ folgas pedidas: colocadas primeiro, como compromisso
+  // 2 ─ pedidos dos colaboradores: colocados primeiro, como compromisso
+  //     (folga OU um turno específico pedido nessa data)
   for (const st of staff)
-    for (let d=1; d<=n; d++)
-      if (stAtivoDia(st, y, m, d) && pedidoOn(loja, st.id, y, m, d) && !cellGet(g, st.id, d)){
+    for (let d=1; d<=n; d++){
+      if (!stAtivoDia(st, y, m, d) || cellGet(g, st.id, d)) continue;
+      const tp = pedidoTipo(loja, st.id, y, m, d);
+      if (!tp) continue;
+      if (tp === 'folga'){
         cellSet(g, st.id, d, dow(y,m,d)===0 ? 'DO' : 'DC');
         if (dow(y,m,d)===0) domFolgas[st.id]++;
+      } else if (shiftByCode(loja, tp) && shiftByCode(loja, tp).ativo){
+        cellSet(g, st.id, d, tp); // turno pedido — fica fixo, os blocos formam-se à volta
       }
+    }
 
   // 3 ─ folgas semanais
   const lastPair = {};
@@ -1439,15 +1454,22 @@ function validar(loja, y, m){
     }
   }
 
-  // folgas pedidas não respeitadas
+  // pedidos não respeitados (folga ou turno específico)
   for (const p of loja.pedidos){
     const [py,pm,pd] = p.data.split('-').map(Number);
     if (py!==y || pm!==m) continue;
     const st = staff.find(s=>s.id===p.staffId);
     if (!st) continue;
-    const t = tipoOf(loja, cellGet(g, p.staffId, pd));
-    if (t && t!=='F' && t!=='A'){
-      viols.push({sev:'warn', msg:`${st.nome}: folga pedida a ${pd}/${m} não foi respeitada`, dia:pd});
+    const tipo = p.tipo || 'folga';
+    const code = cellGet(g, p.staffId, pd);
+    const t = tipoOf(loja, code);
+    if (tipo === 'folga'){
+      if (t && t!=='F' && t!=='A'){
+        viols.push({sev:'warn', msg:`${st.nome}: folga pedida a ${pd}/${m} não foi respeitada`, dia:pd});
+        cells.add(p.staffId+':'+pd);
+      }
+    } else if (code !== tipo){
+      viols.push({sev:'warn', msg:`${st.nome}: turno ${tipo} pedido a ${pd}/${m} não foi respeitado (ficou ${code||'vazio'})`, dia:pd});
       cells.add(p.staffId+':'+pd);
     }
   }
@@ -1709,14 +1731,22 @@ function delAbs(i){ L().ausencias.splice(i,1); save(); renderAbs(); }
 function addPedido(){
   const loja = L();
   const staffId = document.getElementById('ped-staff').value;
+  const tipo = document.getElementById('ped-tipo').value || 'folga';
   const data = document.getElementById('ped-data').value;
   if (!staffId || !data) return toast('Escolhe colaborador e data', false);
-  if (!loja.pedidos.some(p=>p.staffId===staffId && p.data===data))
-    loja.pedidos.push({staffId, data});
+  const ex = loja.pedidos.find(p=>p.staffId===staffId && p.data===data);
+  if (ex) ex.tipo = tipo; else loja.pedidos.push({staffId, data, tipo});
   save(); renderPedidos();
 }
 function renderPedidos(){
   const loja = L();
+  // dropdown de tipo: Folga + cada turno activo desta loja
+  const selTipo = document.getElementById('ped-tipo');
+  const valAntes = selTipo.value;
+  selTipo.innerHTML = '<option value="folga">Folga</option>' +
+    ativos(loja).map(s => `<option value="${esc(s.code)}">${esc(s.code)} — ${esc(s.label)}</option>`).join('');
+  if ([...selTipo.options].some(o=>o.value===valAntes)) selTipo.value = valAntes;
+
   const byStaff = {};
   loja.pedidos.forEach((p,i) => { (byStaff[p.staffId] = byStaff[p.staffId] || []).push({p,i}); });
   let h = '';
@@ -1724,10 +1754,10 @@ function renderPedidos(){
     const st = loja.staff.find(s=>s.id===sid);
     h += `<div class="abs-row"><b>${st ? esc(st.nome) : '?'}</b> ` +
       lst.sort((a,b)=>a.p.data<b.p.data?-1:1).map(({p,i}) =>
-        `<span class="chip">${p.data}<button onclick="delPedido(${i})">✕</button></span>`).join('') +
+        `<span class="chip">${p.tipo && p.tipo!=='folga' ? esc(p.tipo) : 'Folga'} · ${p.data}<button onclick="delPedido(${i})">✕</button></span>`).join('') +
       `</div>`;
   }
-  document.getElementById('ped-list').innerHTML = h || '<div class="mut">Sem folgas pedidas</div>';
+  document.getElementById('ped-list').innerHTML = h || '<div class="mut">Sem pedidos registados</div>';
 }
 function delPedido(i){ L().pedidos.splice(i,1); save(); renderPedidos(); }
 
