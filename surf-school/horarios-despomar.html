@@ -1170,6 +1170,37 @@ function gerarHorario(loja, y, m, manter){
     }
     if (!mudou) break;
   }
+
+  // 5c ─ reparação fina (equipas pequenas): vira UM só dia na ponta de um
+  //      bloco quando o sentido da troca de turno o permite
+  for (let pass=0; pass<2; pass++){
+    let mudou = false;
+    for (let d=1; d<=n; d++){
+      const idx = dow(y,m,d);
+      for (const sTn of turnos){
+        while (cnt[sTn.code][d] < sTn.min[idx]){
+          let done = false;
+          for (const b of blocos){
+            if (!b.sh || b.lock || b.sh.code===sTn.code) continue;
+            if (b.st.gerente && sTn.tipo==='N') continue;
+            const first = b.dias[0]===d, last = b.dias[b.dias.length-1]===d;
+            if (!first && !last) continue;
+            if (b.dias.length < 2) continue;
+            if (b.sh.min[idx] > 0 && cnt[b.sh.code][d] - 1 < b.sh.min[idx]) continue;
+            // transição dentro do bloco tem de ser permitida
+            if (last && trocaProibida(b.sh.tipo, sTn.tipo)) continue;   // …c2 → s
+            if (first && trocaProibida(sTn.tipo, b.sh.tipo)) continue;  // s → c2…
+            cnt[b.sh.code][d]--; cnt[sTn.code][d]++;
+            cellSet(g, b.st.id, d, sTn.code);
+            b.lock = true; done = true; mudou = true;
+            break;
+          }
+          if (!done) break;
+        }
+      }
+    }
+    if (!mudou) break;
+  }
 }
 
 /* ══════════════════════ VALIDAÇÃO ══════════════════════ */
