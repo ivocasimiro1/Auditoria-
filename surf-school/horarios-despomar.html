@@ -145,15 +145,14 @@ table.hgrid { border-collapse: collapse; width: 100%; font-size: 12px; }
 .vend .vtxt { font-size: 9.5px; color: var(--muted); font-weight: 700; }
 .vend.hot .vbar { background: var(--orange); }
 .vend.hot .vtxt { color: var(--orange); }
-.c-M { background: #e4edfc; color: #1b55c4; }
-.c-I { background: #fbf1da; color: #966312; }
-.c-N { background: #eae7fb; color: #5b3fc4; }
-.c-DO { background: #e9edf2; color: #42505f; }
-.c-DC { background: #f3f5f8; color: #64748b; font-style: italic; }
-.c-FR { background: #e3f6e9; color: #15803d; }
-.c-BX { background: #fdeaea; color: #b91c1c; }
-.c-AV { background: #fdeaf4; color: #be185d; }
-.c-DCOMP { background: #fdefe3; color: #c2410c; }
+.c-M, .c-I, .c-N { background: transparent; color: var(--text-bright); }
+.tag.c-M, .tag.c-I, .tag.c-N, #pop button.c-M, #pop button.c-I, #pop button.c-N { background: var(--surface2); border: 1px solid var(--border); }
+.c-DO { background: #d8deea; color: #33415c; }
+.c-DC { background: #e2e7f0; color: #4a5872; font-style: italic; }
+.c-FR { background: #bfe8cd; color: #10602f; }
+.c-BX { background: #f7d4d4; color: #a51616; }
+.c-AV { background: #f9d5ea; color: #a81563; }
+.c-DCOMP { background: #fbe3c8; color: #a53a08; }
 .c-empty { color: #c6cdd8; }
 td.viol { outline: 2px solid var(--red); outline-offset: -2px; }
 
@@ -246,12 +245,10 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
   .grid-wrap { border: none; overflow: visible; }
   .hgrid th, .hgrid td, .sum th, .sum td { border: 1px solid #999; color: #000 !important; background: #fff !important; padding: 1px 3px; font-size: 8.5px; }
   .hgrid thead th { position: static; }
-  .c-M { background: #dbeafe !important; }
-  .c-I { background: #fef3c7 !important; }
-  .c-N { background: #ede9fe !important; }
-  .c-FR { background: #dcfce7 !important; }
-  .c-BX { background: #fee2e2 !important; }
-  .c-DO, .c-DC { background: #f3f4f6 !important; }
+  .c-M, .c-I, .c-N { background: #fff !important; }
+  .c-FR { background: #c9ecd6 !important; }
+  .c-BX { background: #f6d3d3 !important; }
+  .c-DO, .c-DC { background: #dfe3ec !important; }
   .hgrid tr.wstart td { border-top: 2px solid #444; }
   .hgrid thead th span { color: #444 !important; }
   .hgrid tr.weekend td.day-lbl, .hgrid tr.weekend td.cnt { background: #dfe3ec !important; font-weight: 700; }
