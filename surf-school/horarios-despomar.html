@@ -154,6 +154,7 @@ table.hgrid { border-collapse: collapse; width: 100%; font-size: 12px; }
 .c-AV { background: #f9d5ea; color: #a81563; }
 .c-DCOMP { background: #fbe3c8; color: #a53a08; }
 .c-empty { color: #c6cdd8; }
+.c-out { background: repeating-linear-gradient(45deg, #eef0f4, #eef0f4 5px, #e4e7ee 5px, #e4e7ee 10px); color: #aab2c0; cursor: default; }
 td.viol { outline: 2px solid var(--red); outline-offset: -2px; }
 
 /* ── Violações ── */
@@ -333,7 +334,7 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 <!-- ═══════════ EQUIPA ═══════════ -->
 <div class="page" id="page-equipa">
   <div class="card">
-    <h2><span id="eq-loja-nome"></span> — Colaboradores <span class="hint">padrão de folgas fixo (opcional): alterna semanalmente entre Padrão A e Padrão B</span></h2>
+    <h2><span id="eq-loja-nome"></span> — Colaboradores <span class="hint">Entrada/Saída controlam quando a pessoa aparece no horário (saídas mantêm o histórico). Padrão de folgas fixo é opcional: alterna semanalmente entre A e B; vazio = automático</span></h2>
     <div style="overflow-x:auto"><table class="tbl" id="staff-tbl"></table></div>
     <div style="margin-top:12px"><button class="btn primary" onclick="addStaff()">+ Adicionar colaborador</button></div>
   </div>
@@ -680,6 +681,18 @@ function tipoOf(loja, code){
   return s ? s.tipo : null;
 }
 function primShift(loja, tipo){ const s = loja.shifts.find(s => s.ativo && s.tipo===tipo); return s ? s.code : null; }
+// vigência do contrato: entrada/saída de colaboradores
+function stAtivoDia(st, y, m, d){
+  const ds = dateStr(y,m,d);
+  if (st.inicio && ds < st.inicio) return false;
+  if (st.fim && ds > st.fim) return false;
+  return true;
+}
+// colaboradores com contrato activo em algum dia do mês (histórico preservado)
+function staffDoMes(loja, y, m){
+  const ini = dateStr(y,m,1), fim = dateStr(y,m,daysInMonth(y,m));
+  return loja.staff.filter(st => (!st.inicio || st.inicio <= fim) && (!st.fim || st.fim >= ini));
+}
 function ativos(loja){ return loja.shifts.filter(s => s.ativo); }
 function minTotDia(loja, idx){ return ativos(loja).reduce((c,s) => c + (s.min[idx]||0), 0); }
 function gridOf(loja, ym){ if (!loja.meses[ym]) loja.meses[ym] = {}; return loja.meses[ym]; }
@@ -696,8 +709,9 @@ function sincAusencias(loja, y, m){
   const g = gridOf(loja, ym);
   const n = daysInMonth(y,m);
   let mudou = false;
-  for (const st of loja.staff)
+  for (const st of staffDoMes(loja, y, m))
     for (let d=1; d<=n; d++){
+      if (!stAtivoDia(st, y, m, d)) continue;
       const a = absOn(loja, st.id, y, m, d);
       if (a && !cellGet(g, st.id, d)){ cellSet(g, st.id, d, a); mudou = true; }
     }
@@ -787,7 +801,7 @@ function gerarHorario(loja, y, m, manter){
   const ym = y+'-'+pad2(m);
   if (!manter) loja.meses[ym] = {};
   const g = gridOf(loja, ym);
-  const staff = loja.staff;
+  const staff = staffDoMes(loja, y, m);
   const weeks = weeksOf(y,m);
   const R = loja.regras;
   const turnos = ativos(loja).filter(s => s.min.some(v=>v>0) || s.ideal.some(v=>v>0));
@@ -797,6 +811,7 @@ function gerarHorario(loja, y, m, manter){
   // 1 ─ ausências (férias, baixas…) — não pisam células já preenchidas à mão
   for (const st of staff)
     for (let d=1; d<=n; d++){
+      if (!stAtivoDia(st, y, m, d)) continue;
       const a = absOn(loja, st.id, y, m, d);
       if (a && !cellGet(g, st.id, d)) cellSet(g, st.id, d, a);
     }
@@ -811,7 +826,7 @@ function gerarHorario(loja, y, m, manter){
   // 2 ─ folgas pedidas: colocadas primeiro, como compromisso
   for (const st of staff)
     for (let d=1; d<=n; d++)
-      if (pedidoOn(loja, st.id, y, m, d) && !cellGet(g, st.id, d)){
+      if (stAtivoDia(st, y, m, d) && pedidoOn(loja, st.id, y, m, d) && !cellGet(g, st.id, d)){
         cellSet(g, st.id, d, dow(y,m,d)===0 ? 'DO' : 'DC');
         if (dow(y,m,d)===0) domFolgas[st.id]++;
       }
@@ -819,16 +834,16 @@ function gerarHorario(loja, y, m, manter){
   // 3 ─ folgas semanais
   const lastPair = {};
   const folgasNoDia = d => staff.reduce((c,st) => c + (tipoOf(loja, cellGet(g,st.id,d))==='F' ? 1 : 0), 0);
-  const disponiveis = d => staff.reduce((c,st) => c + (ABS_TIPOS[cellGet(g,st.id,d)] ? 0 : 1), 0);
+  const disponiveis = d => staff.reduce((c,st) => c + (stAtivoDia(st,y,m,d) && !ABS_TIPOS[cellGet(g,st.id,d)] ? 1 : 0), 0);
 
   weeks.forEach((week, wi) => {
     const ordem = staff.slice(); for (let k=0; k<wi; k++) ordem.push(ordem.shift());
     for (const st of ordem){
-      const uteis = week.filter(d => !ABS_TIPOS[cellGet(g,st.id,d)]);
+      const uteis = week.filter(d => stAtivoDia(st,y,m,d) && !ABS_TIPOS[cellGet(g,st.id,d)]);
       const jaTem = week.filter(d => tipoOf(loja, cellGet(g,st.id,d))==='F').length;
       const devidas = Math.max(0, folgasDevidas(loja, uteis.length) - jaTem);
       if (!devidas) continue;
-      const livres = week.filter(d => !cellGet(g, st.id, d));
+      const livres = week.filter(d => stAtivoDia(st,y,m,d) && !cellGet(g, st.id, d));
 
       // padrão fixo: alterna A/B pela paridade da semana ISO
       if (st.padA && st.padB){
@@ -936,7 +951,7 @@ function gerarHorario(loja, y, m, manter){
   for (const st of staff){
     let run = [];
     for (let d=1; d<=n+1; d++){
-      const livre = d<=n && !cellGet(g, st.id, d);
+      const livre = d<=n && stAtivoDia(st, y, m, d) && !cellGet(g, st.id, d);
       if (livre) run.push(d);
       else if (run.length){ blocos.push({st, dias:run}); run = []; }
     }
@@ -1092,7 +1107,7 @@ function validar(loja, y, m){
   const ym = y+'-'+pad2(m);
   const g = gridOf(loja, ym);
   const viols = [], cells = new Set(), days = new Set();
-  const staff = loja.staff;
+  const staff = staffDoMes(loja, y, m);
   const R = loja.regras;
 
   // mínimos e ideais diários — por turno
@@ -1115,10 +1130,10 @@ function validar(loja, y, m){
   // folgas por semana
   for (const week of weeksOf(y,m)){
     for (const st of staff){
-      const uteis = week.filter(d => !ABS_TIPOS[cellGet(g,st.id,d)]);
+      const uteis = week.filter(d => stAtivoDia(st,y,m,d) && !ABS_TIPOS[cellGet(g,st.id,d)]);
       const devidas = folgasDevidas(loja, uteis.length);
       const folgas = week.filter(d => tipoOf(loja, cellGet(g,st.id,d))==='F').length;
-      const preenchidos = week.filter(d => cellGet(g,st.id,d)).length;
+      const preenchidos = week.filter(d => cellGet(g,st.id,d) || !stAtivoDia(st,y,m,d)).length;
       if (preenchidos < week.length) continue;
       if (folgas < devidas)
         viols.push({sev:'err', msg:`${st.nome}: só ${folgas} folga(s) na semana de ${week[0]} a ${week[week.length-1]} (devia ter ${devidas})`});
@@ -1216,7 +1231,7 @@ function renderGrid(){
   // férias/ausências registadas aparecem logo na grelha ao mudar de mês
   if (loja.staff.length && sincAusencias(loja, y, m)) save();
   const g = gridOf(loja, ymv);
-  const staff = loja.staff;
+  const staff = staffDoMes(loja, y, m);
   const v = validar(loja, y, m);
 
   const E = S.empresa;
@@ -1266,6 +1281,7 @@ function renderGrid(){
     h += `<tr class="${cls}"><td class="day-lbl"><span class="dnum">${d}</span><span class="dw">${DWS[idx]}</span>${fer ? `<span class="ferlbl" title="${esc(fer)}">${esc(fer)}</span>` : ''}</td>`;
     let cM=0,cI=0,cN=0,cF=0;
     for (const st of staff){
+      if (!stAtivoDia(st, y, m, d)){ h += '<td class="cell c-out" title="Fora do período de contrato">—</td>'; continue; }
       const code = cellGet(g, st.id, d);
       const t = tipoOf(loja, code);
       if (t==='M')cM++; else if(t==='I')cI++; else if(t==='N')cN++; else if(t==='F')cF++;
@@ -1379,11 +1395,14 @@ function padSel(sid, key, val){
 function renderStaff(){
   const loja = L();
   document.getElementById('eq-loja-nome').textContent = loja.nome;
-  let h = '<tr><th>Nome</th><th>Gerente</th><th>Padrão A</th><th>Padrão B</th><th></th></tr>';
+  let h = '<tr><th>Nome</th><th>Gerente</th><th>Entrada</th><th>Saída</th><th>Padrão A</th><th>Padrão B</th><th></th></tr>';
   for (const st of loja.staff){
-    h += `<tr>
+    const saiu = st.fim && st.fim < new Date().toISOString().slice(0,10);
+    h += `<tr${saiu ? ' style="opacity:.55"' : ''}>
       <td><input type="text" value="${esc(st.nome)}" onchange="stField('${st.id}','nome',this.value)"></td>
       <td><input type="checkbox" ${st.gerente?'checked':''} onchange="stField('${st.id}','gerente',this.checked)"> ${st.gerente?'<span class="tag ger">gerente</span>':''}</td>
+      <td><input type="date" value="${st.inicio||''}" onchange="stField('${st.id}','inicio',this.value)" title="Data de entrada — vazio = desde sempre"></td>
+      <td><input type="date" value="${st.fim||''}" onchange="stField('${st.id}','fim',this.value)" title="Data de saída — vazio = sem fim"></td>
       <td>${padSel(st.id,'A0',st.padA?st.padA[0]:null)} ${padSel(st.id,'A1',st.padA?st.padA[1]:null)}</td>
       <td>${padSel(st.id,'B0',st.padB?st.padB[0]:null)} ${padSel(st.id,'B1',st.padB?st.padB[1]:null)}</td>
       <td><button class="btn danger small" onclick="delStaff('${st.id}')">✕</button></td>
@@ -1401,6 +1420,7 @@ function stField(sid, f, v){
   const st = L().staff.find(s=>s.id===sid);
   st[f] = v; save();
   if (f==='gerente') renderStaff();
+  if (f==='inicio' || f==='fim') renderGrid();
 }
 function setPad(sid, key, val){
   const st = L().staff.find(s=>s.id===sid);
@@ -1420,7 +1440,7 @@ async function addStaff(){
 async function delStaff(sid){
   const loja = L();
   const st = loja.staff.find(s=>s.id===sid);
-  if (!(await pedir(`Remover ${st.nome}?`))) return;
+  if (!(await pedir(`Remover ${st.nome}? Para uma saída da empresa é melhor preencher a data de Saída — assim o histórico dos meses anteriores fica guardado. Remover apaga de vez.`))) return;
   loja.staff = loja.staff.filter(s=>s.id!==sid);
   loja.ausencias = loja.ausencias.filter(a=>a.staffId!==sid);
   loja.pedidos = loja.pedidos.filter(p=>p.staffId!==sid);
@@ -1766,7 +1786,7 @@ function sheetLoja(loja, y, m){
   const n = daysInMonth(y,m);
   const ym = y+'-'+pad2(m);
   const g = gridOf(loja, ym);
-  const staff = loja.staff;
+  const staff = staffDoMes(loja, y, m);
   const E = S.empresa;
   const MABR = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   const mesTxt = `${MABR[m-1]} ${y}`;
