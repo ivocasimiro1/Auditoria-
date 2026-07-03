@@ -520,6 +520,42 @@ function diaFechado(y, m, d){ return (m===12 && d===25) || (m===1 && d===1); }
 const RANK_TURNO = { M:0, I:1, N:2 };
 function trocaProibida(tAntes, tDepois){ return (RANK_TURNO[tDepois] ?? 0) < (RANK_TURNO[tAntes] ?? 0); }
 
+// continuidade entre meses: o horário de Agosto tem de respeitar como
+// Julho acabou (sequência de dias trabalhados, último turno, folgas já
+// dadas na semana que atravessa a fronteira) — sem isto cada mês seria
+// gerado como se o anterior não existisse
+function contextoMesAnterior(loja, y, m){
+  const prevM = m===1 ? 12 : m-1, prevY = m===1 ? y-1 : y;
+  const prevYm = prevY+'-'+pad2(prevM);
+  const prevG = loja.meses[prevYm];
+  const ctx = {};
+  for (const st of loja.staff) ctx[st.id] = { caudaTrabalho: 0, ultimoTurnoTipo: null, folgasFronteira: 0, diasUteisFronteira: 0 };
+  if (!prevG) return ctx;
+  const prevN = daysInMonth(prevY, prevM);
+  const prevWeeks = weeksOf(prevY, prevM);
+  const lastWeek = prevWeeks[prevWeeks.length - 1];
+  // só há fronteira a considerar se o mês anterior não terminou mesmo a um domingo
+  const temFronteira = dow(prevY, prevM, lastWeek[lastWeek.length-1]) !== 0;
+  for (const st of loja.staff){
+    const c = ctx[st.id];
+    // sequência de dias trabalhados terminando no último dia do mês anterior
+    for (let d = prevN; d >= 1; d--){
+      const t = tipoOf(loja, cellGet(prevG, st.id, d));
+      if (t==='M'||t==='I'||t==='N'){ c.caudaTrabalho++; if (c.caudaTrabalho===1) c.ultimoTurnoTipo = t; }
+      else break;
+    }
+    if (temFronteira){
+      for (const d of lastWeek){
+        if (!stAtivoDia(st, prevY, prevM, d)) continue;
+        const t = tipoOf(loja, cellGet(prevG, st.id, d));
+        if (t==='F') c.folgasFronteira++;
+        if (t!=='A') c.diasUteisFronteira++; // dias uteis = tudo menos ausência
+      }
+    }
+  }
+  return ctx;
+}
+
 // cada turno tem mínimo e ideal por dia da semana (índice 0=Dom … 6=Sáb)
 // — porque a nomenclatura e os horários dos turnos variam de loja para loja
 function defaultShifts(){
@@ -987,6 +1023,7 @@ function gerarHorario(loja, y, m, manter){
   const g = gridOf(loja, ym);
   const staff = staffDoMes(loja, y, m);
   const weeks = weeksOf(y,m);
+  const ctxAnt = contextoMesAnterior(loja, y, m);
   const R = loja.regras;
   const turnos = ativos(loja).filter(s => s.min.some(v=>v>0) || s.ideal.some(v=>v>0));
   if (!turnos.length) turnos.push(...ativos(loja));
@@ -1047,9 +1084,13 @@ function gerarHorario(loja, y, m, manter){
   weeks.forEach((week, wi) => {
     const ordem = staff.slice(); for (let k=0; k<wi; k++) ordem.push(ordem.shift());
     for (const st of ordem){
+      // na 1ª semana, a fronteira com o mês anterior conta para o total da
+      // semana real (que pode atravessar os dois meses)
+      const fronteira = wi===0 ? ctxAnt[st.id] : null;
       const uteis = week.filter(d => stAtivoDia(st,y,m,d) && !ABS_TIPOS[cellGet(g,st.id,d)]);
-      const jaTem = week.filter(d => tipoOf(loja, cellGet(g,st.id,d))==='F').length;
-      const devidas = Math.max(0, folgasDevidas(loja, uteis.length) - jaTem);
+      const diasUteisSemana = uteis.length + (fronteira ? fronteira.diasUteisFronteira : 0);
+      const jaTem = week.filter(d => tipoOf(loja, cellGet(g,st.id,d))==='F').length + (fronteira ? fronteira.folgasFronteira : 0);
+      const devidas = Math.max(0, folgasDevidas(loja, diasUteisSemana) - jaTem);
       if (!devidas) continue;
       const livres = week.filter(d => stAtivoDia(st,y,m,d) && !cellGet(g, st.id, d));
 
@@ -1107,8 +1148,9 @@ function gerarHorario(loja, y, m, manter){
         // máx. dias seguidos: simula o par e mede a maior sequência de
         // trabalho até ao fim desta semana (5 ok, 6 excepcional, 7+ nunca)
         const maxSeg = R.maxSeguidos || 5;
-        let run = 0, maxRun = 0;
-        for (let dd = Math.max(1, week[0]-13); dd <= week[week.length-1]; dd++){
+        const ddIni = Math.max(1, week[0]-13);
+        let run = ddIni===1 ? ctxAnt[st.id].caudaTrabalho : 0, maxRun = run; // continua a sequência do mês anterior
+        for (let dd = ddIni; dd <= week[week.length-1]; dd++){
           const t = tipoOf(loja, cellGet(g, st.id, dd));
           const folga = par.includes(dd) || t==='F' || t==='A';
           if (folga) run = 0; else { run++; if (run > maxRun) maxRun = run; }
@@ -1185,8 +1227,10 @@ function gerarHorario(loja, y, m, manter){
     if (b.st.gerente){ if (s.tipo==='M') sc -= 10; else if (s.tipo==='N') sc += 300; }
     // fronteiras com células fixas (modo completar): não trocar de tipo sem folga
     if (R.folgaTroca){
-      const tPrev = b.dias[0]>1 ? workTipo(b.st.id, b.dias[0]-1) : null;
+      let tPrev = b.dias[0]>1 ? workTipo(b.st.id, b.dias[0]-1) : null;
       const tNext = b.dias[b.dias.length-1]<n ? workTipo(b.st.id, b.dias[b.dias.length-1]+1) : null;
+      // dia 1 do mês sem folga antes: continua o último turno do mês anterior
+      if (b.dias[0]===1 && ctxAnt[b.st.id].ultimoTurnoTipo) tPrev = ctxAnt[b.st.id].ultimoTurnoTipo;
       if (tPrev && trocaProibida(tPrev, s.tipo)) sc += 500;
       if (tNext && trocaProibida(s.tipo, tNext)) sc += 500;
     }
@@ -1204,8 +1248,9 @@ function gerarHorario(loja, y, m, manter){
 
   const boundaryOk = (b, s) => {
     if (!R.folgaTroca) return true;
-    const tPrev = b.dias[0]>1 ? workTipo(b.st.id, b.dias[0]-1) : null;
+    let tPrev = b.dias[0]>1 ? workTipo(b.st.id, b.dias[0]-1) : null;
     const tNext = b.dias[b.dias.length-1]<n ? workTipo(b.st.id, b.dias[b.dias.length-1]+1) : null;
+    if (b.dias[0]===1 && ctxAnt[b.st.id].ultimoTurnoTipo) tPrev = ctxAnt[b.st.id].ultimoTurnoTipo;
     // nota: os dias do próprio bloco vão mudar todos juntos, por isso só
     // interessam os vizinhos imediatamente fora do bloco
     return (!tPrev || !trocaProibida(tPrev, s.tipo)) && (!tNext || !trocaProibida(s.tipo, tNext));
@@ -1304,7 +1349,8 @@ function gerarHorario(loja, y, m, manter){
             // vizinhos têm de ser compatíveis com o tipo do turno (regra da troca)
             const okPrev = v => !v || v==='F' || v==='A' || !trocaProibida(v, s.tipo);
             const okNext = v => !v || v==='F' || v==='A' || !trocaProibida(s.tipo, v);
-            if (R.folgaTroca && (!okPrev(d>1?tipoDia(st.id,d-1):null) || !okNext(d<n?tipoDia(st.id,d+1):null))) continue;
+            const vPrev = d>1 ? tipoDia(st.id,d-1) : (d===1 ? ctxAnt[st.id].ultimoTurnoTipo : null);
+            if (R.folgaTroca && (!okPrev(vPrev) || !okNext(d<n?tipoDia(st.id,d+1):null))) continue;
             const week = weeks.find(w => w.includes(d)) || [];
             for (const d2 of week){
               if (d2===d) continue;
@@ -1345,6 +1391,8 @@ function gerarHorario(loja, y, m, manter){
             // transição dentro do bloco tem de ser permitida
             if (last && trocaProibida(b.sh.tipo, sTn.tipo)) continue;   // …c2 → s
             if (first && trocaProibida(sTn.tipo, b.sh.tipo)) continue;  // s → c2…
+            // dia 1 do mês: continuidade com o turno de fecho do mês anterior
+            if (first && d===1 && ctxAnt[b.st.id].ultimoTurnoTipo && trocaProibida(ctxAnt[b.st.id].ultimoTurnoTipo, sTn.tipo)) continue;
             cnt[b.sh.code][d]--; cnt[sTn.code][d]++;
             cellSet(g, b.st.id, d, sTn.code);
             b.lock = true; done = true; mudou = true;
@@ -1362,12 +1410,15 @@ function gerarHorario(loja, y, m, manter){
   //     calhar ou não ao domingo (cobre automático, padrões fixos, pedidos
   //     e o domingo fixo do part-time, todos de uma vez)
   for (const st of staff)
-    for (const week of weeks){
+    weeks.forEach((week, wi) => {
       const diasFolga = week
         .filter(d => { const c = cellGet(g, st.id, d); return c==='DO' || c==='DC'; })
         .sort((a,b) => a-b);
-      diasFolga.forEach((d,i) => cellSet(g, st.id, d, i===0 ? 'DO' : 'DC'));
-    }
+      // 1ª semana: se já houve folga na fronteira do mês anterior, essa é
+      // que foi a mais cedo da semana real — aqui fica tudo DC
+      const jaTeveDO = wi===0 && ctxAnt[st.id].folgasFronteira > 0;
+      diasFolga.forEach((d,i) => cellSet(g, st.id, d, (i===0 && !jaTeveDO) ? 'DO' : 'DC'));
+    });
 }
 
 /* ══════════════════════ VALIDAÇÃO ══════════════════════ */
@@ -1378,6 +1429,7 @@ function validar(loja, y, m){
   const viols = [], cells = new Set(), days = new Set();
   const staff = staffDoMes(loja, y, m);
   const R = loja.regras;
+  const ctxAnt = contextoMesAnterior(loja, y, m);
 
   // mínimos e ideais diários — por turno
   const turnos = ativos(loja);
@@ -1429,15 +1481,16 @@ function validar(loja, y, m){
       viols.push({sev:'warn', msg:`Semana de ${week[0]} a ${week[week.length-1]}: dias desnivelados — ${mx} pessoas no dia ${dmx} vs ${mn} no dia ${dmn}`});
   }
 
-  // troca de turno sem folga
+  // troca de turno sem folga (incluindo a continuidade com o mês anterior)
   if (R.folgaTroca){
     for (const st of staff){
-      let prev = null, prevD = 0;
+      let prev = ctxAnt[st.id].ultimoTurnoTipo, prevD = prev ? 0 : -99;
       for (let d=1; d<=n; d++){
         const code = cellGet(g,st.id,d), t = tipoOf(loja, code);
         if (t==='M' || t==='I' || t==='N'){
           if (prev && d === prevD+1 && trocaProibida(prev, t)){
-            viols.push({sev:'err', msg:`${st.nome}: troca ${prev}→${t} no dia ${d} sem folga entre (turno mais cedo logo a seguir a turno mais tarde)`, dia:d});
+            const onde = prevD===0 ? `${st.nome}: troca ${prev}→${t} logo no dia 1 sem folga desde o fecho do mês anterior` : `${st.nome}: troca ${prev}→${t} no dia ${d} sem folga entre (turno mais cedo logo a seguir a turno mais tarde)`;
+            viols.push({sev:'err', msg:onde, dia:d});
             cells.add(st.id+':'+d);
           }
           prev = t; prevD = d;
@@ -1464,13 +1517,14 @@ function validar(loja, y, m){
   // máx. dias seguidos de trabalho (maxSeguidos ok; +1 excepcional; mais = erro)
   const maxSeg = R.maxSeguidos || 5;
   for (const st of staff){
-    let run = 0, ini = 0;
+    // a sequência pode ter começado no mês anterior
+    let run = ctxAnt[st.id].caudaTrabalho, ini = run>0 ? 1 : 0, vemDoMesAnterior = run>0;
     const fecha = (fim) => {
       if (run === maxSeg + 1)
-        viols.push({sev:'warn', msg:`${st.nome}: ${run} dias seguidos de trabalho (${ini} a ${fim}) — excepcional`});
+        viols.push({sev:'warn', msg:`${st.nome}: ${run} dias seguidos de trabalho (${vemDoMesAnterior?'desde o mês anterior':`${ini}`} a ${fim}) — excepcional`});
       else if (run > maxSeg + 1)
-        viols.push({sev:'err', msg:`${st.nome}: ${run} dias seguidos de trabalho (${ini} a ${fim}) — máximo ${maxSeg+1}`});
-      run = 0;
+        viols.push({sev:'err', msg:`${st.nome}: ${run} dias seguidos de trabalho (${vemDoMesAnterior?'desde o mês anterior':`${ini}`} a ${fim}) — máximo ${maxSeg+1}`});
+      run = 0; vemDoMesAnterior = false;
     };
     for (let d=1; d<=n; d++){
       const t = tipoOf(loja, cellGet(g,st.id,d));
