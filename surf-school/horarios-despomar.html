@@ -336,8 +336,8 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
       <button class="btn" onclick="renderGrid()">✔ Validar</button>
       <button class="btn danger small" onclick="limparMes()">Limpar mês</button>
       <div class="header-spacer"></div>
-      <button class="btn green" onclick="exportXLSX()">⬇ Excel</button>
       <button class="btn" onclick="window.print()">🖨 Imprimir</button>
+      <button class="btn primary" onclick="enviarSupervisor()">📧 Enviar ao supervisor</button>
     </div>
     <div class="print-head" id="print-head"></div>
     <div class="grid-wrap" id="grid"></div>
@@ -357,7 +357,7 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 <!-- ═══════════ EQUIPA ═══════════ -->
 <div class="page" id="page-equipa">
   <div class="card">
-    <h2><span id="eq-loja-nome"></span> — Colaboradores <span class="hint">Tudo opcional, campo a campo — deixa em branco para o comportamento normal. Turno fixo: só faz aquele turno (ex: só noite). Dom. sempre folga: part-time que nunca trabalha ao domingo. Aniversário (MM-DD) marca AV todos os anos. Entrada/Saída controlam quando a pessoa aparece (saídas mantêm o histórico). Padrão de folgas: alterna semanalmente A/B</span></h2>
+    <h2><span id="eq-loja-nome"></span> — Colaboradores <span class="hint">Tudo opcional, campo a campo — deixa em branco para o comportamento normal. Turno fixo: só faz aquele turno (ex: só noite). Dom. sempre folga: part-time que nunca trabalha ao domingo. Aniversário (MM-DD) marca AV todos os anos. Entrada/Saída controlam quando a pessoa aparece (saídas mantêm o histórico). Padrão de folgas: só A preenchido = fixo todas as semanas; A e B juntos = alternam semana sim, semana não</span></h2>
     <div style="overflow-x:auto"><table class="tbl" id="staff-tbl"></table></div>
     <div style="margin-top:12px"><button class="btn primary" onclick="addStaff()">+ Adicionar colaborador</button></div>
   </div>
@@ -1106,25 +1106,23 @@ function gerarHorario(loja, y, m, manter){
       if (!devidas) continue;
       const livres = week.filter(d => stAtivoDia(st,y,m,d) && !cellGet(g, st.id, d));
 
-      // padrão fixo: alterna A/B pela paridade da semana ISO
-      if (st.padA && st.padB){
-        const par = isoWeek(y, m, week[0]) % 2 === 0;
-        const pat = par ? st.padB : st.padA;
+      // padrão fixo: com A e B alterna pela paridade da semana ISO;
+      // com só um dos dois preenchido, esse fica fixo TODAS as semanas.
+      // Os dias do padrão contam SEMPRE que caiam nesta semana — é um
+      // compromisso contratual, não está sujeito ao limite de "devidas"
+      // (que existiria para semanas parciais no início/fim do mês)
+      if (st.padA || st.padB){
+        const pat = (st.padA && st.padB)
+          ? (isoWeek(y, m, week[0]) % 2 === 0 ? st.padB : st.padA)
+          : (st.padA || st.padB);
         let usadas = 0;
         for (const wd of pat){
           const d = week.find(d => dow(y,m,d)===wd && !cellGet(g,st.id,d));
-          if (d !== undefined && usadas < devidas){
+          if (d !== undefined){
             cellSet(g, st.id, d, usadas===0 && jaTem===0 ? 'DO' : 'DC');
             if (dow(y,m,d)===0) domFolgas[st.id]++;
             usadas++;
           }
-        }
-        while (usadas < devidas){
-          const d = livres.find(d => !cellGet(g,st.id,d));
-          if (d === undefined) break;
-          cellSet(g, st.id, d, usadas===0 && jaTem===0 ? 'DO' : 'DC');
-          if (dow(y,m,d)===0) domFolgas[st.id]++;
-          usadas++;
         }
         continue;
       }
@@ -1356,7 +1354,7 @@ function gerarHorario(loja, y, m, manter){
             const cd = cellGet(g, st.id, d);
             if (cd!=='DC' && cd!=='DO') continue;
             if (pedidoOn(loja, st.id, y, m, d)) continue;
-            if (st.padA && st.padB) continue;                  // não mexer em padrões fixos
+            if (st.padA || st.padB) continue;                  // não mexer em padrões fixos
             if (dow(y,m,d)===0 && domFolgasDe(st.id) <= alvoDom(st)) continue; // não roubar domingos de folga
             // vizinhos têm de ser compatíveis com o tipo do turno (regra da troca)
             const okPrev = v => !v || v==='F' || v==='A' || !trocaProibida(v, s.tipo);
@@ -1490,7 +1488,7 @@ function validar(loja, y, m){
       if (t>mx){mx=t;dmx=d;} if (t<mn){mn=t;dmn=d;}
     }
     if (completo && mx>=0 && mx-mn > 3)
-      viols.push({sev:'warn', msg:`Semana de ${week[0]} a ${week[week.length-1]}: dias desnivelados — ${mx} pessoas no dia ${dmx} vs ${mn} no dia ${dmn}`});
+      viols.push({sev:'warn', msg:`Semana de ${week[0]} a ${week[week.length-1]}: dias desnivelados (fora do domingo, que tem mínimos próprios) — ${mx} pessoas no dia ${dmx} vs ${mn} no dia ${dmn}`});
   }
 
   // troca de turno sem folga (incluindo a continuidade com o mês anterior)
@@ -1806,11 +1804,37 @@ function renderStaff(){
   renderAbs();
   renderPedidos();
 }
+// regista uma ausência/aniversário DEPOIS do mês já estar gerado: sem isto,
+// a sincronização normal só preenche células vazias e a marcação fica
+// invisível na grelha até se limpar e gerar tudo de novo
+function forcarAusenciaGrid(loja, staffId, tipo, inicio, fim){
+  for (const ym in loja.meses){
+    const [yy, mm] = ym.split('-').map(Number);
+    const n = daysInMonth(yy, mm);
+    const g = loja.meses[ym];
+    for (let d=1; d<=n; d++){
+      const ds = dateStr(yy, mm, d);
+      if (ds >= inicio && ds <= fim) cellSet(g, staffId, d, tipo);
+    }
+  }
+}
+function forcarAniversarioGrid(loja, staffId, mmdd){
+  if (!mmdd) return;
+  for (const ym in loja.meses){
+    const [yy, mm] = ym.split('-').map(Number);
+    const n = daysInMonth(yy, mm);
+    const g = loja.meses[ym];
+    for (let d=1; d<=n; d++)
+      if (`${pad2(mm)}-${pad2(d)}` === mmdd) cellSet(g, staffId, d, 'AV');
+  }
+}
 function stField(sid, f, v){
-  const st = L().staff.find(s=>s.id===sid);
+  const loja = L();
+  const st = loja.staff.find(s=>s.id===sid);
   st[f] = v; save();
   if (f==='gerente') renderStaff();
-  if (f==='inicio' || f==='fim' || f==='aniversario' || f==='turnoFixo' || f==='domSempre') renderGrid();
+  if (f==='aniversario' && v) forcarAniversarioGrid(loja, sid, v);
+  if (f==='inicio' || f==='fim' || f==='aniversario' || f==='turnoFixo' || f==='domSempre'){ save(); renderGrid(); }
 }
 function setPad(sid, key, val){
   const st = L().staff.find(s=>s.id===sid);
@@ -1844,7 +1868,8 @@ function addAbs(){
   const fim = document.getElementById('abs-fim').value || inicio;
   if (!staffId || !inicio) return toast('Escolhe colaborador e data de início', false);
   loja.ausencias.push({staffId, tipo, inicio, fim});
-  save(); renderAbs();
+  forcarAusenciaGrid(loja, staffId, tipo, inicio, fim);
+  save(); renderAbs(); renderGrid();
 }
 function renderAbs(){
   const loja = L();
@@ -1992,13 +2017,14 @@ function delFeriado(i){ S.feriados.splice(i,1); save(); renderFeriados(); render
 
 /* ══════════════════════ RENDER: LOJAS ══════════════════════ */
 function renderLojas(){
-  let h = '<tr><th>Nome</th><th>Morada</th><th>Feriado municipal</th><th>Colaboradores</th><th>Meses com horário</th><th></th></tr>';
+  let h = '<tr><th>Nome</th><th>Morada</th><th>Feriado municipal</th><th>Email supervisor</th><th>Colaboradores</th><th>Meses com horário</th><th></th></tr>';
   for (const l of S.lojas){
     const meses = Object.keys(l.meses).filter(ym => !mesVazio(l, ym)).sort().reverse().slice(0,4).join(', ');
     h += `<tr>
       <td><input type="text" value="${esc(l.nome)}" onchange="lojaField('${l.id}','nome',this.value)"></td>
       <td><input type="text" value="${esc(l.morada||'')}" size="28" onchange="lojaField('${l.id}','morada',this.value)"></td>
       <td><input type="text" value="${esc(l.ferMunicipal||'')}" size="5" placeholder="MM-DD" title="Mês-dia do feriado municipal, repete todos os anos (ex: 10-27)" onchange="lojaField('${l.id}','ferMunicipal',this.value)"></td>
+      <td><input type="email" value="${esc(l.supervisorEmail||'')}" size="20" placeholder="supervisor@despomar.com" onchange="lojaField('${l.id}','supervisorEmail',this.value)"></td>
       <td>${l.staff.length}</td>
       <td class="mut">${meses || '—'}</td>
       <td><button class="btn danger small" onclick="delLoja('${l.id}')">✕</button></td>
@@ -2052,6 +2078,24 @@ function saveEmpresa(){
   E.nif = document.getElementById('c-nif').value;
   E.atividade = document.getElementById('c-activ').value;
   save();
+}
+// Um browser não consegue anexar um ficheiro a um email sozinho — por isso
+// o fluxo é: 1) Imprimir → Guardar como PDF, 2) este botão abre o email já
+// preenchido (destinatário, assunto, corpo) e o utilizador só anexa o PDF
+async function enviarSupervisor(){
+  const loja = L();
+  const {y, m} = ymParts();
+  if (!loja.supervisorEmail){
+    const email = await pedir(`Ainda não há email de supervisor guardado para ${loja.nome}. Introduz o email (fica guardado para as próximas vezes):`, {input:true, placeholder:'supervisor@despomar.com'});
+    if (!email) return;
+    loja.supervisorEmail = email.trim();
+    save(); renderLojas();
+  }
+  const assunto = `Horário ${loja.nome} — ${MESES[m-1]} ${y}`;
+  const corpo = `Olá,\n\nSegue o horário de ${loja.nome} referente a ${MESES[m-1]} de ${y}, para validação.\n\n(Lembrete: anexa o PDF — Imprimir → Guardar como PDF, antes de enviar)\n\nObrigado.`;
+  const url = `mailto:${encodeURIComponent(loja.supervisorEmail)}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
+  window.open(url, '_blank');
+  toast('Email aberto — não te esqueças de anexar o PDF (Imprimir → Guardar como PDF)');
 }
 function mudarLoja(id){ S.lojaAtual = id; save(); renderAll(); }
 function syncLojaSel(){
@@ -2357,14 +2401,6 @@ function sheetLoja(loja, y, m){
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   ws['!cols'] = [{wch:15},{wch:11},{wch:10}, ...staff.map(()=>({wch:10})), {wch:4},{wch:4},{wch:4},{wch:4},{wch:4}];
   return ws;
-}
-function exportXLSX(){
-  if (!temXLSX()) return;
-  const {y, m} = ymParts();
-  const loja = L();
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, sheetLoja(loja, y, m), `Hor ${pad2(m)}-${y}`.slice(0,31));
-  XLSX.writeFile(wb, `Horario_${loja.nome.replace(/\s+/g,'_')}_${pad2(m)}_${y}.xlsx`);
 }
 function exportTodasXLSX(){
   if (!temXLSX()) return;
