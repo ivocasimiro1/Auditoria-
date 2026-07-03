@@ -1356,6 +1356,18 @@ function gerarHorario(loja, y, m, manter){
     }
     if (!mudou) break;
   }
+
+  // 6 ─ normalização final DO/DC: em cada semana, a folga cronologicamente
+  //     mais cedo é sempre DO e as restantes são DC — independente de
+  //     calhar ou não ao domingo (cobre automático, padrões fixos, pedidos
+  //     e o domingo fixo do part-time, todos de uma vez)
+  for (const st of staff)
+    for (const week of weeks){
+      const diasFolga = week
+        .filter(d => { const c = cellGet(g, st.id, d); return c==='DO' || c==='DC'; })
+        .sort((a,b) => a-b);
+      diasFolga.forEach((d,i) => cellSet(g, st.id, d, i===0 ? 'DO' : 'DC'));
+    }
 }
 
 /* ══════════════════════ VALIDAÇÃO ══════════════════════ */
