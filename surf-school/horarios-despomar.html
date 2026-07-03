@@ -153,6 +153,7 @@ table.hgrid { border-collapse: collapse; width: 100%; font-size: 12px; }
 .c-BX { background: #f7d4d4; color: #a51616; }
 .c-AV { background: #f9d5ea; color: #a81563; }
 .c-DCOMP { background: #fbe3c8; color: #a53a08; }
+.c-ENC { background: #414b5d; color: #fff; }
 .c-empty { color: #c6cdd8; }
 .c-out { background: repeating-linear-gradient(45deg, #eef0f4, #eef0f4 5px, #e4e7ee 5px, #e4e7ee 10px); color: #aab2c0; cursor: default; }
 td.viol { outline: 2px solid var(--red); outline-offset: -2px; }
@@ -261,10 +262,21 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
   .hgrid td.day-lbl .dw { font-size: 6.5px; }
   .ferlbl { font-size: 5.5px; }
   .hgrid thead th { position: static; }
-  .c-M, .c-I, .c-N { background: #fff !important; }
-  .c-FR { background: #c9ecd6 !important; }
-  .c-BX { background: #f6d3d3 !important; }
-  .c-DO, .c-DC { background: #dfe3ec !important; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .hgrid td.c-M, .hgrid td.c-I, .hgrid td.c-N { background: #fff !important; }
+  .hgrid td.c-FR { background: #b9e7c9 !important; color: #0f5c2c !important; }
+  .hgrid td.c-BX { background: #f5caca !important; color: #8f1414 !important; }
+  .hgrid td.c-AV { background: #f8cfe6 !important; color: #97125a !important; }
+  .hgrid td.c-DCOMP { background: #f9dcbb !important; color: #8f3306 !important; }
+  .hgrid td.c-ENC { background: #cfd4dd !important; color: #333 !important; }
+  .hgrid td.c-DO, .hgrid td.c-DC { background: #d9dfe9 !important; color: #33415c !important; }
+  .hgrid tr.weekend td { background-image: linear-gradient(rgba(60,70,166,.09), rgba(60,70,166,.09)) !important; }
+  .hgrid tr.sunday td { background-image: linear-gradient(rgba(60,70,166,.16), rgba(60,70,166,.16)) !important; }
+  .hgrid tr.holiday td { background-image: linear-gradient(rgba(109,40,217,.13), rgba(109,40,217,.13)) !important; }
+  .hgrid tr.weekend td.day-lbl .dnum, .hgrid tr.weekend td.day-lbl .dw { color: #2e3684 !important; }
+  .hgrid tr.sunday td.day-lbl .dnum, .hgrid tr.sunday td.day-lbl .dw { color: #b91c1c !important; }
+  .hgrid tr.holiday td.day-lbl .dnum, .hgrid tr.holiday td.day-lbl .dw { color: #6d28d9 !important; }
+  .ferlbl { color: #6d28d9 !important; }
   .hgrid tr.wstart td { border-top: 2px solid #444; }
   .hgrid thead th span { color: #444 !important; }
   .hgrid tr.weekend td.day-lbl, .hgrid tr.weekend td.cnt { background: #dfe3ec !important; font-weight: 700; }
@@ -481,7 +493,14 @@ const LSKEY_OLD = 'despomar_horarios_v2';
 const DWS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const DWL = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const ABS_TIPOS = { FR:'Férias', BX:'Baixa', AV:'Aniversário', DCOMP:'Dia de Compensação' };
+const ABS_TIPOS = { FR:'Férias', BX:'Baixa', AV:'Aniversário', DCOMP:'Dia de Compensação', ENC:'Encerrado' };
+// lojas fecham apenas a 25 de Dezembro e 1 de Janeiro
+function diaFechado(y, m, d){ return (m===12 && d===25) || (m===1 && d===1); }
+// a troca de turno só precisa de folga quando o turno seguinte começa MAIS CEDO
+// (ex: noite→manhã não descansa o suficiente; manhã→noite pode — permite ao
+// gerente fazer manhãs com uma noite solta antes da folga)
+const RANK_TURNO = { M:0, I:1, N:2 };
+function trocaProibida(tAntes, tDepois){ return (RANK_TURNO[tDepois] ?? 0) < (RANK_TURNO[tAntes] ?? 0); }
 
 // cada turno tem mínimo e ideal por dia da semana (índice 0=Dom … 6=Sáb)
 // — porque a nomenclatura e os horários dos turnos variam de loja para loja
@@ -740,6 +759,7 @@ function sincAusencias(loja, y, m){
   for (const st of staffDoMes(loja, y, m))
     for (let d=1; d<=n; d++){
       if (!stAtivoDia(st, y, m, d)) continue;
+      if (diaFechado(y, m, d) && !cellGet(g, st.id, d)){ cellSet(g, st.id, d, 'ENC'); mudou = true; continue; }
       const a = absOn(loja, st.id, y, m, d);
       if (a && !cellGet(g, st.id, d)){ cellSet(g, st.id, d, a); mudou = true; }
     }
@@ -841,10 +861,12 @@ function gerarHorario(loja, y, m, manter){
   if (!turnos.length) turnos.push(...ativos(loja));
   if (!turnos.length) return;
 
-  // 1 ─ ausências (férias, baixas…) — não pisam células já preenchidas à mão
+  // 1 ─ dias de encerramento (25/12 e 1/1) + ausências (férias, baixas…)
+  //     — não pisam células já preenchidas à mão
   for (const st of staff)
     for (let d=1; d<=n; d++){
       if (!stAtivoDia(st, y, m, d)) continue;
+      if (diaFechado(y, m, d) && !cellGet(g, st.id, d)){ cellSet(g, st.id, d, 'ENC'); continue; }
       const a = absOn(loja, st.id, y, m, d);
       if (a && !cellGet(g, st.id, d)) cellSet(g, st.id, d, a);
     }
@@ -930,7 +952,7 @@ function gerarHorario(loja, y, m, manter){
           const cap = disponiveis(d) - minTotDia(loja, idx);
           const jaFolgam = folgasNoDia(d);
           if (jaFolgam >= cap) sc += 100 + (jaFolgam-cap)*40;
-          else sc += jaFolgam * 6;
+          else sc += jaFolgam * jaFolgam * 12; // nivelar: penaliza empilhar folgas no mesmo dia
           if (lastPair[st.id] && lastPair[st.id].includes(idx)) sc += 10;
         }
         // máx. dias seguidos: simula o par e mede a maior sequência de
@@ -1007,12 +1029,15 @@ function gerarHorario(loja, y, m, manter){
     }
     sc += (stTot[b.st.id][s.tipo]||0) * 2;               // equilíbrio mensal por pessoa
     if (R.gerenteManha && b.st.gerente && !stTemM[b.st.id] && s.tipo==='M') sc -= 8;
+    // gerentes fazem normalmente a manhã; blocos de noite são quase proibidos
+    // (as 1-2 noites entram SOLTAS no passo 4c, no fim de blocos de manhã)
+    if (b.st.gerente){ if (s.tipo==='M') sc -= 10; else if (s.tipo==='N') sc += 300; }
     // fronteiras com células fixas (modo completar): não trocar de tipo sem folga
     if (R.folgaTroca){
       const tPrev = b.dias[0]>1 ? workTipo(b.st.id, b.dias[0]-1) : null;
       const tNext = b.dias[b.dias.length-1]<n ? workTipo(b.st.id, b.dias[b.dias.length-1]+1) : null;
-      if (tPrev && tPrev!==s.tipo) sc += 500;
-      if (tNext && tNext!==s.tipo) sc += 500;
+      if (tPrev && trocaProibida(tPrev, s.tipo)) sc += 500;
+      if (tNext && trocaProibida(s.tipo, tNext)) sc += 500;
     }
     sc += RND() * 6;
     return sc;
@@ -1032,7 +1057,7 @@ function gerarHorario(loja, y, m, manter){
     const tNext = b.dias[b.dias.length-1]<n ? workTipo(b.st.id, b.dias[b.dias.length-1]+1) : null;
     // nota: os dias do próprio bloco vão mudar todos juntos, por isso só
     // interessam os vizinhos imediatamente fora do bloco
-    return (!tPrev || tPrev===s.tipo) && (!tNext || tNext===s.tipo);
+    return (!tPrev || !trocaProibida(tPrev, s.tipo)) && (!tNext || !trocaProibida(s.tipo, tNext));
   };
 
   // 4b ─ gerente sem manhãs: força o bloco mais pequeno para um turno M
@@ -1052,25 +1077,30 @@ function gerarHorario(loja, y, m, manter){
     }
   }
 
-  // 4c ─ gerente com menos noites que o mínimo mensal: vira um bloco para N
+  // 4c ─ noites do gerente: 1-2 noites SOLTAS no fim de blocos de manhã
+  //     (manhã→noite não precisa de folga; a folga a seguir ao bloco
+  //      protege o regresso à manhã) — nunca um bloco inteiro de noites
   if ((R.gerenteNoites||0) > 0){
     const turnoN = turnos.find(s => s.tipo==='N');
     if (turnoN){
       for (const st of staff.filter(s => s.gerente)){
         let noites = 0;
         for (let d=1; d<=n; d++) if (tipoOf(loja, cellGet(g,st.id,d))==='N') noites++;
-        if (noites >= R.gerenteNoites) continue;
-        const meusM = blocos.filter(b => b.st.id===st.id && b.sh && b.sh.tipo==='M').length;
-        const meus = blocos.filter(b => b.st.id===st.id && b.sh && b.sh.tipo!=='N' &&
-            boundaryOk(b, turnoN) &&
-            // não desfazer a única manhã do gerente
-            !(R.gerenteManha && b.sh.tipo==='M' && meusM <= 1) &&
-            b.dias.every(dd => cnt[b.sh.code][dd] - 1 >= b.sh.min[dow(y,m,dd)] || b.sh.min[dow(y,m,dd)] === 0))
-          .sort((a,b)=>a.dias.length-b.dias.length);
-        if (meus.length){
-          const b = meus[0];
-          for (const d of b.dias){ cnt[b.sh.code][d]--; cnt[turnoN.code][d]++; cellSet(g, st.id, d, turnoN.code); }
-          b.sh = turnoN;
+        let falta = R.gerenteNoites - noites;
+        if (falta <= 0) continue;
+        const meus = blocos.filter(b => b.st.id===st.id && b.sh && b.sh.tipo!=='N' && b.dias.length >= 2)
+          .sort((a,b) => b.dias.length - a.dias.length);
+        for (const b of meus){
+          let viradas = 0;
+          for (let k = b.dias.length-1; k >= 1 && falta > 0 && viradas < 2; k--){
+            const d = b.dias[k];
+            if (b.sh.min[dow(y,m,d)] > 0 && cnt[b.sh.code][d] - 1 < b.sh.min[dow(y,m,d)]) break; // não furar mínimo
+            cnt[b.sh.code][d]--; cnt[turnoN.code][d]++;
+            cellSet(g, st.id, d, turnoN.code);
+            falta--; viradas++;
+          }
+          if (viradas) b.lock = true; // bloco misto — as reparações não lhe mexem
+          if (falta <= 0) break;
         }
       }
     }
@@ -1083,7 +1113,8 @@ function gerarHorario(loja, y, m, manter){
       const idx = dow(y,m,d);
       for (const s of turnos){
         while (cnt[s.code][d] < s.min[idx]){
-          const cand = blocos.filter(b => b.sh && b.sh.code!==s.code && b.dias.includes(d) &&
+          const cand = blocos.filter(b => b.sh && !b.lock && b.sh.code!==s.code && b.dias.includes(d) &&
+            !(b.st.gerente && s.tipo==='N') &&
             boundaryOk(b, s) &&
             b.dias.every(dd => cnt[b.sh.code][dd] - 1 >= b.sh.min[dow(y,m,dd)] ||
                                b.sh.min[dow(y,m,dd)] === 0))
@@ -1110,14 +1141,16 @@ function gerarHorario(loja, y, m, manter){
         while (cnt[s.code][d] < s.min[idx]){
           let done = false;
           for (const st of staff){
+            if (st.gerente && s.tipo==='N') continue; // noites do gerente só soltas
             const cd = cellGet(g, st.id, d);
             if (cd!=='DC' && cd!=='DO') continue;
             if (pedidoOn(loja, st.id, y, m, d)) continue;
             if (st.padA && st.padB) continue;                  // não mexer em padrões fixos
             if (dow(y,m,d)===0 && domFolgasDe(st.id) <= alvoDom(st)) continue; // não roubar domingos de folga
             // vizinhos têm de ser compatíveis com o tipo do turno (regra da troca)
-            const okViz = v => !v || v==='F' || v==='A' || v===s.tipo;
-            if (R.folgaTroca && (!okViz(d>1?tipoDia(st.id,d-1):null) || !okViz(d<n?tipoDia(st.id,d+1):null))) continue;
+            const okPrev = v => !v || v==='F' || v==='A' || !trocaProibida(v, s.tipo);
+            const okNext = v => !v || v==='F' || v==='A' || !trocaProibida(s.tipo, v);
+            if (R.folgaTroca && (!okPrev(d>1?tipoDia(st.id,d-1):null) || !okNext(d<n?tipoDia(st.id,d+1):null))) continue;
             const week = weeks.find(w => w.includes(d)) || [];
             for (const d2 of week){
               if (d2===d) continue;
@@ -1151,6 +1184,7 @@ function validar(loja, y, m){
   // mínimos e ideais diários — por turno
   const turnos = ativos(loja);
   for (let d=1; d<=n; d++){
+    if (diaFechado(y, m, d)) continue; // loja encerrada — sem mínimos
     const idx = dow(y,m,d);
     const cont = {};
     for (const st of staff){ const c = cellGet(g,st.id,d); if (c) cont[c] = (cont[c]||0) + 1; }
@@ -1180,6 +1214,23 @@ function validar(loja, y, m){
     }
   }
 
+  // nivelamento: evitar dias com 10 pessoas e outros com 4 na mesma semana
+  for (const week of weeksOf(y,m)){
+    let mx=-1, mn=99, dmx=0, dmn=0, completo=true;
+    for (const d of week){
+      if (diaFechado(y,m,d) || dow(y,m,d)===0) continue; // domingo tem mínimos próprios
+      let t=0;
+      for (const st of staff){
+        const x = tipoOf(loja, cellGet(g,st.id,d));
+        if (x==='M'||x==='I'||x==='N') t++;
+        else if (!x && stAtivoDia(st,y,m,d)) completo=false;
+      }
+      if (t>mx){mx=t;dmx=d;} if (t<mn){mn=t;dmn=d;}
+    }
+    if (completo && mx>=0 && mx-mn > 3)
+      viols.push({sev:'warn', msg:`Semana de ${week[0]} a ${week[week.length-1]}: dias desnivelados — ${mx} pessoas no dia ${dmx} vs ${mn} no dia ${dmn}`});
+  }
+
   // troca de turno sem folga
   if (R.folgaTroca){
     for (const st of staff){
@@ -1187,8 +1238,8 @@ function validar(loja, y, m){
       for (let d=1; d<=n; d++){
         const code = cellGet(g,st.id,d), t = tipoOf(loja, code);
         if (t==='M' || t==='I' || t==='N'){
-          if (prev && prev!==t && d === prevD+1){
-            viols.push({sev:'err', msg:`${st.nome}: troca de turno ${prev}→${t} no dia ${d} sem folga entre`, dia:d});
+          if (prev && d === prevD+1 && trocaProibida(prev, t)){
+            viols.push({sev:'err', msg:`${st.nome}: troca ${prev}→${t} no dia ${d} sem folga entre (turno mais cedo logo a seguir a turno mais tarde)`, dia:d});
             cells.add(st.id+':'+d);
           }
           prev = t; prevD = d;
