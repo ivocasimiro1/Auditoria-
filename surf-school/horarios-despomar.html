@@ -209,6 +209,16 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 .tag { display:inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
 .tag.ger { background: var(--purple-dim); color: var(--purple); }
 
+/* ── Diálogo e toast próprios (confirm/alert nativos são bloqueados em telemóvel/pré-visualizações) ── */
+.dlg-wrap { position: fixed; inset: 0; background: rgba(15,23,42,.45); display: flex; align-items: center; justify-content: center; z-index: 800; padding: 16px; }
+.dlg { background: var(--surface); border-radius: 14px; padding: 20px; max-width: 440px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+.dlg-msg { font-size: 14px; line-height: 1.45; margin-bottom: 14px; color: var(--text-bright); }
+.dlg input { width: 100%; margin-bottom: 14px; }
+.dlg-btns { display: flex; gap: 10px; justify-content: flex-end; }
+#toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(16px); background: #157347; color: #fff; padding: 11px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none; transition: .25s; z-index: 900; max-width: 90vw; text-align: center; }
+#toast.show { opacity: 1; transform: translateX(-50%); }
+#toast.show.err { background: #b91c1c; }
+
 /* ── Popover ── */
 #pop {
   position: absolute; z-index: 500; background: var(--surface2); border: 1px solid var(--border);
@@ -297,8 +307,8 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 <div class="page active" id="page-horario">
   <div class="card">
     <div class="toolbar">
-      <button class="btn primary" onclick="gerarClick()">⚡ Sugerir horário</button>
-      <button class="btn primary" onclick="completarClick()" title="Preenche só as células vazias, mantendo tudo o que já preencheste">✚ Completar vazios</button>
+      <button class="btn primary" onclick="gerarClick(this)">⚡ Sugerir horário</button>
+      <button class="btn primary" onclick="completarClick(this)" title="Preenche só as células vazias, mantendo tudo o que já preencheste">✚ Completar vazios</button>
       <button class="btn" onclick="renderGrid()">✔ Validar</button>
       <button class="btn danger small" onclick="limparMes()">Limpar mês</button>
       <div class="header-spacer"></div>
@@ -416,7 +426,7 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
     <div class="flex" style="margin-top:12px">
       <button class="btn primary" onclick="addLoja()">+ Nova loja</button>
       <button class="btn" onclick="dupLoja()">⧉ Duplicar loja actual (equipa e regras)</button>
-      <button class="btn" onclick="gerarTodas()">⚡ Gerar todas as lojas (mês seleccionado)</button>
+      <button class="btn" onclick="gerarTodas(this)">⚡ Gerar todas as lojas (mês seleccionado)</button>
       <button class="btn green" onclick="exportTodasXLSX()">⬇ Excel — todas as lojas</button>
     </div>
   </div>
@@ -442,6 +452,13 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 </div>
 
 </div>
+
+<div class="dlg-wrap" id="dlg" style="display:none"><div class="dlg">
+  <div class="dlg-msg" id="dlg-msg"></div>
+  <input type="text" id="dlg-inp">
+  <div class="dlg-btns"><button class="btn" id="dlg-no">Cancelar</button><button class="btn primary" id="dlg-ok">OK</button></div>
+</div></div>
+<div id="toast"></div>
 
 <div id="pop"></div>
 
@@ -564,7 +581,37 @@ function load(){
 }
 function save(){ try { localStorage.setItem(LSKEY, JSON.stringify(S)); } catch(e){} }
 const temXLSX = () => typeof XLSX !== 'undefined' ||
-  (alert('Importação/Exportação Excel não está disponível nesta pré-visualização — usa a versão do site.'), false);
+  (toast('Excel não disponível nesta pré-visualização — usa o site ou o ficheiro offline.', false), false);
+// aviso não-bloqueante no fundo do ecrã
+function toast(msg, sucesso=true){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (sucesso ? '' : ' err');
+  clearTimeout(t._h); t._h = setTimeout(() => { t.className = ''; }, 3800);
+}
+// diálogo próprio: substitui confirm() e prompt() (bloqueados em telemóvel/pré-visualizações)
+function pedir(msg, opts={}){
+  return new Promise(res => {
+    const w = document.getElementById('dlg'), inp = document.getElementById('dlg-inp');
+    document.getElementById('dlg-msg').textContent = msg;
+    inp.style.display = opts.input ? 'block' : 'none';
+    inp.value = ''; inp.placeholder = opts.placeholder || '';
+    w.style.display = 'flex';
+    const bok = document.getElementById('dlg-ok'), bno = document.getElementById('dlg-no');
+    const fim = v => { w.style.display = 'none'; bok.onclick = bno.onclick = inp.onkeydown = null; res(v); };
+    bok.onclick = () => fim(opts.input ? (inp.value.trim() || null) : true);
+    bno.onclick = () => fim(null);
+    inp.onkeydown = e => { if (e.key === 'Enter') bok.click(); };
+    if (opts.input) setTimeout(() => inp.focus(), 60);
+  });
+}
+// mostra "A gerar…" no botão enquanto o gerador corre
+async function ocupado(btn, fn){
+  let txt;
+  if (btn && btn.textContent){ txt = btn.textContent; btn.disabled = true; btn.textContent = '⏳ A gerar…'; }
+  await new Promise(r => setTimeout(r, 40));
+  try { fn(); } finally { if (btn && txt){ btn.disabled = false; btn.textContent = txt; } }
+}
 function L(){ return S.lojas.find(l => l.id === S.lojaAtual) || S.lojas[0]; }
 
 /* ══════════════════════ HELPERS ══════════════════════ */
@@ -699,36 +746,40 @@ function gerarMelhor(loja, y, m, manter){
   RND = () => 0;
 }
 
-function gerarClick(){
+async function gerarClick(btn){
   const {y, m} = ymParts();
   const loja = L();
-  if (!loja.staff.length) return alert('Esta loja não tem colaboradores — adiciona-os no separador Equipa.');
-  if (!ativos(loja).length) return alert('Esta loja não tem turnos activos — configura-os no separador Regras.');
-  if (!mesVazio(loja, ymSel()) && !confirm('O mês já tem dados. Sugerir de novo substitui tudo (excepto ausências e pedidos). Para manter o que preencheste, usa "Completar vazios". Continuar?')) return;
-  gerarMelhor(loja, y, m, false);
+  if (!loja.staff.length) return toast('Esta loja não tem colaboradores — adiciona-os no separador Equipa.', false);
+  if (!ativos(loja).length) return toast('Esta loja não tem turnos activos — configura-os no separador Regras.', false);
+  if (!mesVazio(loja, ymSel()) && !(await pedir('O mês já tem dados. Sugerir de novo substitui tudo (excepto ausências e pedidos). Para manter o que preencheste, usa "Completar vazios". Continuar?'))) return;
+  await ocupado(btn, () => gerarMelhor(loja, y, m, false));
   save();
   renderGrid();
+  toast('Horário sugerido — vê a validação e corrige à vontade ✅');
 }
 
-function completarClick(){
+async function completarClick(btn){
   const {y, m} = ymParts();
   const loja = L();
-  if (!loja.staff.length) return alert('Esta loja não tem colaboradores — adiciona-os no separador Equipa.');
-  if (!ativos(loja).length) return alert('Esta loja não tem turnos activos — configura-os no separador Regras.');
-  gerarMelhor(loja, y, m, true);
+  if (!loja.staff.length) return toast('Esta loja não tem colaboradores — adiciona-os no separador Equipa.', false);
+  if (!ativos(loja).length) return toast('Esta loja não tem turnos activos — configura-os no separador Regras.', false);
+  await ocupado(btn, () => gerarMelhor(loja, y, m, true));
   save();
   renderGrid();
+  toast('Células vazias completadas ✅');
 }
 
-function gerarTodas(){
+async function gerarTodas(btn){
   const {y, m} = ymParts();
   const comDados = S.lojas.filter(l => l.staff.length && !mesVazio(l, ymSel()));
-  if (comDados.length && !confirm(`${comDados.length} loja(s) já têm horário em ${MESES[m-1]}. Gerar de novo substitui tudo. Continuar?`)) return;
-  for (const loja of S.lojas){
-    if (loja.staff.length && ativos(loja).length) gerarMelhor(loja, y, m, false);
-  }
+  if (comDados.length && !(await pedir(`${comDados.length} loja(s) já têm horário em ${MESES[m-1]}. Gerar de novo substitui tudo. Continuar?`))) return;
+  await ocupado(btn, () => {
+    for (const loja of S.lojas)
+      if (loja.staff.length && ativos(loja).length) gerarMelhor(loja, y, m, false);
+  });
   save();
   renderAll();
+  toast('Horários gerados para todas as lojas ✅');
 }
 
 function gerarHorario(loja, y, m, manter){
@@ -1285,8 +1336,8 @@ function renderLegenda(){
   document.getElementById('legenda').innerHTML = h;
 }
 
-function limparMes(){
-  if (!confirm('Limpar todo o horário deste mês nesta loja?')) return;
+async function limparMes(){
+  if (!(await pedir('Limpar todo o horário deste mês nesta loja?'))) return;
   L().meses[ymSel()] = {};
   save(); renderGrid();
 }
@@ -1361,15 +1412,15 @@ function setPad(sid, key, val){
   }
   save(); renderStaff();
 }
-function addStaff(){
-  const nome = prompt('Nome do colaborador:'); if (!nome) return;
+async function addStaff(){
+  const nome = await pedir('Nome do colaborador:', {input:true, placeholder:'ex: Maria Santos'}); if (!nome) return;
   L().staff.push({ id:'s'+Date.now(), nome, gerente:false, padA:null, padB:null });
   save(); renderStaff();
 }
-function delStaff(sid){
+async function delStaff(sid){
   const loja = L();
   const st = loja.staff.find(s=>s.id===sid);
-  if (!confirm(`Remover ${st.nome}?`)) return;
+  if (!(await pedir(`Remover ${st.nome}?`))) return;
   loja.staff = loja.staff.filter(s=>s.id!==sid);
   loja.ausencias = loja.ausencias.filter(a=>a.staffId!==sid);
   loja.pedidos = loja.pedidos.filter(p=>p.staffId!==sid);
@@ -1381,7 +1432,7 @@ function addAbs(){
   const tipo = document.getElementById('abs-tipo').value;
   const inicio = document.getElementById('abs-ini').value;
   const fim = document.getElementById('abs-fim').value || inicio;
-  if (!staffId || !inicio) return alert('Escolhe colaborador e data de início');
+  if (!staffId || !inicio) return toast('Escolhe colaborador e data de início', false);
   loja.ausencias.push({staffId, tipo, inicio, fim});
   save(); renderAbs();
 }
@@ -1400,7 +1451,7 @@ function addPedido(){
   const loja = L();
   const staffId = document.getElementById('ped-staff').value;
   const data = document.getElementById('ped-data').value;
-  if (!staffId || !data) return alert('Escolhe colaborador e data');
+  if (!staffId || !data) return toast('Escolhe colaborador e data', false);
   if (!loja.pedidos.some(p=>p.staffId===staffId && p.data===data))
     loja.pedidos.push({staffId, data});
   save(); renderPedidos();
@@ -1471,7 +1522,7 @@ function renderRegras(){
   renderFeriados();
 }
 function shField(i, f, v){ L().shifts[i][f] = v; save(); if (f==='ativo'||f==='tipo'||f==='code') renderRegras(); renderGrid(); }
-function delShift(i){ const loja = L(); if (confirm(`Remover turno ${loja.shifts[i].code}?`)){ loja.shifts.splice(i,1); save(); renderRegras(); } }
+async function delShift(i){ const loja = L(); if (await pedir(`Remover turno ${loja.shifts[i].code}?`)){ loja.shifts.splice(i,1); save(); renderRegras(); } }
 function smField(i, key, j, v){ L().shifts[i][key][j] = v; save(); renderGrid(); }
 function saveRegras(){
   const R = L().regras;
@@ -1536,17 +1587,17 @@ function renderLojas(){
   document.getElementById('c-activ').value = E.atividade;
 }
 function lojaField(id, f, v){ S.lojas.find(l=>l.id===id)[f] = v; save(); syncLojaSel(); renderLojas(); }
-function addLoja(){
-  const nome = prompt('Nome da loja (ex: ESS PORTIMÃO):'); if (!nome) return;
+async function addLoja(){
+  const nome = await pedir('Nome da nova loja:', {input:true, placeholder:'ex: ESS PORTIMÃO'}); if (!nome) return;
   const l = novaLoja(nome);
   S.lojas.push(l);
   S.lojaAtual = l.id;
   save(); syncLojaSel(); renderAll();
   goTab('equipa');
 }
-function dupLoja(){
+async function dupLoja(){
   const src = L();
-  const nome = prompt(`Nome da nova loja (cópia de ${src.nome}):`); if (!nome) return;
+  const nome = await pedir(`Nome da nova loja (cópia de ${src.nome}):`, {input:true, placeholder:'ex: ESS ALBUFEIRA'}); if (!nome) return;
   const l = novaLoja(nome);
   l.shifts = JSON.parse(JSON.stringify(src.shifts));
   l.minM = src.minM.slice(); l.minI = src.minI.slice(); l.minN = src.minN.slice();
@@ -1556,10 +1607,10 @@ function dupLoja(){
   S.lojaAtual = l.id;
   save(); syncLojaSel(); renderAll();
 }
-function delLoja(id){
-  if (S.lojas.length===1) return alert('Tem de existir pelo menos uma loja.');
+async function delLoja(id){
+  if (S.lojas.length===1) return toast('Tem de existir pelo menos uma loja.', false);
   const l = S.lojas.find(l=>l.id===id);
-  if (!confirm(`Apagar a loja ${l.nome} e todos os seus horários? Esta acção não pode ser anulada.`)) return;
+  if (!(await pedir(`Apagar a loja ${l.nome} e todos os seus horários? Esta acção não pode ser anulada.`))) return;
   S.lojas = S.lojas.filter(x=>x.id!==id);
   if (S.lojaAtual===id) S.lojaAtual = S.lojas[0].id;
   save(); syncLojaSel(); renderAll();
@@ -1647,8 +1698,9 @@ function importVendas(inp){
       const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true});
       const add = addVendasRows(rows);
       save(); renderVendas(); renderGrid();
-      alert(add ? `✅ ${add} dia(s) de vendas importados` : 'Não encontrei linhas com data + valor no ficheiro. Formato esperado: 1ª coluna data, 2ª coluna valor.');
-    } catch(e){ alert('Erro ao ler o ficheiro: '+e.message); }
+      if (add) toast(`${add} dia(s) de vendas importados ✅`);
+      else toast('Não encontrei linhas com data + valor no ficheiro.', false);
+    } catch(e){ toast('Erro ao ler o ficheiro: '+e.message, false); }
   };
   r.readAsArrayBuffer(f);
   inp.value = '';
@@ -1658,11 +1710,12 @@ function colarVendas(){
   const rows = txt.split('\n').map(l => l.trim().split(/[;\t]+|\s{1,}/)).filter(r => r.length >= 2);
   const add = addVendasRows(rows);
   if (add){ document.getElementById('vd-paste').value = ''; save(); renderVendas(); renderGrid(); }
-  alert(add ? `✅ ${add} dia(s) adicionados` : 'Não consegui interpretar nenhuma linha. Usa: data valor (ex: 01/07/2025 1234,56)');
+  if (add) toast(`${add} dia(s) adicionados ✅`);
+  else toast('Não consegui interpretar nenhuma linha. Usa: data valor (ex: 01/07/2025 1234,56)', false);
 }
-function limparVendas(){
+async function limparVendas(){
   const loja = L();
-  if (!confirm(`Apagar todo o histórico de vendas de ${loja.nome}?`)) return;
+  if (!(await pedir(`Apagar todo o histórico de vendas de ${loja.nome}?`))) return;
   loja.vendas = {}; save(); renderVendas(); renderGrid();
 }
 const fmtEur = v => v.toLocaleString('pt-PT', {maximumFractionDigits:0}) + ' €';
@@ -1808,7 +1861,7 @@ function exportTodasXLSX(){
     XLSX.utils.book_append_sheet(wb, sheetLoja(loja, y, m), loja.nome.replace(/[\\\/\?\*\[\]:]/g,' ').slice(0,31));
     added++;
   }
-  if (!added) return alert('Nenhuma loja com equipa para exportar.');
+  if (!added) return toast('Nenhuma loja com equipa para exportar.', false);
   XLSX.writeFile(wb, `Horarios_Todas_Lojas_${pad2(m)}_${y}.xlsx`);
 }
 
@@ -1826,9 +1879,9 @@ function importJSON(inp){
     try {
       const data = JSON.parse(r.result);
       if (!data.lojas || !data.empresa) throw new Error('formato inválido');
-      S = data; save(); syncLojaSel(); renderAll();
-      alert('Backup restaurado ✅');
-    } catch(e){ alert('Erro ao ler o ficheiro: '+e.message); }
+      S = normalizeState(data); save(); syncLojaSel(); renderAll();
+      toast('Backup restaurado ✅');
+    } catch(e){ toast('Erro ao ler o ficheiro: '+e.message, false); }
   };
   r.readAsText(f);
   inp.value = '';
