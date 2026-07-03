@@ -9,7 +9,7 @@
 <style>
 :root {
   color-scheme: light;
-  --bg: #f6f7f9;
+  --bg: #edf0f6;
   --surface: #ffffff;
   --surface2: #f3f4f6;
   --surface3: #e7e9ee;
@@ -36,12 +36,12 @@
   font-size: 14px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); min-height: 100vh; }
+body { background: linear-gradient(180deg, #eef1f8 0%, #e9ecf4 100%); background-attachment: fixed; color: var(--text); min-height: 100vh; }
 
 .header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 3px rgba(16,24,40,.06);
+  background: linear-gradient(90deg, #2e3684 0%, #3c46a6 60%, #4353c9 100%);
+  border-bottom: none;
+  box-shadow: 0 2px 10px rgba(35,48,138,.25);
   padding: 10px 20px;
   display: flex;
   align-items: center;
@@ -51,8 +51,11 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; }
   z-index: 100;
   flex-wrap: wrap;
 }
-.header-logo { font-size: 18px; font-weight: 800; color: #2b2d63; letter-spacing: -0.3px; display:flex; align-items:center; gap:9px; }
-.header-logo span { color: var(--accent); }
+.header-logo { font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -0.3px; display:flex; align-items:center; gap:9px; }
+.header-logo span { color: #c3cdf7; }
+.header-logo img { background: #fff; padding: 2px; }
+.hdr-ctl label { color: #c3cdf7; }
+.header input, .header select { background: rgba(255,255,255,.94); border-color: transparent; }
 .header-spacer { flex: 1; }
 .hdr-ctl { display:flex; gap:8px; align-items:center; }
 .hdr-ctl label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
@@ -60,17 +63,17 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; }
 .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
 .tab {
   padding: 7px 14px; border-radius: var(--radius); cursor: pointer;
-  color: var(--muted); font-weight: 600; font-size: 13px; border: 1px solid transparent;
+  color: #ccd3f5; font-weight: 600; font-size: 13px; border: 1px solid transparent;
   background: none;
 }
-.tab:hover { color: var(--text); background: var(--surface2); }
-.tab.active { color: #fff; background: var(--brand); border-color: var(--brand); }
+.tab:hover { color: #fff; background: rgba(255,255,255,.14); }
+.tab.active { color: var(--brand); background: #fff; border-color: #fff; }
 
 .main { max-width: 1560px; margin: 0 auto; padding: 20px; }
 .page { display: none; }
 .page.active { display: block; }
 
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(16,24,40,.05); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; margin-bottom: 18px; box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 6px 22px rgba(35,48,138,.06); }
 .card h2 { font-size: 15px; color: var(--text-bright); margin-bottom: 12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .card h2 .hint { font-size: 12px; color: var(--muted); font-weight: 400; }
 
@@ -387,9 +390,10 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 <!-- ═══════════ VENDAS ═══════════ -->
 <div class="page" id="page-vendas">
   <div class="card">
-    <h2><span id="vd-loja-nome"></span> — Histórico de vendas <span class="hint">carrega as vendas diárias do ano anterior — cada dia da grelha mostra as vendas do dia equivalente do ano passado (mesmo dia da semana), para veres os dias mais fortes ao fazer o horário</span></h2>
+    <h2><span id="vd-loja-nome"></span> — Histórico de vendas <span class="hint">descarrega o modelo (já traz as datas do ano anterior do mês seleccionado), preenche a coluna Vendas no Excel e importa — cada dia da grelha passa a mostrar as vendas previstas para veres os dias mais fortes</span></h2>
     <div class="flex" style="margin-bottom:12px">
-      <button class="btn primary" onclick="document.getElementById('imp-vendas').click()">⬆ Importar Excel/CSV (colunas: data, valor)</button>
+      <button class="btn" onclick="modeloVendas()">⬇ 1. Descarregar modelo Excel</button>
+      <button class="btn primary" onclick="document.getElementById('imp-vendas').click()">⬆ 2. Importar preenchido</button>
       <input type="file" id="imp-vendas" accept=".xlsx,.xls,.csv" style="display:none" onchange="importVendas(this)">
       <label class="flex">Crescimento previsto vs ano anterior <input type="number" id="vd-cresc" step="0.5" min="-50" max="100" onchange="saveCresc()"> %</label>
       <button class="btn danger small" onclick="limparVendas()">Apagar histórico desta loja</button>
@@ -1603,14 +1607,31 @@ function addVendasRows(rows){
   let add = 0;
   for (const row of rows){
     if (!row || !row.length) continue;
-    const ds = parseDataFlex(row[0]);
-    if (!ds) continue;
-    for (let i=1; i<row.length; i++){
+    // encontra a primeira célula que é uma data, em qualquer coluna
+    let ds = null, di = -1;
+    for (let i=0; i<row.length; i++){ const d = parseDataFlex(row[i]); if (d){ ds = d; di = i; break; } }
+    if (!ds) continue; // linha de cabeçalho ou vazia
+    // e o primeiro valor numérico noutra coluna
+    for (let i=0; i<row.length; i++){
+      if (i === di) continue;
       const val = parseValorFlex(row[i]);
       if (val !== null){ loja.vendas[ds] = val; add++; break; }
     }
   }
   return add;
+}
+function modeloVendas(){
+  if (!temXLSX()) return;
+  const {y, m} = ymParts();
+  const loja = L();
+  const n = daysInMonth(y-1, m);
+  const aoa = [['Data','Vendas (€)']];
+  for (let d=1; d<=n; d++) aoa.push([`${pad2(d)}/${pad2(m)}/${y-1}`, loja.vendas[dateStr(y-1,m,d)] ?? '']);
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:12},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, `Vendas ${pad2(m)}-${y-1}`);
+  XLSX.writeFile(wb, `Modelo_Vendas_${loja.nome.replace(/\s+/g,'_')}_${pad2(m)}_${y-1}.xlsx`);
 }
 function importVendas(inp){
   if (!temXLSX()) return;
