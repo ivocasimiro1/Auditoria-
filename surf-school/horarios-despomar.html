@@ -246,15 +246,20 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
 .print-head { display: none; }
 @media print {
   :root { color-scheme: light; }
-  @page { size: A4 landscape; margin: 8mm; }
-  body { background: #fff; color: #000; }
+  @page { size: A4 landscape; margin: 6mm; }
+  body { background: #fff; color: #000; zoom: 0.94; }
   .header, .toolbar, .viols, .no-print, #pop { display: none !important; }
   .main { max-width: none; padding: 0; }
-  .card { border: none; padding: 0; margin: 0 0 10px; background: #fff; }
-  .card h2 { color: #000; font-size: 12px; }
+  .card { border: none; padding: 0; margin: 0 0 4px; background: #fff; box-shadow: none; break-inside: avoid; }
+  .card h2 { color: #000; font-size: 9px; margin-bottom: 3px; }
   .card h2 .hint { display: none; }
   .grid-wrap { border: none; overflow: visible; }
-  .hgrid th, .hgrid td, .sum th, .sum td { border: 1px solid #999; color: #000 !important; background: #fff !important; padding: 1px 3px; font-size: 8.5px; }
+  .hgrid th, .hgrid td { border: 0.5px solid #999; color: #000 !important; background: #fff !important; padding: 0.5px 2px; font-size: 7px; line-height: 1.15; }
+  .sum th, .sum td { border: 0.5px solid #999; color: #000 !important; background: #fff !important; padding: 0.5px 3px; font-size: 6.5px; line-height: 1.15; }
+  .hgrid td.day-lbl { line-height: 1.05; }
+  .hgrid td.day-lbl .dnum { font-size: 8px; min-width: 11px; }
+  .hgrid td.day-lbl .dw { font-size: 6.5px; }
+  .ferlbl { font-size: 5.5px; }
   .hgrid thead th { position: static; }
   .c-M, .c-I, .c-N { background: #fff !important; }
   .c-FR { background: #c9ecd6 !important; }
@@ -266,18 +271,20 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
   .hgrid tr.sunday td.day-lbl, .hgrid tr.sunday td.cnt { background: #d3d9e8 !important; }
   .hgrid tr.holiday td.day-lbl, .hgrid tr.holiday td.cnt { background: #e4dcf6 !important; }
   .hgrid tr.weekend td, .hgrid tr.holiday td { border-top: 1.5px solid #777; border-bottom: 1.5px solid #777; }
-  .tag { border: 1px solid #999; color: #000; background: #fff; }
-  .print-head { display: flex; gap: 12px; align-items: flex-start; color: #000; margin-bottom: 8px; }
+  .tag { border: 0.5px solid #999; color: #000; background: #fff; font-size: 6px; padding: 1px 5px; }
+  #legenda { gap: 3px; }
+  .print-head { display: flex; gap: 8px; align-items: flex-start; color: #000; margin-bottom: 4px; }
+  .print-head img { width: 34px !important; height: 34px !important; }
   .print-head .ph-logo { flex: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .print-head .ph-emp { font-size: 14px; font-weight: 800; letter-spacing: .5px; }
-  .print-head .ph-l { font-size: 8.5px; color: #333; }
-  .print-head .ph-map { font-size: 13px; font-weight: 800; margin-top: 3px; }
-  .print-head table { border-collapse: collapse; margin-top: 4px; }
-  .print-head td { border: 1px solid #999; padding: 2px 8px; font-size: 9px; }
+  .print-head .ph-emp { font-size: 10px; font-weight: 800; letter-spacing: .5px; }
+  .print-head .ph-l { font-size: 6.5px; color: #333; }
+  .print-head .ph-map { font-size: 9.5px; font-weight: 800; margin-top: 2px; }
+  .print-head table { border-collapse: collapse; margin-top: 2px; }
+  .print-head td { border: 0.5px solid #999; padding: 1px 6px; font-size: 6.5px; }
   .print-sign { display: flex !important; }
 }
-.print-sign { display: none; justify-content: space-between; margin-top: 24px; font-size: 9px; color: #000; }
-.print-sign div { width: 40%; border-top: 1px solid #000; padding-top: 4px; text-align: center; }
+.print-sign { display: none; justify-content: space-between; margin-top: 14px; font-size: 7px; color: #000; }
+.print-sign div { width: 40%; border-top: 1px solid #000; padding-top: 3px; text-align: center; }
 </style>
 </head>
 <body>
@@ -387,6 +394,8 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
       <label class="flex">Máx. dias seguidos de trabalho <input type="number" id="r-maxseg" min="3" max="7" onchange="saveRegras()"> <span class="mut">(+1 dia é aceite como excepção, com aviso — só quando não há alternativa)</span></label>
       <label class="flex">Folgas por semana <input type="number" id="r-folgas" min="1" max="3" onchange="saveRegras()"></label>
       <label class="flex">Mínimo de domingos de folga por mês <input type="number" id="r-domfolga" min="0" max="5" onchange="saveRegras()"></label>
+      <label class="flex">Máx. domingos trabalhados por mês (gerentes) <input type="number" id="r-gdom" min="0" max="5" onchange="saveRegras()"></label>
+      <label class="flex">Domingos de folga por ano e colaborador <input type="number" id="r-domano" min="0" max="52" onchange="saveRegras()"> <span class="mut">(inclui os domingos das férias — 0 = desligado)</span></label>
     </div>
   </div>
   <div class="card">
@@ -484,7 +493,7 @@ function defaultShifts(){
     { code:'XII-L', label:'15h-00h', tipo:'N', horas:8, ativo:true,  min:[3,4,4,4,4,4,4], ideal:[3,4,4,4,4,4,4] },
   ];
 }
-function defaultRegras(){ return { folgasJuntas:true, folgaTroca:true, gerenteManha:true, gerenteNoites:1, folgasSemana:2, domFolgaMin:1, maxSeguidos:5, crescimento:6 }; }
+function defaultRegras(){ return { folgasJuntas:true, folgaTroca:true, gerenteManha:true, gerenteNoites:1, folgasSemana:2, domFolgaMin:1, gerenteDomMax:3, domAno:11, maxSeguidos:5, crescimento:6 }; }
 function novaLoja(nome){
   return {
     id: 'l' + Date.now() + Math.floor(Math.random()*1000),
@@ -681,6 +690,25 @@ function tipoOf(loja, code){
   return s ? s.tipo : null;
 }
 function primShift(loja, tipo){ const s = loja.shifts.find(s => s.ativo && s.tipo===tipo); return s ? s.code : null; }
+// domingos de folga no ano civil: acumulados (folga ou férias ao domingo,
+// nos meses com registo) + potencial (domingos futuros, vazios ou de meses
+// ainda sem horário — que ainda podem vir a ser de folga)
+function domAnoInfo(loja, st, y, m){
+  let acum = 0, potencial = 0;
+  for (let mm=1; mm<=12; mm++){
+    const nn = daysInMonth(y,mm);
+    const g = loja.meses[y+'-'+pad2(mm)];
+    const temDados = g && g[st.id] && Object.keys(g[st.id]).length;
+    for (let d=1; d<=nn; d++){
+      if (dow(y,mm,d)!==0) continue;
+      if (mm > m || !temDados){ potencial++; continue; }
+      const t = tipoOf(loja, cellGet(g, st.id, d));
+      if (t==='F' || t==='A') acum++;
+      else if (!t) potencial++;
+    }
+  }
+  return {acum, potencial};
+}
 // vigência do contrato: entrada/saída de colaboradores
 function stAtivoDia(st, y, m, d){
   const ds = dateStr(y,m,d);
@@ -841,6 +869,10 @@ function gerarHorario(loja, y, m, manter){
   const folgasNoDia = d => staff.reduce((c,st) => c + (tipoOf(loja, cellGet(g,st.id,d))==='F' ? 1 : 0), 0);
   const disponiveis = d => staff.reduce((c,st) => c + (stAtivoDia(st,y,m,d) && !ABS_TIPOS[cellGet(g,st.id,d)] ? 1 : 0), 0);
 
+  let domsNoMes = 0; for (let d=1; d<=n; d++) if (dow(y,m,d)===0) domsNoMes++;
+  // alvo de domingos de folga: gerente não pode trabalhar mais de gerenteDomMax
+  const alvoDom = st => st.gerente ? Math.max(R.domFolgaMin, domsNoMes - (R.gerenteDomMax ?? 3)) : R.domFolgaMin;
+
   weeks.forEach((week, wi) => {
     const ordem = staff.slice(); for (let k=0; k<wi; k++) ordem.push(ordem.shift());
     for (const st of ordem){
@@ -875,7 +907,8 @@ function gerarHorario(loja, y, m, manter){
 
       // automático: escolhe par (ou dia único)
       const domRestantes = weeks.slice(wi).flat().filter(d => dow(y,m,d)===0).length;
-      const precisaDom = domFolgas[st.id] < R.domFolgaMin && domRestantes <= (R.domFolgaMin - domFolgas[st.id]) * 2;
+      const alvo = alvoDom(st);
+      const precisaDom = domFolgas[st.id] < alvo && domRestantes <= (alvo - domFolgas[st.id]) * 2;
 
       let candidatos = [];
       if (devidas === 2){
@@ -891,7 +924,7 @@ function gerarHorario(loja, y, m, manter){
         if (R.folgasJuntas && par.length===2 && !seguidos) sc += 50;
         const temDom = par.some(d => dow(y,m,d)===0);
         if (precisaDom && !temDom) sc += 200;
-        if (!precisaDom && temDom && domFolgas[st.id] >= R.domFolgaMin) sc += 15;
+        if (!precisaDom && temDom && domFolgas[st.id] >= alvo) sc += 15;
         for (const d of par){
           const idx = dow(y,m,d);
           const cap = disponiveis(d) - minTotDia(loja, idx);
@@ -1081,7 +1114,7 @@ function gerarHorario(loja, y, m, manter){
             if (cd!=='DC' && cd!=='DO') continue;
             if (pedidoOn(loja, st.id, y, m, d)) continue;
             if (st.padA && st.padB) continue;                  // não mexer em padrões fixos
-            if (dow(y,m,d)===0 && domFolgasDe(st.id) <= R.domFolgaMin) continue; // não roubar o domingo de folga
+            if (dow(y,m,d)===0 && domFolgasDe(st.id) <= alvoDom(st)) continue; // não roubar domingos de folga
             // vizinhos têm de ser compatíveis com o tipo do turno (regra da troca)
             const okViz = v => !v || v==='F' || v==='A' || v===s.tipo;
             if (R.folgaTroca && (!okViz(d>1?tipoDia(st.id,d-1):null) || !okViz(d<n?tipoDia(st.id,d+1):null))) continue;
@@ -1209,6 +1242,19 @@ function validar(loja, y, m){
     }
     if (domF + domTrab > 0 && domF < R.domFolgaMin)
       viols.push({sev:'warn', msg:`${st.nome}: só ${domF} domingo(s) de folga (mínimo ${R.domFolgaMin})`});
+    if (st.gerente && domTrab > (R.gerenteDomMax ?? 3))
+      viols.push({sev:'err', msg:`${st.nome} (gerente): trabalha ${domTrab} domingos este mês (máximo ${R.gerenteDomMax ?? 3})`});
+  }
+
+  // meta anual de domingos de folga (inclui os das férias)
+  if ((R.domAno||0) > 0){
+    for (const st of staff){
+      const info = domAnoInfo(loja, st, y, m);
+      if (info.acum + info.potencial < R.domAno)
+        viols.push({sev:'err', msg:`${st.nome}: só ${info.acum} domingo(s) de folga em ${y} e restam ${info.potencial} possíveis — não chega aos ${R.domAno}/ano`});
+      else if (info.acum < R.domAno && info.acum + info.potencial < R.domAno + 2)
+        viols.push({sev:'warn', msg:`${st.nome}: ${info.acum} domingo(s) de folga em ${y} — a meta dos ${R.domAno}/ano fica apertada (${info.potencial} domingos ainda possíveis)`});
+    }
   }
 
   // folgas pedidas não respeitadas
@@ -1321,7 +1367,7 @@ function renderGrid(){
 }
 
 function renderResumo(loja,y,m,n,g,staff){
-  const rows = [['M','Manhãs'],['I','Intermédios'],['N','Noites'],['F','Folgas'],['DOM','Domingos trab.'],['FD','Folgas domingo'],['FR','Férias/Ausên.'],['DT','Dias trab.'],['H','Horas']];
+  const rows = [['M','Manhãs'],['I','Intermédios'],['N','Noites'],['F','Folgas'],['DOM','Domingos trab.'],['FD','Folgas domingo'],['FDA',`Folgas dom. no ano (meta ${loja.regras.domAno ?? 11})`],['FR','Férias/Ausên.'],['DT','Dias trab.'],['H','Horas']];
   const st2 = {};
   for (const st of staff){
     const r = {M:0,I:0,N:0,F:0,DOM:0,FD:0,FR:0,DT:0,H:0};
@@ -1331,6 +1377,7 @@ function renderResumo(loja,y,m,n,g,staff){
       else if (t==='F'){ r.F++; if (dow(y,m,d)===0) r.FD++; }
       else if (t==='A'){ r.FR++; if (dow(y,m,d)===0) r.FD++; }
     }
+    r.FDA = domAnoInfo(loja, st, y, m).acum;
     st2[st.id] = r;
   }
   let h = '<table class="sum"><tr><th style="text-align:left"></th>';
@@ -1540,6 +1587,8 @@ function renderRegras(){
   document.getElementById('r-maxseg').value = loja.regras.maxSeguidos ?? 5;
   document.getElementById('r-folgas').value = loja.regras.folgasSemana;
   document.getElementById('r-domfolga').value = loja.regras.domFolgaMin;
+  document.getElementById('r-gdom').value = loja.regras.gerenteDomMax ?? 3;
+  document.getElementById('r-domano').value = loja.regras.domAno ?? 11;
 
   const fl = document.getElementById('fer-loja');
   fl.innerHTML = '<option value="">🇵🇹 Nacional (todas)</option>' +
@@ -1558,6 +1607,8 @@ function saveRegras(){
   R.maxSeguidos = +document.getElementById('r-maxseg').value || 5;
   R.folgasSemana = +document.getElementById('r-folgas').value || 2;
   R.domFolgaMin = +document.getElementById('r-domfolga').value || 0;
+  R.gerenteDomMax = +document.getElementById('r-gdom').value || 0;
+  R.domAno = +document.getElementById('r-domano').value || 0;
   save(); renderGrid();
 }
 function addShift(){
