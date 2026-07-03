@@ -513,10 +513,61 @@ function defaultShifts(){
   ];
 }
 function defaultRegras(){ return { folgasJuntas:true, folgaTroca:true, gerenteManha:true, gerenteNoites:1, folgasSemana:2, domFolgaMin:1, gerenteDomMax:3, domAno:11, maxSeguidos:5, crescimento:6 }; }
+// as 36 lojas do modelo oficial Despomar (nome, morada, feriado municipal MM-DD)
+const LOJAS_MODELO = [["ESS ALMADA","Almada Forum - Loja 1.73 Caminho Municipal 1111 Vale de Moureles","06-24"],
+  ["ESS OEIRAS","Centro Comercial Oeiras Parque, Loja 1.134 Avenida António Bernardo Cabral de Macedo",""],
+  ["ESS ERICEIRA","Praça da República, 13",""],
+  ["ESS FARO","Forum Algarve- Lj. 1.28 Estrada Nacional 125","09-07"],
+  ["ESS FREEPORT","Outlet Freeport - Loja H 15 Av. Euro 2004",""],
+  ["ESS IKEA PORTO","MAR SHOPPING, Loja 0112 Av. Óscar Lopes Leça da Palmeira",""],
+  ["BB ERICEIRA","Rua Dr. Eduardo Burnay, 38 - R/c",""],
+  ["ESS GUIA","Algarve Shopping - Loja 0157/9, Caminho dos Álamos, n° 2389, Tavagueira","08-20"],
+  ["ESS BRAGA","Braga Parque – Loja 110/110 A",""],
+  ["ESS COLOMBO","Centro Comercial Colombo Loja 2100-01 Av. lusiada","06-13"],
+  ["ESS COIMBRA","Forum Coimbra,  loja 0.56 Av. José Bonifácio de Andrade e silva, nº1, Quinta do Vale Gemil - Almegue Santa Clara",""],
+  ["BB LAGOS","Rua Lima Leitão, 27","06-13"],
+  ["BB COLOMBO","Centro Comercial Colombo, lj- 2060 a 2063 Av. Lusiada","06-13"],
+  ["ESS VASCO GAMA","C. Com. Vasco da Gama, Lj. 2095 Av. D. João II, Lt 1 .05.02",""],
+  ["BB FREEPORT","Outlet Freeport - Loja Billabong nº F29  Av. Euro 2004  Caixa Correio 173","09-07"],
+  ["OCASIAO","Rua Mira Parque, 1",""],
+  ["ESS ONLINE","Ericeira Surf Center - Escritório","06-13"],
+  ["ESS ALFRAGIDE","Centro Comercial Alegro, Loja 020 Estrada Nacional 117, Outorela",""],
+  ["ESS CASCAISHOPPING","Cascaishopping, loja 0.047 Estrada Nacional 9","07-29"],
+  ["ESS EVORA","Rua João de Deus, 12-14",""],
+  ["58 VBISPO","(ainda desconhecido)","10-27"],
+  ["ESS LAGOS","Praça Gil Eanes, 25","10-27"],
+  ["ESS NORTESHOPPING","NorteShopping, Loja 0.309/13  Rua Sara Afonso, n.º 105-117",""],
+  ["ESS MADEIRASHOPPING","Madeira Shopping, Loja 0.012 Caminho de Santa Quitéria nº45 Santo António",""],
+  ["ESS SINTRA","Fórum Sintra, Loja 0.68 IC19, Alto do Forte Rio de Mouro",""],
+  ["58 CAPARICA","Av. General Humberto Delgado, 9 A-F",""],
+  ["58 ONLINE","Ericeira Surf Center - Escritório",""],
+  ["58 PENICHE","Sol Village 1  R. Infante D. Henrique, Lote 4  Loja 1 - R/C","07-15"],
+  ["58 ERICEIRA","Ericeira Surf Center - Piso 1, Av. São Sebastião, 36-B",""],
+  ["ESS SETUBAL","Alegro Setúbal, Loja 1.017-Av. Antero de Quental, nº2",""],
+  ["ESS LEIRIA","Leiria Shopping, Rua do Alto Vieiro, Loja nº L017",""],
+  ["ESS VCONDE","Porto Fashion Outlet, Loja 19 - Av. Fonte Cova",""],
+  ["58 MATOSINHOS","Rua Roberto Ivens, 1339",""],
+  ["ESS ALMANCIL","Designer Outlet Algarve, Loja 0.40 Avenida Algarve","10-27"],
+  ["ECI LISBOA","Avenida António Augusto de Aguiar, 31/3º Piso - Billabong ECI",""],
+  ["ECI GAIA","Avenida da Republica, nº 1435/4º Piso - Billabong  ECI",""]];
+// turnos padrão do modelo: V-B manhã e VIII-J fecho (ajustar por loja nas Regras)
+function novaLojaModelo(nome, morada, md){
+  const l = novaLoja(nome);
+  l.morada = morada;
+  l.ferMunicipal = md || '';
+  l.shifts = [
+    { code:'V-B',   label:'10h-19h', tipo:'M', horas:8, ativo:true,  min:[2,2,2,2,2,2,2], ideal:[2,2,2,2,2,2,2] },
+    { code:'VIII-J',label:'12h-21h', tipo:'N', horas:8, ativo:true,  min:[2,2,2,2,2,2,2], ideal:[2,2,2,2,2,2,2] },
+    { code:'VIII-H',label:'12h-21h', tipo:'I', horas:8, ativo:false, min:[0,0,0,0,0,0,0], ideal:[0,0,0,0,0,0,0] },
+    { code:'IX-L',  label:'13h-22h', tipo:'I', horas:8, ativo:false, min:[0,0,0,0,0,0,0], ideal:[0,0,0,0,0,0,0] },
+    { code:'XII-L', label:'15h-24h', tipo:'N', horas:8, ativo:false, min:[0,0,0,0,0,0,0], ideal:[0,0,0,0,0,0,0] },
+  ];
+  return l;
+}
 function novaLoja(nome){
   return {
     id: 'l' + Date.now() + Math.floor(Math.random()*1000),
-    nome, morada:'',
+    nome, morada:'', ferMunicipal:'',
     shifts: defaultShifts(),
     regras: defaultRegras(),
     staff: [], ausencias: [], pedidos: [], meses: {}, vendas: {},
@@ -566,12 +617,18 @@ function defaultState(){
       nif:'501823646',
       atividade:'Comércio e Retalho',
     },
-    feriados: [
-      { data:'2026-09-07', nome:'Feriado Municipal Faro', lojaId: faro.id },
-      { data:'2026-10-27', nome:'Feriado Municipal Lagos', lojaId: ess.id },
-    ],
-    lojas: [ess, faro],
+    feriados: [],
+    lojas: (() => {
+      ess.ferMunicipal = '10-27';
+      faro.ferMunicipal = '09-07';
+      const out = [ess, faro];
+      for (const [nome, morada, md] of LOJAS_MODELO)
+        if (nome !== 'ESS LAGOS' && nome !== 'ESS FARO')
+          out.push(novaLojaModelo(nome, morada, md));
+      return out;
+    })(),
     lojaAtual: ess.id,
+    modeloImportado: true,
   };
 }
 
@@ -579,7 +636,21 @@ let S = load();
 function normalizeState(st){
   for (const l of st.lojas || []){
     if (!l.vendas) l.vendas = {};
+    if (l.ferMunicipal === undefined) l.ferMunicipal = '';
     l.regras = Object.assign(defaultRegras(), l.regras || {});
+  }
+  // importa as lojas do modelo oficial que ainda não existam (uma só vez)
+  if (!st.modeloImportado && st.lojas){
+    for (const [nome, morada, md] of LOJAS_MODELO){
+      const ex = st.lojas.find(l => l.nome.trim().toUpperCase() === nome.toUpperCase());
+      if (ex){
+        if (!ex.morada) ex.morada = morada;
+        if (!ex.ferMunicipal && md) ex.ferMunicipal = md;
+      } else {
+        st.lojas.push(novaLojaModelo(nome, morada, md));
+      }
+    }
+    st.modeloImportado = true;
   }
   return st;
 }
@@ -688,6 +759,7 @@ function feriadoNome(loja,y,m,d){
   const ds = dateStr(y,m,d);
   const nac = feriadosNacionais(y).find(f => f.data === ds);
   if (nac) return nac.nome;
+  if (loja.ferMunicipal && ds.slice(5) === loja.ferMunicipal) return 'Feriado Municipal';
   const f = S.feriados.find(f => f.data === ds && (!f.lojaId || f.lojaId === loja.id));
   return f ? f.nome : null;
 }
@@ -1728,12 +1800,13 @@ function delFeriado(i){ S.feriados.splice(i,1); save(); renderFeriados(); render
 
 /* ══════════════════════ RENDER: LOJAS ══════════════════════ */
 function renderLojas(){
-  let h = '<tr><th>Nome</th><th>Morada</th><th>Colaboradores</th><th>Meses com horário</th><th></th></tr>';
+  let h = '<tr><th>Nome</th><th>Morada</th><th>Feriado municipal</th><th>Colaboradores</th><th>Meses com horário</th><th></th></tr>';
   for (const l of S.lojas){
     const meses = Object.keys(l.meses).filter(ym => !mesVazio(l, ym)).sort().reverse().slice(0,4).join(', ');
     h += `<tr>
       <td><input type="text" value="${esc(l.nome)}" onchange="lojaField('${l.id}','nome',this.value)"></td>
       <td><input type="text" value="${esc(l.morada||'')}" size="28" onchange="lojaField('${l.id}','morada',this.value)"></td>
+      <td><input type="text" value="${esc(l.ferMunicipal||'')}" size="5" placeholder="MM-DD" title="Mês-dia do feriado municipal, repete todos os anos (ex: 10-27)" onchange="lojaField('${l.id}','ferMunicipal',this.value)"></td>
       <td>${l.staff.length}</td>
       <td class="mut">${meses || '—'}</td>
       <td><button class="btn danger small" onclick="delLoja('${l.id}')">✕</button></td>
@@ -1943,8 +2016,8 @@ function sheetLoja(loja, y, m){
   put(4,0,loja.nome);        put(4,3,'Actividade Exercida -'); put(4,5,E.atividade); put(4,7,'NIF:'); put(4,8,E.nif);
   put(5,0,loja.morada||'');
   put(6,3,'DATA INÍCIO:');   put(6,4,dateStr(y,m,1)); put(6,5,'FIM MÊS:'); put(6,6,dateStr(y,m,n)); put(6,7,'MÊS/ANO:'); put(6,8,mesTxt);
-  const ferMun = S.feriados.find(f => f.lojaId === loja.id);
-  if (ferMun){ put(8,0,ferMun.nome); put(8,1,ferMun.data); }
+  if (loja.ferMunicipal) { put(8,0,'Feriado Municipal'); put(8,1,`${y}-${loja.ferMunicipal}`); }
+  else { const ferMun = S.feriados.find(f => f.lojaId === loja.id); if (ferMun){ put(8,0,ferMun.nome); put(8,1,ferMun.data); } }
 
   // nomes em duas linhas (linha 10 = primeiro nome, linha 11 = apelido)
   staff.forEach((st,i) => {
