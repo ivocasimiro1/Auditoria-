@@ -329,6 +329,7 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 13px; }
     <div class="toolbar">
       <button class="btn primary" onclick="gerarClick(this)">⚡ Sugerir horário</button>
       <button class="btn primary" onclick="completarClick(this)" title="Preenche só as células vazias, mantendo tudo o que já preencheste">✚ Completar vazios</button>
+      <button class="btn" onclick="reaplicarClick(this)" title="Mudaste uma regra? Recalcula os turnos com as regras actuais, mantendo folgas/férias/pedidos como estão">🔄 Reaplicar regras</button>
       <button class="btn" onclick="renderGrid()">✔ Validar</button>
       <button class="btn danger small" onclick="limparMes()">Limpar mês</button>
       <div class="header-spacer"></div>
@@ -906,6 +907,33 @@ async function completarClick(btn){
   const v = validar(loja, y, m);
   const errs = v.viols.filter(x=>x.sev==='err').length;
   toast(errs ? `Completado — ${errs} erro(s) por resolver (lista em baixo)` : 'Células vazias completadas ✅', errs===0);
+}
+
+// mudaste uma regra (mínimos, máx. dias seguidos, noites do gerente…) depois
+// de já teres o mês preenchido? isto mantém as folgas/férias/pedidos tal
+// como estão e só recalcula os TURNOS (M/I/N) com as regras actuais
+async function reaplicarClick(btn){
+  const {y, m} = ymParts();
+  const loja = L();
+  const ym = ymSel();
+  if (!loja.staff.length) return toast('Esta loja não tem colaboradores — adiciona-os no separador Equipa.', false);
+  if (!ativos(loja).length) return toast('Esta loja não tem turnos activos — configura-os no separador Regras.', false);
+  if (mesVazio(loja, ym)) return toast('Este mês ainda não tem nada preenchido — usa "Sugerir horário".', false);
+  if (!(await pedir('Recalcula todos os turnos (manhã/intermédio/noite) com as regras actuais, mas MANTÉM as folgas, férias e pedidos exactamente como estão. Continuar?'))) return;
+  const g = gridOf(loja, ym);
+  const n = daysInMonth(y, m);
+  for (const st of loja.staff)
+    for (let d=1; d<=n; d++){
+      const t = tipoOf(loja, cellGet(g, st.id, d));
+      if (t==='M' || t==='I' || t==='N') cellSet(g, st.id, d, '');
+    }
+  save();
+  await ocupado(btn, () => gerarMelhor(loja, y, m, true));
+  save();
+  renderGrid();
+  const v = validar(loja, y, m);
+  const errs = v.viols.filter(x=>x.sev==='err').length, warns = v.viols.length - errs;
+  toast(v.viols.length ? `Turnos recalculados — ${errs} erro(s) e ${warns} aviso(s) por resolver` : 'Turnos recalculados com as novas regras ✅', errs===0);
 }
 
 async function gerarTodas(btn){
