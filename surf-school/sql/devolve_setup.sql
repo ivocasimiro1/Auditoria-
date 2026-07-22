@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS devolve_tenants (
   sector TEXT DEFAULT '',              -- livre — só sugere catálogo inicial
   plano TEXT DEFAULT 'trial',          -- trial | basico | pro
   whatsapp_numero TEXT DEFAULT '',
+  activo BOOLEAN DEFAULT true,         -- false = conta suspensa (ex: falta de pagamento) — bloqueia painel e loja
   criado_em TIMESTAMPTZ DEFAULT NOW()
 );
 
