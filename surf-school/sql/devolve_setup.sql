@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS devolve_items (
   category_id UUID NOT NULL REFERENCES devolve_categories(id) ON DELETE CASCADE,
   tenant_id UUID NOT NULL REFERENCES devolve_tenants(id) ON DELETE CASCADE,
   nome TEXT NOT NULL,
+  preco NUMERIC DEFAULT 0,          -- preço de aluguer por dia
+  foto TEXT DEFAULT '',             -- base64 da foto do artigo (mesmo padrão do dep_registos.foto)
   activo BOOLEAN DEFAULT true
 );
 
@@ -74,6 +76,7 @@ CREATE TABLE IF NOT EXISTS devolve_rentals (
   devolucao_real TIMESTAMPTZ,
   estado TEXT DEFAULT 'activo',         -- activo | devolvido | atraso
   caucao NUMERIC DEFAULT 0,
+  preco_total NUMERIC DEFAULT 0,
   notas TEXT DEFAULT '',
   criado_em TIMESTAMPTZ DEFAULT NOW()
 );

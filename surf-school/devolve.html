@@ -213,6 +213,27 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
 .chip.u-crit{border-color:var(--red);color:#ff9b93;background:var(--red-dim);cursor:default;font-family:ui-monospace,monospace;font-size:12px;padding:4px 10px;}
 .chip.u-warn{border-color:var(--yellow);color:#f0c05a;background:var(--yellow-dim);font-family:ui-monospace,monospace;font-size:12px;padding:4px 10px;}
 
+/* ---------- catalogo (montra tipo loja) ---------- */
+.shop-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+.shop-toolbar .chip-row{flex:1;}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;}
+.shop-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:.15s;}
+.shop-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.35);}
+.shop-card .photo{aspect-ratio:4/3;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:38px;color:var(--muted);overflow:hidden;}
+.shop-card .photo img{width:100%;height:100%;object-fit:cover;display:block;}
+.shop-card .body{padding:13px 14px;display:flex;flex-direction:column;gap:5px;flex:1;}
+.shop-card .cat-tag{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
+.shop-card .name{font-weight:700;color:var(--text-bright);font-size:14.5px;line-height:1.3;}
+.shop-card .price{color:var(--accent);font-weight:800;font-size:15px;margin-top:2px;}
+.shop-card .price small{color:var(--muted);font-weight:500;font-size:11.5px;}
+.shop-card .stock-row{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px;}
+.shop-card .stock-row .cnt{font-size:11.5px;color:var(--muted);}
+.photo-upload{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.photo-upload .preview{width:88px;height:88px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--muted);overflow:hidden;flex-shrink:0;}
+.photo-upload .preview img{width:100%;height:100%;object-fit:cover;}
+.photo-upload input[type=file]{font-size:12px;}
+.item-detail-units{margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
+
 /* ---------- novo aluguer layout ---------- */
 .novo-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:flex-start;}
 @media(max-width:920px){.novo-grid{grid-template-columns:1fr;}}
@@ -279,48 +300,48 @@ const SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const CATALOG_TEMPLATES = {
   bicicletas: { nome:'Bicicletas', categorias:[
     { nome:'Bicicletas', icone:'🚲', campos_extra:[{chave:'tamanho',tipo:'select',opcoes:['S','M','L','XL']}],
-      itens:[{nome:'BTT aro 29',quantidade_inicial:5},{nome:'Urbana',quantidade_inicial:8},{nome:'Elétrica',quantidade_inicial:3}] },
+      itens:[{nome:'BTT aro 29',quantidade_inicial:5,preco:12},{nome:'Urbana',quantidade_inicial:8,preco:8},{nome:'Elétrica',quantidade_inicial:3,preco:20}] },
     { nome:'Acessórios', icone:'🎒', campos_extra:[],
-      itens:[{nome:'Capacete',quantidade_inicial:15},{nome:'Cadeado',quantidade_inicial:10}] }
+      itens:[{nome:'Capacete',quantidade_inicial:15,preco:2},{nome:'Cadeado',quantidade_inicial:10,preco:1}] }
   ]},
   ferramentas: { nome:'Ferramentas', categorias:[
     { nome:'Elétricas', icone:'🛠️', campos_extra:[{chave:'voltagem',tipo:'select',opcoes:['12V','18V','220V']}],
-      itens:[{nome:'Berbequim',quantidade_inicial:6},{nome:'Rebarbadora',quantidade_inicial:4},{nome:'Serra circular',quantidade_inicial:3}] },
+      itens:[{nome:'Berbequim',quantidade_inicial:6,preco:10},{nome:'Rebarbadora',quantidade_inicial:4,preco:8},{nome:'Serra circular',quantidade_inicial:3,preco:15}] },
     { nome:'Manuais', icone:'🔧', campos_extra:[],
-      itens:[{nome:'Andaime',quantidade_inicial:4},{nome:'Escada',quantidade_inicial:6}] }
+      itens:[{nome:'Andaime',quantidade_inicial:4,preco:25},{nome:'Escada',quantidade_inicial:6,preco:10}] }
   ]},
   festas: { nome:'Festas & Eventos', categorias:[
     { nome:'Insufláveis', icone:'🎈', campos_extra:[],
-      itens:[{nome:'Castelo insuflável',quantidade_inicial:2},{nome:'Escorrega insuflável',quantidade_inicial:1}] },
+      itens:[{nome:'Castelo insuflável',quantidade_inicial:2,preco:80},{nome:'Escorrega insuflável',quantidade_inicial:1,preco:90}] },
     { nome:'Mobiliário', icone:'🪑', campos_extra:[],
-      itens:[{nome:'Mesa redonda',quantidade_inicial:20},{nome:'Cadeira',quantidade_inicial:100}] }
+      itens:[{nome:'Mesa redonda',quantidade_inicial:20,preco:5},{nome:'Cadeira',quantidade_inicial:100,preco:1}] }
   ]},
   praia: { nome:'Praia & Água', categorias:[
     { nome:'Pranchas', icone:'🏄', campos_extra:[{chave:'tamanho',tipo:'texto'}],
-      itens:[{nome:'Prancha soft 8ft',quantidade_inicial:10}] },
+      itens:[{nome:'Prancha soft 8ft',quantidade_inicial:10,preco:15}] },
     { nome:'Acessórios', icone:'⛱️', campos_extra:[],
-      itens:[{nome:'Chapéu de praia',quantidade_inicial:12},{nome:'Espreguiçadeira',quantidade_inicial:20}] }
+      itens:[{nome:'Chapéu de praia',quantidade_inicial:12,preco:3},{nome:'Espreguiçadeira',quantidade_inicial:20,preco:5}] }
   ]},
   surf: { nome:'Escola de Surf', categorias:[
     { nome:'Pranchas', icone:'🏄', campos_extra:[{chave:'tamanho',tipo:'texto'}],
       itens:[
-        {nome:"Softboard 7'0 Iniciante",quantidade_inicial:6},
-        {nome:"Softboard 8'0 Iniciante",quantidade_inicial:4},
-        {nome:"Shortboard 6'0",quantidade_inicial:3},
-        {nome:"Fish 6'4",quantidade_inicial:2},
-        {nome:"Longboard 9'0",quantidade_inicial:3}
+        {nome:"Softboard 7'0 Iniciante",quantidade_inicial:6,preco:15},
+        {nome:"Softboard 8'0 Iniciante",quantidade_inicial:4,preco:18},
+        {nome:"Shortboard 6'0",quantidade_inicial:3,preco:20},
+        {nome:"Fish 6'4",quantidade_inicial:2,preco:18},
+        {nome:"Longboard 9'0",quantidade_inicial:3,preco:20}
       ] },
     { nome:'Fatos', icone:'🤿', campos_extra:[{chave:'espessura',tipo:'select',opcoes:['2mm','3/2mm','4/3mm']}],
       itens:[
-        {nome:'Fato 3/2mm XS',quantidade_inicial:2},
-        {nome:'Fato 3/2mm S',quantidade_inicial:4},
-        {nome:'Fato 3/2mm M',quantidade_inicial:5},
-        {nome:'Fato 3/2mm L',quantidade_inicial:4},
-        {nome:'Fato 3/2mm XL',quantidade_inicial:2},
-        {nome:'Fato 4/3mm M',quantidade_inicial:3}
+        {nome:'Fato 3/2mm XS',quantidade_inicial:2,preco:10},
+        {nome:'Fato 3/2mm S',quantidade_inicial:4,preco:10},
+        {nome:'Fato 3/2mm M',quantidade_inicial:5,preco:10},
+        {nome:'Fato 3/2mm L',quantidade_inicial:4,preco:10},
+        {nome:'Fato 3/2mm XL',quantidade_inicial:2,preco:10},
+        {nome:'Fato 4/3mm M',quantidade_inicial:3,preco:12}
       ] },
     { nome:'Acessórios', icone:'🎒', campos_extra:[],
-      itens:[{nome:'Leash de perna',quantidade_inicial:10},{nome:'Capa de prancha',quantidade_inicial:6}] }
+      itens:[{nome:'Leash de perna',quantidade_inicial:10,preco:3},{nome:'Capa de prancha',quantidade_inicial:6,preco:5}] }
   ]},
   personalizado: { nome:'Personalizado', categorias:[] }
 };
@@ -350,6 +371,7 @@ let state = {
   signup: { step:1, email:'', password:'', nomeResp:'', nomeNegocio:'', sector:'bicicletas', whatsapp:'', template:'bicicletas' },
   novo: { cliente_nome:'', cliente_telefone:'', cliente_email:'', cliente_doc:'', catSel:null, cart:[], unidade:'dias', duracao:1, caucao:0, notas:'' },
   ativosFiltro: '', ativosCat: '',
+  catalogFiltro: '',
   histFiltro: { de:'', ate:'', q:'' },
   catOpen: {},
   sidebarOpen: false,
@@ -380,6 +402,10 @@ function waUrl(numero, msg){
 /* ============================================================
    Cálculos de negócio
    ============================================================ */
+function precoPorUnidade(item, unidade, duracao){
+  const preco = item? (item.preco||0) : 0;
+  return unidade==='dias' ? preco*duracao : (preco/24)*duracao;
+}
 function calcDevolucaoPrevista(inicioISO, unidade, duracao, horarioFecho){
   const inicio = new Date(inicioISO);
   if(unidade === 'horas'){
@@ -652,7 +678,7 @@ async function finishSignup(){
     if(catRow){
       for(const it of cat.itens){
         const { data: itemRow } = await SB.from('devolve_items').insert({
-          tenant_id: tenantRow.id, category_id: catRow.id, nome: it.nome, activo:true
+          tenant_id: tenantRow.id, category_id: catRow.id, nome: it.nome, preco: it.preco||0, foto:'', activo:true
         }).select().single();
         if(itemRow){
           const unidades = [];
@@ -841,7 +867,7 @@ function rentalCard(r){
     </div>
     <div class="items">${itensTxt}</div>
     <div class="countdown" data-target="${r.devolucao_prevista}">${fmtCountdown(msRestantes(r))}</div>
-    <div class="meta">Prevista: ${fmtDateTime(r.devolucao_prevista)}</div>
+    <div class="meta">Prevista: ${fmtDateTime(r.devolucao_prevista)}${r.preco_total? ' · €'+r.preco_total.toFixed(2) : ''}</div>
     <div class="rcard-actions">
       <button class="btn sm primary block" onclick="devolverAluguer('${r.id}')">Devolver</button>
       ${r.cliente_telefone? `<button class="btn sm" onclick="contactarCliente('${r.id}')">💬</button>`:''}
@@ -917,6 +943,7 @@ function renderNovo(){
               const codigos = inCart? inCart.unit_ids.map(uidv=>{ const u=state.units.find(x=>x.id===uidv); return u? u.codigo : ''; }).join(', ') : '';
               return `<div class="item-pick">
                 <div class="n">${it.nome}</div>
+                <div style="color:var(--accent);font-weight:700;font-size:12px;margin-bottom:2px">€${(it.preco||0).toFixed(2)}/dia</div>
                 <div class="avail ${disp<=0?'zero':''}">${disp} disponíveis</div>
                 <div class="item-pick-row">
                   <button class="qty-btn" onclick="nv_qty('${it.id}',-1)">−</button>
@@ -955,6 +982,7 @@ function renderNovo(){
             return `<div class="cart-line"><span>${c.unit_ids.length}× ${c.nome} <span style="color:var(--muted);font-size:11.5px">(${codigos})</span></span><span class="x" onclick="nv_removeCart('${c.item_id}')">✕</span></div>`;
           }).join('')
         }
+        ${n.cart.length>0? `<div class="summary-devol">Total estimado: <b>€${n.cart.reduce((sum,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return sum + c.unit_ids.length*precoPorUnidade(item,n.unidade,n.duracao); },0).toFixed(2)}</b></div>` : ''}
         <div style="margin-top:16px">
           <button class="btn primary block" onclick="confirmarAluguer()" ${(!n.cliente_nome || n.cart.length===0)?'disabled':''}>Confirmar Aluguer</button>
         </div>
@@ -998,12 +1026,13 @@ async function confirmarAluguer(){
     const codigos = c.unit_ids.map(uidv=>{ const u=state.units.find(x=>x.id===uidv); return u? u.codigo : ''; });
     return { item_id:c.item_id, nome:c.nome, quantidade:c.unit_ids.length, unit_ids:[...c.unit_ids], unit_codigos:codigos };
   });
+  const precoTotal = n.cart.reduce((sum,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return sum + c.unit_ids.length*precoPorUnidade(item,n.unidade,n.duracao); },0);
   const payload = {
     tenant_id: state.tenantId,
     cliente_nome: n.cliente_nome, cliente_telefone: n.cliente_telefone,
     cliente_email: n.cliente_email, cliente_doc: n.cliente_doc,
     itens: itensSnapshot, inicio, unidade_duracao: n.unidade, duracao: n.duracao,
-    devolucao_prevista: prevista.toISOString(), estado:'activo', caucao: n.caucao, notas: n.notas
+    devolucao_prevista: prevista.toISOString(), estado:'activo', caucao: n.caucao, preco_total: precoTotal, notas: n.notas
   };
   // abrir WhatsApp antes do await, para não ser bloqueado pelo browser
   let waWin = null;
@@ -1113,42 +1142,36 @@ function exportCSV(){
    CATÁLOGO
    ============================================================ */
 function renderCatalogo(){
+  const filtro = state.catalogFiltro;
+  const itensFiltrados = filtro? state.items.filter(i=>i.category_id===filtro) : state.items;
   return `
-    <div class="toolbar"><button class="btn primary" onclick="openCatModal()">+ Nova Categoria</button></div>
-    <div class="cat-list">
-      ${state.categories.length===0? `<div class="empty"><div class="ico">📦</div>Ainda sem categorias.</div>` :
-        state.categories.map(c=>{
-          const itens = state.items.filter(i=>i.category_id===c.id);
-          const open = !!state.catOpen[c.id];
-          return `<div class="cat-row">
-            <div class="cat-row-head" onclick="toggleCat('${c.id}')">
-              <span class="ico">${c.icone}</span><span class="n">${c.nome}</span><span class="cnt">${itens.length} artigo(s)</span>
-              <button class="btn sm" onclick="event.stopPropagation();openCatModal('${c.id}')">Editar</button>
-              <button class="btn sm danger" onclick="event.stopPropagation();apagarCategoria('${c.id}')">Apagar</button>
-            </div>
-            ${open? `<div class="cat-body">
-              ${itens.map(it=>{
-                const units = unidadesDoItem(it.id);
-                const disp = units.filter(u=>u.estado==='disponivel').length;
-                return `<div class="item-row" style="flex-direction:column;align-items:stretch;gap:8px">
-                  <div style="display:flex;align-items:center;gap:10px">
-                    <span class="n">${it.nome}</span><span class="q">${disp}/${units.length} disponíveis</span>
-                    <button class="btn sm" onclick="openItemModal('${c.id}','${it.id}')">Editar</button>
-                    <button class="btn sm danger" onclick="apagarItem('${it.id}')">Apagar</button>
-                  </div>
-                  <div class="chip-row">
-                    ${units.map(u=>`<div class="chip ${u.estado==='disponivel'?'u-ok':u.estado==='alugada'?'u-crit':'u-warn'}" title="${u.estado==='alugada'?'Em aluguer — não editável':'Toca para marcar manutenção/disponível'}" onclick="toggleUnidadeEstado('${u.id}')">${u.codigo}</div>`).join('')}
-                    <button class="btn sm" onclick="adicionarUnidade('${it.id}')">+ Unidade</button>
-                  </div>
-                </div>`;
-              }).join('')}
-              <button class="btn sm" style="margin-top:10px" onclick="openItemModal('${c.id}')">+ Novo Artigo</button>
-            </div>` : ''}
-          </div>`;
-        }).join('')}
+    <div class="shop-toolbar">
+      <div class="chip-row">
+        <div class="chip ${!filtro?'sel':''}" onclick="setCatalogFiltro('')">Todos</div>
+        ${state.categories.map(c=>`<div class="chip ${filtro===c.id?'sel':''}" onclick="setCatalogFiltro('${c.id}')">${c.icone} ${c.nome}</div>`).join('')}
+      </div>
+      <button class="btn sm" onclick="openCategoriasModal()">⚙ Categorias</button>
+      <button class="btn primary sm" onclick="openItemModal()" ${state.categories.length===0?'disabled title="Cria primeiro uma categoria"':''}>+ Novo Artigo</button>
     </div>
+    ${state.items.length===0? `<div class="empty"><div class="ico">📦</div>${state.categories.length===0? 'Cria primeiro uma categoria em "⚙ Categorias".' : 'Ainda sem artigos — clica em "+ Novo Artigo".'}</div>` :
+      `<div class="shop-grid">${itensFiltrados.map(it=>shopCardHtml(it)).join('')}</div>`}
     <div id="modal-host"></div>
   `;
+}
+function setCatalogFiltro(id){ state.catalogFiltro = id; render(); }
+function shopCardHtml(it){
+  const cat = state.categories.find(c=>c.id===it.category_id) || {};
+  const units = unidadesDoItem(it.id);
+  const disp = units.filter(u=>u.estado==='disponivel').length;
+  return `<div class="shop-card" onclick="openItemModal('${it.category_id}','${it.id}')">
+    <div class="photo">${it.foto? `<img src="${it.foto}" alt="${it.nome}">` : (cat.icone||'📦')}</div>
+    <div class="body">
+      <div class="cat-tag">${cat.nome||''}</div>
+      <div class="name">${it.nome}</div>
+      <div class="price">€${(it.preco||0).toFixed(2)} <small>/dia</small></div>
+      <div class="stock-row"><span class="cnt">${disp}/${units.length} disponíveis</span></div>
+    </div>
+  </div>`;
 }
 async function toggleUnidadeEstado(id){
   const u = state.units.find(x=>x.id===id);
@@ -1157,6 +1180,7 @@ async function toggleUnidadeEstado(id){
   const { error } = await SB.from('devolve_units').update({ estado: novo }).eq('id', id);
   if(error){ toast('Erro: '+error.message); return; }
   u.estado = novo;
+  if(_itemForm && _itemForm.id===u.item_id) renderModal(itemModalHtml());
   render();
 }
 async function adicionarUnidade(itemId){
@@ -1166,9 +1190,25 @@ async function adicionarUnidade(itemId){
   const { data, error } = await SB.from('devolve_units').insert({ tenant_id: state.tenantId, item_id: itemId, codigo, atributos:{}, estado:'disponivel' }).select().single();
   if(error){ toast('Erro: '+error.message); return; }
   state.units.push(data);
+  if(_itemForm && _itemForm.id===itemId) renderModal(itemModalHtml());
   render();
 }
-function toggleCat(id){ state.catOpen[id] = !state.catOpen[id]; render(); }
+function openCategoriasModal(){ renderModal(categoriasModalHtml()); }
+function categoriasModalHtml(){
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>Categorias</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      ${state.categories.length===0? `<p style="color:var(--muted);font-size:13px">Ainda sem categorias.</p>` :
+        state.categories.map(c=>`<div class="item-row"><span class="ico">${c.icone}</span><span class="n">${c.nome}</span>
+          <button class="btn sm" onclick="openCatModal('${c.id}')">Editar</button>
+          <button class="btn sm danger" onclick="apagarCategoria('${c.id}')">Apagar</button>
+        </div>`).join('')}
+      <button class="btn block" style="margin-top:14px" onclick="openCatModal()">+ Nova Categoria</button>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Fechar</button></div>
+  </div></div>`;
+}
 
 let _catForm = null;
 function openCatModal(id){
@@ -1229,43 +1269,74 @@ async function apagarCategoria(id){
   if(!confirm('Apagar esta categoria e todos os seus artigos?')) return;
   const { error } = await SB.from('devolve_categories').delete().eq('id', id);
   if(error){ toast('Erro: '+error.message); return; }
+  const itemIds = state.items.filter(i=>i.category_id===id).map(i=>i.id);
   state.categories = state.categories.filter(c=>c.id!==id);
   state.items = state.items.filter(i=>i.category_id!==id);
+  state.units = state.units.filter(u=>!itemIds.includes(u.item_id));
+  closeModal();
   render();
 }
 
 let _itemForm = null;
 function openItemModal(categoryId, itemId){
   const existing = itemId? state.items.find(i=>i.id===itemId) : null;
-  const cat = state.categories.find(c=>c.id===categoryId);
-  _itemForm = existing? {id:existing.id, category_id:categoryId, nome:existing.nome}
-                       : {id:null, category_id:categoryId, nome:'', quantidade_inicial:1};
-  renderModal(itemModalHtml(cat));
+  _itemForm = existing
+    ? {id:existing.id, category_id:existing.category_id, nome:existing.nome, preco:existing.preco||0, foto:existing.foto||''}
+    : {id:null, category_id:categoryId || (state.categories[0]? state.categories[0].id : ''), nome:'', preco:0, foto:'', quantidade_inicial:1};
+  renderModal(itemModalHtml());
 }
-function itemModalHtml(cat){
+function itemModalHtml(){
   const f = _itemForm;
+  const units = f.id? unidadesDoItem(f.id) : [];
   return `
   <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
-    <div class="modal-head"><h3>${f.id?'Editar artigo':'Novo artigo'} — ${cat.nome}</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-head"><h3>${f.id?'Editar artigo':'Novo artigo'}</h3><button class="close-x" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
-      <div class="field"><label>Nome</label><input type="text" id="if-nome" value="${f.nome}" placeholder="Ex: BTT aro 29"></div>
+      <div class="photo-upload">
+        <div class="preview" id="if-preview">${f.foto? `<img src="${f.foto}">` : '📷'}</div>
+        <div style="flex:1"><label>Foto do artigo</label><input type="file" accept="image/*" id="if-foto" onchange="if_onPhoto(event)"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Nome</label><input type="text" id="if-nome" value="${f.nome}" placeholder="Ex: BTT aro 29"></div>
+        <div class="field"><label>Preço (€ / dia)</label><input type="number" min="0" step="0.5" id="if-preco" value="${f.preco}"></div>
+      </div>
+      <div class="field"><label>Categoria</label><select id="if-cat">${state.categories.map(c=>`<option value="${c.id}" ${f.category_id===c.id?'selected':''}>${c.icone} ${c.nome}</option>`).join('')}</select></div>
       ${f.id? '' : `<div class="field"><label>Quantidade inicial (gera um código por unidade, ex: BTT-001, BTT-002...)</label><input type="number" min="0" id="if-qtd" value="${f.quantidade_inicial}"></div>`}
-      ${f.id? `<p style="font-size:12.5px;color:var(--muted)">Para adicionar ou remover unidades, usa os botões junto aos códigos na lista do catálogo.</p>` : ''}
+      ${f.id? `<div class="item-detail-units">
+        <label>Unidades</label>
+        <div class="chip-row">
+          ${units.map(u=>`<div class="chip ${u.estado==='disponivel'?'u-ok':u.estado==='alugada'?'u-crit':'u-warn'}" title="${u.estado==='alugada'?'Em aluguer — não editável':'Toca para marcar manutenção/disponível'}" onclick="toggleUnidadeEstado('${u.id}')">${u.codigo}</div>`).join('')}
+          <button class="btn sm" onclick="adicionarUnidade('${f.id}')">+ Unidade</button>
+        </div>
+      </div>` : ''}
     </div>
-    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveItem()">Guardar</button></div>
+    <div class="modal-foot">
+      ${f.id? `<button class="btn danger" onclick="apagarItem('${f.id}')">Apagar</button>` : ''}
+      <button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveItem()">Guardar</button>
+    </div>
   </div></div>`;
+}
+function if_onPhoto(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{ _itemForm.foto = reader.result; renderModal(itemModalHtml()); };
+  reader.readAsDataURL(file);
 }
 async function saveItem(){
   const f = _itemForm;
   const nome = el('if-nome').value.trim();
+  const preco = parseFloat(el('if-preco').value)||0;
+  const categoryId = el('if-cat').value;
   if(!nome){ toast('Dá um nome ao artigo.'); return; }
+  if(!categoryId){ toast('Escolhe uma categoria.'); return; }
   if(f.id){
-    const { error } = await SB.from('devolve_items').update({ nome }).eq('id', f.id);
+    const { error } = await SB.from('devolve_items').update({ nome, preco, foto:f.foto, category_id:categoryId }).eq('id', f.id);
     if(error){ toast('Erro: '+error.message); return; }
-    Object.assign(state.items.find(i=>i.id===f.id), { nome });
+    Object.assign(state.items.find(i=>i.id===f.id), { nome, preco, foto:f.foto, category_id:categoryId });
   } else {
     const qtd = parseInt(el('if-qtd').value)||0;
-    const { data: itemRow, error } = await SB.from('devolve_items').insert({ tenant_id: state.tenantId, category_id: f.category_id, nome, activo:true }).select().single();
+    const { data: itemRow, error } = await SB.from('devolve_items').insert({ tenant_id: state.tenantId, category_id:categoryId, nome, preco, foto:f.foto, activo:true }).select().single();
     if(error){ toast('Erro: '+error.message); return; }
     state.items.push(itemRow);
     if(qtd>0){
@@ -1286,6 +1357,7 @@ async function apagarItem(id){
   if(error){ toast('Erro: '+error.message); return; }
   state.items = state.items.filter(i=>i.id!==id);
   state.units = state.units.filter(u=>u.item_id!==id);
+  closeModal();
   render();
 }
 
