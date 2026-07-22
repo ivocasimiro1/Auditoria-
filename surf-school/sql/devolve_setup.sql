@@ -18,9 +18,13 @@ CREATE TABLE IF NOT EXISTS devolve_tenants (
   plano TEXT DEFAULT 'trial',          -- trial | basico | pro
   whatsapp_numero TEXT DEFAULT '',
   activo BOOLEAN DEFAULT true,         -- suspensão manual (o Devolve pode forçar bloqueio a qualquer momento)
+  aprovado BOOLEAN DEFAULT true,       -- pedidos vindos do signup público nascem com false — só o Devolve HQ aprova
   proximo_pagamento DATE DEFAULT (CURRENT_DATE + INTERVAL '1 month'), -- passado este dia sem "marcar pagamento", a conta bloqueia-se sozinha
   criado_em TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migração para bases de dados já existentes (idempotente — seguro correr outra vez)
+ALTER TABLE devolve_tenants ADD COLUMN IF NOT EXISTS aprovado BOOLEAN DEFAULT true;
 
 -- devolve_users: liga cada utilizador autenticado a um negócio (tenant)
 CREATE TABLE IF NOT EXISTS devolve_users (
