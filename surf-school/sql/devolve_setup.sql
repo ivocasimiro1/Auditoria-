@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS devolve_tenants (
   sector TEXT DEFAULT '',              -- livre — só sugere catálogo inicial
   plano TEXT DEFAULT 'trial',          -- trial | basico | pro
   whatsapp_numero TEXT DEFAULT '',
+  slug TEXT UNIQUE,                    -- identifica o link público de reservas: /loja/<slug>
   activo BOOLEAN DEFAULT true,         -- suspensão manual (o Devolve pode forçar bloqueio a qualquer momento)
   aprovado BOOLEAN DEFAULT true,       -- pedidos vindos do signup público nascem com false — só o Devolve HQ aprova
   proximo_pagamento DATE DEFAULT (CURRENT_DATE + INTERVAL '1 month'), -- passado este dia sem "marcar pagamento", a conta bloqueia-se sozinha
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS devolve_tenants (
 
 -- Migração para bases de dados já existentes (idempotente — seguro correr outra vez)
 ALTER TABLE devolve_tenants ADD COLUMN IF NOT EXISTS aprovado BOOLEAN DEFAULT true;
+ALTER TABLE devolve_tenants ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE;
 
 -- devolve_users: liga cada utilizador autenticado a um negócio (tenant)
 CREATE TABLE IF NOT EXISTS devolve_users (
@@ -115,6 +117,19 @@ CREATE OR REPLACE FUNCTION devolve_is_sa() RETURNS BOOLEAN
     SELECT EXISTS(SELECT 1 FROM devolve_users WHERE id = auth.uid() AND role = 'super_admin')
   $$;
 
+-- devolve_public_tenant_info: usada pela página pública de reservas (sem login).
+-- Só devolve dados de negócios aprovados e activos — se a loja ficar pendente
+-- ou for suspensa, o link público dela deixa de funcionar automaticamente.
+CREATE OR REPLACE FUNCTION devolve_public_tenant_info(p_slug TEXT)
+RETURNS TABLE(id UUID, nome TEXT, nome_negocio TEXT, sector TEXT, horario_fecho TEXT)
+LANGUAGE SQL SECURITY DEFINER STABLE AS $$
+  SELECT t.id, t.nome, COALESCE(c.nome_negocio, t.nome), t.sector, COALESCE(c.horario_fecho, '18:00')
+  FROM devolve_tenants t
+  LEFT JOIN devolve_config c ON c.tenant_id = t.id
+  WHERE t.slug = p_slug AND t.aprovado = true AND t.activo = true
+$$;
+GRANT EXECUTE ON FUNCTION devolve_public_tenant_info(TEXT) TO anon, authenticated;
+
 -- -------------------------------------------------------------
 -- 3. ROW LEVEL SECURITY
 -- -------------------------------------------------------------
@@ -170,6 +185,32 @@ CREATE POLICY "devolve_rentals_all" ON devolve_rentals
 CREATE POLICY "devolve_config_all" ON devolve_config
   FOR ALL USING (devolve_is_sa() OR tenant_id = devolve_my_tenant())
   WITH CHECK (devolve_is_sa() OR tenant_id = devolve_my_tenant());
+
+-- Página pública de reservas (cliente final, sem login) — acesso extra e limitado,
+-- só a catálogo e só de negócios aprovados+activos. Some sozinho se a loja for
+-- suspensa ou ficar pendente, porque a condição deixa de se verificar.
+CREATE POLICY "devolve_categories_public_select" ON devolve_categories
+  FOR SELECT TO anon USING (
+    EXISTS (SELECT 1 FROM devolve_tenants t WHERE t.id = devolve_categories.tenant_id AND t.aprovado = true AND t.activo = true)
+  );
+
+CREATE POLICY "devolve_items_public_select" ON devolve_items
+  FOR SELECT TO anon USING (
+    EXISTS (SELECT 1 FROM devolve_tenants t WHERE t.id = devolve_items.tenant_id AND t.aprovado = true AND t.activo = true)
+  );
+
+CREATE POLICY "devolve_units_public_select" ON devolve_units
+  FOR SELECT TO anon USING (
+    EXISTS (SELECT 1 FROM devolve_tenants t WHERE t.id = devolve_units.tenant_id AND t.aprovado = true AND t.activo = true)
+  );
+
+-- o cliente final só pode CRIAR pedidos (estado='pendente') — nunca ver, editar
+-- ou apagar alugueres; confirmar/recusar continua a ser só do staff da loja.
+CREATE POLICY "devolve_rentals_public_insert" ON devolve_rentals
+  FOR INSERT TO anon WITH CHECK (
+    estado = 'pendente'
+    AND EXISTS (SELECT 1 FROM devolve_tenants t WHERE t.id = devolve_rentals.tenant_id AND t.aprovado = true AND t.activo = true)
+  );
 
 -- -------------------------------------------------------------
 -- 4. SUPER-ADMIN (Ivo — Devolve HQ)

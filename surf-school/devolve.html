@@ -282,6 +282,22 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
 .summary-devol{background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius);padding:12px 14px;margin-top:12px;font-size:13px;color:var(--text-bright);}
 .summary-devol b{color:var(--accent);}
 
+/* ---------- loja pública (auto-reserva do cliente) ---------- */
+.cstore{min-height:100vh;padding-bottom:120px;}
+.cstore-hero{background:linear-gradient(135deg,var(--accent-dim),var(--surface));border-bottom:1px solid var(--border);padding:34px 20px 28px;text-align:center;}
+.cstore-hero .biz{font-size:26px;font-weight:800;color:var(--text-bright);letter-spacing:-.5px;margin-bottom:4px;}
+.cstore-hero .sub{color:var(--muted);font-size:14px;}
+.cstore-wrap{max-width:1000px;margin:0 auto;padding:22px 16px;}
+.cstore-cat-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+.cbook-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(22,27,34,.98);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:12px 16px calc(12px + env(safe-area-inset-bottom));z-index:40;box-shadow:0 -4px 20px rgba(0,0,0,.35);}
+.cbook-bar-in{max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:14px;}
+.cbook-bar .cnt{flex:1;font-size:13.5px;color:var(--text);}
+.cbook-bar .cnt b{color:var(--text-bright);}
+.cstore-success{max-width:520px;margin:60px auto;text-align:center;padding:0 20px;}
+.cstore-success .big{font-size:60px;margin-bottom:16px;}
+.cstore-success h2{font-size:24px;color:var(--text-bright);margin-bottom:10px;}
+.cstore-success p{color:var(--muted);font-size:14.5px;margin-bottom:8px;}
+
 /* ---------- catalogo ---------- */
 .cat-list{display:flex;flex-direction:column;gap:10px;}
 .cat-row{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;}
@@ -406,8 +422,12 @@ let state = {
   histFiltro: { de:'', ate:'', q:'' },
   catOpen: {},
   loading: true,
-  err: ''
+  err: '',
+  publicMode: false,       // true = link público /loja/:slug — sem login
+  publicTenant: null,
+  pub: { nome:'', telefone:'', email:'', catSel:null, cart:[], notas:'', enviado:false }
 };
+const DEVOLVE_HQ_WHATSAPP = ''; // número do Ivo para receber aviso de novos pedidos de conta — a preencher
 
 function el(id){ return document.getElementById(id); }
 function fmtDate(d){ if(!d) return ''; const dt=new Date(d); return dt.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'}); }
@@ -493,6 +513,7 @@ function contaPendente(){
 function render(){
   const app = el('app');
   if(state.loading){ app.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--muted)">A carregar…</div>'; return; }
+  if(state.publicMode){ app.innerHTML = renderPublicStore(); window.scrollTo(0,0); return; }
   if(contaPendente() && state.view==='app'){ app.innerHTML = renderContaPendente(); window.scrollTo(0,0); return; }
   if(contaSuspensa() && state.view==='app'){ app.innerHTML = renderContaSuspensa(); window.scrollTo(0,0); return; }
   if(state.view==='landing') app.innerHTML = renderLanding();
@@ -725,9 +746,13 @@ async function finishSignup(){
   }
   // 1. tenant — pedidos vindos deste signup público nascem por aprovar (Devolve HQ decide o preço e activa)
   const { data: tenantRow, error: tErr } = await SB.from('devolve_tenants')
-    .insert({ nome: s.nomeNegocio, sector: s.sector, whatsapp_numero: s.whatsapp, plano:'trial', aprovado:false })
+    .insert({ nome: s.nomeNegocio, sector: s.sector, whatsapp_numero: s.whatsapp, plano:'trial', aprovado:false, slug: gerarSlug(s.nomeNegocio) })
     .select().single();
   if(tErr){ state.err = tErr.message; render(); return; }
+  if(DEVOLVE_HQ_WHATSAPP){
+    const avisoMsg = `Novo pedido de conta Devolve: ${s.nomeNegocio} (${s.sector}), contacto ${s.whatsapp||s.email}. Aprovar em Devolve HQ.`;
+    window.open(waUrl(DEVOLVE_HQ_WHATSAPP, avisoMsg), '_blank');
+  }
   // 2. user->tenant
   const { error: uErr } = await SB.from('devolve_users')
     .insert({ id: user.id, tenant_id: tenantRow.id, role:'owner', nome: s.nomeResp });
@@ -760,6 +785,218 @@ async function finishSignup(){
   }
   toast('Pedido enviado! A tua conta fica activa assim que for aprovada.');
   await bootAfterAuth(user);
+}
+
+/* ============================================================
+   PÁGINA PÚBLICA DE RESERVAS (/loja/:slug — sem login)
+   ============================================================ */
+function gerarSlug(nome){
+  const base = (nome||'loja').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'loja';
+  const suf = Math.random().toString(36).slice(2,6);
+  return base+'-'+suf;
+}
+async function bootPublicStore(slug){
+  state.loading = true; render();
+  state.publicMode = true;
+  const { data, error } = await SB.rpc('devolve_public_tenant_info', { p_slug: slug });
+  const tenant = Array.isArray(data)? data[0] : data;
+  if(error || !tenant){
+    state.publicTenant = null; state.loading = false; render(); return;
+  }
+  state.publicTenant = tenant;
+  state.tenantId = tenant.id;
+  const [{data:cats}, {data:items}, {data:units}] = await Promise.all([
+    SB.from('devolve_categories').select('*').eq('tenant_id', tenant.id).order('ordem'),
+    SB.from('devolve_items').select('*').eq('tenant_id', tenant.id),
+    SB.from('devolve_units').select('*').eq('tenant_id', tenant.id)
+  ]);
+  state.categories = cats || []; state.items = items || []; state.units = units || [];
+  state.pub = { nome:'', telefone:'', email:'', catSel:(state.categories[0]?state.categories[0].id:null), cart:[], notas:'', enviado:false };
+  state.loading = false;
+  render();
+}
+function renderPublicStore(){
+  if(!state.publicTenant) return renderPublicNaoDisponivel();
+  const b = state.pub;
+  if(b.enviado) return renderPublicSuccess();
+  const t = state.publicTenant;
+  const cats = state.categories;
+  if(!b.catSel && cats.length) b.catSel = cats[0].id;
+  const itensCat = b.catSel? state.items.filter(i=>i.category_id===b.catSel && i.activo!==false) : state.items;
+  const totalCarrinho = b.cart.reduce((s,c)=>s+c.quantidade,0);
+  const precoAtual = estimarPrecoPub();
+  return `
+  <div class="cstore">
+    <div class="cstore-hero">
+      <div class="biz">${t.nome_negocio||t.nome}</div>
+      <div class="sub">Reserva o teu material online</div>
+    </div>
+    <div class="cstore-wrap" style="${totalCarrinho>0?'padding-bottom:80px':''}">
+      ${cats.length>1? `<div class="cstore-cat-bar">${cats.map(c=>`<div class="chip ${b.catSel===c.id?'sel':''}" onclick="pub_setCat('${c.id}')">${c.icone} ${c.nome}</div>`).join('')}</div>` : ''}
+      ${itensCat.length===0? `<div class="empty"><div class="ico">📦</div>Ainda sem artigos disponíveis.</div>` : `
+      <div class="item-pick-grid">
+        ${itensCat.map(it=>{
+          const disp = stockDisponivel(it.id);
+          const inCart = b.cart.find(c=>c.item_id===it.id);
+          const qty = inCart? inCart.quantidade : 0;
+          return `<div class="item-pick" onclick="${disp>0||inCart?`pub_openItemAdd('${it.id}')`:''}" style="${disp<=0 && !inCart?'opacity:.5;cursor:default':'cursor:pointer'}">
+            <div class="pick-thumb">${it.foto? `<img src="${it.foto}" alt="${it.nome}">` : '📦'}</div>
+            <div class="n">${it.nome}</div>
+            <div style="color:var(--accent);font-weight:700;font-size:12px;margin-bottom:2px">€${(it.preco||0).toFixed(2)}/dia</div>
+            <div class="avail ${disp<=0?'zero':''}">${disp<=0?'Esgotado':disp+' disponíveis'}</div>
+            ${inCart? `<div class="avail" style="margin-top:6px;color:var(--accent)">✓ ${qty}× · ${linhaDuracaoTxt(inCart)}</div>` : (disp>0? `<button class="add-btn" style="margin-top:8px">+ Adicionar</button>` : '')}
+          </div>`;
+        }).join('')}
+      </div>`}
+    </div>
+    ${totalCarrinho>0? `<div class="cbook-bar"><div class="cbook-bar-in">
+      <div class="cnt">🛒 <b>${totalCarrinho}</b> ${totalCarrinho===1?'artigo':'artigos'} · <b class="tabular">€${precoAtual.toFixed(2)}</b></div>
+      <button class="btn primary" onclick="pub_openCheckout()">Continuar →</button>
+    </div></div>` : ''}
+  </div>`;
+}
+function renderPublicNaoDisponivel(){
+  return `<div class="cstore"><div class="cstore-hero"><div class="biz">Devolve</div></div>
+    <div class="cstore-success">
+      <div class="big">🔒</div>
+      <h2>Loja não disponível</h2>
+      <p>Este link não está activo neste momento. Contacta directamente o negócio.</p>
+    </div></div>`;
+}
+function renderPublicSuccess(){
+  const t = state.publicTenant;
+  return `<div class="cstore"><div class="cstore-hero"><div class="biz">${t.nome_negocio||t.nome}</div></div>
+    <div class="cstore-success">
+      <div class="big">✅</div>
+      <h2>Pedido enviado!</h2>
+      <p>A loja recebeu o teu pedido e vai confirmar em breve, por WhatsApp.</p>
+      <button class="btn primary" style="margin-top:20px" onclick="pub_novaReserva()">Nova reserva</button>
+    </div></div>`;
+}
+function pub_novaReserva(){
+  state.pub = { nome:'', telefone:'', email:'', catSel:(state.categories[0]?state.categories[0].id:null), cart:[], notas:'', enviado:false };
+  render();
+}
+function pub_setCat(id){ state.pub.catSel = id; render(); }
+function estimarPrecoPub(){
+  return state.pub.cart.reduce((sum,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return sum + c.quantidade*precoPorUnidade(item,c.unidade,c.duracao); },0);
+}
+let _pubItemDraft = null;
+function pub_openItemAdd(itemId){
+  const item = state.items.find(i=>i.id===itemId);
+  const existing = state.pub.cart.find(c=>c.item_id===itemId);
+  const disp = stockDisponivel(itemId);
+  _pubItemDraft = existing
+    ? { item_id:itemId, nome:item.nome, quantidade:existing.quantidade, unidade:existing.unidade, duracao:existing.duracao, disp }
+    : { item_id:itemId, nome:item.nome, quantidade: disp>0?1:0, unidade: state.pub.lastUnidade||'dias', duracao: state.pub.lastDuracao||1, disp };
+  renderModal(pubItemAddModalHtml());
+}
+function pubItemAddModalHtml(){
+  const d = _pubItemDraft;
+  const item = state.items.find(i=>i.id===d.item_id);
+  const prevista = calcDevolucaoPrevista(new Date().toISOString(), d.unidade, d.duracao, state.publicTenant? state.publicTenant.horario_fecho : '18:00');
+  const jaExiste = state.pub.cart.some(c=>c.item_id===d.item_id);
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>${d.nome}</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Quantidade (${d.disp} disponíveis)</label>
+        <div class="item-pick-row">
+          <button class="qty-btn" onclick="pub_id_qty(-1)">−</button>
+          <span class="qty-val tabular">${d.quantidade}</span>
+          <button class="qty-btn" onclick="pub_id_qty(1)" ${d.quantidade>=d.disp?'disabled':''}>+</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Duração</label>
+        <div class="chip-row"><div class="chip ${d.unidade==='horas'?'sel':''}" onclick="pub_id_setUnidade('horas')">Horas</div><div class="chip ${d.unidade==='dias'?'sel':''}" onclick="pub_id_setUnidade('dias')">Dias</div></div>
+      </div>
+      <div class="field"><label>Nº de ${d.unidade}</label><input type="number" min="1" id="pid-dur" value="${d.duracao}" oninput="pub_id_setDuracao(this.value)"></div>
+      ${d.quantidade>0? `<div class="summary-devol">Devolução prevista: <b>${fmtDateTime(prevista)}</b> · €${(d.quantidade*precoPorUnidade(item,d.unidade,d.duracao)).toFixed(2)}</div>` : ''}
+    </div>
+    <div class="modal-foot">
+      ${jaExiste? `<button class="btn danger" onclick="pub_removeCart('${d.item_id}');closeModal()">Remover</button>` : ''}
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="pub_confirmItemDraft()" ${d.quantidade<=0?'disabled':''}>${jaExiste?'Guardar':'Adicionar'}</button>
+    </div>
+  </div></div>`;
+}
+function pub_id_qty(delta){ _pubItemDraft.quantidade = Math.max(0, Math.min(_pubItemDraft.disp, _pubItemDraft.quantidade+delta)); renderModal(pubItemAddModalHtml()); }
+function pub_id_setUnidade(u){ _pubItemDraft.unidade = u; renderModal(pubItemAddModalHtml()); }
+function pub_id_setDuracao(v){ _pubItemDraft.duracao = Math.max(1, parseInt(v)||1); renderModal(pubItemAddModalHtml()); }
+function pub_confirmItemDraft(){
+  const d = _pubItemDraft; const b = state.pub;
+  b.cart = b.cart.filter(c=>c.item_id!==d.item_id);
+  if(d.quantidade>0){
+    b.cart.push({ item_id:d.item_id, nome:d.nome, quantidade:d.quantidade, unidade:d.unidade, duracao:d.duracao });
+    b.lastUnidade = d.unidade; b.lastDuracao = d.duracao;
+  }
+  closeModal();
+  render();
+}
+function pub_removeCart(itemId){ state.pub.cart = state.pub.cart.filter(c=>c.item_id!==itemId); render(); }
+function pub_bind(k,v){ state.pub[k]=v; }
+function pub_openCheckout(){ renderModal(pubCheckoutModalHtml()); }
+function pubCheckoutModalHtml(){
+  const b = state.pub;
+  const gruposDif = new Set(b.cart.map(c=>c.unidade+'|'+c.duracao)).size;
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>Finalizar pedido</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      ${b.cart.map(c=>{
+        const item = state.items.find(i=>i.id===c.item_id);
+        const subtotal = c.quantidade*precoPorUnidade(item, c.unidade, c.duracao);
+        return `<div class="cart-line" onclick="closeModal();pub_openItemAdd('${c.item_id}')" style="cursor:pointer">
+          <span>${c.quantidade}× ${c.nome} <span style="color:var(--muted);font-size:11.5px">${linhaDuracaoTxt(c)} · €${subtotal.toFixed(2)}</span></span>
+          <span class="x" onclick="event.stopPropagation();pub_removeCart('${c.item_id}');renderModal(pubCheckoutModalHtml())">✕</span>
+        </div>`;
+      }).join('')}
+      ${gruposDif>1? `<div style="font-size:11.5px;color:var(--accent);margin-top:8px">ℹ️ Este pedido tem ${gruposDif} prazos diferentes — a loja vai ver tudo junto.</div>` : ''}
+      <div class="field" style="margin-top:14px"><label>O teu nome *</label><input type="text" id="pb-nome" value="${b.nome}" oninput="pub_bind('nome',this.value.toUpperCase())" style="text-transform:uppercase" placeholder="O TEU NOME"></div>
+      <div class="field"><label>Telefone (WhatsApp) *</label><input type="tel" id="pb-tel" value="${b.telefone}" oninput="pub_bind('telefone',this.value)" placeholder="912345678"></div>
+      <div class="field"><label>Email</label><input type="email" id="pb-email" value="${b.email}" oninput="pub_bind('email',this.value)" placeholder="opcional"></div>
+      <div class="summary-devol">Total estimado: <b>€${estimarPrecoPub().toFixed(2)}</b></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">← Voltar</button>
+      <button class="btn primary block" onclick="pub_submit()" ${(!b.nome || !b.telefone || b.cart.length===0)?'disabled':''}>✅ Pedir reserva</button>
+    </div>
+  </div></div>`;
+}
+async function pub_submit(){
+  const b = state.pub;
+  if(!b.nome || !b.telefone || b.cart.length===0) return;
+  const inicio = new Date().toISOString();
+  const horarioFecho = state.publicTenant? state.publicTenant.horario_fecho : '18:00';
+  const grupos = {}; const ordem = [];
+  b.cart.forEach(c=>{
+    const chave = c.unidade+'|'+c.duracao;
+    if(!grupos[chave]){ grupos[chave] = { unidade:c.unidade, duracao:c.duracao, linhas:[] }; ordem.push(chave); }
+    grupos[chave].linhas.push(c);
+  });
+  const payloads = ordem.map(chave=>{
+    const g = grupos[chave];
+    const prevista = calcDevolucaoPrevista(inicio, g.unidade, g.duracao, horarioFecho);
+    const itensSnapshot = g.linhas.map(c=>({ item_id:c.item_id, nome:c.nome, quantidade:c.quantidade, unit_ids:[], unit_codigos:[] }));
+    const precoGrupo = g.linhas.reduce((sum,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return sum + c.quantidade*precoPorUnidade(item,c.unidade,c.duracao); },0);
+    return {
+      tenant_id: state.tenantId,
+      cliente_nome: b.nome, cliente_telefone: b.telefone, cliente_email: b.email, cliente_doc:'',
+      itens: itensSnapshot, inicio, unidade_duracao: g.unidade, duracao: g.duracao,
+      devolucao_prevista: prevista.toISOString(), estado:'pendente', caucao:0, preco_total: precoGrupo, notas: b.notas||''
+    };
+  });
+  for(const payload of payloads){
+    const { error } = await SB.from('devolve_rentals').insert(payload);
+    if(error){ toast('Erro: '+error.message); return; }
+  }
+  b.enviado = true;
+  closeModal();
+  render();
 }
 
 /* ============================================================
@@ -940,12 +1177,18 @@ function maisModalHtml(){
    DASHBOARD
    ============================================================ */
 function renderDashboard(){
-  const activos = state.rentals.filter(r=>!r.devolucao_real);
+  const pendentes = state.rentals.filter(r=>r.estado==='pendente');
+  const activos = state.rentals.filter(r=>!r.devolucao_real && r.estado!=='pendente');
   const emAtraso = activos.filter(r=>estadoEfectivo(r)==='atraso');
   const aVencer = activos.filter(r=>estadoEfectivo(r)==='avencer');
   const urgentes = [...activos].sort((a,b)=> new Date(a.devolucao_prevista)-new Date(b.devolucao_prevista)).slice(0,5);
 
   return `
+    ${pendentes.length>0? `<div class="banner" style="background:var(--accent-dim);border-color:var(--accent);color:var(--text-bright)">🔔 <b>${pendentes.length}</b> ${pendentes.length===1?'pedido de reserva do cliente':'pedidos de reserva de clientes'} à espera de confirmação.</div>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header"><span class="card-title">🔔 Pedidos de clientes</span></div>
+      <div class="card-body"><div class="rental-grid">${pendentes.map(r=>pendenteCard(r)).join('')}</div></div>
+    </div>` : ''}
     ${emAtraso.length>0? `<div class="banner">🚨 <b>${emAtraso.length}</b> aluguer(es) em atraso agora mesmo. <button class="btn sm danger" onclick="setAppView('atraso')">Ver atrasos</button></div>` : ''}
     <div class="stat-row">
       <div class="stat ok" onclick="setAppView('ativos')"><div class="lbl">Activos</div><div class="num tabular">${activos.length}</div></div>
@@ -959,6 +1202,58 @@ function renderDashboard(){
           `<div class="rental-grid">${urgentes.map(r=>rentalCard(r)).join('')}</div>`}
       </div>
     </div>`;
+}
+function pendenteCard(r){
+  const itensTxt = (r.itens||[]).map(i=>`<span>${i.quantidade}× ${i.nome}</span>`).join('');
+  return `
+  <div class="rcard" style="border-color:var(--accent)">
+    <div class="rcard-top">
+      <div><div class="client">${r.cliente_nome}</div><div class="phone">${r.cliente_telefone||''}</div></div>
+      <span class="pill" style="background:var(--accent-dim);color:var(--accent)">● Pedido</span>
+    </div>
+    <div class="items">${itensTxt}</div>
+    <div class="meta">Prazo pedido: ${r.duracao} ${r.unidade_duracao} · Prevista: ${fmtDateTime(r.devolucao_prevista)}${r.preco_total? ' · €'+r.preco_total.toFixed(2) : ''}</div>
+    <div class="rcard-actions">
+      <button class="btn sm primary block" onclick="confirmarPendente('${r.id}')">✅ Confirmar</button>
+      <button class="btn sm danger" onclick="recusarPendente('${r.id}')">Recusar</button>
+    </div>
+  </div>`;
+}
+async function confirmarPendente(id){
+  const r = state.rentals.find(x=>x.id===id);
+  if(!r) return;
+  let faltou = false;
+  const itensAtualizados = (r.itens||[]).map(linha=>{
+    const escolhidas = [];
+    for(let k=0;k<linha.quantidade;k++){
+      const u = state.units.filter(x=>x.item_id===linha.item_id && x.estado==='disponivel' && !escolhidas.includes(x.id)).sort((a,b)=>a.codigo.localeCompare(b.codigo))[0];
+      if(u){ escolhidas.push(u.id); } else faltou = true;
+    }
+    return { ...linha, unit_ids: escolhidas, unit_codigos: escolhidas.map(uidv=>{ const u=state.units.find(x=>x.id===uidv); return u?u.codigo:''; }) };
+  });
+  const unitIds = itensAtualizados.flatMap(l=>l.unit_ids);
+  const { error } = await SB.from('devolve_rentals').update({ itens: itensAtualizados, estado:'activo' }).eq('id', id);
+  if(error){ toast('Erro: '+error.message); return; }
+  if(unitIds.length){
+    await SB.from('devolve_units').update({ estado:'alugada' }).in('id', unitIds);
+    unitIds.forEach(uidv=>{ const u = state.units.find(x=>x.id===uidv); if(u) u.estado='alugada'; });
+  }
+  r.itens = itensAtualizados; r.estado = 'activo';
+  if(r.cliente_telefone && state.cfg && state.cfg.notif_whatsapp_auto){
+    const itensTxt = itensAtualizados.map(i=>i.quantidade+'x '+i.nome).join(', ');
+    const msg = `Olá ${r.cliente_nome}! O teu pedido (${itensTxt}) está confirmado. Devolução prevista: ${fmtDateTime(r.devolucao_prevista)}. Obrigado!`;
+    window.open(waUrl(r.cliente_telefone, msg), '_blank');
+  }
+  toast(faltou? 'Confirmado, mas faltou stock nalguns artigos.' : 'Reserva confirmada — WhatsApp enviado ✅');
+  render();
+}
+async function recusarPendente(id){
+  if(!confirm('Recusar este pedido de reserva?')) return;
+  const { error } = await SB.from('devolve_rentals').delete().eq('id', id);
+  if(error){ toast('Erro: '+error.message); return; }
+  state.rentals = state.rentals.filter(r=>r.id!==id);
+  toast('Pedido recusado.');
+  render();
 }
 
 function rentalCard(r){
@@ -1245,7 +1540,7 @@ async function confirmarAluguer(){
 /* ============================================================
    ACTIVOS / EM ATRASO
    ============================================================ */
-function renderAtivos(){ return renderRentalListView(state.rentals.filter(r=>!r.devolucao_real), false); }
+function renderAtivos(){ return renderRentalListView(state.rentals.filter(r=>!r.devolucao_real && r.estado!=='pendente'), false); }
 function renderAtrasoView(){ return renderRentalListView(state.rentals.filter(r=>!r.devolucao_real && estadoEfectivo(r)==='atraso'), true); }
 
 function renderRentalListView(list, isAtraso){
@@ -1565,7 +1860,23 @@ function closeModal(){ const host = el('modal-root'); if(host) host.innerHTML=''
    ============================================================ */
 function renderConfig(){
   const c = state.cfg || {};
+  const slug = state.tenant && state.tenant.slug;
+  const linkPublico = slug? location.origin+'/loja/'+slug : '';
   return `
+  ${state.tenant? `
+  <div class="card" style="max-width:560px;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">🔗 Link público de reservas</span></div>
+    <div class="card-body">
+      ${slug? `
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Dá este link aos teus clientes — eles escolhem o material e pedem a reserva sozinhos. Deixa de funcionar automaticamente se a tua conta ficar suspensa.</p>
+        <div style="display:flex;gap:8px">
+          <input type="text" readonly value="${linkPublico}" style="flex:1;font-size:12.5px" onclick="this.select()">
+          <button class="btn sm primary" onclick="copiarLinkPublico('${linkPublico}')">Copiar</button>
+        </div>` : `
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Ainda não tens um link público. Gera um agora.</p>
+        <button class="btn primary" onclick="gerarLinkPublico()">Gerar link</button>`}
+    </div>
+  </div>` : ''}
   <div class="card" style="max-width:560px">
     <div class="card-header"><span class="card-title">Dados do negócio</span></div>
     <div class="card-body">
@@ -1583,6 +1894,17 @@ function renderConfig(){
       <button class="btn primary" onclick="guardarConfig()">Guardar Configurações</button>
     </div>
   </div>`;
+}
+async function gerarLinkPublico(){
+  const slug = gerarSlug(state.tenant.nome);
+  const { error } = await SB.from('devolve_tenants').update({ slug }).eq('id', state.tenantId);
+  if(error){ toast('Erro: '+error.message); return; }
+  state.tenant.slug = slug;
+  toast('Link público gerado!');
+  render();
+}
+function copiarLinkPublico(link){
+  navigator.clipboard.writeText(link).then(()=>toast('Link copiado!')).catch(()=>toast('Não foi possível copiar — selecciona e copia manualmente.'));
 }
 async function guardarConfig(){
   const payload = {
@@ -1608,7 +1930,7 @@ async function guardarConfig(){
    ANALYTICS
    ============================================================ */
 function renderAnalytics(){
-  const done = state.rentals;
+  const done = state.rentals.filter(r=>r.estado!=='pendente');
   const last30 = Array.from({length:30}, (_,i)=>{
     const d = new Date(); d.setDate(d.getDate()-(29-i)); d.setHours(0,0,0,0);
     return d;
@@ -1721,10 +2043,13 @@ function renderHQ(){
 async function hqAprovarConta(tenantId){
   const proximo = new Date(); proximo.setMonth(proximo.getMonth()+1);
   const novaData = proximo.toISOString().slice(0,10);
-  const { error } = await SB.from('devolve_tenants').update({ aprovado:true, proximo_pagamento: novaData }).eq('id', tenantId);
+  const t0 = state.allTenants.find(x=>x.id===tenantId);
+  const payload = { aprovado:true, proximo_pagamento: novaData };
+  if(t0 && !t0.slug) payload.slug = gerarSlug(t0.nome); // negócios anteriores a esta funcionalidade também recebem link público
+  const { error } = await SB.from('devolve_tenants').update(payload).eq('id', tenantId);
   if(error){ toast('Erro: '+error.message); return; }
   const t = state.allTenants.find(x=>x.id===tenantId);
-  if(t){ t.aprovado=true; t.proximo_pagamento=novaData; }
+  if(t) Object.assign(t, payload);
   toast('Conta aprovada — 1º mês grátis até '+fmtDate(novaData));
   render();
 }
@@ -1799,6 +2124,8 @@ async function hqToggleActivo(tenantId, estaActivo){
    INIT
    ============================================================ */
 (async function init(){
+  const slug = new URLSearchParams(location.search).get('loja');
+  if(slug){ await bootPublicStore(slug); return; }
   const { data: { session } } = await SB.auth.getSession();
   if(session && session.user){
     await bootAfterAuth(session.user);
