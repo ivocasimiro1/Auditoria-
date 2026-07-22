@@ -38,15 +38,24 @@ CREATE TABLE IF NOT EXISTS devolve_categories (
   ordem INT DEFAULT 0
 );
 
--- devolve_items: artigos concretos dentro de cada categoria
+-- devolve_items: tipos de artigo dentro de cada categoria (ex: "BTT aro 29")
 CREATE TABLE IF NOT EXISTS devolve_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   category_id UUID NOT NULL REFERENCES devolve_categories(id) ON DELETE CASCADE,
   tenant_id UUID NOT NULL REFERENCES devolve_tenants(id) ON DELETE CASCADE,
   nome TEXT NOT NULL,
-  quantidade_total INT DEFAULT 1,
-  atributos JSONB DEFAULT '{}',
   activo BOOLEAN DEFAULT true
+);
+
+-- devolve_units: unidades físicas individuais de cada artigo, com código próprio
+-- (ex: BTT-001, BTT-002) — permite saber exactamente qual unidade está com qual cliente
+CREATE TABLE IF NOT EXISTS devolve_units (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  item_id UUID NOT NULL REFERENCES devolve_items(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES devolve_tenants(id) ON DELETE CASCADE,
+  codigo TEXT NOT NULL,
+  atributos JSONB DEFAULT '{}',
+  estado TEXT NOT NULL DEFAULT 'disponivel'   -- disponivel | alugada | manutencao
 );
 
 -- devolve_rentals: cada empréstimo — coração do sistema
@@ -104,6 +113,7 @@ ALTER TABLE devolve_tenants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE devolve_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE devolve_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE devolve_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE devolve_units ENABLE ROW LEVEL SECURITY;
 ALTER TABLE devolve_rentals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE devolve_config ENABLE ROW LEVEL SECURITY;
 
@@ -136,6 +146,10 @@ CREATE POLICY "devolve_categories_all" ON devolve_categories
   WITH CHECK (devolve_is_sa() OR tenant_id = devolve_my_tenant());
 
 CREATE POLICY "devolve_items_all" ON devolve_items
+  FOR ALL USING (devolve_is_sa() OR tenant_id = devolve_my_tenant())
+  WITH CHECK (devolve_is_sa() OR tenant_id = devolve_my_tenant());
+
+CREATE POLICY "devolve_units_all" ON devolve_units
   FOR ALL USING (devolve_is_sa() OR tenant_id = devolve_my_tenant())
   WITH CHECK (devolve_is_sa() OR tenant_id = devolve_my_tenant());
 

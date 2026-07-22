@@ -209,6 +209,9 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
 .chip-row{display:flex;gap:8px;flex-wrap:wrap;}
 .chip{padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;}
 .chip.sel{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);}
+.chip.u-ok{border-color:var(--green);color:#7ee08a;font-family:ui-monospace,monospace;font-size:12px;padding:4px 10px;}
+.chip.u-crit{border-color:var(--red);color:#ff9b93;background:var(--red-dim);cursor:default;font-family:ui-monospace,monospace;font-size:12px;padding:4px 10px;}
+.chip.u-warn{border-color:var(--yellow);color:#f0c05a;background:var(--yellow-dim);font-family:ui-monospace,monospace;font-size:12px;padding:4px 10px;}
 
 /* ---------- novo aluguer layout ---------- */
 .novo-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:flex-start;}
@@ -276,34 +279,55 @@ const SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const CATALOG_TEMPLATES = {
   bicicletas: { nome:'Bicicletas', categorias:[
     { nome:'Bicicletas', icone:'🚲', campos_extra:[{chave:'tamanho',tipo:'select',opcoes:['S','M','L','XL']}],
-      itens:[{nome:'BTT aro 29',quantidade_total:5},{nome:'Urbana',quantidade_total:8},{nome:'Elétrica',quantidade_total:3}] },
+      itens:[{nome:'BTT aro 29',quantidade_inicial:5},{nome:'Urbana',quantidade_inicial:8},{nome:'Elétrica',quantidade_inicial:3}] },
     { nome:'Acessórios', icone:'🎒', campos_extra:[],
-      itens:[{nome:'Capacete',quantidade_total:15},{nome:'Cadeado',quantidade_total:10}] }
+      itens:[{nome:'Capacete',quantidade_inicial:15},{nome:'Cadeado',quantidade_inicial:10}] }
   ]},
   ferramentas: { nome:'Ferramentas', categorias:[
     { nome:'Elétricas', icone:'🛠️', campos_extra:[{chave:'voltagem',tipo:'select',opcoes:['12V','18V','220V']}],
-      itens:[{nome:'Berbequim',quantidade_total:6},{nome:'Rebarbadora',quantidade_total:4},{nome:'Serra circular',quantidade_total:3}] },
+      itens:[{nome:'Berbequim',quantidade_inicial:6},{nome:'Rebarbadora',quantidade_inicial:4},{nome:'Serra circular',quantidade_inicial:3}] },
     { nome:'Manuais', icone:'🔧', campos_extra:[],
-      itens:[{nome:'Andaime',quantidade_total:4},{nome:'Escada',quantidade_total:6}] }
+      itens:[{nome:'Andaime',quantidade_inicial:4},{nome:'Escada',quantidade_inicial:6}] }
   ]},
   festas: { nome:'Festas & Eventos', categorias:[
     { nome:'Insufláveis', icone:'🎈', campos_extra:[],
-      itens:[{nome:'Castelo insuflável',quantidade_total:2},{nome:'Escorrega insuflável',quantidade_total:1}] },
+      itens:[{nome:'Castelo insuflável',quantidade_inicial:2},{nome:'Escorrega insuflável',quantidade_inicial:1}] },
     { nome:'Mobiliário', icone:'🪑', campos_extra:[],
-      itens:[{nome:'Mesa redonda',quantidade_total:20},{nome:'Cadeira',quantidade_total:100}] }
+      itens:[{nome:'Mesa redonda',quantidade_inicial:20},{nome:'Cadeira',quantidade_inicial:100}] }
   ]},
   praia: { nome:'Praia & Água', categorias:[
     { nome:'Pranchas', icone:'🏄', campos_extra:[{chave:'tamanho',tipo:'texto'}],
-      itens:[{nome:'Prancha soft 8ft',quantidade_total:10}] },
+      itens:[{nome:'Prancha soft 8ft',quantidade_inicial:10}] },
     { nome:'Acessórios', icone:'⛱️', campos_extra:[],
-      itens:[{nome:'Chapéu de praia',quantidade_total:12},{nome:'Espreguiçadeira',quantidade_total:20}] }
+      itens:[{nome:'Chapéu de praia',quantidade_inicial:12},{nome:'Espreguiçadeira',quantidade_inicial:20}] }
+  ]},
+  surf: { nome:'Escola de Surf', categorias:[
+    { nome:'Pranchas', icone:'🏄', campos_extra:[{chave:'tamanho',tipo:'texto'}],
+      itens:[
+        {nome:"Softboard 7'0 Iniciante",quantidade_inicial:6},
+        {nome:"Softboard 8'0 Iniciante",quantidade_inicial:4},
+        {nome:"Shortboard 6'0",quantidade_inicial:3},
+        {nome:"Fish 6'4",quantidade_inicial:2},
+        {nome:"Longboard 9'0",quantidade_inicial:3}
+      ] },
+    { nome:'Fatos', icone:'🤿', campos_extra:[{chave:'espessura',tipo:'select',opcoes:['2mm','3/2mm','4/3mm']}],
+      itens:[
+        {nome:'Fato 3/2mm XS',quantidade_inicial:2},
+        {nome:'Fato 3/2mm S',quantidade_inicial:4},
+        {nome:'Fato 3/2mm M',quantidade_inicial:5},
+        {nome:'Fato 3/2mm L',quantidade_inicial:4},
+        {nome:'Fato 3/2mm XL',quantidade_inicial:2},
+        {nome:'Fato 4/3mm M',quantidade_inicial:3}
+      ] },
+    { nome:'Acessórios', icone:'🎒', campos_extra:[],
+      itens:[{nome:'Leash de perna',quantidade_inicial:10},{nome:'Capa de prancha',quantidade_inicial:6}] }
   ]},
   personalizado: { nome:'Personalizado', categorias:[] }
 };
 
 const SECTORS = [
   {v:'bicicletas',l:'Bicicletas'}, {v:'ferramentas',l:'Ferramentas'},
-  {v:'festas',l:'Festas & Eventos'}, {v:'praia',l:'Praia & Água'},
+  {v:'festas',l:'Festas & Eventos'}, {v:'praia',l:'Praia & Água'}, {v:'surf',l:'Escola de Surf'},
   {v:'outro',l:'Outro'}
 ];
 
@@ -320,6 +344,7 @@ let state = {
   tenant: null,
   categories: [],
   items: [],
+  units: [],
   rentals: [],
   allTenants: [],         // super-admin only
   signup: { step:1, email:'', password:'', nomeResp:'', nomeNegocio:'', sector:'bicicletas', whatsapp:'', template:'bicicletas' },
@@ -343,6 +368,10 @@ function toast(msg){
   setTimeout(()=>t.remove(), 3200);
 }
 function uid(){ return 'x'+Math.random().toString(36).slice(2,10); }
+function prefixoCodigo(nome){
+  const letras = nome.split(/\s+/).map(w=>w[0]).join('').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  return (letras || 'ART').slice(0,4);
+}
 function waUrl(numero, msg){
   const n = (numero||'').replace(/\D/g,'');
   return 'https://wa.me/'+n+'?text='+encodeURIComponent(msg);
@@ -382,15 +411,10 @@ function fmtCountdown(ms){
   return (neg? '+' : '') + s + (neg? ' atraso' : '');
 }
 function stockDisponivel(itemId){
-  const item = state.items.find(i=>i.id===itemId);
-  if(!item) return 0;
-  const emUso = state.rentals
-    .filter(r=>!r.devolucao_real)
-    .reduce((sum,r)=>{
-      const linha = (r.itens||[]).find(l=>l.item_id===itemId);
-      return sum + (linha? linha.quantidade : 0);
-    },0);
-  return item.quantidade_total - emUso;
+  return state.units.filter(u=>u.item_id===itemId && u.estado==='disponivel').length;
+}
+function unidadesDoItem(itemId){
+  return state.units.filter(u=>u.item_id===itemId);
 }
 
 /* ============================================================
@@ -627,10 +651,16 @@ async function finishSignup(){
     }).select().single();
     if(catRow){
       for(const it of cat.itens){
-        await SB.from('devolve_items').insert({
-          tenant_id: tenantRow.id, category_id: catRow.id, nome: it.nome,
-          quantidade_total: it.quantidade_total, atributos:{}, activo:true
-        });
+        const { data: itemRow } = await SB.from('devolve_items').insert({
+          tenant_id: tenantRow.id, category_id: catRow.id, nome: it.nome, activo:true
+        }).select().single();
+        if(itemRow){
+          const unidades = [];
+          for(let n=1; n<=it.quantidade_inicial; n++){
+            unidades.push({ tenant_id: tenantRow.id, item_id: itemRow.id, codigo: prefixoCodigo(it.nome)+'-'+String(n).padStart(3,'0'), atributos:{}, estado:'disponivel' });
+          }
+          if(unidades.length) await SB.from('devolve_units').insert(unidades);
+        }
       }
     }
   }
@@ -663,17 +693,19 @@ async function loadAll(){
     state.allTenants = allT || [];
   }
   if(!state.tenantId) return;
-  const [{data:tenant}, {data:cfg}, {data:cats}, {data:items}, {data:rentals}] = await Promise.all([
+  const [{data:tenant}, {data:cfg}, {data:cats}, {data:items}, {data:units}, {data:rentals}] = await Promise.all([
     SB.from('devolve_tenants').select('*').eq('id', state.tenantId).maybeSingle(),
     SB.from('devolve_config').select('*').eq('tenant_id', state.tenantId).maybeSingle(),
     SB.from('devolve_categories').select('*').eq('tenant_id', state.tenantId).order('ordem'),
     SB.from('devolve_items').select('*').eq('tenant_id', state.tenantId),
+    SB.from('devolve_units').select('*').eq('tenant_id', state.tenantId),
     SB.from('devolve_rentals').select('*').eq('tenant_id', state.tenantId).order('criado_em',{ascending:false})
   ]);
   state.tenant = tenant;
   state.cfg = cfg;
   state.categories = cats || [];
   state.items = items || [];
+  state.units = units || [];
   state.rentals = rentals || [];
 }
 
@@ -683,6 +715,11 @@ function subscribeRealtime(){
     .on('postgres_changes', {event:'*', schema:'public', table:'devolve_rentals', filter:'tenant_id=eq.'+state.tenantId}, async ()=>{
       const { data } = await SB.from('devolve_rentals').select('*').eq('tenant_id', state.tenantId).order('criado_em',{ascending:false});
       state.rentals = data || [];
+      if(state.view==='app') render();
+    })
+    .on('postgres_changes', {event:'*', schema:'public', table:'devolve_units', filter:'tenant_id=eq.'+state.tenantId}, async ()=>{
+      const { data } = await SB.from('devolve_units').select('*').eq('tenant_id', state.tenantId);
+      state.units = data || [];
       if(state.view==='app') render();
     }).subscribe();
 }
@@ -795,7 +832,7 @@ function renderDashboard(){
 
 function rentalCard(r){
   const st = estadoEfectivo(r);
-  const itensTxt = (r.itens||[]).map(i=>`<span>${i.quantidade}× ${i.nome}</span>`).join('');
+  const itensTxt = (r.itens||[]).map(i=>`<span>${i.quantidade}× ${i.nome}${i.unit_codigos&&i.unit_codigos.length? ' '+i.unit_codigos.join('/') : ''}</span>`).join('');
   return `
   <div class="rcard ${st==='atraso'?'crit':''}">
     <div class="rcard-top">
@@ -821,6 +858,11 @@ async function devolverAluguer(id){
   if(error){ toast('Erro: '+error.message); return; }
   const idx = state.rentals.findIndex(x=>x.id===id);
   if(idx>-1){ state.rentals[idx].devolucao_real = agora; state.rentals[idx].estado = estadoFinal; }
+  const unitIds = (r.itens||[]).flatMap(l=>l.unit_ids||[]);
+  if(unitIds.length){
+    await SB.from('devolve_units').update({ estado:'disponivel' }).in('id', unitIds).eq('estado','alugada');
+    unitIds.forEach(uidv=>{ const u = state.units.find(x=>x.id===uidv); if(u && u.estado==='alugada') u.estado='disponivel'; });
+  }
   toast('Aluguer devolvido.');
   render();
 }
@@ -871,7 +913,8 @@ function renderNovo(){
             ${itensCat.map(it=>{
               const disp = stockDisponivel(it.id);
               const inCart = n.cart.find(c=>c.item_id===it.id);
-              const qty = inCart? inCart.quantidade : 0;
+              const qty = inCart? inCart.unit_ids.length : 0;
+              const codigos = inCart? inCart.unit_ids.map(uidv=>{ const u=state.units.find(x=>x.id===uidv); return u? u.codigo : ''; }).join(', ') : '';
               return `<div class="item-pick">
                 <div class="n">${it.nome}</div>
                 <div class="avail ${disp<=0?'zero':''}">${disp} disponíveis</div>
@@ -880,6 +923,7 @@ function renderNovo(){
                   <span class="qty-val tabular">${qty}</span>
                   <button class="qty-btn" onclick="nv_qty('${it.id}',1)" ${qty>=disp?'disabled':''}>+</button>
                 </div>
+                ${codigos? `<div class="avail" style="margin-top:6px;color:var(--accent)">${codigos}</div>` : ''}
               </div>`;
             }).join('')}
           </div>`}
@@ -906,7 +950,10 @@ function renderNovo(){
       <div class="card-header"><span class="card-title">Resumo</span></div>
       <div class="card-body">
         ${n.cart.length===0? `<div class="empty" style="padding:24px 10px"><div class="ico">🛒</div>Sem artigos seleccionados</div>` :
-          n.cart.map(c=>`<div class="cart-line"><span>${c.quantidade}× ${c.nome}</span><span class="x" onclick="nv_removeCart('${c.item_id}')">✕</span></div>`).join('')
+          n.cart.map(c=>{
+            const codigos = c.unit_ids.map(uidv=>{ const u=state.units.find(x=>x.id===uidv); return u? u.codigo : ''; }).join(', ');
+            return `<div class="cart-line"><span>${c.unit_ids.length}× ${c.nome} <span style="color:var(--muted);font-size:11.5px">(${codigos})</span></span><span class="x" onclick="nv_removeCart('${c.item_id}')">✕</span></div>`;
+          }).join('')
         }
         <div style="margin-top:16px">
           <button class="btn primary block" onclick="confirmarAluguer()" ${(!n.cliente_nome || n.cart.length===0)?'disabled':''}>Confirmar Aluguer</button>
@@ -922,13 +969,21 @@ function nv_qty(itemId, delta){
   const n = state.novo;
   const item = state.items.find(i=>i.id===itemId);
   let line = n.cart.find(c=>c.item_id===itemId);
-  const disp = stockDisponivel(itemId) + (line? line.quantidade : 0);
-  if(!line){
-    if(delta>0){ n.cart.push({item_id:itemId, nome:item.nome, quantidade:1, atributos:{}}); }
+  if(delta>0){
+    const disp = stockDisponivel(itemId);
+    const jaEmCarrinho = line? line.unit_ids.length : 0;
+    if(jaEmCarrinho >= disp) return;
+    const jaEscolhidas = line? line.unit_ids : [];
+    const escolhida = state.units
+      .filter(u=>u.item_id===itemId && u.estado==='disponivel' && !jaEscolhidas.includes(u.id))
+      .sort((a,b)=> a.codigo.localeCompare(b.codigo))[0];
+    if(!escolhida) return;
+    if(!line){ line = {item_id:itemId, nome:item.nome, unit_ids:[]}; n.cart.push(line); }
+    line.unit_ids.push(escolhida.id);
   } else {
-    line.quantidade += delta;
-    if(line.quantidade <= 0) n.cart = n.cart.filter(c=>c.item_id!==itemId);
-    else if(line.quantidade > disp) line.quantidade = disp;
+    if(!line || line.unit_ids.length===0) return;
+    line.unit_ids.pop();
+    if(line.unit_ids.length===0) n.cart = n.cart.filter(c=>c.item_id!==itemId);
   }
   render();
 }
@@ -939,21 +994,31 @@ async function confirmarAluguer(){
   if(!n.cliente_nome || n.cart.length===0) return;
   const inicio = new Date().toISOString();
   const prevista = calcDevolucaoPrevista(inicio, n.unidade, n.duracao, state.cfg? state.cfg.horario_fecho : '18:00');
+  const itensSnapshot = n.cart.map(c=>{
+    const codigos = c.unit_ids.map(uidv=>{ const u=state.units.find(x=>x.id===uidv); return u? u.codigo : ''; });
+    return { item_id:c.item_id, nome:c.nome, quantidade:c.unit_ids.length, unit_ids:[...c.unit_ids], unit_codigos:codigos };
+  });
   const payload = {
     tenant_id: state.tenantId,
     cliente_nome: n.cliente_nome, cliente_telefone: n.cliente_telefone,
     cliente_email: n.cliente_email, cliente_doc: n.cliente_doc,
-    itens: n.cart, inicio, unidade_duracao: n.unidade, duracao: n.duracao,
+    itens: itensSnapshot, inicio, unidade_duracao: n.unidade, duracao: n.duracao,
     devolucao_prevista: prevista.toISOString(), estado:'activo', caucao: n.caucao, notas: n.notas
   };
   // abrir WhatsApp antes do await, para não ser bloqueado pelo browser
   let waWin = null;
   if(n.cliente_telefone && state.cfg && state.cfg.notif_whatsapp_auto){
-    const msg = `Olá ${n.cliente_nome}! O teu aluguer (${n.cart.map(c=>c.quantidade+'x '+c.nome).join(', ')}) está confirmado. Devolução prevista: ${fmtDateTime(prevista)}. Obrigado!`;
+    const msg = `Olá ${n.cliente_nome}! O teu aluguer (${itensSnapshot.map(c=>c.quantidade+'x '+c.nome+' ['+c.unit_codigos.join(', ')+']').join(', ')}) está confirmado. Devolução prevista: ${fmtDateTime(prevista)}. Obrigado!`;
     waWin = window.open(waUrl(n.cliente_telefone, msg), '_blank');
   }
   const { data, error } = await SB.from('devolve_rentals').insert(payload).select().single();
   if(error){ toast('Erro: '+error.message); return; }
+  const unitIds = n.cart.flatMap(c=>c.unit_ids);
+  if(unitIds.length){
+    const { error: uErr } = await SB.from('devolve_units').update({ estado:'alugada' }).in('id', unitIds);
+    if(uErr){ toast('Aviso: aluguer criado mas houve um erro a marcar as unidades: '+uErr.message); }
+    else unitIds.forEach(id=>{ const u = state.units.find(x=>x.id===id); if(u) u.estado='alugada'; });
+  }
   state.rentals.unshift(data);
   state.novo = { cliente_nome:'', cliente_telefone:'', cliente_email:'', cliente_doc:'', catSel:n.catSel, cart:[], unidade:'dias', duracao:1, caucao:0, notas:'' };
   toast('Aluguer registado!');
@@ -1024,7 +1089,7 @@ function renderHistorico(){
         <tbody>
         ${filtered.map(r=>`<tr style="border-top:1px solid var(--border)">
           <td style="padding:10px 16px">${r.cliente_nome}</td>
-          <td>${(r.itens||[]).map(i=>i.quantidade+'× '+i.nome).join(', ')}</td>
+          <td>${(r.itens||[]).map(i=>i.quantidade+'× '+i.nome+(i.unit_codigos&&i.unit_codigos.length? ' ['+i.unit_codigos.join(', ')+']' : '')).join(', ')}</td>
           <td>${fmtDateTime(r.criado_em)}</td>
           <td>${fmtDateTime(r.devolucao_real)}</td>
           <td>${r.estado==='atraso'? '<span class="pill crit">Atraso</span>' : '<span class="pill ok">A tempo</span>'}</td>
@@ -1062,11 +1127,21 @@ function renderCatalogo(){
               <button class="btn sm danger" onclick="event.stopPropagation();apagarCategoria('${c.id}')">Apagar</button>
             </div>
             ${open? `<div class="cat-body">
-              ${itens.map(it=>`<div class="item-row">
-                <span class="n">${it.nome}</span><span class="q">stock: ${it.quantidade_total}</span>
-                <button class="btn sm" onclick="openItemModal('${c.id}','${it.id}')">Editar</button>
-                <button class="btn sm danger" onclick="apagarItem('${it.id}')">Apagar</button>
-              </div>`).join('')}
+              ${itens.map(it=>{
+                const units = unidadesDoItem(it.id);
+                const disp = units.filter(u=>u.estado==='disponivel').length;
+                return `<div class="item-row" style="flex-direction:column;align-items:stretch;gap:8px">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span class="n">${it.nome}</span><span class="q">${disp}/${units.length} disponíveis</span>
+                    <button class="btn sm" onclick="openItemModal('${c.id}','${it.id}')">Editar</button>
+                    <button class="btn sm danger" onclick="apagarItem('${it.id}')">Apagar</button>
+                  </div>
+                  <div class="chip-row">
+                    ${units.map(u=>`<div class="chip ${u.estado==='disponivel'?'u-ok':u.estado==='alugada'?'u-crit':'u-warn'}" title="${u.estado==='alugada'?'Em aluguer — não editável':'Toca para marcar manutenção/disponível'}" onclick="toggleUnidadeEstado('${u.id}')">${u.codigo}</div>`).join('')}
+                    <button class="btn sm" onclick="adicionarUnidade('${it.id}')">+ Unidade</button>
+                  </div>
+                </div>`;
+              }).join('')}
               <button class="btn sm" style="margin-top:10px" onclick="openItemModal('${c.id}')">+ Novo Artigo</button>
             </div>` : ''}
           </div>`;
@@ -1074,6 +1149,24 @@ function renderCatalogo(){
     </div>
     <div id="modal-host"></div>
   `;
+}
+async function toggleUnidadeEstado(id){
+  const u = state.units.find(x=>x.id===id);
+  if(!u || u.estado==='alugada') return;
+  const novo = u.estado==='disponivel' ? 'manutencao' : 'disponivel';
+  const { error } = await SB.from('devolve_units').update({ estado: novo }).eq('id', id);
+  if(error){ toast('Erro: '+error.message); return; }
+  u.estado = novo;
+  render();
+}
+async function adicionarUnidade(itemId){
+  const item = state.items.find(i=>i.id===itemId);
+  if(!item) return;
+  const codigo = prefixoCodigo(item.nome)+'-'+String(unidadesDoItem(itemId).length+1).padStart(3,'0');
+  const { data, error } = await SB.from('devolve_units').insert({ tenant_id: state.tenantId, item_id: itemId, codigo, atributos:{}, estado:'disponivel' }).select().single();
+  if(error){ toast('Erro: '+error.message); return; }
+  state.units.push(data);
+  render();
 }
 function toggleCat(id){ state.catOpen[id] = !state.catOpen[id]; render(); }
 
@@ -1145,25 +1238,19 @@ let _itemForm = null;
 function openItemModal(categoryId, itemId){
   const existing = itemId? state.items.find(i=>i.id===itemId) : null;
   const cat = state.categories.find(c=>c.id===categoryId);
-  _itemForm = existing? {id:existing.id, category_id:categoryId, nome:existing.nome, quantidade_total:existing.quantidade_total, atributos:{...existing.atributos}}
-                       : {id:null, category_id:categoryId, nome:'', quantidade_total:1, atributos:{}};
+  _itemForm = existing? {id:existing.id, category_id:categoryId, nome:existing.nome}
+                       : {id:null, category_id:categoryId, nome:'', quantidade_inicial:1};
   renderModal(itemModalHtml(cat));
 }
 function itemModalHtml(cat){
   const f = _itemForm;
-  const extraFields = (cat.campos_extra||[]).map(ex=>{
-    if(ex.tipo==='select'){
-      return `<div class="field"><label>${ex.chave}</label><select id="if-ex-${ex.chave}">${ex.opcoes.map(o=>`<option ${f.atributos[ex.chave]===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
-    }
-    return `<div class="field"><label>${ex.chave}</label><input type="text" id="if-ex-${ex.chave}" value="${f.atributos[ex.chave]||''}"></div>`;
-  }).join('');
   return `
   <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
     <div class="modal-head"><h3>${f.id?'Editar artigo':'Novo artigo'} — ${cat.nome}</h3><button class="close-x" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div class="field"><label>Nome</label><input type="text" id="if-nome" value="${f.nome}" placeholder="Ex: BTT aro 29"></div>
-      <div class="field"><label>Quantidade em stock</label><input type="number" min="0" id="if-qtd" value="${f.quantidade_total}"></div>
-      ${extraFields}
+      ${f.id? '' : `<div class="field"><label>Quantidade inicial (gera um código por unidade, ex: BTT-001, BTT-002...)</label><input type="number" min="0" id="if-qtd" value="${f.quantidade_inicial}"></div>`}
+      ${f.id? `<p style="font-size:12.5px;color:var(--muted)">Para adicionar ou remover unidades, usa os botões junto aos códigos na lista do catálogo.</p>` : ''}
     </div>
     <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveItem()">Guardar</button></div>
   </div></div>`;
@@ -1171,28 +1258,34 @@ function itemModalHtml(cat){
 async function saveItem(){
   const f = _itemForm;
   const nome = el('if-nome').value.trim();
-  const qtd = parseInt(el('if-qtd').value)||0;
   if(!nome){ toast('Dá um nome ao artigo.'); return; }
-  const cat = state.categories.find(c=>c.id===f.category_id);
-  const atributos = {};
-  (cat.campos_extra||[]).forEach(ex=>{ const inp = el('if-ex-'+ex.chave); if(inp) atributos[ex.chave]=inp.value; });
-  const payload = { tenant_id: state.tenantId, category_id: f.category_id, nome, quantidade_total: qtd, atributos, activo:true };
   if(f.id){
-    const { error } = await SB.from('devolve_items').update(payload).eq('id', f.id);
+    const { error } = await SB.from('devolve_items').update({ nome }).eq('id', f.id);
     if(error){ toast('Erro: '+error.message); return; }
-    Object.assign(state.items.find(i=>i.id===f.id), payload);
+    Object.assign(state.items.find(i=>i.id===f.id), { nome });
   } else {
-    const { data, error } = await SB.from('devolve_items').insert(payload).select().single();
+    const qtd = parseInt(el('if-qtd').value)||0;
+    const { data: itemRow, error } = await SB.from('devolve_items').insert({ tenant_id: state.tenantId, category_id: f.category_id, nome, activo:true }).select().single();
     if(error){ toast('Erro: '+error.message); return; }
-    state.items.push(data);
+    state.items.push(itemRow);
+    if(qtd>0){
+      const unidades = [];
+      for(let n=1; n<=qtd; n++){
+        unidades.push({ tenant_id: state.tenantId, item_id: itemRow.id, codigo: prefixoCodigo(nome)+'-'+String(n).padStart(3,'0'), atributos:{}, estado:'disponivel' });
+      }
+      const { data: unitsData, error: uErr } = await SB.from('devolve_units').insert(unidades).select();
+      if(uErr){ toast('Artigo criado, mas houve um erro a gerar as unidades: '+uErr.message); }
+      else state.units.push(...(unitsData||[]));
+    }
   }
   closeModal(); render();
 }
 async function apagarItem(id){
-  if(!confirm('Apagar este artigo?')) return;
+  if(!confirm('Apagar este artigo e todas as suas unidades?')) return;
   const { error } = await SB.from('devolve_items').delete().eq('id', id);
   if(error){ toast('Erro: '+error.message); return; }
   state.items = state.items.filter(i=>i.id!==id);
+  state.units = state.units.filter(u=>u.item_id!==id);
   render();
 }
 
