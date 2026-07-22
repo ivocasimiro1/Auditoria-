@@ -1584,7 +1584,7 @@ function renderHQ(){
           <td>${activo? '<span class="pill ok">Activa</span>' : t.activo===false? '<span class="pill crit">Suspensa (manual)</span>' : '<span class="pill crit">Bloqueada (atraso)</span>'}</td>
           <td class="tabular" style="color:${atraso?'var(--red)':'var(--text)'}">${t.proximo_pagamento? fmtDate(t.proximo_pagamento) : '—'}</td>
           <td style="display:flex;gap:6px">
-            <button class="btn sm primary" onclick="hqMarcarPagamento('${t.id}')">💳 Marcar pagamento</button>
+            <button class="btn sm primary" onclick="hqAbrirModalPagamento('${t.id}')">💳 Marcar pagamento</button>
             <button class="btn sm ${t.activo===false?'primary':'danger'}" onclick="hqToggleActivo('${t.id}', ${t.activo!==false})">${t.activo===false?'Reactivar':'Suspender'}</button>
           </td>
         </tr>`;
@@ -1594,16 +1594,52 @@ function renderHQ(){
     </div></div>
   `;
 }
-async function hqMarcarPagamento(tenantId){
-  const t = state.allTenants.find(x=>x.id===tenantId);
+let _hqPagamentoTenantId = null;
+let _hqPagamentoMeses = 1;
+function hqBaseDoPagamento(t){
+  return (t.proximo_pagamento && new Date(t.proximo_pagamento) > new Date()) ? new Date(t.proximo_pagamento) : new Date();
+}
+function hqAbrirModalPagamento(tenantId){
+  _hqPagamentoTenantId = tenantId;
+  _hqPagamentoMeses = 1;
+  renderModal(hqPagamentoModalHtml());
+}
+function hqPagamentoModalHtml(){
+  const t = state.allTenants.find(x=>x.id===_hqPagamentoTenantId);
+  if(!t) return '';
+  const atraso = !!(t.proximo_pagamento && new Date() > new Date(t.proximo_pagamento+'T23:59:59'));
+  const base = hqBaseDoPagamento(t);
+  const resultado = new Date(base); resultado.setMonth(resultado.getMonth()+_hqPagamentoMeses);
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>💳 Marcar pagamento — ${t.nome}</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">${atraso? 'Estava em atraso — a contagem começa a partir de <b style="color:var(--text-bright)">hoje</b>.' : (t.proximo_pagamento? 'Ainda dentro do prazo — soma a partir de <b style="color:var(--text-bright)">'+fmtDate(t.proximo_pagamento)+'</b>, sem perder dias já pagos.' : 'Primeiro pagamento.')}</p>
+      <div class="field">
+        <label>Quantos meses foram pagos?</label>
+        <input type="number" min="1" max="24" id="hq-pg-meses" value="${_hqPagamentoMeses}" oninput="hqPgSetMeses(this.value)">
+      </div>
+      <div class="summary-devol">Fica activo até: <b>${fmtDate(resultado)}</b> ${_hqPagamentoMeses>1? `<span style="color:var(--muted);font-weight:400">(${_hqPagamentoMeses} meses)</span>` : ''}</div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="hqConfirmarPagamento()">✅ Confirmar pagamento</button></div>
+  </div></div>`;
+}
+function hqPgSetMeses(v){
+  const n = parseInt(v)||1;
+  _hqPagamentoMeses = Math.min(24, Math.max(1, n));
+  renderModal(hqPagamentoModalHtml());
+}
+async function hqConfirmarPagamento(){
+  const t = state.allTenants.find(x=>x.id===_hqPagamentoTenantId);
   if(!t) return;
-  const base = (t.proximo_pagamento && new Date(t.proximo_pagamento) > new Date()) ? new Date(t.proximo_pagamento) : new Date();
-  base.setMonth(base.getMonth()+1);
+  const base = hqBaseDoPagamento(t);
+  base.setMonth(base.getMonth()+_hqPagamentoMeses);
   const novaData = base.toISOString().slice(0,10);
-  const { error } = await SB.from('devolve_tenants').update({ proximo_pagamento: novaData, activo: true }).eq('id', tenantId);
+  const { error } = await SB.from('devolve_tenants').update({ proximo_pagamento: novaData, activo: true }).eq('id', t.id);
   if(error){ toast('Erro: '+error.message); return; }
   t.proximo_pagamento = novaData; t.activo = true;
-  toast('Pagamento registado — activo até '+fmtDate(novaData));
+  toast(`Pagamento de ${_hqPagamentoMeses} ${_hqPagamentoMeses===1?'mês':'meses'} registado — activo até ${fmtDate(novaData)}`);
+  closeModal();
   render();
 }
 async function hqToggleActivo(tenantId, estaActivo){
