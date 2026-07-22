@@ -55,7 +55,8 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
 
 /* ================= LANDING ================= */
 .landing-nav{position:sticky;top:0;z-index:50;background:rgba(13,17,23,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);}
-.landing-nav-in{max-width:1120px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:20px;}
+.landing-nav-in{max-width:1120px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+@media(max-width:480px){.landing-nav-in .btn{padding:8px 12px;font-size:12px;}}
 .logo{font-size:19px;font-weight:800;color:var(--text-bright);letter-spacing:-.4px;display:flex;align-items:center;gap:8px;}
 .logo .mark{color:var(--accent);}
 .landing-nav-links{display:flex;gap:22px;font-size:13.5px;color:var(--muted);flex:1;justify-content:center;}
@@ -70,6 +71,7 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
 .hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
 .hero-cta .btn{padding:13px 24px;font-size:14.5px;}
 @media(max-width:600px){.hero h1{font-size:34px;}.hero{padding:56px 20px 40px;}}
+@media(max-width:480px){.hero-cta{flex-direction:column;align-items:stretch;}.hero-cta .btn{width:100%;}}
 
 .marquee{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface);overflow:hidden;padding:16px 0;}
 .marquee-track{display:flex;gap:40px;white-space:nowrap;animation:scroll 28s linear infinite;width:max-content;}
@@ -150,12 +152,34 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
 .topbar .spacer{flex:1;}
 .content{padding:26px 28px 60px;max-width:1220px;width:100%;}
 .mobile-topbar{display:none;}
+.bottom-nav{display:none;}
 @media(max-width:900px){
-  .sidebar{transform:translateX(-100%);transition:.2s;z-index:60;}
-  .sidebar.open{transform:translateX(0);}
+  .sidebar{display:none;}
   .main{margin-left:0;}
-  .mobile-topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:30;}
+  .topbar{display:none;}
+  .mobile-topbar{
+    display:flex;align-items:center;gap:12px;padding:14px 16px;
+    border-bottom:1px solid var(--border);background:rgba(13,17,23,.92);backdrop-filter:blur(6px);
+    position:sticky;top:0;z-index:30;
+  }
+  .mobile-topbar h1{font-size:16px;color:var(--text-bright);flex:1;}
+  .mobile-topbar .logo{font-size:15px;}
+  .content{padding:18px 16px 96px;}
+  .bottom-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:50;
+    background:rgba(22,27,34,.96);backdrop-filter:blur(10px);border-top:1px solid var(--border);
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
 }
+.bottom-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:7px 2px;color:var(--muted);font-size:10px;font-weight:700;cursor:pointer;position:relative;border-radius:10px;}
+.bottom-nav-item.on{color:var(--accent);}
+.bottom-nav-item .ico{font-size:19px;}
+.bottom-nav-item .badge{position:absolute;top:2px;right:22%;background:var(--red);color:#fff;font-size:9px;font-weight:700;border-radius:20px;padding:0 4px;line-height:1.4;}
+.mais-list{display:flex;flex-direction:column;gap:2px;}
+.mais-item{display:flex;align-items:center;gap:12px;padding:13px 8px;border-radius:var(--radius);color:var(--text);font-size:14.5px;font-weight:600;cursor:pointer;}
+.mais-item:hover, .mais-item:active{background:var(--surface2);}
+.mais-item .ico{font-size:17px;width:20px;text-align:center;}
+.mais-item.danger{color:#ff9b93;}
 
 /* ---------- generic card / stat / pill ---------- */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
@@ -325,23 +349,23 @@ const CATALOG_TEMPLATES = {
   surf: { nome:'Escola de Surf', categorias:[
     { nome:'Pranchas', icone:'🏄', campos_extra:[{chave:'tamanho',tipo:'texto'}],
       itens:[
-        {nome:"Softboard 7'0 Iniciante",quantidade_inicial:6,preco:15},
-        {nome:"Softboard 8'0 Iniciante",quantidade_inicial:4,preco:18},
-        {nome:"Shortboard 6'0",quantidade_inicial:3,preco:20},
-        {nome:"Fish 6'4",quantidade_inicial:2,preco:18},
-        {nome:"Longboard 9'0",quantidade_inicial:3,preco:20}
+        {nome:"Softboard 7'0 Iniciante",quantidade_inicial:6,preco:15,caucao_sugerida:50},
+        {nome:"Softboard 8'0 Iniciante",quantidade_inicial:4,preco:18,caucao_sugerida:50},
+        {nome:"Shortboard 6'0",quantidade_inicial:3,preco:20,caucao_sugerida:80},
+        {nome:"Fish 6'4",quantidade_inicial:2,preco:18,caucao_sugerida:70},
+        {nome:"Longboard 9'0",quantidade_inicial:3,preco:20,caucao_sugerida:80}
       ] },
     { nome:'Fatos', icone:'🤿', campos_extra:[{chave:'espessura',tipo:'select',opcoes:['2mm','3/2mm','4/3mm']}],
       itens:[
-        {nome:'Fato 3/2mm XS',quantidade_inicial:2,preco:10},
-        {nome:'Fato 3/2mm S',quantidade_inicial:4,preco:10},
-        {nome:'Fato 3/2mm M',quantidade_inicial:5,preco:10},
-        {nome:'Fato 3/2mm L',quantidade_inicial:4,preco:10},
-        {nome:'Fato 3/2mm XL',quantidade_inicial:2,preco:10},
-        {nome:'Fato 4/3mm M',quantidade_inicial:3,preco:12}
+        {nome:'Fato 3/2mm XS',quantidade_inicial:2,preco:10,caucao_sugerida:20},
+        {nome:'Fato 3/2mm S',quantidade_inicial:4,preco:10,caucao_sugerida:20},
+        {nome:'Fato 3/2mm M',quantidade_inicial:5,preco:10,caucao_sugerida:20},
+        {nome:'Fato 3/2mm L',quantidade_inicial:4,preco:10,caucao_sugerida:20},
+        {nome:'Fato 3/2mm XL',quantidade_inicial:2,preco:10,caucao_sugerida:20},
+        {nome:'Fato 4/3mm M',quantidade_inicial:3,preco:12,caucao_sugerida:25}
       ] },
     { nome:'Acessórios', icone:'🎒', campos_extra:[],
-      itens:[{nome:'Leash de perna',quantidade_inicial:10,preco:3},{nome:'Capa de prancha',quantidade_inicial:6,preco:5}] }
+      itens:[{nome:'Leash de perna',quantidade_inicial:10,preco:3,caucao_sugerida:0},{nome:'Capa de prancha',quantidade_inicial:6,preco:5,caucao_sugerida:0}] }
   ]},
   personalizado: { nome:'Personalizado', categorias:[] }
 };
@@ -374,7 +398,6 @@ let state = {
   catalogFiltro: '',
   histFiltro: { de:'', ate:'', q:'' },
   catOpen: {},
-  sidebarOpen: false,
   loading: true,
   err: ''
 };
@@ -678,7 +701,7 @@ async function finishSignup(){
     if(catRow){
       for(const it of cat.itens){
         const { data: itemRow } = await SB.from('devolve_items').insert({
-          tenant_id: tenantRow.id, category_id: catRow.id, nome: it.nome, preco: it.preco||0, foto:'', activo:true
+          tenant_id: tenantRow.id, category_id: catRow.id, nome: it.nome, preco: it.preco||0, caucao_sugerida: it.caucao_sugerida||0, foto:'', activo:true
         }).select().single();
         if(itemRow){
           const unidades = [];
@@ -809,27 +832,61 @@ function renderApp(){
 
   const currentLabel = (nav.find(n=>n.k===state.appView)||{}).l || '';
 
+  const bottomItems = [
+    {k:'dashboard', l:'Início', i:'🏠'},
+    {k:'novo', l:'Novo', i:'➕'},
+    {k:'ativos', l:'Activos', i:'📋'},
+    {k:'atraso', l:'Atrasos', i:'🚨'},
+  ];
+  const maisKeys = ['historico','catalogo','analytics','config','hq'];
+  const maisActivo = maisKeys.includes(state.appView);
+  const bottomNavHtml = bottomItems.map(n=>`
+    <div class="bottom-nav-item ${state.appView===n.k?'on':''}" onclick="setAppView('${n.k}')">
+      <span class="ico">${n.i}</span>${n.l}
+      ${n.k==='atraso' && overdue>0 ? `<span class="badge">${overdue}</span>` : ''}
+    </div>`).join('') + `
+    <div class="bottom-nav-item ${maisActivo?'on':''}" onclick="openMaisModal()"><span class="ico">☰</span>Mais</div>`;
+
   return `
   <div class="shell">
-    <div class="sidebar ${state.sidebarOpen?'open':''}" id="sidebar">
+    <div class="sidebar" id="sidebar">
       <div class="logo"><span class="mark">↻</span> Devolve</div>
       <div class="side-biz"><div class="n">${state.tenant? state.tenant.nome : ''}</div><div class="p">${state.tenant? state.tenant.plano : ''}</div></div>
       <div class="side-nav">${navHtml}</div>
       <div class="side-foot"><button class="btn ghost block" onclick="doLogout()">↩ Sair</button></div>
     </div>
     <div class="mobile-topbar">
-      <button class="btn sm" onclick="toggleSidebar()">☰</button>
-      <div class="logo" style="font-size:15px"><span class="mark">↻</span> Devolve</div>
+      <div class="logo" style="font-size:15px"><span class="mark">↻</span></div>
+      <h1>${currentLabel}</h1>
     </div>
     <div class="main">
       <div class="topbar"><h1>${currentLabel}</h1><div class="spacer"></div></div>
       <div class="content" id="view-content">${viewHtml}</div>
     </div>
+    <div class="bottom-nav">${bottomNavHtml}</div>
   </div>`;
 }
-function toggleSidebar(){ state.sidebarOpen = !state.sidebarOpen; render(); }
-function setAppView(k){ state.appView = k; state.sidebarOpen=false; render(); if(k!=='novo') resetNovoIfEmpty(); }
-function resetNovoIfEmpty(){ /* mantém o carrinho entre navegações acidentais */ }
+function setAppView(k){ state.appView = k; render(); }
+function openMaisModal(){ renderModal(maisModalHtml()); }
+function maisModalHtml(){
+  const items = [
+    {k:'historico', l:'Histórico', i:'🗂️'},
+    {k:'catalogo', l:'Catálogo', i:'📦'},
+    {k:'analytics', l:'Analytics', i:'📊'},
+    {k:'config', l:'Configurações', i:'⚙️'},
+  ];
+  if(state.myRole==='super_admin') items.push({k:'hq', l:'Devolve HQ', i:'🛡️'});
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>Mais</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="mais-list">
+        ${items.map(n=>`<div class="mais-item" onclick="closeModal();setAppView('${n.k}')"><span class="ico">${n.i}</span>${n.l}</div>`).join('')}
+        <div class="mais-item danger" onclick="closeModal();doLogout()"><span class="ico">↩</span>Sair</div>
+      </div>
+    </div>
+  </div></div>`;
+}
 
 /* ============================================================
    DASHBOARD
@@ -910,6 +967,7 @@ function renderNovo(){
   const itensCat = catAtual? state.items.filter(i=>i.category_id===catAtual.id && i.activo!==false) : [];
 
   const prevista = calcDevolucaoPrevista(new Date().toISOString(), n.unidade, n.duracao, state.cfg? state.cfg.horario_fecho : '18:00');
+  const caucaoSugerida = n.cart.reduce((sum,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return sum + c.unit_ids.length*(item&&item.caucao_sugerida||0); },0);
 
   return `
   <div class="novo-grid">
@@ -966,7 +1024,9 @@ function renderNovo(){
           </div>
           <div class="field-row">
             <div class="field"><label>Nº de ${n.unidade}</label><input type="number" min="1" id="nv-dur" value="${n.duracao}" oninput="nv_bind('duracao', parseInt(this.value)||1)"></div>
-            <div class="field"><label>Caução (opcional, €)</label><input type="number" min="0" step="0.01" value="${n.caucao}" oninput="nv_bind('caucao', parseFloat(this.value)||0)"></div>
+            <div class="field"><label>Caução (€)</label><input type="number" min="0" step="1" id="nv-caucao" value="${n.caucao}" oninput="nv_bind('caucao', parseFloat(this.value)||0)">
+              ${caucaoSugerida>0? `<div style="font-size:11.5px;color:var(--muted);margin-top:5px">Sugestão com base nos artigos: €${caucaoSugerida.toFixed(2)} — <a onclick="nv_usarCaucaoSugerida(${caucaoSugerida})" style="color:var(--accent);cursor:pointer;font-weight:600">usar</a></div>` : ''}
+            </div>
           </div>
           <div class="summary-devol">Devolução prevista: <b>${fmtDateTime(prevista)}</b></div>
         </div>
@@ -991,6 +1051,7 @@ function renderNovo(){
   </div>`;
 }
 function nv_bind(k,v){ state.novo[k]=v; }
+function nv_usarCaucaoSugerida(valor){ state.novo.caucao = valor; render(); }
 function nv_setCat(id){ state.novo.catSel = id; render(); }
 function nv_unidade(u){ state.novo.unidade = u; render(); }
 function nv_qty(itemId, delta){
@@ -1281,8 +1342,8 @@ let _itemForm = null;
 function openItemModal(categoryId, itemId){
   const existing = itemId? state.items.find(i=>i.id===itemId) : null;
   _itemForm = existing
-    ? {id:existing.id, category_id:existing.category_id, nome:existing.nome, preco:existing.preco||0, foto:existing.foto||''}
-    : {id:null, category_id:categoryId || (state.categories[0]? state.categories[0].id : ''), nome:'', preco:0, foto:'', quantidade_inicial:1};
+    ? {id:existing.id, category_id:existing.category_id, nome:existing.nome, preco:existing.preco||0, caucao_sugerida:existing.caucao_sugerida||0, foto:existing.foto||''}
+    : {id:null, category_id:categoryId || (state.categories[0]? state.categories[0].id : ''), nome:'', preco:0, caucao_sugerida:0, foto:'', quantidade_inicial:1};
   renderModal(itemModalHtml());
 }
 function itemModalHtml(){
@@ -1300,7 +1361,10 @@ function itemModalHtml(){
         <div class="field"><label>Nome</label><input type="text" id="if-nome" value="${f.nome}" placeholder="Ex: BTT aro 29"></div>
         <div class="field"><label>Preço (€ / dia)</label><input type="number" min="0" step="0.5" id="if-preco" value="${f.preco}"></div>
       </div>
-      <div class="field"><label>Categoria</label><select id="if-cat">${state.categories.map(c=>`<option value="${c.id}" ${f.category_id===c.id?'selected':''}>${c.icone} ${c.nome}</option>`).join('')}</select></div>
+      <div class="field-row">
+        <div class="field"><label>Categoria</label><select id="if-cat">${state.categories.map(c=>`<option value="${c.id}" ${f.category_id===c.id?'selected':''}>${c.icone} ${c.nome}</option>`).join('')}</select></div>
+        <div class="field"><label>Caução sugerida (€, opcional)</label><input type="number" min="0" step="1" id="if-caucao" value="${f.caucao_sugerida}" placeholder="Ex: 50"></div>
+      </div>
       ${f.id? '' : `<div class="field"><label>Quantidade inicial (gera um código por unidade, ex: BTT-001, BTT-002...)</label><input type="number" min="0" id="if-qtd" value="${f.quantidade_inicial}"></div>`}
       ${f.id? `<div class="item-detail-units">
         <label>Unidades</label>
@@ -1327,16 +1391,17 @@ async function saveItem(){
   const f = _itemForm;
   const nome = el('if-nome').value.trim();
   const preco = parseFloat(el('if-preco').value)||0;
+  const caucaoSugerida = parseFloat(el('if-caucao').value)||0;
   const categoryId = el('if-cat').value;
   if(!nome){ toast('Dá um nome ao artigo.'); return; }
   if(!categoryId){ toast('Escolhe uma categoria.'); return; }
   if(f.id){
-    const { error } = await SB.from('devolve_items').update({ nome, preco, foto:f.foto, category_id:categoryId }).eq('id', f.id);
+    const { error } = await SB.from('devolve_items').update({ nome, preco, caucao_sugerida:caucaoSugerida, foto:f.foto, category_id:categoryId }).eq('id', f.id);
     if(error){ toast('Erro: '+error.message); return; }
-    Object.assign(state.items.find(i=>i.id===f.id), { nome, preco, foto:f.foto, category_id:categoryId });
+    Object.assign(state.items.find(i=>i.id===f.id), { nome, preco, caucao_sugerida:caucaoSugerida, foto:f.foto, category_id:categoryId });
   } else {
     const qtd = parseInt(el('if-qtd').value)||0;
-    const { data: itemRow, error } = await SB.from('devolve_items').insert({ tenant_id: state.tenantId, category_id:categoryId, nome, preco, foto:f.foto, activo:true }).select().single();
+    const { data: itemRow, error } = await SB.from('devolve_items').insert({ tenant_id: state.tenantId, category_id:categoryId, nome, preco, caucao_sugerida:caucaoSugerida, foto:f.foto, activo:true }).select().single();
     if(error){ toast('Erro: '+error.message); return; }
     state.items.push(itemRow);
     if(qtd>0){

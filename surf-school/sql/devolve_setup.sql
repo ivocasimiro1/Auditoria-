@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS devolve_items (
   tenant_id UUID NOT NULL REFERENCES devolve_tenants(id) ON DELETE CASCADE,
   nome TEXT NOT NULL,
   preco NUMERIC DEFAULT 0,          -- preço de aluguer por dia
+  caucao_sugerida NUMERIC DEFAULT 0,-- caução recomendada por unidade (artigos caros)
   foto TEXT DEFAULT '',             -- base64 da foto do artigo (mesmo padrão do dep_registos.foto)
   activo BOOLEAN DEFAULT true
 );
