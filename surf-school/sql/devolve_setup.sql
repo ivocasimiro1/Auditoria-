@@ -130,6 +130,11 @@ LANGUAGE SQL SECURITY DEFINER STABLE AS $$
 $$;
 GRANT EXECUTE ON FUNCTION devolve_public_tenant_info(TEXT) TO anon, authenticated;
 
+-- Privilégio de base nas tabelas (RLS por si só não chega — sem isto dá
+-- "permission denied for table" mesmo com as políticas todas certas).
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON devolve_tenants, devolve_users, devolve_categories, devolve_items, devolve_units, devolve_rentals, devolve_config TO anon, authenticated;
+
 -- -------------------------------------------------------------
 -- 3. ROW LEVEL SECURITY
 -- -------------------------------------------------------------
