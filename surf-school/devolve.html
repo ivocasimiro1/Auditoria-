@@ -267,8 +267,15 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
 .item-pick .avail{font-size:11.5px;color:var(--muted);margin-bottom:8px;}
 .item-pick .avail.zero{color:var(--red);}
 .item-pick-row{display:flex;align-items:center;gap:8px;}
+.item-pick .pick-thumb{aspect-ratio:4/3;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:8px;font-size:26px;}
+.item-pick .pick-thumb img{width:100%;height:100%;object-fit:cover;}
 .qty-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface3);color:var(--text-bright);cursor:pointer;font-weight:700;}
 .qty-val{width:24px;text-align:center;font-weight:700;}
+.add-btn{width:100%;padding:8px;border-radius:8px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700;font-size:12.5px;cursor:pointer;}
+.novo-cart-bar{position:fixed;left:0;right:0;bottom:0;z-index:45;background:rgba(22,27,34,.98);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:12px 20px;box-shadow:0 -4px 20px rgba(0,0,0,.35);}
+.novo-cart-bar-in{max-width:1220px;margin:0 auto;display:flex;align-items:center;gap:14px;}
+.novo-cart-bar .cnt{flex:1;font-size:13.5px;color:var(--text);}
+@media(max-width:900px){ .novo-cart-bar{ bottom:64px; padding:10px 16px calc(10px + env(safe-area-inset-bottom)); } }
 .cart-line{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
 .cart-line:last-child{border-bottom:none;}
 .cart-line .x{color:var(--red);cursor:pointer;font-weight:700;}
@@ -393,7 +400,7 @@ let state = {
   rentals: [],
   allTenants: [],         // super-admin only
   signup: { step:1, email:'', password:'', nomeResp:'', nomeNegocio:'', sector:'bicicletas', whatsapp:'', template:'bicicletas' },
-  novo: { cliente_nome:'', cliente_telefone:'', cliente_email:'', cliente_doc:'', catSel:null, cart:[], unidade:'dias', duracao:1, caucao:0, notas:'' },
+  novo: { cliente_nome:'', cliente_telefone:'', cliente_email:'', cliente_doc:'', catSel:null, cart:[], caucao:0, preco_manual:null, notas:'' },
   ativosFiltro: '', ativosCat: '',
   catalogFiltro: '',
   histFiltro: { de:'', ate:'', q:'' },
@@ -988,153 +995,232 @@ function renderNovo(){
   if(!n.catSel && cats.length) n.catSel = cats[0].id;
   const catAtual = cats.find(c=>c.id===n.catSel);
   const itensCat = catAtual? state.items.filter(i=>i.category_id===catAtual.id && i.activo!==false) : [];
-
-  const prevista = calcDevolucaoPrevista(new Date().toISOString(), n.unidade, n.duracao, state.cfg? state.cfg.horario_fecho : '18:00');
-  const caucaoSugerida = n.cart.reduce((sum,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return sum + c.unit_ids.length*(item&&item.caucao_sugerida||0); },0);
+  const totalCarrinho = n.cart.reduce((s,c)=>s+c.unit_ids.length,0);
+  const precoAtual = n.preco_manual!=null? n.preco_manual : estimarPreco();
 
   return `
-  <div class="novo-grid">
-    <div>
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-header"><span class="card-title">1. Cliente</span></div>
-        <div class="card-body">
-          <div class="field-row">
-            <div class="field"><label>Nome *</label><input type="text" id="nv-nome" value="${n.cliente_nome}" oninput="nv_bind('cliente_nome',this.value)" placeholder="Nome do cliente"></div>
-            <div class="field"><label>Telefone (WhatsApp)</label><input type="tel" id="nv-tel" value="${n.cliente_telefone}" oninput="nv_bind('cliente_telefone',this.value)" placeholder="351912345678"></div>
-          </div>
-          <div class="field-row">
-            <div class="field"><label>Email</label><input type="email" id="nv-email" value="${n.cliente_email}" oninput="nv_bind('cliente_email',this.value)"></div>
-            <div class="field"><label>Nº documento</label><input type="text" id="nv-doc" value="${n.cliente_doc}" oninput="nv_bind('cliente_doc',this.value)" placeholder="opcional"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-header"><span class="card-title">2. Artigos</span></div>
-        <div class="card-body">
-          ${cats.length===0? `<div class="empty">Ainda não tens categorias. <a onclick="setAppView('catalogo')" style="color:var(--accent);cursor:pointer">Criar catálogo →</a></div>` : `
-          <div class="chip-row" style="margin-bottom:14px">
-            ${cats.map(c=>`<div class="chip ${n.catSel===c.id?'sel':''}" onclick="nv_setCat('${c.id}')">${c.icone} ${c.nome}</div>`).join('')}
-          </div>
-          <div class="item-pick-grid">
-            ${itensCat.map(it=>{
-              const disp = stockDisponivel(it.id);
-              const inCart = n.cart.find(c=>c.item_id===it.id);
-              const qty = inCart? inCart.unit_ids.length : 0;
-              const codigos = inCart? inCart.unit_ids.map(uidv=>{ const u=state.units.find(x=>x.id===uidv); return u? u.codigo : ''; }).join(', ') : '';
-              return `<div class="item-pick">
-                <div class="n">${it.nome}</div>
-                <div style="color:var(--accent);font-weight:700;font-size:12px;margin-bottom:2px">€${(it.preco||0).toFixed(2)}/dia</div>
-                <div class="avail ${disp<=0?'zero':''}">${disp} disponíveis</div>
-                <div class="item-pick-row">
-                  <button class="qty-btn" onclick="nv_qty('${it.id}',-1)">−</button>
-                  <span class="qty-val tabular">${qty}</span>
-                  <button class="qty-btn" onclick="nv_qty('${it.id}',1)" ${qty>=disp?'disabled':''}>+</button>
-                </div>
-                ${codigos? `<div class="avail" style="margin-top:6px;color:var(--accent)">${codigos}</div>` : ''}
-              </div>`;
-            }).join('')}
-          </div>`}
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header"><span class="card-title">3. Duração</span></div>
-        <div class="card-body">
-          <div class="chip-row" style="margin-bottom:14px">
-            <div class="chip ${n.unidade==='horas'?'sel':''}" onclick="nv_unidade('horas')">Horas</div>
-            <div class="chip ${n.unidade==='dias'?'sel':''}" onclick="nv_unidade('dias')">Dias</div>
-          </div>
-          <div class="field-row">
-            <div class="field"><label>Nº de ${n.unidade}</label><input type="number" min="1" id="nv-dur" value="${n.duracao}" oninput="nv_bind('duracao', parseInt(this.value)||1)"></div>
-            <div class="field"><label>Caução (€)</label><input type="number" min="0" step="1" id="nv-caucao" value="${n.caucao}" oninput="nv_bind('caucao', parseFloat(this.value)||0)">
-              ${caucaoSugerida>0? `<div style="font-size:11.5px;color:var(--muted);margin-top:5px">Sugestão com base nos artigos: €${caucaoSugerida.toFixed(2)} — <a onclick="nv_usarCaucaoSugerida(${caucaoSugerida})" style="color:var(--accent);cursor:pointer;font-weight:600">usar</a></div>` : ''}
-            </div>
-          </div>
-          <div class="summary-devol">Devolução prevista: <b>${fmtDateTime(prevista)}</b></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card" style="position:sticky;top:80px">
-      <div class="card-header"><span class="card-title">Resumo</span></div>
+  <div style="${totalCarrinho>0?'padding-bottom:88px':''}">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header"><span class="card-title">1. Cliente</span></div>
       <div class="card-body">
-        ${n.cart.length===0? `<div class="empty" style="padding:24px 10px"><div class="ico">🛒</div>Sem artigos seleccionados</div>` :
-          n.cart.map(c=>{
-            const codigos = c.unit_ids.map(uidv=>{ const u=state.units.find(x=>x.id===uidv); return u? u.codigo : ''; }).join(', ');
-            return `<div class="cart-line"><span>${c.unit_ids.length}× ${c.nome} <span style="color:var(--muted);font-size:11.5px">(${codigos})</span></span><span class="x" onclick="nv_removeCart('${c.item_id}')">✕</span></div>`;
-          }).join('')
-        }
-        ${n.cart.length>0? `<div class="summary-devol">Total estimado: <b>€${n.cart.reduce((sum,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return sum + c.unit_ids.length*precoPorUnidade(item,n.unidade,n.duracao); },0).toFixed(2)}</b></div>` : ''}
-        <div style="margin-top:16px">
-          <button class="btn primary block" onclick="confirmarAluguer()" ${(!n.cliente_nome || n.cart.length===0)?'disabled':''}>Confirmar Aluguer</button>
+        <div class="field-row">
+          <div class="field"><label>Nome *</label><input type="text" id="nv-nome" value="${n.cliente_nome}" oninput="nv_bind('cliente_nome',this.value)" placeholder="Nome do cliente"></div>
+          <div class="field"><label>Telefone (WhatsApp)</label><input type="tel" id="nv-tel" value="${n.cliente_telefone}" oninput="nv_bind('cliente_telefone',this.value)" placeholder="351912345678"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Email</label><input type="email" id="nv-email" value="${n.cliente_email}" oninput="nv_bind('cliente_email',this.value)"></div>
+          <div class="field"><label>Nº documento</label><input type="text" id="nv-doc" value="${n.cliente_doc}" oninput="nv_bind('cliente_doc',this.value)" placeholder="opcional"></div>
         </div>
       </div>
     </div>
-  </div>`;
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">2. Artigos e serviços</span></div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Toca num artigo para escolher quantidade e duração — cada artigo pode ter o seu próprio prazo (horas ou dias).</p>
+        ${cats.length===0? `<div class="empty">Ainda não tens categorias. <a onclick="setAppView('catalogo')" style="color:var(--accent);cursor:pointer">Criar catálogo →</a></div>` : `
+        <div class="chip-row" style="margin-bottom:14px">
+          ${cats.map(c=>`<div class="chip ${n.catSel===c.id?'sel':''}" onclick="nv_setCat('${c.id}')">${c.icone} ${c.nome}</div>`).join('')}
+        </div>
+        <div class="item-pick-grid">
+          ${itensCat.map(it=>{
+            const disp = stockDisponivel(it.id);
+            const inCart = n.cart.find(c=>c.item_id===it.id);
+            const qty = inCart? inCart.unit_ids.length : 0;
+            return `<div class="item-pick" onclick="${disp>0||inCart?`nv_openItemAdd('${it.id}')`:''}" style="${disp<=0 && !inCart?'opacity:.5;cursor:default':'cursor:pointer'}">
+              <div class="pick-thumb">${it.foto? `<img src="${it.foto}" alt="${it.nome}">` : (catAtual&&catAtual.icone||'📦')}</div>
+              <div class="n">${it.nome}</div>
+              <div style="color:var(--accent);font-weight:700;font-size:12px;margin-bottom:2px">€${(it.preco||0).toFixed(2)}/dia</div>
+              <div class="avail ${disp<=0?'zero':''}">${disp} disponíveis</div>
+              ${inCart? `<div class="avail" style="margin-top:6px;color:var(--accent);display:flex;align-items:center;gap:4px">✓ ${qty}× · ${linhaDuracaoTxt(inCart)} <span style="margin-left:auto;color:var(--accent);font-weight:700">editar</span></div>`
+                : `<button class="add-btn" style="margin-top:8px">+ Adicionar</button>`}
+            </div>`;
+          }).join('')}
+        </div>`}
+      </div>
+    </div>
+  </div>
+  ${totalCarrinho>0? `<div class="novo-cart-bar"><div class="novo-cart-bar-in">
+      <div class="cnt">🛒 <b>${totalCarrinho}</b> ${totalCarrinho===1?'artigo':'artigos'} · <b class="tabular">€${precoAtual.toFixed(2)}</b></div>
+      <button class="btn primary" onclick="nv_openResumo()">Rever & Confirmar →</button>
+    </div></div>` : ''}`;
 }
 function nv_bind(k,v){ state.novo[k]=v; }
 function nv_usarCaucaoSugerida(valor){ state.novo.caucao = valor; render(); }
+function nv_resetPreco(){ state.novo.preco_manual=null; render(); }
 function nv_setCat(id){ state.novo.catSel = id; render(); }
-function nv_unidade(u){ state.novo.unidade = u; render(); }
-function nv_qty(itemId, delta){
-  const n = state.novo;
+function nv_removeCart(itemId){ state.novo.cart = state.novo.cart.filter(c=>c.item_id!==itemId); render(); }
+
+/* ---- adicionar/editar 1 artigo ao carrinho (com a sua própria duração) ---- */
+let _itemDraft = null;
+function nv_openItemAdd(itemId){
   const item = state.items.find(i=>i.id===itemId);
-  let line = n.cart.find(c=>c.item_id===itemId);
-  if(delta>0){
-    const disp = stockDisponivel(itemId);
-    const jaEmCarrinho = line? line.unit_ids.length : 0;
-    if(jaEmCarrinho >= disp) return;
-    const jaEscolhidas = line? line.unit_ids : [];
-    const escolhida = state.units
-      .filter(u=>u.item_id===itemId && u.estado==='disponivel' && !jaEscolhidas.includes(u.id))
-      .sort((a,b)=> a.codigo.localeCompare(b.codigo))[0];
-    if(!escolhida) return;
-    if(!line){ line = {item_id:itemId, nome:item.nome, unit_ids:[]}; n.cart.push(line); }
-    line.unit_ids.push(escolhida.id);
-  } else {
-    if(!line || line.unit_ids.length===0) return;
-    line.unit_ids.pop();
-    if(line.unit_ids.length===0) n.cart = n.cart.filter(c=>c.item_id!==itemId);
+  const existing = state.novo.cart.find(c=>c.item_id===itemId);
+  const disp = stockDisponivel(itemId);
+  _itemDraft = existing
+    ? { item_id:itemId, nome:item.nome, quantidade:existing.unit_ids.length, unidade:existing.unidade, duracao:existing.duracao, disp }
+    : { item_id:itemId, nome:item.nome, quantidade: disp>0?1:0, unidade: state.novo.lastUnidade||'dias', duracao: state.novo.lastDuracao||1, disp };
+  renderModal(itemAddModalHtml());
+}
+function itemAddModalHtml(){
+  const d = _itemDraft;
+  const item = state.items.find(i=>i.id===d.item_id);
+  const prevista = calcDevolucaoPrevista(new Date().toISOString(), d.unidade, d.duracao, state.cfg? state.cfg.horario_fecho : '18:00');
+  const jaExiste = state.novo.cart.some(c=>c.item_id===d.item_id);
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>${d.nome}</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Quantidade (${d.disp} disponíveis)</label>
+        <div class="item-pick-row">
+          <button class="qty-btn" onclick="id_qty(-1)">−</button>
+          <span class="qty-val tabular">${d.quantidade}</span>
+          <button class="qty-btn" onclick="id_qty(1)" ${d.quantidade>=d.disp?'disabled':''}>+</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Duração deste artigo</label>
+        <div class="chip-row"><div class="chip ${d.unidade==='horas'?'sel':''}" onclick="id_setUnidade('horas')">Horas</div><div class="chip ${d.unidade==='dias'?'sel':''}" onclick="id_setUnidade('dias')">Dias</div></div>
+      </div>
+      <div class="field"><label>Nº de ${d.unidade}</label><input type="number" min="1" id="id-dur" value="${d.duracao}" oninput="id_setDuracao(this.value)"></div>
+      ${d.quantidade>0? `<div class="summary-devol">Devolução prevista: <b>${fmtDateTime(prevista)}</b> · €${(d.quantidade*precoPorUnidade(item,d.unidade,d.duracao)).toFixed(2)}</div>` : ''}
+    </div>
+    <div class="modal-foot">
+      ${jaExiste? `<button class="btn danger" onclick="nv_removeCart('${d.item_id}');closeModal()">Remover</button>` : ''}
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="nv_confirmItemDraft()" ${d.quantidade<=0?'disabled':''}>${jaExiste?'Guardar':'Adicionar'}</button>
+    </div>
+  </div></div>`;
+}
+function id_qty(delta){ _itemDraft.quantidade = Math.max(0, Math.min(_itemDraft.disp, _itemDraft.quantidade+delta)); renderModal(itemAddModalHtml()); }
+function id_setUnidade(u){ _itemDraft.unidade = u; renderModal(itemAddModalHtml()); }
+function id_setDuracao(v){ _itemDraft.duracao = Math.max(1, parseInt(v)||1); renderModal(itemAddModalHtml()); }
+function nv_confirmItemDraft(){
+  const d = _itemDraft;
+  const n = state.novo;
+  n.cart = n.cart.filter(c=>c.item_id!==d.item_id);
+  if(d.quantidade>0){
+    const unidades = state.units.filter(u=>u.item_id===d.item_id && u.estado==='disponivel').sort((a,b)=>a.codigo.localeCompare(b.codigo)).slice(0,d.quantidade);
+    n.cart.push({ item_id:d.item_id, nome:d.nome, unit_ids:unidades.map(u=>u.id), unidade:d.unidade, duracao:d.duracao });
+    n.lastUnidade = d.unidade; n.lastDuracao = d.duracao;
   }
+  closeModal();
   render();
 }
-function nv_removeCart(itemId){ state.novo.cart = state.novo.cart.filter(c=>c.item_id!==itemId); render(); }
+function nv_openResumo(){ renderModal(resumoModalHtml()); }
+function linhaDuracaoTxt(c){
+  return c.duracao+' '+(c.unidade==='dias'? (c.duracao===1?'dia':'dias') : (c.duracao===1?'hora':'horas'));
+}
+function resumoModalHtml(){
+  const n = state.novo;
+  const gruposDif = new Set(n.cart.map(c=>c.unidade+'|'+c.duracao)).size;
+  const caucaoSugerida = n.cart.reduce((sum,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return sum + c.unit_ids.length*(item&&item.caucao_sugerida||0); },0);
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>Resumo do aluguer</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      ${n.cart.length===0? `<div class="empty" style="padding:24px 10px"><div class="ico">🛒</div>Sem artigos seleccionados</div>` :
+        n.cart.map(c=>{
+          const item = state.items.find(i=>i.id===c.item_id);
+          const codigos = c.unit_ids.map(uidv=>{ const u=state.units.find(x=>x.id===uidv); return u? u.codigo : ''; }).join(', ');
+          const subtotal = c.unit_ids.length*precoPorUnidade(item, c.unidade, c.duracao);
+          return `<div class="cart-line" onclick="closeModal();nv_openItemAdd('${c.item_id}')" style="cursor:pointer">
+            <span>${c.unit_ids.length}× ${c.nome} <span style="color:var(--muted);font-size:11.5px">(${codigos}) · ${linhaDuracaoTxt(c)} · €${subtotal.toFixed(2)}</span></span>
+            <span class="x" onclick="event.stopPropagation();nv_removeCart('${c.item_id}');renderModal(resumoModalHtml())">✕</span>
+          </div>`;
+        }).join('')
+      }
+      ${gruposDif>1? `<div style="font-size:11.5px;color:var(--accent);margin-top:8px">ℹ️ Este aluguer tem ${gruposDif} prazos diferentes — vai gerar ${gruposDif} registos separados (mesmo cliente), um WhatsApp só com tudo.</div>` : ''}
+      ${n.cart.length>0? `
+        <div class="field-row" style="margin-top:14px">
+          <div class="field"><label>Caução (€)</label><input type="number" min="0" step="1" id="nv-caucao" value="${n.caucao}" oninput="nv_bind('caucao', parseFloat(this.value)||0)"></div>
+          <div class="field"><label>Preço total (€)${gruposDif>1?' <span style="color:var(--muted);font-weight:400">— desactivado com prazos diferentes</span>':''}</label>
+            <input type="number" min="0" step="0.5" id="nv-preco" ${gruposDif>1?'disabled':''} value="${(n.preco_manual!=null? n.preco_manual : estimarPreco()).toFixed(2)}" oninput="nv_bind('preco_manual', parseFloat(this.value)||0)">
+          </div>
+        </div>
+        ${caucaoSugerida>0? `<div style="font-size:11.5px;color:var(--muted);margin-top:5px">Caução sugerida pelos artigos: €${caucaoSugerida.toFixed(2)} — <a onclick="nv_usarCaucaoSugerida(${caucaoSugerida});renderModal(resumoModalHtml())" style="color:var(--accent);cursor:pointer;font-weight:600">usar</a></div>` : ''}
+        ${gruposDif===1 && n.preco_manual!=null? `<div style="font-size:11.5px;color:var(--muted);margin-top:5px">Estimativa: €${estimarPreco().toFixed(2)} — <a onclick="nv_resetPreco();renderModal(resumoModalHtml())" style="color:var(--accent);cursor:pointer;font-weight:600">repor</a></div>` : ''}
+        <div class="summary-devol">Total estimado: <b>€${estimarPreco().toFixed(2)}</b></div>
+      ` : ''}
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">← Voltar</button>
+      <button class="btn primary block" onclick="confirmarAluguer()" ${(!n.cliente_nome || n.cart.length===0)?'disabled':''}>Confirmar & Enviar WhatsApp</button>
+    </div>
+  </div></div>`;
+}
+function estimarPreco(){
+  const n = state.novo;
+  return n.cart.reduce((sum,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return sum + c.unit_ids.length*precoPorUnidade(item,c.unidade,c.duracao); },0);
+}
 
 async function confirmarAluguer(){
   const n = state.novo;
   if(!n.cliente_nome || n.cart.length===0) return;
   const inicio = new Date().toISOString();
-  const prevista = calcDevolucaoPrevista(inicio, n.unidade, n.duracao, state.cfg? state.cfg.horario_fecho : '18:00');
-  const itensSnapshot = n.cart.map(c=>{
-    const codigos = c.unit_ids.map(uidv=>{ const u=state.units.find(x=>x.id===uidv); return u? u.codigo : ''; });
-    return { item_id:c.item_id, nome:c.nome, quantidade:c.unit_ids.length, unit_ids:[...c.unit_ids], unit_codigos:codigos };
+  const horarioFecho = state.cfg? state.cfg.horario_fecho : '18:00';
+
+  // Agrupar as linhas do carrinho por prazo (unidade+duração) — cada grupo gera um registo de aluguer próprio
+  const grupos = {};
+  const ordem = [];
+  n.cart.forEach(c=>{
+    const chave = c.unidade+'|'+c.duracao;
+    if(!grupos[chave]){ grupos[chave] = { unidade:c.unidade, duracao:c.duracao, linhas:[] }; ordem.push(chave); }
+    grupos[chave].linhas.push(c);
   });
-  const precoTotal = n.cart.reduce((sum,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return sum + c.unit_ids.length*precoPorUnidade(item,n.unidade,n.duracao); },0);
-  const payload = {
-    tenant_id: state.tenantId,
-    cliente_nome: n.cliente_nome, cliente_telefone: n.cliente_telefone,
-    cliente_email: n.cliente_email, cliente_doc: n.cliente_doc,
-    itens: itensSnapshot, inicio, unidade_duracao: n.unidade, duracao: n.duracao,
-    devolucao_prevista: prevista.toISOString(), estado:'activo', caucao: n.caucao, preco_total: precoTotal, notas: n.notas
-  };
+
+  const payloads = [];
+  let devolucaoMaisCedo = null;
+  const linhasParaMsg = [];
+
+  ordem.forEach((chave, idx)=>{
+    const g = grupos[chave];
+    const prevista = calcDevolucaoPrevista(inicio, g.unidade, g.duracao, horarioFecho);
+    if(!devolucaoMaisCedo || prevista < devolucaoMaisCedo) devolucaoMaisCedo = prevista;
+
+    const itensSnapshot = g.linhas.map(c=>{
+      const codigos = c.unit_ids.map(uidv=>{ const u=state.units.find(x=>x.id===uidv); return u? u.codigo : ''; });
+      return { item_id:c.item_id, nome:c.nome, quantidade:c.unit_ids.length, unit_ids:[...c.unit_ids], unit_codigos:codigos };
+    });
+    const precoGrupo = g.linhas.reduce((sum,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return sum + c.unit_ids.length*precoPorUnidade(item,c.unidade,c.duracao); },0);
+    const precoRegisto = (ordem.length===1 && n.preco_manual!=null) ? n.preco_manual : precoGrupo;
+
+    g.linhas.forEach(c=>{
+      linhasParaMsg.push(c.unit_ids.length+'x '+c.nome+' ['+c.unit_ids.map(uidv=>{ const u=state.units.find(x=>x.id===uidv); return u? u.codigo : ''; }).join(', ')+'] ('+linhaDuracaoTxt(c)+') — devolução '+fmtDateTime(prevista));
+    });
+
+    payloads.push({
+      tenant_id: state.tenantId,
+      cliente_nome: n.cliente_nome, cliente_telefone: n.cliente_telefone,
+      cliente_email: n.cliente_email, cliente_doc: n.cliente_doc,
+      itens: itensSnapshot, inicio, unidade_duracao: g.unidade, duracao: g.duracao,
+      devolucao_prevista: prevista.toISOString(), estado:'activo', caucao: idx===0? n.caucao : 0, preco_total: precoRegisto, notas: n.notas
+    });
+  });
+
   // abrir WhatsApp antes do await, para não ser bloqueado pelo browser
-  let waWin = null;
   if(n.cliente_telefone && state.cfg && state.cfg.notif_whatsapp_auto){
-    const msg = `Olá ${n.cliente_nome}! O teu aluguer (${itensSnapshot.map(c=>c.quantidade+'x '+c.nome+' ['+c.unit_codigos.join(', ')+']').join(', ')}) está confirmado. Devolução prevista: ${fmtDateTime(prevista)}. Obrigado!`;
-    waWin = window.open(waUrl(n.cliente_telefone, msg), '_blank');
+    const msg = `Olá ${n.cliente_nome}! O teu aluguer está confirmado:\n${linhasParaMsg.join('\n')}\nObrigado!`;
+    window.open(waUrl(n.cliente_telefone, msg), '_blank');
   }
-  const { data, error } = await SB.from('devolve_rentals').insert(payload).select().single();
-  if(error){ toast('Erro: '+error.message); return; }
+
   const unitIds = n.cart.flatMap(c=>c.unit_ids);
+  const novosRentals = [];
+  for(const payload of payloads){
+    const { data, error } = await SB.from('devolve_rentals').insert(payload).select().single();
+    if(error){ toast('Erro: '+error.message); return; }
+    novosRentals.push(data);
+  }
   if(unitIds.length){
     const { error: uErr } = await SB.from('devolve_units').update({ estado:'alugada' }).in('id', unitIds);
     if(uErr){ toast('Aviso: aluguer criado mas houve um erro a marcar as unidades: '+uErr.message); }
     else unitIds.forEach(id=>{ const u = state.units.find(x=>x.id===id); if(u) u.estado='alugada'; });
   }
-  state.rentals.unshift(data);
-  state.novo = { cliente_nome:'', cliente_telefone:'', cliente_email:'', cliente_doc:'', catSel:n.catSel, cart:[], unidade:'dias', duracao:1, caucao:0, notas:'' };
-  toast('Aluguer registado!');
+  novosRentals.reverse().forEach(r=> state.rentals.unshift(r));
+  state.novo = { cliente_nome:'', cliente_telefone:'', cliente_email:'', cliente_doc:'', catSel:n.catSel, cart:[], caucao:0, preco_manual:null, notas:'' };
+  toast(novosRentals.length>1? novosRentals.length+' registos criados (prazos diferentes)!' : 'Aluguer registado!');
+  closeModal();
   setAppView('ativos');
 }
 
