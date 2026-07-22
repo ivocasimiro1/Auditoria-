@@ -469,7 +469,15 @@ function unidadesDoItem(itemId){
 /* ============================================================
    Router / render dispatcher
    ============================================================ */
-function contaSuspensa(){ return state.myRole!=='super_admin' && state.tenant && state.tenant.activo===false; }
+function pagamentoEmAtraso(){
+  const t = state.tenant;
+  return !!(t && t.proximo_pagamento && new Date() > new Date(t.proximo_pagamento+'T23:59:59'));
+}
+function contaSuspensa(){
+  if(state.myRole==='super_admin') return false;
+  const t = state.tenant; if(!t) return false;
+  return t.activo===false || pagamentoEmAtraso();
+}
 function render(){
   const app = el('app');
   if(state.loading){ app.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--muted)">A carregar…</div>'; return; }
@@ -482,10 +490,14 @@ function render(){
 }
 function renderContaSuspensa(){
   const loja = (state.tenant&&state.tenant.nome)||'A tua conta';
+  const atraso = pagamentoEmAtraso();
+  const motivo = atraso
+    ? `O prazo de pagamento da mensalidade terminou a <b style="color:var(--text-bright)">${fmtDate(state.tenant.proximo_pagamento)}</b> e ainda não foi registado o pagamento seguinte.`
+    : `O acesso foi suspenso manualmente pelo Devolve.`;
   return `<div class="auth-wrap"><div class="auth-card">
     <div class="logo"><span class="mark">↻</span> Devolve</div>
     <div class="sub" style="color:var(--red)">🔒 Conta suspensa</div>
-    <p style="font-size:13.5px;color:var(--muted);text-align:center;margin-bottom:18px">O acesso de <b style="color:var(--text-bright)">${loja}</b> está suspenso — normalmente por falta de pagamento da mensalidade. Contacta o suporte do Devolve para regularizar a situação.</p>
+    <p style="font-size:13.5px;color:var(--muted);text-align:center;margin-bottom:18px"><b style="color:var(--text-bright)">${loja}</b> — ${motivo} Contacta o suporte do Devolve para regularizar.</p>
     <button class="btn ghost block" onclick="doLogout()">← Sair</button>
   </div></div>`;
 }
@@ -1557,26 +1569,42 @@ function drawBarChart(canvasId, values){
 function renderHQ(){
   const tenants = state.allTenants;
   return `
-    <div class="section-sub">Todos os negócios clientes do Devolve. Suspende o acesso de quem não pagar a mensalidade.</div>
+    <div class="section-sub">Todos os negócios clientes do Devolve. Passado o prazo de pagamento sem "Marcar pagamento", a conta bloqueia-se sozinha.</div>
     <div class="card"><div class="tablewrap" style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead><tr style="text-align:left;color:var(--muted);font-size:11.5px;text-transform:uppercase">
-          <th style="padding:10px 16px">Negócio</th><th>Sector</th><th>Plano</th><th>Estado</th><th>Criado em</th><th></th>
+          <th style="padding:10px 16px">Negócio</th><th>Plano</th><th>Estado</th><th>Próx. pagamento</th><th></th>
         </tr></thead>
         <tbody>
         ${tenants.map(t=>{
-          const activo = t.activo!==false;
+          const atraso = !!(t.proximo_pagamento && new Date() > new Date(t.proximo_pagamento+'T23:59:59'));
+          const activo = t.activo!==false && !atraso;
           return `<tr style="border-top:1px solid var(--border)">
-          <td style="padding:10px 16px">${t.nome}</td><td>${t.sector||''}</td><td><span class="pill ok">${t.plano}</span></td>
-          <td>${activo? '<span class="pill ok">Activa</span>' : '<span class="pill crit">Suspensa</span>'}</td>
-          <td>${fmtDate(t.criado_em)}</td>
-          <td><button class="btn sm ${activo?'danger':'primary'}" onclick="hqToggleActivo('${t.id}', ${activo})">${activo?'Suspender':'Reactivar'}</button></td>
+          <td style="padding:10px 16px">${t.nome}</td><td><span class="pill ok">${t.plano}</span></td>
+          <td>${activo? '<span class="pill ok">Activa</span>' : t.activo===false? '<span class="pill crit">Suspensa (manual)</span>' : '<span class="pill crit">Bloqueada (atraso)</span>'}</td>
+          <td class="tabular" style="color:${atraso?'var(--red)':'var(--text)'}">${t.proximo_pagamento? fmtDate(t.proximo_pagamento) : '—'}</td>
+          <td style="display:flex;gap:6px">
+            <button class="btn sm primary" onclick="hqMarcarPagamento('${t.id}')">💳 Marcar pagamento</button>
+            <button class="btn sm ${t.activo===false?'primary':'danger'}" onclick="hqToggleActivo('${t.id}', ${t.activo!==false})">${t.activo===false?'Reactivar':'Suspender'}</button>
+          </td>
         </tr>`;
-        }).join('') || `<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--muted)">Sem negócios registados.</td></tr>`}
+        }).join('') || `<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--muted)">Sem negócios registados.</td></tr>`}
         </tbody>
       </table>
     </div></div>
   `;
+}
+async function hqMarcarPagamento(tenantId){
+  const t = state.allTenants.find(x=>x.id===tenantId);
+  if(!t) return;
+  const base = (t.proximo_pagamento && new Date(t.proximo_pagamento) > new Date()) ? new Date(t.proximo_pagamento) : new Date();
+  base.setMonth(base.getMonth()+1);
+  const novaData = base.toISOString().slice(0,10);
+  const { error } = await SB.from('devolve_tenants').update({ proximo_pagamento: novaData, activo: true }).eq('id', tenantId);
+  if(error){ toast('Erro: '+error.message); return; }
+  t.proximo_pagamento = novaData; t.activo = true;
+  toast('Pagamento registado — activo até '+fmtDate(novaData));
+  render();
 }
 async function hqToggleActivo(tenantId, estaActivo){
   const novo = !estaActivo;

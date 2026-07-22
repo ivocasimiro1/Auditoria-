@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS devolve_tenants (
   sector TEXT DEFAULT '',              -- livre — só sugere catálogo inicial
   plano TEXT DEFAULT 'trial',          -- trial | basico | pro
   whatsapp_numero TEXT DEFAULT '',
-  activo BOOLEAN DEFAULT true,         -- false = conta suspensa (ex: falta de pagamento) — bloqueia painel e loja
+  activo BOOLEAN DEFAULT true,         -- suspensão manual (o Devolve pode forçar bloqueio a qualquer momento)
+  proximo_pagamento DATE DEFAULT (CURRENT_DATE + INTERVAL '1 month'), -- passado este dia sem "marcar pagamento", a conta bloqueia-se sozinha
   criado_em TIMESTAMPTZ DEFAULT NOW()
 );
 
