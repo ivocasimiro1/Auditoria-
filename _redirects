@@ -23,3 +23,7 @@
 /avaliar            /surf-school/review.html        301
 /parceiros          /surf-school/parceiros.html     301
 /candidatura        /surf-school/parceiros.html     301
+
+# Devolve — gestão de aluguer (qualquer negócio)
+/devolve            /surf-school/devolve.html       301
+/devolve.html       /surf-school/devolve.html       301
