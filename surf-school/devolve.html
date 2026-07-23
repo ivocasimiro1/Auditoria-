@@ -2043,6 +2043,7 @@ function renderHQ(){
             <button class="btn sm primary" onclick="hqAbrirModalPagamento('${t.id}')">💳 Pagamento</button>
             <button class="btn sm ${t.activo===false?'primary':'danger'}" onclick="hqToggleActivo('${t.id}', ${t.activo!==false})">${t.activo===false?'Reactivar':'Suspender'}</button>
             ${link? `<button class="btn sm" onclick="copiarLinkPublico('${link}')">🔗 Copiar link</button>` : ''}
+            <button class="btn sm danger" onclick="hqApagarConta('${t.id}','${t.nome.replace(/'/g,"\\'")}')">🗑 Apagar</button>
           </div>
         </div>`;
       }).join('')}
@@ -2068,6 +2069,14 @@ async function hqRejeitarConta(tenantId){
   if(error){ toast('Erro: '+error.message); return; }
   state.allTenants = state.allTenants.filter(x=>x.id!==tenantId);
   toast('Pedido rejeitado.');
+  render();
+}
+async function hqApagarConta(tenantId, nome){
+  if(!confirm('Apagar definitivamente "'+nome+'" e tudo o que lhe pertence (catálogo, alugueres, utilizadores)? Esta acção não pode ser desfeita — usa isto só para limpar contas de teste.')) return;
+  const { error } = await SB.from('devolve_tenants').delete().eq('id', tenantId);
+  if(error){ toast('Erro: '+error.message); return; }
+  state.allTenants = state.allTenants.filter(x=>x.id!==tenantId);
+  toast('Negócio apagado.');
   render();
 }
 let _hqPagamentoTenantId = null;
