@@ -342,8 +342,10 @@ canvas{max-width:100%;}
 /* ============================================================
    DEVOLVE — configuração
    ============================================================ */
-const SUPABASE_URL = 'https://ubeqidccuvsjhjphybxz.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViZXFpZGNjdXZzamhqcGh5Ynh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDI0NTYsImV4cCI6MjA5NTkxODQ1Nn0.wyCBBMSuRfxrz935XifGa3Chgv64o4-ACvP5rCj7t1U';
+// Projecto Supabase próprio do Devolve — totalmente independente do projecto
+// usado pelas outras ferramentas (depósitos, etc.), sem tabelas nem utilizadores partilhados.
+const SUPABASE_URL = 'https://yclgwqiieejsyhdoojeb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljbGd3cWlpZWVqc3loZG9vamViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4MDM5NTIsImV4cCI6MjEwMDM3OTk1Mn0.Ai0jusd2Mle1f3RTXx0EnybeFrBvlKK0AkJHhHcGVig';
 const SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATALOG_TEMPLATES = {
