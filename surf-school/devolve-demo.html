@@ -1,0 +1,2307 @@
+<title>Devolve — Pré-visualização</title>
+<style>
+:root{
+  color-scheme: dark;
+  --bg:#0d1117; --surface:#161b22; --surface2:#21262d; --surface3:#2d333b;
+  --border:#30363d;
+  --accent:#2dd4bf; --accent-dim:#0f3d38; --accent-text:#0d1117;
+  --green:#3fb950; --green-dim:#1a4a24;
+  --yellow:#d29922; --yellow-dim:#4a3800;
+  --red:#f85149; --red-dim:#4a1515;
+  --purple:#8b5cf6; --purple-dim:#2e1b5e;
+  --text:#c9d1d9; --text-bright:#f0f6fc; --muted:#8b949e;
+  /* paleta categórica (ordem fixa, validada — ver skill dataviz) */
+  --cat-1:#3987e5; --cat-2:#d95926; --cat-3:#199e70; --cat-4:#9085e9;
+  --grid-line:#2c2c2a;
+  --radius:8px; --radius-lg:14px;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-size:14px;
+  -webkit-text-size-adjust:100%;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{overscroll-behavior:none;}
+body{background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;}
+a{color:inherit;}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit;}
+::selection{background:var(--accent-dim);color:var(--text-bright);}
+.hidden{display:none!important;}
+.tabular{font-variant-numeric:tabular-nums;}
+
+/* ---------- buttons / inputs ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text-bright);font-weight:600;font-size:13px;cursor:pointer;transition:.15s;white-space:nowrap;}
+.btn:hover{border-color:var(--muted);}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-text);}
+.btn.primary:hover{filter:brightness(1.08);}
+.btn.danger{background:var(--red-dim);border-color:var(--red);color:#ffb4ae;}
+.btn.ghost{background:transparent;}
+.btn.block{width:100%;}
+.btn.sm{padding:6px 10px;font-size:12px;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+input[type=text],input[type=email],input[type=password],input[type=tel],input[type=number],input[type=date],select,textarea{
+  width:100%;padding:9px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text-bright);
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600;}
+.field{margin-bottom:14px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:600px){.field-row{grid-template-columns:1fr;}}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);}
+.check input{width:auto;}
+
+/* ---------- demo badge / note ---------- */
+.demo-pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:20px;background:var(--purple-dim);color:#c9aefc;margin-left:8px;}
+.demo-note{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:9px 14px;border-radius:var(--radius);font-size:12.5px;margin-bottom:18px;}
+.demo-note b{color:var(--text-bright);}
+
+/* ================= LANDING ================= */
+.landing-nav{position:sticky;top:0;z-index:50;background:rgba(13,17,23,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);}
+.landing-nav-in{max-width:1120px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+@media(max-width:480px){.landing-nav-in .btn{padding:8px 12px;font-size:12px;}}
+.logo{font-size:19px;font-weight:800;color:var(--text-bright);letter-spacing:-.4px;display:flex;align-items:center;gap:8px;}
+.logo .mark{color:var(--accent);}
+.landing-nav-links{display:flex;gap:22px;font-size:13.5px;color:var(--muted);flex:1;justify-content:center;}
+.landing-nav-links a:hover{color:var(--text-bright);}
+@media(max-width:720px){.landing-nav-links{display:none;}}
+
+.hero{max-width:900px;margin:0 auto;padding:88px 24px 60px;text-align:center;}
+.hero .kicker{color:var(--accent);font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:18px;}
+.hero h1{font-size:52px;line-height:1.05;letter-spacing:-1.5px;color:var(--text-bright);margin-bottom:20px;}
+.hero h1 em{font-style:normal;color:var(--accent);}
+.hero p{font-size:18px;color:var(--muted);max-width:60ch;margin:0 auto 34px;}
+.hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.hero-cta .btn{padding:13px 24px;font-size:14.5px;}
+@media(max-width:600px){.hero h1{font-size:34px;}.hero{padding:56px 20px 40px;}}
+@media(max-width:480px){.hero-cta{flex-direction:column;align-items:stretch;}.hero-cta .btn{width:100%;}}
+
+.marquee{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface);overflow:hidden;padding:16px 0;}
+.marquee-track{display:flex;gap:40px;white-space:nowrap;animation:scroll 28s linear infinite;width:max-content;}
+@media(prefers-reduced-motion:reduce){.marquee-track{animation:none;}}
+@keyframes scroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+.marquee-item{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px;}
+.marquee-item .ico{font-size:17px;}
+
+.section-wrap{max-width:1120px;margin:0 auto;padding:80px 24px;}
+.section-head{max-width:640px;margin:0 auto 44px;text-align:center;}
+.section-head .kicker{color:var(--accent);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;}
+.section-head h2{font-size:32px;color:var(--text-bright);letter-spacing:-.5px;margin-bottom:12px;text-wrap:balance;}
+.section-head p{color:var(--muted);font-size:15.5px;}
+
+.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+@media(max-width:860px){.feature-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.feature-grid{grid-template-columns:1fr;}}
+.feature-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;}
+.feature-card .ico{font-size:26px;margin-bottom:14px;display:inline-block;}
+.feature-card h3{font-size:15.5px;color:var(--text-bright);margin-bottom:8px;}
+.feature-card p{font-size:13.5px;color:var(--muted);line-height:1.55;}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;counter-reset:step;}
+@media(max-width:760px){.steps{grid-template-columns:1fr;}}
+.step{position:relative;padding-left:0;}
+.step .num{font-family:ui-monospace,monospace;font-size:13px;color:var(--accent);font-weight:700;margin-bottom:10px;display:block;}
+.step h3{font-size:16px;color:var(--text-bright);margin-bottom:8px;}
+.step p{font-size:13.5px;color:var(--muted);}
+
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:stretch;}
+@media(max-width:860px){.pricing-grid{grid-template-columns:1fr;max-width:380px;margin:0 auto;}}
+.price-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:26px;display:flex;flex-direction:column;gap:16px;}
+.price-card.featured{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+.price-card .tier{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+.price-card .amount{font-size:34px;color:var(--text-bright);letter-spacing:-1px;}
+.price-card .amount span{font-size:14px;color:var(--muted);font-weight:400;}
+.price-card ul{list-style:none;display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:var(--text);flex:1;}
+.price-card li::before{content:"✓ ";color:var(--accent);font-weight:700;}
+
+.landing-footer{border-top:1px solid var(--border);padding:34px 24px;text-align:center;color:var(--muted);font-size:12.5px;}
+
+/* ================= AUTH ================= */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.auth-card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;}
+.auth-card .logo{justify-content:center;margin-bottom:6px;}
+.auth-card .sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:26px;}
+.auth-switch{text-align:center;margin-top:16px;font-size:13px;color:var(--muted);}
+.auth-switch a{color:var(--accent);font-weight:600;cursor:pointer;}
+.onb-progress{display:flex;gap:6px;margin-bottom:22px;}
+.onb-progress i{flex:1;height:3px;border-radius:3px;background:var(--surface3);}
+.onb-progress i.on{background:var(--accent);}
+.tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.tpl-card{border:1px solid var(--border);background:var(--surface2);border-radius:var(--radius);padding:14px;text-align:center;cursor:pointer;}
+.tpl-card:hover{border-color:var(--accent);}
+.tpl-card.sel{border-color:var(--accent);background:var(--accent-dim);}
+.tpl-card .ico{font-size:22px;display:block;margin-bottom:6px;}
+.tpl-card .name{font-size:12.5px;font-weight:600;color:var(--text-bright);}
+.err-box{background:var(--red-dim);border:1px solid var(--red);color:#ffb4ae;padding:9px 12px;border-radius:var(--radius);font-size:13px;margin-bottom:14px;}
+.ok-box{background:var(--green-dim);border:1px solid var(--green);color:#b7f0c0;padding:9px 12px;border-radius:var(--radius);font-size:13px;margin-bottom:14px;}
+
+/* ================= APP SHELL ================= */
+.shell{display:flex;min-height:100vh;}
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;overflow-y:auto;}
+.sidebar .logo{padding:18px 20px;border-bottom:1px solid var(--border);}
+.side-biz{padding:14px 20px;border-bottom:1px solid var(--border);}
+.side-biz .n{font-size:13px;font-weight:700;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.side-biz .p{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.side-nav{flex:1;padding:12px;display:flex;flex-direction:column;gap:2px;}
+.side-link{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:var(--radius);color:var(--muted);font-size:13.5px;font-weight:600;cursor:pointer;position:relative;}
+.side-link:hover{background:var(--surface2);color:var(--text-bright);}
+.side-link.on{background:var(--accent-dim);color:var(--accent);}
+.side-link .ico{font-size:15px;width:18px;text-align:center;}
+.side-link .badge{margin-left:auto;background:var(--red);color:#fff;font-size:10.5px;font-weight:700;border-radius:20px;padding:1px 6px;}
+.side-foot{padding:12px;border-top:1px solid var(--border);}
+.main{flex:1;margin-left:220px;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{position:sticky;top:0;z-index:20;background:rgba(13,17,23,.9);backdrop-filter:blur(6px);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:14px;}
+.topbar h1{font-size:17px;color:var(--text-bright);}
+.topbar .spacer{flex:1;}
+.content{padding:26px 28px 60px;max-width:1220px;width:100%;margin:0 auto;}
+.mobile-topbar{display:none;}
+.bottom-nav{display:none;}
+.sidebar-backdrop{display:none;}
+@media(max-width:900px){
+  .shell{flex-direction:column;}
+  .sidebar{display:none;}
+  .main{margin-left:0;width:100%;}
+  .topbar{display:none;}
+  .mobile-topbar{
+    display:flex;align-items:center;gap:10px;padding:14px 18px;
+    border-bottom:1px solid var(--border);background:rgba(13,17,23,.92);backdrop-filter:blur(10px);
+    position:sticky;top:0;z-index:30;
+  }
+  .mobile-topbar h1{font-size:18px;font-weight:800;letter-spacing:-.3px;color:var(--text-bright);flex:1;}
+  .mobile-topbar .logo{font-size:20px;}
+  .content{padding:18px 16px 96px;}
+  .bottom-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:50;
+    background:rgba(22,27,34,.97);backdrop-filter:blur(14px);border-top:1px solid var(--border);
+    padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+    box-shadow:0 -4px 20px rgba(0,0,0,.3);
+  }
+}
+
+.bottom-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:7px 2px;color:var(--muted);font-size:10px;font-weight:700;cursor:pointer;position:relative;border-radius:10px;}
+.bottom-nav-item.on{color:var(--accent);}
+.bottom-nav-item .ico{font-size:19px;}
+.bottom-nav-item .badge{position:absolute;top:2px;right:22%;background:var(--red);color:#fff;font-size:9px;font-weight:700;border-radius:20px;padding:0 4px;line-height:1.4;}
+.mais-list{display:flex;flex-direction:column;gap:2px;}
+.mais-item{display:flex;align-items:center;gap:12px;padding:13px 8px;border-radius:var(--radius);color:var(--text);font-size:14.5px;font-weight:600;cursor:pointer;}
+.mais-item:hover, .mais-item:active{background:var(--surface2);}
+.mais-item .ico{font-size:17px;width:20px;text-align:center;}
+.mais-item.danger{color:#ff9b93;}
+
+/* ---------- generic card / stat / pill ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+.card-header{padding:15px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.card-title{font-weight:700;color:var(--text-bright);font-size:14.5px;}
+.card-body{padding:18px;}
+.section-title{font-size:19px;color:var(--text-bright);font-weight:700;margin-bottom:4px;}
+.section-sub{color:var(--muted);font-size:13px;margin-bottom:20px;}
+
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
+@media(max-width:700px){.stat-row{grid-template-columns:repeat(3,1fr);gap:9px;}}
+.stat{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;cursor:pointer;transition:.15s;overflow:hidden;}
+.stat:hover{border-color:var(--muted);transform:translateY(-2px);}
+.stat:active{transform:scale(.98);}
+.stat .stat-ico{position:absolute;top:14px;right:14px;font-size:18px;opacity:.5;}
+.stat .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px;}
+.stat .num{font-size:34px;font-weight:800;color:var(--text-bright);line-height:1;}
+.stat.ok{border-left:3px solid var(--green);}
+.stat.warn{border-left:3px solid var(--yellow);}
+.stat.crit{border-left:3px solid var(--red);}
+@media(max-width:700px){
+  .stat{padding:14px 12px;border-radius:12px;}
+  .stat .stat-ico{display:none;}
+  .stat .lbl{font-size:9.5px;letter-spacing:.02em;margin-bottom:4px;line-height:1.2;}
+  .stat .num{font-size:26px;}
+  .stat.ok,.stat.warn,.stat.crit{border-left-width:0;border-top:3px solid;}
+  .stat.ok{border-top-color:var(--green);}
+  .stat.warn{border-top-color:var(--yellow);}
+  .stat.crit{border-top-color:var(--red);}
+}
+/* hero de receita/resumo */
+.hero-stat{background:linear-gradient(135deg,var(--accent-dim),var(--surface));border:1px solid var(--accent);border-radius:var(--radius-lg);padding:20px 22px;margin-bottom:16px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.hero-stat .big{flex:1;min-width:160px;}
+.hero-stat .big .lbl{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:6px;}
+.hero-stat .big .val{font-size:32px;font-weight:800;color:var(--text-bright);line-height:1;}
+.hero-stat .big .sub{font-size:12.5px;color:var(--muted);margin-top:6px;}
+.hero-stat .mini{display:flex;gap:20px;}
+.hero-stat .mini .m .v{font-size:20px;font-weight:800;color:var(--text-bright);}
+.hero-stat .mini .m .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;}
+.pill.ok{background:var(--green-dim);color:#7ee08a;}
+.pill.warn{background:var(--yellow-dim);color:#f0c05a;}
+.pill.crit{background:var(--red-dim);color:#ff9b93;}
+.pill::before{content:"●";font-size:.6em;}
+
+.banner{display:flex;align-items:center;gap:12px;background:var(--red-dim);border:1px solid var(--red);color:#ffb4ae;padding:13px 16px;border-radius:var(--radius);margin-bottom:20px;font-size:13.5px;}
+.banner .btn{margin-left:auto;flex-shrink:0;}
+
+.empty{text-align:center;padding:50px 20px;color:var(--muted);}
+.empty .ico{font-size:36px;margin-bottom:12px;}
+
+/* ---------- rental cards ---------- */
+.rental-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.rcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;gap:10px;}
+.rcard.crit{border-color:var(--red);}
+.rcard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.rcard .client{font-weight:700;color:var(--text-bright);font-size:14.5px;}
+.rcard .phone{font-size:12px;color:var(--muted);}
+.rcard .items{font-size:12.5px;color:var(--text);display:flex;flex-wrap:wrap;gap:5px;}
+.rcard .items span{background:var(--surface2);padding:2px 8px;border-radius:20px;}
+.rcard .countdown{font-family:ui-monospace,monospace;font-size:18px;font-weight:700;color:var(--text-bright);}
+.rcard .countdown.crit{color:var(--red);}
+.rcard .countdown.warn{color:var(--yellow);}
+.rcard .countdown.ok{color:var(--green);}
+.rcard .meta{font-size:11.5px;color:var(--muted);}
+.rcard-actions{display:flex;gap:8px;margin-top:auto;}
+
+.toolbar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
+.toolbar input[type=text]{max-width:260px;}
+.toolbar select{max-width:200px;}
+.chip-row{display:flex;gap:8px;flex-wrap:wrap;}
+.chip{padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.chip.sel{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);}
+.chip.u-ok{border-color:var(--green);color:#7ee08a;font-family:ui-monospace,monospace;font-size:12px;padding:4px 10px;}
+.chip.u-crit{border-color:var(--red);color:#ff9b93;background:var(--red-dim);cursor:default;font-family:ui-monospace,monospace;font-size:12px;padding:4px 10px;}
+.chip.u-warn{border-color:var(--yellow);color:#f0c05a;background:var(--yellow-dim);font-family:ui-monospace,monospace;font-size:12px;padding:4px 10px;}
+
+/* ---------- novo aluguer layout ---------- */
+.novo-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:flex-start;}
+@media(max-width:920px){.novo-grid{grid-template-columns:1fr;}}
+.item-pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.item-pick{border:1px solid var(--border);background:var(--surface2);border-radius:var(--radius);padding:12px;}
+.item-pick .pick-thumb{aspect-ratio:4/3;border-radius:8px;background:linear-gradient(160deg,var(--surface3),var(--surface2));display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:8px;}
+.item-pick .pick-thumb img{width:100%;height:100%;object-fit:cover;}
+.item-pick .n{font-size:13px;font-weight:600;color:var(--text-bright);margin-bottom:2px;}
+.item-pick .avail{font-size:11.5px;color:var(--muted);margin-bottom:8px;}
+.item-pick .avail.zero{color:var(--red);}
+.item-pick-row{display:flex;align-items:center;gap:8px;}
+.qty-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--surface3);color:var(--text-bright);cursor:pointer;font-weight:700;}
+.qty-val{width:24px;text-align:center;font-weight:700;}
+.cart-line{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.cart-line:last-child{border-bottom:none;}
+.cart-line .x{color:var(--red);cursor:pointer;font-weight:700;}
+.summary-devol{background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius);padding:12px 14px;margin-top:12px;font-size:13px;color:var(--text-bright);}
+.summary-devol b{color:var(--accent);}
+
+/* ---------- catalogo (montra tipo loja) ---------- */
+.shop-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+.shop-toolbar .chip-row{flex:1;}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;}
+.shop-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:.15s;}
+.shop-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.35);}
+.shop-card .photo{aspect-ratio:4/3;background:linear-gradient(160deg,var(--surface2),var(--surface3));display:flex;align-items:center;justify-content:center;font-size:38px;color:var(--muted);overflow:hidden;}
+.shop-card .photo img{width:100%;height:100%;object-fit:cover;display:block;}
+.art-badge{width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 32% 30%,var(--accent-dim),var(--surface3));display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:inset 0 0 0 1px var(--border);}
+.shop-card .body{padding:13px 14px;display:flex;flex-direction:column;gap:5px;flex:1;}
+.shop-card .cat-tag{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;}
+.shop-card .name{font-weight:700;color:var(--text-bright);font-size:14.5px;line-height:1.3;}
+.shop-card .price{color:var(--accent);font-weight:800;font-size:15px;margin-top:2px;}
+.shop-card .price small{color:var(--muted);font-weight:500;font-size:11.5px;}
+.shop-card .stock-row{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px;}
+.shop-card .stock-row .cnt{font-size:11.5px;color:var(--muted);}
+.photo-upload{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.photo-upload .preview{width:88px;height:88px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--muted);overflow:hidden;flex-shrink:0;}
+.photo-upload .preview img{width:100%;height:100%;object-fit:cover;}
+.photo-upload input[type=file]{font-size:12px;}
+.item-detail-units{margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
+
+/* ---------- loja pública (auto-reserva do cliente) ---------- */
+.cstore{min-height:100vh;padding-bottom:120px;}
+.cstore-hero{background:linear-gradient(135deg,var(--accent-dim),var(--surface));border-bottom:1px solid var(--border);padding:34px 20px 28px;text-align:center;}
+.cstore-hero .biz{font-size:26px;font-weight:800;color:var(--text-bright);letter-spacing:-.5px;margin-bottom:4px;}
+.cstore-hero .sub{color:var(--muted);font-size:14px;}
+.cstore-hero .badge-demo{display:inline-block;margin-top:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);background:rgba(45,212,191,.12);border:1px solid var(--accent);padding:4px 12px;border-radius:20px;}
+.cstore-wrap{max-width:1000px;margin:0 auto;padding:22px 16px;}
+.cstore-cat-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+.cbook-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(22,27,34,.98);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:12px 16px calc(12px + env(safe-area-inset-bottom));z-index:40;box-shadow:0 -4px 20px rgba(0,0,0,.35);}
+.cbook-bar-in{max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:14px;}
+.novo-cart-bar{position:fixed;left:0;right:0;bottom:0;z-index:45;background:rgba(22,27,34,.98);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:12px 20px;box-shadow:0 -4px 20px rgba(0,0,0,.35);}
+.novo-cart-bar-in{max-width:1220px;margin:0 auto;display:flex;align-items:center;gap:14px;}
+.novo-cart-bar .cnt{flex:1;font-size:13.5px;color:var(--text);}
+@media(max-width:900px){ .novo-cart-bar{ bottom:64px; padding:10px 16px calc(10px + env(safe-area-inset-bottom)); } }
+.cbook-bar .cnt{flex:1;font-size:13.5px;color:var(--text);}
+.cbook-bar .cnt b{color:var(--text-bright);}
+.shop-card .add-btn{margin-top:8px;width:100%;padding:8px;border-radius:8px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700;font-size:12.5px;cursor:pointer;}
+.shop-card .add-btn:disabled{opacity:.4;border-color:var(--border);background:var(--surface2);color:var(--muted);cursor:not-allowed;}
+.shop-card .in-cart{display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:6px;}
+.cstore-success{max-width:520px;margin:60px auto;text-align:center;padding:0 20px;}
+.cstore-success .big{font-size:60px;margin-bottom:16px;}
+.cstore-success h2{font-size:24px;color:var(--text-bright);margin-bottom:10px;}
+.cstore-success p{color:var(--muted);font-size:14.5px;margin-bottom:8px;}
+
+.cat-list{display:flex;flex-direction:column;gap:10px;}
+.cat-row{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;}
+.cat-row-head{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.cat-row-head .ico{font-size:20px;}
+.cat-row-head .n{font-weight:700;color:var(--text-bright);flex:1;}
+.cat-row-head .cnt{font-size:12px;color:var(--muted);}
+.cat-body{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.item-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.item-row:last-child{border-bottom:none;}
+.item-row .n{flex:1;font-weight:600;color:var(--text-bright);}
+.item-row .q{color:var(--muted);font-size:12px;}
+.field-extra-row{display:flex;gap:8px;align-items:center;background:var(--surface2);padding:8px 10px;border-radius:var(--radius);margin-bottom:6px;font-size:12.5px;}
+.field-extra-row .x{color:var(--red);cursor:pointer;font-weight:700;margin-left:auto;}
+
+/* ---------- analytics ---------- */
+.chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;}
+canvas{max-width:100%;}
+.rank-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.rank-row:last-child{border-bottom:none;}
+.rank-row .bar{height:6px;border-radius:6px;background:var(--accent);}
+.rank-row .bar-track{flex:1;background:var(--surface2);border-radius:6px;overflow:hidden;}
+
+/* ---------- modal / toast ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:200;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:480px;width:100%;max-height:85vh;overflow-y:auto;}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.modal-head h3{font-size:15.5px;color:var(--text-bright);flex:1;}
+.modal-body{padding:20px;}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+.close-x{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface3);border:1px solid var(--border);color:var(--text-bright);padding:11px 20px;border-radius:var(--radius);font-size:13.5px;z-index:300;box-shadow:0 6px 20px rgba(0,0,0,.4);}
+</style>
+
+<div id="app"></div>
+<div id="toast-host"></div>
+
+<script>
+/* ============================================================
+   DEVOLVE — pré-visualização local (sem backend)
+   Dados guardados apenas neste browser via localStorage.
+   Esta é uma demo funcional; a versão de produção usa Supabase
+   multi-negócio (ver surf-school/devolve.html no repo Auditoria-,
+   ou o repo devolve quando estiver publicado).
+   ============================================================ */
+const STORAGE_KEY = 'devolve_demo_v1';
+// Nome da marca — muda só isto para renomear a app inteira (painel, WhatsApp, título, etc.)
+// para algo mais universal que cubra equipamentos e serviços (ex: aulas, sessões).
+const APP_NAME = 'Devolve';
+const APP_TAGLINE = 'Gestão de Aluguer e Reservas';
+document.title = APP_NAME+' — Pré-visualização';
+const DEVOLVE_HQ_WHATSAPP = '351962800400'; // número do Ivo para receber aviso de novos pedidos de conta
+const DEVOLVE_HQ_EMAIL = 'ivo@despomar.com'; // email do Ivo para receber o mesmo aviso, em paralelo ao WhatsApp
+
+const CATALOG_TEMPLATES = {
+  bicicletas: { nome:'Bicicletas', categorias:[
+    { nome:'Bicicletas', icone:'🚲', campos_extra:[{chave:'tamanho',tipo:'select',opcoes:['S','M','L','XL']}],
+      itens:[{nome:'BTT aro 29',quantidade_inicial:5,preco:12},{nome:'Urbana',quantidade_inicial:8,preco:8},{nome:'Elétrica',quantidade_inicial:3,preco:20}] },
+    { nome:'Acessórios', icone:'🎒', campos_extra:[],
+      itens:[{nome:'Capacete',quantidade_inicial:15,preco:2},{nome:'Cadeado',quantidade_inicial:10,preco:1}] }
+  ]},
+  ferramentas: { nome:'Ferramentas', categorias:[
+    { nome:'Elétricas', icone:'🛠️', campos_extra:[{chave:'voltagem',tipo:'select',opcoes:['12V','18V','220V']}],
+      itens:[{nome:'Berbequim',quantidade_inicial:6,preco:10},{nome:'Rebarbadora',quantidade_inicial:4,preco:8},{nome:'Serra circular',quantidade_inicial:3,preco:15}] },
+    { nome:'Manuais', icone:'🔧', campos_extra:[],
+      itens:[{nome:'Andaime',quantidade_inicial:4,preco:25},{nome:'Escada',quantidade_inicial:6,preco:10}] }
+  ]},
+  festas: { nome:'Festas & Eventos', categorias:[
+    { nome:'Insufláveis', icone:'🎈', campos_extra:[],
+      itens:[{nome:'Castelo insuflável',quantidade_inicial:2,preco:80},{nome:'Escorrega insuflável',quantidade_inicial:1,preco:90}] },
+    { nome:'Mobiliário', icone:'🪑', campos_extra:[],
+      itens:[{nome:'Mesa redonda',quantidade_inicial:20,preco:5},{nome:'Cadeira',quantidade_inicial:100,preco:1}] }
+  ]},
+  praia: { nome:'Praia & Água', categorias:[
+    { nome:'Pranchas', icone:'🏄', campos_extra:[{chave:'tamanho',tipo:'texto'}],
+      itens:[{nome:'Prancha soft 8ft',quantidade_inicial:10,preco:15}] },
+    { nome:'Acessórios', icone:'⛱️', campos_extra:[],
+      itens:[{nome:'Chapéu de praia',quantidade_inicial:12,preco:3},{nome:'Espreguiçadeira',quantidade_inicial:20,preco:5}] }
+  ]},
+  surf: { nome:'Escola de Surf', categorias:[
+    { nome:'Pranchas', icone:'🏄', campos_extra:[{chave:'tamanho',tipo:'texto'}],
+      itens:[
+        {nome:"Softboard 7'0 Iniciante",quantidade_inicial:6,preco:15,caucao_sugerida:50},
+        {nome:"Softboard 8'0 Iniciante",quantidade_inicial:4,preco:18,caucao_sugerida:50},
+        {nome:"Shortboard 6'0",quantidade_inicial:3,preco:20,caucao_sugerida:80},
+        {nome:"Fish 6'4",quantidade_inicial:2,preco:18,caucao_sugerida:70},
+        {nome:"Longboard 9'0",quantidade_inicial:3,preco:20,caucao_sugerida:80}
+      ] },
+    { nome:'Fatos', icone:'🤿', campos_extra:[{chave:'espessura',tipo:'select',opcoes:['2mm','3/2mm','4/3mm']}],
+      itens:[
+        {nome:'Fato 3/2mm XS',quantidade_inicial:2,preco:10,caucao_sugerida:20},
+        {nome:'Fato 3/2mm S',quantidade_inicial:4,preco:10,caucao_sugerida:20},
+        {nome:'Fato 3/2mm M',quantidade_inicial:5,preco:10,caucao_sugerida:20},
+        {nome:'Fato 3/2mm L',quantidade_inicial:4,preco:10,caucao_sugerida:20},
+        {nome:'Fato 3/2mm XL',quantidade_inicial:2,preco:10,caucao_sugerida:20},
+        {nome:'Fato 4/3mm M',quantidade_inicial:3,preco:12,caucao_sugerida:25}
+      ] },
+    { nome:'Acessórios', icone:'🎒', campos_extra:[],
+      itens:[{nome:'Leash de perna',quantidade_inicial:10,preco:3,caucao_sugerida:0},{nome:'Capa de prancha',quantidade_inicial:6,preco:5,caucao_sugerida:0}] }
+  ]},
+  personalizado: { nome:'Personalizado', categorias:[] }
+};
+
+const SECTORS = [
+  {v:'bicicletas',l:'Bicicletas'}, {v:'ferramentas',l:'Ferramentas'},
+  {v:'festas',l:'Festas & Eventos'}, {v:'praia',l:'Praia & Água'}, {v:'surf',l:'Escola de Surf'},
+  {v:'outro',l:'Outro'}
+];
+
+/* Países: código, bandeira, indicativo telefónico, idioma da comunicação */
+const COUNTRIES = [
+  {c:'PT', nome:'Portugal',       flag:'🇵🇹', dial:'351', lang:'pt'},
+  {c:'BR', nome:'Brasil',         flag:'🇧🇷', dial:'55',  lang:'ptbr'},
+  {c:'ES', nome:'Espanha',        flag:'🇪🇸', dial:'34',  lang:'es'},
+  {c:'FR', nome:'França',         flag:'🇫🇷', dial:'33',  lang:'fr'},
+  {c:'GB', nome:'Reino Unido',    flag:'🇬🇧', dial:'44',  lang:'en'},
+  {c:'IE', nome:'Irlanda',        flag:'🇮🇪', dial:'353', lang:'en'},
+  {c:'US', nome:'EUA',            flag:'🇺🇸', dial:'1',   lang:'en'},
+  {c:'DE', nome:'Alemanha',       flag:'🇩🇪', dial:'49',  lang:'de'},
+  {c:'AT', nome:'Áustria',        flag:'🇦🇹', dial:'43',  lang:'de'},
+  {c:'CH', nome:'Suíça',          flag:'🇨🇭', dial:'41',  lang:'de'},
+  {c:'NL', nome:'Países Baixos',  flag:'🇳🇱', dial:'31',  lang:'nl'},
+  {c:'BE', nome:'Bélgica',        flag:'🇧🇪', dial:'32',  lang:'fr'},
+  {c:'IT', nome:'Itália',         flag:'🇮🇹', dial:'39',  lang:'it'},
+];
+function countryByCode(c){ return COUNTRIES.find(x=>x.c===c) || COUNTRIES[0]; }
+
+/* Mensagens em vários idiomas — 3 momentos: confirmação, atraso, agradecimento */
+const MSG = {
+  pt:{
+    confirm:(o)=>`Olá ${o.nome}! ✅ A tua reserva na ${o.loja} está confirmada.\n\n📦 ${o.itens}\n🗓️ Devolução prevista: ${o.prazo}${o.preco?`\n💶 Total: €${o.preco}`:''}${o.caucao?`\n🔒 Caução: €${o.caucao}`:''}\n\nObrigado e bons momentos! 🌊`,
+    atraso:(o)=>`Olá ${o.nome}! ⏰ Lembrete: o prazo de devolução do teu aluguer (${o.itens}) na ${o.loja} era ${o.prazo}. Podes dizer-nos quando consegues devolver? Obrigado!`,
+    obrigado:(o)=>`Olá ${o.nome}! 🙏 Obrigado por devolveres o material (${o.itens}) e pela tua preferência na ${o.loja}. Até à próxima! 🌊`
+  },
+  ptbr:{
+    confirm:(o)=>`Olá ${o.nome}! ✅ Sua reserva na ${o.loja} está confirmada.\n\n📦 ${o.itens}\n🗓️ Devolução prevista: ${o.prazo}${o.preco?`\n💶 Total: €${o.preco}`:''}${o.caucao?`\n🔒 Caução: €${o.caucao}`:''}\n\nObrigado e bons momentos! 🌊`,
+    atraso:(o)=>`Olá ${o.nome}! ⏰ Lembrete: o prazo de devolução do seu aluguel (${o.itens}) na ${o.loja} era ${o.prazo}. Pode nos dizer quando consegue devolver? Obrigado!`,
+    obrigado:(o)=>`Olá ${o.nome}! 🙏 Obrigado por devolver o material (${o.itens}) e pela preferência na ${o.loja}. Até a próxima! 🌊`
+  },
+  en:{
+    confirm:(o)=>`Hi ${o.nome}! ✅ Your booking at ${o.loja} is confirmed.\n\n📦 ${o.itens}\n🗓️ Return by: ${o.prazo}${o.preco?`\n💶 Total: €${o.preco}`:''}${o.caucao?`\n🔒 Deposit: €${o.caucao}`:''}\n\nThank you and enjoy! 🌊`,
+    atraso:(o)=>`Hi ${o.nome}! ⏰ Reminder: your rental (${o.itens}) at ${o.loja} was due back on ${o.prazo}. Could you let us know when you can return it? Thanks!`,
+    obrigado:(o)=>`Hi ${o.nome}! 🙏 Thank you for returning the gear (${o.itens}) and for choosing ${o.loja}. See you next time! 🌊`
+  },
+  es:{
+    confirm:(o)=>`¡Hola ${o.nome}! ✅ Tu reserva en ${o.loja} está confirmada.\n\n📦 ${o.itens}\n🗓️ Devolución prevista: ${o.prazo}${o.preco?`\n💶 Total: €${o.preco}`:''}${o.caucao?`\n🔒 Fianza: €${o.caucao}`:''}\n\n¡Gracias y a disfrutar! 🌊`,
+    atraso:(o)=>`¡Hola ${o.nome}! ⏰ Recordatorio: el plazo de devolución de tu alquiler (${o.itens}) en ${o.loja} era ${o.prazo}. ¿Nos puedes decir cuándo lo devuelves? ¡Gracias!`,
+    obrigado:(o)=>`¡Hola ${o.nome}! 🙏 Gracias por devolver el material (${o.itens}) y por confiar en ${o.loja}. ¡Hasta la próxima! 🌊`
+  },
+  fr:{
+    confirm:(o)=>`Bonjour ${o.nome} ! ✅ Votre réservation chez ${o.loja} est confirmée.\n\n📦 ${o.itens}\n🗓️ Retour prévu : ${o.prazo}${o.preco?`\n💶 Total : €${o.preco}`:''}${o.caucao?`\n🔒 Caution : €${o.caucao}`:''}\n\nMerci et bonne session ! 🌊`,
+    atraso:(o)=>`Bonjour ${o.nome} ! ⏰ Rappel : le retour de votre location (${o.itens}) chez ${o.loja} était prévu le ${o.prazo}. Pouvez-vous nous dire quand vous pouvez le rendre ? Merci !`,
+    obrigado:(o)=>`Bonjour ${o.nome} ! 🙏 Merci d'avoir rendu le matériel (${o.itens}) et pour votre confiance en ${o.loja}. À bientôt ! 🌊`
+  },
+  de:{
+    confirm:(o)=>`Hallo ${o.nome}! ✅ Deine Buchung bei ${o.loja} ist bestätigt.\n\n📦 ${o.itens}\n🗓️ Rückgabe bis: ${o.prazo}${o.preco?`\n💶 Gesamt: €${o.preco}`:''}${o.caucao?`\n🔒 Kaution: €${o.caucao}`:''}\n\nDanke und viel Spaß! 🌊`,
+    atraso:(o)=>`Hallo ${o.nome}! ⏰ Erinnerung: die Rückgabe deiner Ausleihe (${o.itens}) bei ${o.loja} war am ${o.prazo} fällig. Kannst du uns sagen, wann du sie zurückbringst? Danke!`,
+    obrigado:(o)=>`Hallo ${o.nome}! 🙏 Danke für die Rückgabe (${o.itens}) und für dein Vertrauen in ${o.loja}. Bis zum nächsten Mal! 🌊`
+  },
+  nl:{
+    confirm:(o)=>`Hallo ${o.nome}! ✅ Je reservering bij ${o.loja} is bevestigd.\n\n📦 ${o.itens}\n🗓️ Retour vóór: ${o.prazo}${o.preco?`\n💶 Totaal: €${o.preco}`:''}${o.caucao?`\n🔒 Borg: €${o.caucao}`:''}\n\nBedankt en veel plezier! 🌊`,
+    atraso:(o)=>`Hallo ${o.nome}! ⏰ Herinnering: je huur (${o.itens}) bij ${o.loja} moest terug op ${o.prazo}. Kun je ons laten weten wanneer je het terugbrengt? Bedankt!`,
+    obrigado:(o)=>`Hallo ${o.nome}! 🙏 Bedankt voor het terugbrengen (${o.itens}) en voor je vertrouwen in ${o.loja}. Tot de volgende keer! 🌊`
+  },
+  it:{
+    confirm:(o)=>`Ciao ${o.nome}! ✅ La tua prenotazione da ${o.loja} è confermata.\n\n📦 ${o.itens}\n🗓️ Reso previsto: ${o.prazo}${o.preco?`\n💶 Totale: €${o.preco}`:''}${o.caucao?`\n🔒 Cauzione: €${o.caucao}`:''}\n\nGrazie e buon divertimento! 🌊`,
+    atraso:(o)=>`Ciao ${o.nome}! ⏰ Promemoria: il reso del tuo noleggio (${o.itens}) da ${o.loja} era previsto il ${o.prazo}. Ci puoi dire quando lo riporti? Grazie!`,
+    obrigado:(o)=>`Ciao ${o.nome}! 🙏 Grazie per aver restituito il materiale (${o.itens}) e per aver scelto ${o.loja}. Alla prossima! 🌊`
+  }
+};
+function msgFor(lang, tipo, o){ const pack = MSG[lang] || MSG.pt; return (pack[tipo]||MSG.pt[tipo])(o); }
+
+/* ============================================================
+   Estado global
+   ============================================================ */
+let state = {
+  view: 'landing',        // landing | login | signup | app
+  appView: 'dashboard',
+  tenantId: 'local-demo',
+  cfg: null,
+  tenant: null,
+  categories: [],
+  items: [],
+  units: [],
+  rentals: [],
+  signup: { step:1, email:'', nomeResp:'', nomeNegocio:'', sector:'bicicletas', whatsapp:'', template:'bicicletas' },
+  novo: { cliente_nome:'', cliente_telefone:'', cliente_email:'', cliente_doc:'', cliente_pais:'PT', catSel:null, cart:[], unidade:'dias', duracao:1, caucao:0, preco_manual:null, notas:'' },
+  ativosFiltro: '', ativosCat: '',
+  catalogFiltro: '',
+  histFiltro: { de:'', ate:'', q:'' },
+  catOpen: {},
+  clientView: false,
+  clientBooking: { nome:'', pais:'PT', telefone:'', email:'', cart:[], unidade:'dias', duracao:1, catSel:null, enviado:false },
+  loading: true,
+  err: ''
+};
+
+function el(id){ return document.getElementById(id); }
+function fmtDate(d){ if(!d) return ''; const dt=new Date(d); return dt.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function fmtDateTime(d){ if(!d) return ''; const dt=new Date(d); return dt.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}); }
+function toast(msg){
+  const host = el('toast-host');
+  const t = document.createElement('div');
+  t.className='toast'; t.textContent=msg;
+  host.appendChild(t);
+  setTimeout(()=>t.remove(), 3200);
+}
+function uid(){ return 'x'+Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
+function prefixoCodigo(nome){
+  const letras = nome.split(/\s+/).map(w=>w[0]).join('').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  return (letras || 'ART').slice(0,4);
+}
+function proximoCodigo(itemId, nome){
+  const existentes = state.units.filter(u=>u.item_id===itemId).length;
+  return prefixoCodigo(nome)+'-'+String(existentes+1).padStart(3,'0');
+}
+
+/* ============================================================
+   Ilustrações de produto — usadas quando o artigo ainda não tem
+   foto real carregada (o upload de foto continua a ter prioridade)
+   ============================================================ */
+const SVG_SURFBOARD = `<svg viewBox="0 0 100 180" xmlns="http://www.w3.org/2000/svg" style="height:88%;width:auto;display:block">
+<defs><linearGradient id="gArt1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5eead4"/><stop offset="1" stop-color="#0d9488"/></linearGradient></defs>
+<path d="M50 4C78 34 88 90 78 140C74 162 60 176 50 176C40 176 26 162 22 140C12 90 22 34 50 4Z" fill="url(#gArt1)" stroke="#0f766e" stroke-width="2"/>
+<path d="M50 20 L50 168" stroke="#0f766e" stroke-width="1.5" opacity=".55"/>
+<ellipse cx="44" cy="28" rx="14" ry="9" fill="#fff" opacity=".2"/>
+</svg>`;
+const SVG_WETSUIT = `<svg viewBox="0 0 100 160" xmlns="http://www.w3.org/2000/svg" style="height:88%;width:auto;display:block">
+<defs><linearGradient id="gArt2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#44444c"/><stop offset="1" stop-color="#18181b"/></linearGradient></defs>
+<path d="M35 8 L65 8 L70 28 L88 38 L84 57 L68 49 L70 150 L57 150 L53 88 L47 88 L43 150 L30 150 L32 49 L16 57 L12 38 L30 28 Z" fill="url(#gArt2)" stroke="#000" stroke-width="1.5"/>
+<path d="M35 8 L65 8 L62 24 L38 24 Z" fill="#2dd4bf" opacity=".9"/>
+<path d="M30 28 L70 28" stroke="#2dd4bf" stroke-width="3" opacity=".55"/>
+</svg>`;
+const SVG_BIKE = `<svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" style="width:88%;height:auto;display:block">
+<g fill="none" stroke="#0f766e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="42" cy="86" r="27"/><circle cx="158" cy="86" r="27"/>
+<path d="M42 86 L92 42 L132 42 L158 86 M92 42 L72 86 M92 42 L112 86 M112 86 L158 86 M72 86 L42 86"/>
+<path d="M132 42 L142 22 L157 22"/>
+</g>
+<circle cx="42" cy="86" r="27" fill="none" stroke="#2dd4bf" stroke-width="2" opacity=".5"/>
+<circle cx="158" cy="86" r="27" fill="none" stroke="#2dd4bf" stroke-width="2" opacity=".5"/>
+<circle cx="42" cy="86" r="4" fill="#2dd4bf"/><circle cx="158" cy="86" r="4" fill="#2dd4bf"/>
+</svg>`;
+const SVG_DRILL = `<svg viewBox="0 0 180 120" xmlns="http://www.w3.org/2000/svg" style="width:80%;height:auto;display:block">
+<defs><linearGradient id="gArt3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbbf24"/><stop offset="1" stop-color="#d97706"/></linearGradient></defs>
+<rect x="20" y="40" width="90" height="34" rx="10" fill="url(#gArt3)" stroke="#92400e" stroke-width="2"/>
+<path d="M110 48 L150 48 L150 66 L110 66 Z" fill="#3f3f46" stroke="#18181b" stroke-width="2"/>
+<path d="M40 74 L58 74 L50 112 Z" fill="#3f3f46" stroke="#18181b" stroke-width="2"/>
+<circle cx="150" cy="57" r="6" fill="#18181b"/>
+</svg>`;
+const SVG_PARTY = `<svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" style="width:78%;height:auto;display:block">
+<defs><linearGradient id="gArt4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f472b6"/><stop offset="1" stop-color="#db2777"/></linearGradient></defs>
+<circle cx="70" cy="60" r="46" fill="url(#gArt4)" stroke="#9d174d" stroke-width="2"/>
+<path d="M70 106 L60 132 L80 132 Z" fill="#9d174d"/>
+<circle cx="55" cy="48" r="7" fill="#fff" opacity=".35"/>
+</svg>`;
+const SVG_BEACH = `<svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg" style="width:82%;height:auto;display:block">
+<path d="M80 8 L150 46 L10 46 Z" fill="#f59e0b" stroke="#92400e" stroke-width="2"/>
+<path d="M80 8 L80 46" stroke="#92400e" stroke-width="2"/>
+<rect x="74" y="46" width="12" height="66" fill="#78350f"/>
+</svg>`;
+function productArt(nome, icone){
+  const n = (nome||'').toLowerCase();
+  if(/prancha|softboard|shortboard|longboard|fish\b/.test(n)) return SVG_SURFBOARD;
+  if(/\bfato\b|wetsuit/.test(n)) return SVG_WETSUIT;
+  if(/bicicleta|btt|urbana|el[ée]ctrica|elétrica/.test(n)) return SVG_BIKE;
+  if(/berbequim|rebarbadora|serra|andaime|ferramenta/.test(n)) return SVG_DRILL;
+  if(/insufl[áa]vel|castelo|escorrega/.test(n)) return SVG_PARTY;
+  if(/chap[ée]u|espregui[çc]adeira|guarda-sol/.test(n)) return SVG_BEACH;
+  return `<div class="art-badge">${icone||'📦'}</div>`;
+}
+function waUrl(numero, msg, dial){
+  let n = (numero||'').replace(/\D/g,'');
+  // se o número não começar pelo indicativo do país, prefixa-o (evita duplicar)
+  if(dial && !n.startsWith(dial)){
+    n = n.replace(/^0+/,'');           // tira zeros iniciais (ex: 0912...)
+    n = dial + n;
+  }
+  return 'https://wa.me/'+n+'?text='+encodeURIComponent(msg);
+}
+/* Assuntos de email por idioma */
+const SUBJ = {
+  pt:{confirm:'Reserva confirmada', atraso:'Lembrete de devolução', obrigado:'Obrigado pela preferência'},
+  ptbr:{confirm:'Reserva confirmada', atraso:'Lembrete de devolução', obrigado:'Obrigado pela preferência'},
+  en:{confirm:'Booking confirmed', atraso:'Return reminder', obrigado:'Thank you'},
+  es:{confirm:'Reserva confirmada', atraso:'Recordatorio de devolución', obrigado:'Gracias'},
+  fr:{confirm:'Réservation confirmée', atraso:'Rappel de retour', obrigado:'Merci'},
+  de:{confirm:'Buchung bestätigt', atraso:'Rückgabe-Erinnerung', obrigado:'Vielen Dank'},
+  nl:{confirm:'Reservering bevestigd', atraso:'Herinnering retour', obrigado:'Bedankt'},
+  it:{confirm:'Prenotazione confermata', atraso:'Promemoria reso', obrigado:'Grazie'}
+};
+function emailUrl(to, assunto, corpo){
+  return 'mailto:'+encodeURIComponent(to||'')+'?subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
+}
+function emailCliente(id, tipo){
+  const r = state.rentals.find(x=>x.id===id);
+  if(!r) return;
+  if(!r.cliente_email){ toast('Este cliente não tem email registado.'); return; }
+  const pais = countryByCode(r.cliente_pais);
+  const lang = r.cliente_lang||pais.lang;
+  const loja = (state.cfg&&state.cfg.nome_negocio)||APP_NAME;
+  const itensTxt = (r.itens||[]).map(i=>i.quantidade+'× '+i.nome).join(', ');
+  const corpo = msgFor(lang, tipo, { nome:r.cliente_nome, loja, itens:itensTxt, prazo:fmtDateTime(r.devolucao_prevista), preco:r.preco_total?r.preco_total.toFixed(2):'', caucao:r.caucao?r.caucao.toFixed(2):'' });
+  const assunto = (SUBJ[lang]||SUBJ.pt)[tipo] + ' — ' + loja;
+  window.open(emailUrl(r.cliente_email, assunto, corpo), '_blank');
+}
+
+/* ============================================================
+   Persistência local (localStorage — sem backend nesta demo)
+   ============================================================ */
+function saveLocal(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      tenant: state.tenant, cfg: state.cfg, categories: state.categories,
+      items: state.items, units: state.units, rentals: state.rentals
+    }));
+  }catch(e){ /* storage indisponível — a app continua a funcionar só nesta sessão */ }
+}
+function loadLocal(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
+  catch(e){ return null; }
+}
+function resetDemo(){
+  if(!confirm('Apagar todos os dados desta pré-visualização e recomeçar?')) return;
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  state = { ...state, view:'landing', tenant:null, cfg:null, categories:[], items:[], units:[], rentals:[],
+    signup:{ step:1, email:'', nomeResp:'', nomeNegocio:'', sector:'bicicletas', whatsapp:'', template:'bicicletas' } };
+  render();
+}
+
+/* ============================================================
+   Cálculos de negócio
+   ============================================================ */
+function precoPorUnidade(item, unidade, duracao){
+  const preco = item? (item.preco||0) : 0;   // preço/dia
+  if(unidade==='dias') return preco*duracao;
+  // por horas: fracção do dia (dia útil ~8h) com mínimo de meio-dia — evita "cêntimos"
+  const porHora = preco/8;
+  return Math.max(porHora*duracao, preco*0.5);
+}
+function calcDevolucaoPrevista(inicioISO, unidade, duracao, horarioFecho){
+  const inicio = new Date(inicioISO);
+  if(unidade === 'horas'){
+    return new Date(inicio.getTime() + duracao*3600*1000);
+  }
+  // dias: soma N dias e fixa à hora de fecho configurada
+  const d = new Date(inicio);
+  d.setDate(d.getDate() + duracao);
+  const [hh,mm] = (horarioFecho||'18:00').split(':').map(Number);
+  d.setHours(hh||18, mm||0, 0, 0);
+  return d;
+}
+function estadoEfectivo(r){
+  if(r.estado==='pendente') return 'pendente'; // pedido do cliente à espera de confirmação
+  if(r.devolucao_real) return r.estado; // devolvido | atraso (final)
+  const prev = new Date(r.devolucao_prevista).getTime();
+  const now = Date.now();
+  if(now > prev) return 'atraso';
+  if(prev - now <= 3*3600*1000) return 'avencer';
+  return 'activo';
+}
+function msRestantes(r){ return new Date(r.devolucao_prevista).getTime() - Date.now(); }
+function fmtCountdown(ms){
+  const neg = ms < 0; const a = Math.abs(ms);
+  const h = Math.floor(a/3600000), m = Math.floor((a%3600000)/60000);
+  const dd = Math.floor(h/24);
+  let s;
+  if(dd >= 1) s = dd+'d '+(h%24)+'h';
+  else s = (h+'h '+String(m).padStart(2,'0')+'m');
+  return (neg? '+' : '') + s + (neg? ' atraso' : '');
+}
+function stockDisponivel(itemId){
+  return state.units.filter(u=>u.item_id===itemId && u.estado==='disponivel').length;
+}
+function unidadesDoItem(itemId){
+  return state.units.filter(u=>u.item_id===itemId);
+}
+function estadoUnidadeLabel(e){
+  if(e==='alugada') return '<span class="pill crit">Alugada</span>';
+  if(e==='manutencao') return '<span class="pill warn">Manutenção</span>';
+  return '<span class="pill ok">Disponível</span>';
+}
+
+/* ============================================================
+   Router / render dispatcher
+   ============================================================ */
+function addMonths(date, n){ const d = new Date(date); d.setMonth(d.getMonth()+n); return d; }
+function pagamentoEmAtraso(){
+  const t = state.tenant;
+  return !!(t && t.proximo_pagamento && new Date() > new Date(t.proximo_pagamento));
+}
+function contaSuspensa(){
+  const t = state.tenant;
+  if(!t) return false;
+  return t.conta_activa===false || pagamentoEmAtraso();
+}
+function contaPendente(){
+  const t = state.tenant;
+  return !!(t && t.aprovado===false);
+}
+function render(){
+  const app = el('app');
+  if(state.loading){ app.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--muted)">A carregar…</div>'; return; }
+  if(contaPendente() && (state.clientView || state.view==='app')){ app.innerHTML = renderContaPendente(); window.scrollTo(0,0); return; }
+  if(contaSuspensa() && (state.clientView || state.view==='app')){ app.innerHTML = renderContaSuspensa(); window.scrollTo(0,0); return; }
+  if(state.clientView){ app.innerHTML = renderClientStore(); window.scrollTo(0,0); return; }
+  if(state.view==='landing') app.innerHTML = renderLanding();
+  else if(state.view==='login') app.innerHTML = renderLogin();
+  else if(state.view==='signup') app.innerHTML = renderSignup();
+  else if(state.view==='app') app.innerHTML = renderApp();
+  window.scrollTo(0,0);
+}
+function renderContaSuspensa(){
+  const cliente = !!state.clientView;
+  const loja = (state.cfg&&state.cfg.nome_negocio)||'Este negócio';
+  if(cliente){
+    return `<div class="cstore"><div class="cstore-hero"><div class="biz">${loja}</div></div>
+      <div class="cstore-success">
+        <div class="big">🔒</div>
+        <h2>Reservas temporariamente indisponíveis</h2>
+        <p>Esta loja não está a aceitar reservas online neste momento. Contacta directamente o negócio.</p>
+        <button class="btn ghost block" style="margin-top:16px" onclick="fecharLojaCliente()">← Voltar ao painel (staff)</button>
+      </div></div>`;
+  }
+  const atraso = pagamentoEmAtraso();
+  const motivo = atraso
+    ? `O prazo de pagamento da mensalidade terminou a <b style="color:var(--text-bright)">${fmtDate(state.tenant.proximo_pagamento)}</b> e ainda não foi registado o pagamento seguinte.`
+    : `O acesso foi suspenso manualmente pelo ${APP_NAME}.`;
+  return `<div class="auth-wrap"><div class="auth-card">
+    <div class="logo"><span class="mark">↻</span> ${APP_NAME}</div>
+    <div class="sub" style="color:var(--red)">🔒 Conta suspensa</div>
+    <p style="font-size:13.5px;color:var(--muted);text-align:center;margin-bottom:18px"><b style="color:var(--text-bright)">${loja}</b> — ${motivo} Contacta o suporte do ${APP_NAME} para regularizar.</p>
+    <button class="btn primary block" onclick="abrirModalPagamento()">💳 (simulação) Marcar pagamento e reactivar</button>
+    <button class="btn ghost block" style="margin-top:10px" onclick="doLogout()">← Sair</button>
+  </div></div>`;
+}
+function renderContaPendente(){
+  const cliente = !!state.clientView;
+  const loja = (state.cfg&&state.cfg.nome_negocio)||'Este negócio';
+  if(cliente){
+    return `<div class="cstore"><div class="cstore-hero"><div class="biz">${loja}</div></div>
+      <div class="cstore-success">
+        <div class="big">⏳</div>
+        <h2>Reservas ainda não disponíveis</h2>
+        <p>Esta loja ainda está a ser aprovada no ${APP_NAME}. Contacta directamente o negócio.</p>
+        <button class="btn ghost block" style="margin-top:16px" onclick="fecharLojaCliente()">← Voltar ao painel (staff)</button>
+      </div></div>`;
+  }
+  return `<div class="auth-wrap"><div class="auth-card">
+    <div class="logo"><span class="mark">↻</span> ${APP_NAME}</div>
+    <div class="sub" style="color:var(--yellow)">⏳ Pedido em análise</div>
+    <p style="font-size:13.5px;color:var(--muted);text-align:center;margin-bottom:18px"><b style="color:var(--text-bright)">${loja}</b> — o pedido de conta foi recebido. A equipa ${APP_NAME} (Ivo) analisa e liga o preço combinado antes de activar o acesso. Na versão real isto acontece no painel <b>${APP_NAME} HQ</b>.</p>
+    <button class="btn primary block" onclick="simularAprovacaoConta()">✅ (simulação) Aprovar conta agora</button>
+    <button class="btn ghost block" style="margin-top:10px" onclick="doLogout()">← Sair</button>
+  </div></div>`;
+}
+function simularAprovacaoConta(){
+  if(!state.tenant) return;
+  state.tenant.aprovado = true;
+  state.tenant.proximo_pagamento = addMonths(new Date(),1).toISOString();
+  saveLocal();
+  toast('Conta aprovada — 1º mês grátis a contar de hoje ✅');
+  render();
+}
+
+/* ============================================================
+   LANDING
+   ============================================================ */
+function renderLanding(){
+  return `
+  <nav class="landing-nav"><div class="landing-nav-in">
+    <div class="logo"><span class="mark">↻</span> ${APP_NAME} <span class="demo-pill">Pré-visualização</span></div>
+    <div class="landing-nav-links">
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#precos">Preços</a>
+      <a href="#negocios">Para quem</a>
+    </div>
+    <button class="btn ghost" onclick="goto('login')">Entrar</button>
+    <button class="btn primary" onclick="goto('signup')">Criar conta grátis</button>
+  </div></nav>
+
+  <header class="hero">
+    <div class="kicker">Gestão de aluguer · qualquer negócio</div>
+    <h1>Sabe sempre o que está <em>fora</em> e quando deve <em>voltar</em>.</h1>
+    <p>Bicicletas, ferramentas, insufláveis, pranchas, aulas — o ${APP_NAME} adapta-se ao teu catálogo de equipamentos e serviços. Regista o empréstimo ou a marcação em segundos, e recebe o alerta automático assim que algo passa do prazo.</p>
+    <div class="hero-cta">
+      <button class="btn primary" onclick="goto('signup')">Criar conta grátis →</button>
+      <button class="btn ghost" onclick="seedSurfDemo()">🏄 Testar já com catálogo de surf</button>
+      <button class="btn ghost" onclick="document.getElementById('como-funciona').scrollIntoView({behavior:'smooth'})">Ver como funciona</button>
+    </div>
+  </header>
+
+  <div class="marquee"><div class="marquee-track">
+    ${['🚲 Bicicletas','🛠️ Ferramentas','🎈 Insufláveis','🏄 Pranchas','📷 Câmaras','⛺ Campismo','🪑 Mobiliário de eventos','🎿 Esqui','🚲 Bicicletas','🛠️ Ferramentas','🎈 Insufláveis','🏄 Pranchas','📷 Câmaras','⛺ Campismo','🪑 Mobiliário de eventos','🎿 Esqui'].map(x=>{
+      const [ico,...rest]=x.split(' '); return `<span class="marquee-item"><span class="ico">${ico}</span>${rest.join(' ')}</span>`;
+    }).join('')}
+  </div></div>
+
+  <section class="section-wrap" id="negocios">
+    <div class="section-head">
+      <div class="kicker">Para quem é</div>
+      <h2>Um catálogo diferente para cada negócio, o mesmo motor por trás</h2>
+      <p>Define as tuas categorias, artigos e serviços — o ${APP_NAME} trata do prazo, do timer e do alerta de atraso.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card"><span class="ico">📦</span><h3>Catálogo à tua medida</h3><p>Cria categorias e artigos com os campos que precisas — tamanho, cor, nº de série. Sem código, sem esperar por ninguém.</p></div>
+      <div class="feature-card"><span class="ico">⏱️</span><h3>Aluguer por horas ou dias</h3><p>Uma ferramenta pode sair por 4 horas, uma bicicleta por 3 dias. O prazo calcula-se sozinho conforme a unidade que escolheres.</p></div>
+      <div class="feature-card"><span class="ico">🚨</span><h3>Atrasos que não passam despercebidos</h3><p>Assim que algo passa do prazo, aparece destacado no painel — e tens o contacto do cliente a um clique de distância.</p></div>
+      <div class="feature-card"><span class="ico">💬</span><h3>WhatsApp automático</h3><p>Confirmação enviada ao cliente assim que regista o aluguer, sem teres de escrever nada.</p></div>
+      <div class="feature-card"><span class="ico">📊</span><h3>Analytics simples</h3><p>O que se aluga mais, taxa de devoluções a tempo, distribuição por dia da semana.</p></div>
+      <div class="feature-card"><span class="ico">🔒</span><h3>Os teus dados, só teus</h3><p>Cada negócio vê apenas os seus próprios registos — isolamento total entre contas.</p></div>
+    </div>
+  </section>
+
+  <section class="section-wrap" id="como-funciona" style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+    <div class="section-head">
+      <div class="kicker">Como funciona</div>
+      <h2>Três passos, sem curva de aprendizagem</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><span class="num">01</span><h3>Regista o empréstimo</h3><p>Nome do cliente, artigos ou serviços e duração. O ${APP_NAME} calcula logo a hora/dia de devolução.</p></div>
+      <div class="step"><span class="num">02</span><h3>Acompanha em tempo real</h3><p>Cada aluguer activo mostra um contador a decorrer até ao prazo — de relance sabes o que está para vencer hoje.</p></div>
+      <div class="step"><span class="num">03</span><h3>Devolve com um clique</h3><p>No check-in, marca devolvido. Se passou do prazo, fica registado como atraso — e entra na tua análise.</p></div>
+    </div>
+  </section>
+
+  <section class="section-wrap" id="precos">
+    <div class="section-head">
+      <div class="kicker">Preços</div>
+      <h2>Começa grátis, cresce quando precisares</h2>
+    </div>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="tier">Trial</div>
+        <div class="amount">0€</div>
+        <ul><li>Até 20 alugueres/mês</li><li>1 utilizador</li><li>Catálogo ilimitado</li></ul>
+        <button class="btn block" onclick="goto('signup')">Começar</button>
+      </div>
+      <div class="price-card featured">
+        <div class="tier">Básico</div>
+        <div class="amount">19€ <span>/mês</span></div>
+        <ul><li>Alugueres ilimitados</li><li>3 utilizadores</li><li>WhatsApp automático</li><li>Analytics</li></ul>
+        <button class="btn primary block" onclick="goto('signup')">Começar</button>
+      </div>
+      <div class="price-card">
+        <div class="tier">Pro</div>
+        <div class="amount">39€ <span>/mês</span></div>
+        <ul><li>Tudo do Básico</li><li>Utilizadores ilimitados</li><li>Múltiplas lojas</li><li>Suporte prioritário</li></ul>
+        <button class="btn block" onclick="goto('signup')">Começar</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="landing-footer">${APP_NAME} · gestão de aluguer e reservas para qualquer negócio · pré-visualização local, sem backend</footer>
+  `;
+}
+
+function goto(view){
+  state.err='';
+  if(view==='login'){
+    const existing = loadLocal();
+    if(existing){ hydrateFromLocal(existing); enterApp(); return; }
+    state.view='signup'; render(); return;
+  }
+  state.view = view; render();
+}
+
+/* ============================================================
+   LOGIN (retomar sessão local — sem password, sem servidor)
+   ============================================================ */
+function renderLogin(){
+  return `
+  <div class="auth-wrap"><div class="auth-card">
+    <div class="logo"><span class="mark">↻</span> ${APP_NAME}</div>
+    <div class="sub">Ainda não há dados guardados neste browser.</div>
+    <button class="btn primary block" onclick="goto('signup')">Criar conta grátis</button>
+    <button class="btn ghost block" style="margin-top:10px" onclick="seedSurfDemo()">🏄 Testar já com catálogo de surf</button>
+    <div class="auth-switch"><a onclick="goto('landing')">← Voltar</a></div>
+  </div></div>`;
+}
+
+/* ============================================================
+   SIGNUP / ONBOARDING
+   ============================================================ */
+function renderSignup(){
+  const s = state.signup;
+  let body = '';
+  if(s.step===1){
+    body = `
+      <div class="field"><label>O teu nome</label><input type="text" id="su-nome" value="${s.nomeResp}" placeholder="Ex: Ivo Casimiro"></div>
+      <div class="field"><label>Email (só para contacto, guardado neste browser)</label><input type="email" id="su-email" value="${s.email}" placeholder="tu@negocio.com"></div>
+      <button class="btn primary block" onclick="signupStep2()">Continuar →</button>`;
+  } else if(s.step===2){
+    body = `
+      <div class="field"><label>Nome do negócio</label><input type="text" id="su-negocio" value="${s.nomeNegocio}" placeholder="Ex: Bike Rent Lisboa"></div>
+      <div class="field"><label>Sector</label><select id="su-sector">${SECTORS.map(x=>`<option value="${x.v}" ${s.sector===x.v?'selected':''}>${x.l}</option>`).join('')}</select></div>
+      <div class="field"><label>WhatsApp do negócio</label><input type="tel" id="su-whats" value="${s.whatsapp}" placeholder="351912345678"></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn" onclick="s_step(1)">← Voltar</button>
+        <button class="btn primary block" onclick="signupStep3()">Continuar →</button>
+      </div>`;
+  } else {
+    const tpls = Object.keys(CATALOG_TEMPLATES);
+    body = `
+      <div class="field"><label>Catálogo inicial (podes editar tudo depois)</label>
+        <div class="tpl-grid">
+          ${tpls.map(k=>{
+            const t=CATALOG_TEMPLATES[k];
+            const ico = t.categorias[0]? t.categorias[0].icone : '✨';
+            return `<div class="tpl-card ${s.template===k?'sel':''}" onclick="s_setTemplate('${k}')"><span class="ico">${ico}</span><span class="name">${t.nome}</span></div>`;
+          }).join('')}
+        </div>
+      </div>
+      ${state.err? `<div class="err-box">${state.err}</div>` : ''}
+      <div style="display:flex;gap:10px">
+        <button class="btn" onclick="s_step(2)">← Voltar</button>
+        <button class="btn primary block" onclick="finishSignup()">Criar conta e começar →</button>
+      </div>`;
+  }
+  return `
+  <div class="auth-wrap"><div class="auth-card">
+    <div class="logo"><span class="mark">↻</span> ${APP_NAME}</div>
+    <div class="sub">Criar conta — passo ${s.step} de 3</div>
+    <div class="onb-progress"><i class="${s.step>=1?'on':''}"></i><i class="${s.step>=2?'on':''}"></i><i class="${s.step>=3?'on':''}"></i></div>
+    ${body}
+    <div class="auth-switch">Já tens conta? <a onclick="goto('login')">Entrar</a></div>
+  </div></div>`;
+}
+function s_step(n){ state.signup.step = n; render(); }
+function s_setTemplate(k){ state.signup.template = k; render(); }
+function signupStep2(){
+  const nome = el('su-nome').value.trim();
+  const email = el('su-email').value.trim();
+  if(!nome){ state.err='Dá o teu nome.'; render(); return; }
+  state.err='';
+  Object.assign(state.signup, {nomeResp:nome, email, step:2});
+  render();
+}
+function signupStep3(){
+  const negocio = el('su-negocio').value.trim();
+  const sector = el('su-sector').value;
+  const whats = el('su-whats').value.trim();
+  if(!negocio){ state.err='Dá um nome ao teu negócio.'; render(); return; }
+  state.err='';
+  Object.assign(state.signup, {nomeNegocio:negocio, sector, whatsapp:whats, step:3, template:sector==='outro'?'personalizado':sector});
+  render();
+}
+
+function finishSignup(){
+  const s = state.signup;
+  const tenant = { id: uid(), nome: s.nomeNegocio, sector: s.sector, whatsapp_numero: s.whatsapp, plano:'trial', conta_activa:true, aprovado:false, proximo_pagamento: addMonths(new Date(),1).toISOString(), criado_em: new Date().toISOString() };
+  if(DEVOLVE_HQ_WHATSAPP || DEVOLVE_HQ_EMAIL){
+    const avisoMsg = `Novo pedido de conta ${APP_NAME}: ${s.nomeNegocio} (${s.sector}), contacto ${s.whatsapp||s.email}. Aprovar em ${APP_NAME} HQ.`;
+    if(DEVOLVE_HQ_WHATSAPP) window.open(waUrl(DEVOLVE_HQ_WHATSAPP, avisoMsg), '_blank');
+    if(DEVOLVE_HQ_EMAIL) window.open(emailUrl(DEVOLVE_HQ_EMAIL, 'Novo pedido de conta '+APP_NAME, avisoMsg), '_blank');
+  }
+  const cfg = {
+    tenant_id: tenant.id, nome_negocio: s.nomeNegocio, morada:'', email: s.email, whatsapp_numero: s.whatsapp,
+    horario_fecho:'18:00', notif_whatsapp_auto:true, notif_atraso_horas:1, idioma:'pt'
+  };
+  const categories = []; const items = []; const units = [];
+  const tpl = CATALOG_TEMPLATES[s.template];
+  tpl.categorias.forEach(cat=>{
+    const catId = uid();
+    categories.push({ id:catId, tenant_id:tenant.id, nome:cat.nome, icone:cat.icone, campos_extra:cat.campos_extra, ordem:categories.length });
+    cat.itens.forEach(it=>{
+      const itemId = uid();
+      items.push({ id:itemId, tenant_id:tenant.id, category_id:catId, nome:it.nome, preco:it.preco||0, caucao_sugerida:it.caucao_sugerida||0, foto:'', activo:true });
+      for(let n=1; n<=it.quantidade_inicial; n++){
+        units.push({ id:uid(), tenant_id:tenant.id, item_id:itemId, codigo:prefixoCodigo(it.nome)+'-'+String(n).padStart(3,'0'), atributos:{}, estado:'disponivel' });
+      }
+    });
+  });
+  state.tenant = tenant; state.cfg = cfg; state.categories = categories; state.items = items; state.units = units; state.rentals = [];
+  saveLocal();
+  toast('Pedido enviado! A conta fica activa assim que for aprovada.');
+  enterApp();
+}
+
+/* ============================================================
+   SESSÃO LOCAL
+   ============================================================ */
+function seedSurfDemo(){
+  const existing = loadLocal();
+  if(existing && existing.tenant){
+    if(!confirm('Isto substitui os dados actuais desta pré-visualização por um catálogo de exemplo de surf (pranchas e fatos variados). Continuar?')) return;
+  }
+  const tenant = { id: uid(), nome: 'Escola de Surf — Demo', sector:'surf', whatsapp_numero:'351900000000', plano:'trial', conta_activa:true, aprovado:true, proximo_pagamento: addMonths(new Date(),1).toISOString(), criado_em: new Date().toISOString() };
+  const cfg = { tenant_id: tenant.id, nome_negocio: tenant.nome, morada:'Praia de Arrifana', email:'', whatsapp_numero: tenant.whatsapp_numero, horario_fecho:'18:00', notif_whatsapp_auto:true, notif_atraso_horas:1, idioma:'pt' };
+  const categories = []; const items = []; const units = [];
+  const tpl = CATALOG_TEMPLATES.surf;
+  tpl.categorias.forEach(cat=>{
+    const catId = uid();
+    categories.push({ id:catId, tenant_id:tenant.id, nome:cat.nome, icone:cat.icone, campos_extra:cat.campos_extra, ordem:categories.length });
+    cat.itens.forEach(it=>{
+      const itemId = uid();
+      items.push({ id:itemId, tenant_id:tenant.id, category_id:catId, nome:it.nome, preco:it.preco||0, caucao_sugerida:it.caucao_sugerida||0, foto:'', activo:true });
+      for(let n=1; n<=it.quantidade_inicial; n++){
+        units.push({ id:uid(), tenant_id:tenant.id, item_id:itemId, codigo:prefixoCodigo(it.nome)+'-'+String(n).padStart(3,'0'), atributos:{}, estado:'disponivel' });
+      }
+    });
+  });
+  state.tenant = tenant; state.cfg = cfg; state.categories = categories; state.items = items; state.units = units; state.rentals = [];
+  saveLocal();
+  toast('Catálogo de surf de exemplo criado!');
+  enterApp();
+}
+
+function hydrateFromLocal(data){
+  state.tenant = data.tenant; state.cfg = data.cfg;
+  state.categories = data.categories || []; state.items = data.items || [];
+  state.units = data.units || []; state.rentals = data.rentals || [];
+}
+function enterApp(){
+  state.loading = false; state.view = 'app'; state.appView = 'dashboard';
+  render();
+  startTicker();
+}
+function doLogout(){
+  state.view = 'landing';
+  render();
+}
+
+let tickerStarted = false;
+function startTicker(){
+  if(tickerStarted) return; tickerStarted = true;
+  setInterval(()=>{
+    document.querySelectorAll('.countdown[data-target]').forEach(elc=>{
+      const target = new Date(elc.dataset.target).getTime();
+      const ms = target - Date.now();
+      elc.textContent = fmtCountdown(ms);
+      elc.classList.remove('ok','warn','crit');
+      elc.classList.add(ms<0?'crit':(ms<3*3600*1000?'warn':'ok'));
+    });
+  }, 1000);
+}
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+const NAV_ITEMS = [
+  {k:'dashboard', l:'Dashboard', i:'🏠'},
+  {k:'novo', l:'Novo Aluguer', i:'➕'},
+  {k:'ativos', l:'Activos', i:'📋'},
+  {k:'atraso', l:'Em Atraso', i:'🚨'},
+  {k:'historico', l:'Histórico', i:'🗂️'},
+  {k:'catalogo', l:'Catálogo', i:'📦'},
+  {k:'analytics', l:'Analytics', i:'📊'},
+  {k:'config', l:'Configurações', i:'⚙️'},
+];
+
+function renderApp(){
+  const overdue = state.rentals.filter(r=>!r.devolucao_real && estadoEfectivo(r)==='atraso').length;
+  const pend = state.rentals.filter(r=>r.estado==='pendente').length;
+  const nav = [...NAV_ITEMS];
+
+  const navHtml = nav.map(n=>`
+    <div class="side-link ${state.appView===n.k?'on':''}" onclick="setAppView('${n.k}')">
+      <span class="ico">${n.i}</span>${n.l}
+      ${n.k==='atraso' && overdue>0 ? `<span class="badge">${overdue}</span>` : ''}
+      ${n.k==='dashboard' && pend>0 ? `<span class="badge" style="background:var(--accent);color:var(--accent-text)">${pend}</span>` : ''}
+    </div>`).join('');
+
+  let viewHtml = '';
+  if(state.appView==='dashboard') viewHtml = renderDashboard();
+  else if(state.appView==='novo') viewHtml = renderNovo();
+  else if(state.appView==='ativos') viewHtml = renderAtivos();
+  else if(state.appView==='atraso') viewHtml = renderAtrasoView();
+  else if(state.appView==='historico') viewHtml = renderHistorico();
+  else if(state.appView==='catalogo') viewHtml = renderCatalogo();
+  else if(state.appView==='analytics') viewHtml = renderAnalytics();
+  else if(state.appView==='config') viewHtml = renderConfig();
+
+  const currentLabel = (nav.find(n=>n.k===state.appView)||{}).l || '';
+
+  const bottomItems = [
+    {k:'dashboard', l:'Início', i:'🏠'},
+    {k:'novo', l:'Novo', i:'➕'},
+    {k:'ativos', l:'Activos', i:'📋'},
+    {k:'atraso', l:'Atrasos', i:'🚨'},
+  ];
+  const maisActivo = ['historico','catalogo','analytics','config'].includes(state.appView);
+  const bottomNavHtml = bottomItems.map(n=>`
+    <div class="bottom-nav-item ${state.appView===n.k?'on':''}" onclick="setAppView('${n.k}')">
+      <span class="ico">${n.i}</span>${n.l}
+      ${n.k==='atraso' && overdue>0 ? `<span class="badge">${overdue}</span>` : ''}
+      ${n.k==='dashboard' && pend>0 ? `<span class="badge" style="background:var(--accent);color:var(--accent-text)">${pend}</span>` : ''}
+    </div>`).join('') + `
+    <div class="bottom-nav-item ${maisActivo?'on':''}" onclick="openMaisModal()"><span class="ico">☰</span>Mais</div>`;
+
+  return `
+  <div class="shell">
+    <div class="sidebar" id="sidebar">
+      <div class="logo"><span class="mark">↻</span> ${APP_NAME}</div>
+      <div class="side-biz"><div class="n">${state.tenant? state.tenant.nome : ''}</div><div class="p">${state.tenant? state.tenant.plano : ''} · demo local</div></div>
+      <div class="side-nav">${navHtml}</div>
+      <div class="side-foot"><button class="btn ghost block" onclick="doLogout()">↩ Sair</button></div>
+    </div>
+    <div class="mobile-topbar">
+      <div class="logo" style="font-size:15px"><span class="mark">↻</span></div>
+      <h1>${currentLabel}</h1>
+    </div>
+    <div class="main">
+      <div class="topbar"><h1>${currentLabel}</h1><div class="spacer"></div></div>
+      <div class="content" id="view-content">
+        ${state.appView==='dashboard'? `<div class="demo-note">🔒 <span><b>Pré-visualização</b> — dados só neste browser. O WhatsApp <b>funciona</b> (abre com a mensagem pronta no idioma do cliente); SMS e email automáticos só na versão final com servidor.</span></div>` : ''}
+        ${viewHtml}
+      </div>
+    </div>
+    <div class="bottom-nav">${bottomNavHtml}</div>
+  </div>`;
+}
+function setAppView(k){ state.appView = k; render(); }
+function openMaisModal(){ renderModal(maisModalHtml()); }
+function maisModalHtml(){
+  const items = [
+    {k:'historico', l:'Histórico', i:'🗂️'},
+    {k:'catalogo', l:'Catálogo', i:'📦'},
+    {k:'analytics', l:'Analytics', i:'📊'},
+    {k:'config', l:'Configurações', i:'⚙️'},
+  ];
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>Mais</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="mais-list">
+        ${items.map(n=>`<div class="mais-item" onclick="closeModal();setAppView('${n.k}')"><span class="ico">${n.i}</span>${n.l}</div>`).join('')}
+        <div class="mais-item" onclick="closeModal();abrirLojaCliente()"><span class="ico">🔗</span>Página de reservas do cliente</div>
+        <div class="mais-item danger" onclick="closeModal();doLogout()"><span class="ico">↩</span>Sair</div>
+      </div>
+    </div>
+  </div></div>`;
+}
+
+/* ============================================================
+   LOJA PÚBLICA — auto-reserva do cliente (sem login)
+   Na versão real seria um link próprio (ex: devolve.pt/tua-loja).
+   Aqui simulamos para testares a experiência do cliente.
+   ============================================================ */
+function abrirLojaCliente(){
+  state.clientView = true;
+  state.clientBooking = { nome:'', pais:'PT', telefone:'', email:'', cart:[], unidade:'dias', duracao:1, catSel:(state.categories[0]?state.categories[0].id:null), enviado:false };
+  render();
+}
+function fecharLojaCliente(){ state.clientView = false; render(); }
+
+function renderClientStore(){
+  const b = state.clientBooking;
+  const loja = (state.cfg&&state.cfg.nome_negocio)||'A nossa loja';
+  if(b.enviado) return renderClientSuccess();
+  const cats = state.categories;
+  if(!b.catSel && cats.length) b.catSel = cats[0].id;
+  const itens = b.catSel? state.items.filter(i=>i.category_id===b.catSel && i.activo!==false) : state.items;
+  const totalArtigos = b.cart.reduce((s,c)=>s+c.qtd,0);
+  return `
+  <div class="cstore">
+    <div class="cstore-hero">
+      <div class="biz">${loja}</div>
+      <div class="sub">Reserva o teu material online 🌊</div>
+      <div class="badge-demo">👀 Vista do cliente — simulação</div>
+    </div>
+    <div class="cstore-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="section-title" style="font-size:17px">Escolhe o que queres alugar</div>
+        <button class="btn sm ghost" onclick="fecharLojaCliente()">← Voltar ao painel</button>
+      </div>
+      ${cats.length>1? `<div class="cstore-cat-bar">${cats.map(c=>`<div class="chip ${b.catSel===c.id?'sel':''}" onclick="cb_setCat('${c.id}')">${c.icone} ${c.nome}</div>`).join('')}</div>` : ''}
+      ${itens.length===0? `<div class="empty"><div class="ico">📦</div>Ainda sem artigos disponíveis.</div>` :
+      `<div class="shop-grid">${itens.map(it=>{
+        const cat = state.categories.find(c=>c.id===it.category_id)||{};
+        const disp = stockDisponivel(it.id);
+        const inCart = b.cart.find(c=>c.item_id===it.id);
+        const q = inCart? inCart.qtd : 0;
+        return `<div class="shop-card" style="cursor:default">
+          <div class="photo">${it.foto? `<img src="${it.foto}" alt="${it.nome}">` : productArt(it.nome, cat.icone)}</div>
+          <div class="body">
+            <div class="cat-tag">${cat.nome||''}</div>
+            <div class="name">${it.nome}</div>
+            <div class="price">€${(it.preco||0).toFixed(2)} <small>/dia</small></div>
+            ${disp<=0? `<div style="font-size:11.5px;color:var(--red);margin-top:6px">Esgotado</div>` :
+              q>0? `<div class="in-cart"><button class="qty-btn" onclick="cb_qty('${it.id}',-1)">−</button><span class="qty-val tabular">${q}</span><button class="qty-btn" onclick="cb_qty('${it.id}',1)" ${q>=disp?'disabled':''}>+</button></div>`
+                 : `<button class="add-btn" onclick="cb_qty('${it.id}',1)">+ Adicionar</button>`}
+          </div>
+        </div>`;
+      }).join('')}</div>`}
+
+    </div>
+
+    ${totalArtigos>0? `<div class="cbook-bar"><div class="cbook-bar-in">
+      <div class="cnt">🛒 <b>${totalArtigos}</b> ${totalArtigos===1?'artigo':'artigos'} seleccionados</div>
+      <button class="btn primary" onclick="cb_openCheckout()">Continuar reserva →</button>
+    </div></div>` : ''}
+  </div>`;
+}
+function cb_openCheckout(){ renderModal(cbCheckoutModalHtml()); }
+function cbCheckoutModalHtml(){
+  const b = state.clientBooking;
+  const totalArtigos = b.cart.reduce((s,c)=>s+c.qtd,0);
+  const precoEstimado = b.cart.reduce((s,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return s + c.qtd*precoPorUnidade(item,b.unidade,b.duracao); },0);
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>Finalizar pedido</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:10px 12px;margin-bottom:16px;font-size:13px">
+        ${b.cart.map(c=>`<div style="display:flex;justify-content:space-between;padding:3px 0">${c.qtd}× ${c.nome}<span></span></div>`).join('')}
+      </div>
+      <div class="field"><label>Nome *</label><input type="text" id="cb-nome" value="${b.nome}" oninput="cb_bind('nome',this.value.toUpperCase())" style="text-transform:uppercase" placeholder="O TEU NOME" autofocus></div>
+      <div class="field-row">
+        <div class="field"><label>País *</label><select id="cb-pais" onchange="cb_bind('pais',this.value);renderModal(cbCheckoutModalHtml())">${COUNTRIES.map(c=>`<option value="${c.c}" ${b.pais===c.c?'selected':''}>${c.flag} ${c.nome}</option>`).join('')}</select></div>
+        <div class="field"><label>Telefone (WhatsApp) *</label>
+          <div style="display:flex;gap:6px">
+            <span style="display:flex;align-items:center;padding:0 10px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);font-weight:700;font-size:13px">+${countryByCode(b.pais).dial}</span>
+            <input type="tel" id="cb-tel" value="${b.telefone}" oninput="cb_bind('telefone',this.value)" placeholder="912 345 678" style="flex:1">
+          </div>
+        </div>
+      </div>
+      <div class="field"><label>Email</label><input type="email" id="cb-email" value="${b.email}" oninput="cb_bind('email',this.value)" placeholder="para receberes a confirmação"></div>
+      <div class="field-row">
+        <div class="field"><label>Duração</label>
+          <div class="chip-row"><div class="chip ${b.unidade==='horas'?'sel':''}" onclick="cb_bind('unidade','horas');renderModal(cbCheckoutModalHtml())">Horas</div><div class="chip ${b.unidade==='dias'?'sel':''}" onclick="cb_bind('unidade','dias');renderModal(cbCheckoutModalHtml())">Dias</div></div>
+        </div>
+        <div class="field"><label>Nº de ${b.unidade}</label><input type="number" min="1" id="cb-dur" value="${b.duracao}" oninput="cb_bind('duracao',parseInt(this.value)||1);renderModal(cbCheckoutModalHtml())"></div>
+      </div>
+      <div class="summary-devol">Estimativa: <b>€${precoEstimado.toFixed(2)}</b> · ${totalArtigos} ${totalArtigos===1?'artigo':'artigos'}</div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">← Voltar aos artigos</button><button class="btn primary" onclick="cb_submit()">✅ Pedir reserva</button></div>
+  </div></div>`;
+}
+function renderClientSuccess(){
+  const loja = (state.cfg&&state.cfg.nome_negocio)||'A nossa loja';
+  return `<div class="cstore"><div class="cstore-hero"><div class="biz">${loja}</div></div>
+    <div class="cstore-success">
+      <div class="big">✅</div>
+      <h2>Pedido de reserva enviado!</h2>
+      <p>Obrigado! A ${loja} recebeu o teu pedido e vai confirmar em breve.</p>
+      <p>Vais receber a confirmação por WhatsApp.</p>
+      <button class="btn primary" style="margin-top:20px" onclick="abrirLojaCliente()">Nova reserva</button>
+      <button class="btn ghost block" style="margin-top:10px" onclick="fecharLojaCliente()">← Voltar ao painel (staff)</button>
+    </div></div>`;
+}
+function cb_bind(k,v){ state.clientBooking[k]=v; }
+function cb_setCat(id){ state.clientBooking.catSel=id; render(); }
+function cb_qty(itemId, delta){
+  const b = state.clientBooking;
+  const item = state.items.find(i=>i.id===itemId);
+  let line = b.cart.find(c=>c.item_id===itemId);
+  if(delta>0){
+    if((line?line.qtd:0) >= stockDisponivel(itemId)) return;
+    if(!line){ line={item_id:itemId, nome:item.nome, qtd:0}; b.cart.push(line); }
+    line.qtd++;
+  } else if(line){
+    line.qtd--; if(line.qtd<=0) b.cart = b.cart.filter(c=>c.item_id!==itemId);
+  }
+  render();
+}
+function cb_submit(){
+  const b = state.clientBooking;
+  if(!b.nome){ toast('Escreve o teu nome.'); return; }
+  if(!b.telefone){ toast('O telefone é obrigatório.'); return; }
+  const pais = countryByCode(b.pais);
+  const inicio = new Date().toISOString();
+  const prevista = calcDevolucaoPrevista(inicio, b.unidade, b.duracao, state.cfg? state.cfg.horario_fecho : '18:00');
+  const itensSnapshot = b.cart.map(c=>{ const item=state.items.find(i=>i.id===c.item_id); return { item_id:c.item_id, nome:c.nome, quantidade:c.qtd, unit_ids:[], unit_codigos:[], preco_unit:item?item.preco:0 }; });
+  const precoTotal = b.cart.reduce((s,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return s + c.qtd*precoPorUnidade(item,b.unidade,b.duracao); },0);
+  const rental = {
+    id: uid(), tenant_id: state.tenantId,
+    cliente_nome: b.nome, cliente_telefone: b.telefone, cliente_email: b.email, cliente_doc:'',
+    cliente_pais: b.pais, cliente_lang: pais.lang,
+    itens: itensSnapshot, inicio, unidade_duracao: b.unidade, duracao: b.duracao,
+    devolucao_prevista: prevista.toISOString(), devolucao_real: null,
+    estado:'pendente', origem:'cliente', caucao:0, preco_total: precoTotal, notas:'', criado_em: inicio
+  };
+  state.rentals.unshift(rental);
+  saveLocal();
+  state.clientBooking.enviado = true;
+  closeModal();
+  render();
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+function renderDashboard(){
+  const pendentes = state.rentals.filter(r=>r.estado==='pendente');
+  const activos = state.rentals.filter(r=>!r.devolucao_real && r.estado!=='pendente');
+  const emAtraso = activos.filter(r=>estadoEfectivo(r)==='atraso');
+  const aVencer = activos.filter(r=>estadoEfectivo(r)==='avencer');
+  const urgentes = [...activos].sort((a,b)=> new Date(a.devolucao_prevista)-new Date(b.devolucao_prevista)).slice(0,6);
+  // receita: soma dos alugueres confirmados criados este mês
+  const agora = new Date();
+  const mesRentals = state.rentals.filter(r=>{ if(r.estado==='pendente') return false; const d=new Date(r.criado_em); return d.getMonth()===agora.getMonth() && d.getFullYear()===agora.getFullYear(); });
+  const receitaMes = mesRentals.reduce((s,r)=>s+(r.preco_total||0),0);
+  const totalUnidades = state.units.length;
+  const unidadesFora = state.units.filter(u=>u.estado==='alugada').length;
+  const ocupacao = totalUnidades? Math.round(unidadesFora/totalUnidades*100) : 0;
+
+  return `
+    ${pendentes.length>0? `<div class="banner" style="background:var(--accent-dim);border-color:var(--accent);color:var(--text-bright)">🔔 <b>${pendentes.length}</b> ${pendentes.length===1?'pedido de reserva do cliente':'pedidos de reserva de clientes'} à espera de confirmação.</div>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header"><span class="card-title">🔔 Pedidos de clientes</span></div>
+      <div class="card-body"><div class="rental-grid">${pendentes.map(r=>pendenteCard(r)).join('')}</div></div>
+    </div>` : ''}
+    ${emAtraso.length>0? `<div class="banner">🚨 <b>${emAtraso.length}</b> ${emAtraso.length===1?'aluguer em atraso':'alugueres em atraso'} agora mesmo. <button class="btn sm danger" onclick="setAppView('atraso')">Ver</button></div>` : ''}
+    <div class="hero-stat">
+      <div class="big">
+        <div class="lbl">Receita este mês</div>
+        <div class="val tabular">€${receitaMes.toFixed(2)}</div>
+        <div class="sub">${mesRentals.length} ${mesRentals.length===1?'aluguer':'alugueres'} · ${new Date().toLocaleDateString('pt-PT',{month:'long'})}</div>
+      </div>
+      <div class="mini">
+        <div class="m"><div class="v tabular">${ocupacao}%</div><div class="k">Ocupação</div></div>
+        <div class="m"><div class="v tabular">${unidadesFora}/${totalUnidades}</div><div class="k">Em uso</div></div>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat ok" onclick="setAppView('ativos')"><span class="stat-ico">📋</span><div class="lbl">Activos</div><div class="num tabular">${activos.length}</div></div>
+      <div class="stat warn" onclick="setAppView('ativos')"><span class="stat-ico">⏳</span><div class="lbl">A vencer</div><div class="num tabular">${aVencer.length}</div></div>
+      <div class="stat crit" onclick="setAppView('atraso')"><span class="stat-ico">🚨</span><div class="lbl">Em atraso</div><div class="num tabular">${emAtraso.length}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Mais urgentes</span>${activos.length>6?`<button class="btn sm ghost" style="margin-left:auto" onclick="setAppView('ativos')">Ver todos →</button>`:''}</div>
+      <div class="card-body">
+        ${urgentes.length===0? `<div class="empty"><div class="ico">🏄</div>Sem alugueres activos de momento.<br><button class="btn primary" style="margin-top:14px" onclick="setAppView('novo')">+ Novo Aluguer</button></div>` :
+          `<div class="rental-grid">${urgentes.map(r=>rentalCard(r)).join('')}</div>`}
+      </div>
+    </div>`;
+}
+
+function rentalCard(r){
+  const st = estadoEfectivo(r);
+  const itensTxt = (r.itens||[]).map(i=>`<span>${i.quantidade}× ${i.nome}${i.unit_codigos&&i.unit_codigos.length? ' '+i.unit_codigos.join('/') : ''}</span>`).join('');
+  return `
+  <div class="rcard ${st==='atraso'?'crit':''}">
+    <div class="rcard-top">
+      <div><div class="client">${r.cliente_pais?countryByCode(r.cliente_pais).flag+' ':''}${r.cliente_nome}</div><div class="phone">${r.cliente_telefone||''}</div></div>
+      ${st==='atraso'?'<span class="pill crit">Atraso</span>': st==='avencer'? '<span class="pill warn">A vencer</span>' : '<span class="pill ok">Activo</span>'}
+    </div>
+    <div class="items">${itensTxt}</div>
+    <div class="countdown" data-target="${r.devolucao_prevista}">${fmtCountdown(msRestantes(r))}</div>
+    <div class="meta">Prevista: ${fmtDateTime(r.devolucao_prevista)}${r.preco_total? ' · €'+r.preco_total.toFixed(2) : ''}</div>
+    <div class="rcard-actions">
+      <button class="btn sm primary block" onclick="devolverAluguer('${r.id}')">Devolver</button>
+      ${r.cliente_telefone? `<button class="btn sm" title="WhatsApp" onclick="contactarCliente('${r.id}')">💬</button>`:''}
+      ${r.cliente_email? `<button class="btn sm" title="Email" onclick="emailCliente('${r.id}', ${(!r.devolucao_real && estadoEfectivo(r)==='atraso')?"'atraso'":"'confirm'"})">✉️</button>`:''}
+    </div>
+  </div>`;
+}
+
+function pendenteCard(r){
+  const itensTxt = (r.itens||[]).map(i=>`<span>${i.quantidade}× ${i.nome}</span>`).join('');
+  return `
+  <div class="rcard" style="border-color:var(--accent)">
+    <div class="rcard-top">
+      <div><div class="client">${r.cliente_pais?countryByCode(r.cliente_pais).flag+' ':''}${r.cliente_nome}</div><div class="phone">${r.cliente_telefone||''}</div></div>
+      <span class="pill" style="background:var(--accent-dim);color:var(--accent)">● Pedido</span>
+    </div>
+    <div class="items">${itensTxt}</div>
+    <div class="meta">Pretende: ${fmtDateTime(r.devolucao_prevista)}${r.preco_total? ' · ~€'+r.preco_total.toFixed(2) : ''}</div>
+    <div class="rcard-actions">
+      <button class="btn sm primary block" onclick="confirmarPendente('${r.id}')">✅ Confirmar</button>
+      <button class="btn sm danger" onclick="recusarPendente('${r.id}')">Recusar</button>
+    </div>
+  </div>`;
+}
+function confirmarPendente(id){
+  const r = state.rentals.find(x=>x.id===id);
+  if(!r) return;
+  // atribui unidades reais agora (só na confirmação é que o stock é comprometido)
+  let faltou = false;
+  (r.itens||[]).forEach(linha=>{
+    const escolhidas = [];
+    for(let k=0;k<linha.quantidade;k++){
+      const u = state.units.filter(x=>x.item_id===linha.item_id && x.estado==='disponivel' && !escolhidas.includes(x.id)).sort((a,b)=>a.codigo.localeCompare(b.codigo))[0];
+      if(u){ escolhidas.push(u.id); u.estado='alugada'; } else faltou=true;
+    }
+    linha.unit_ids = escolhidas;
+    linha.unit_codigos = escolhidas.map(uid2=>{ const u=state.units.find(x=>x.id===uid2); return u?u.codigo:''; });
+  });
+  r.estado = 'activo';
+  saveLocal();
+  // WhatsApp de confirmação na língua do cliente
+  const pais = countryByCode(r.cliente_pais);
+  const itensTxt = (r.itens||[]).map(i=>i.quantidade+'× '+i.nome).join(', ');
+  const msg = msgFor(r.cliente_lang||pais.lang, 'confirm', { nome:r.cliente_nome, loja:(state.cfg&&state.cfg.nome_negocio)||'Devolve', itens:itensTxt, prazo:fmtDateTime(r.devolucao_prevista), preco:r.preco_total?r.preco_total.toFixed(2):'', caucao:'' });
+  if(r.cliente_telefone) window.open(waUrl(r.cliente_telefone, msg, pais.dial), '_blank');
+  if(r.cliente_email){
+    const lang = r.cliente_lang||pais.lang;
+    window.open(emailUrl(r.cliente_email, (SUBJ[lang]||SUBJ.pt).confirm+' — '+((state.cfg&&state.cfg.nome_negocio)||APP_NAME), msg), '_blank');
+  }
+  toast(faltou? 'Confirmado, mas faltou stock nalguns artigos.' : 'Reserva confirmada — aviso enviado ✅');
+  render();
+}
+function recusarPendente(id){
+  if(!confirm('Recusar este pedido de reserva?')) return;
+  state.rentals = state.rentals.filter(r=>r.id!==id);
+  saveLocal();
+  render();
+}
+
+function devolverAluguer(id){
+  const r = state.rentals.find(x=>x.id===id);
+  if(!r) return;
+  const agora = new Date().toISOString();
+  r.devolucao_real = agora;
+  r.estado = Date.now() > new Date(r.devolucao_prevista).getTime() ? 'atraso' : 'devolvido';
+  (r.itens||[]).forEach(linha=> (linha.unit_ids||[]).forEach(uidv=>{
+    const u = state.units.find(x=>x.id===uidv);
+    if(u && u.estado==='alugada') u.estado = 'disponivel';
+  }));
+  saveLocal();
+  // agradecimento por WhatsApp/email na língua do cliente (abrir antes de re-render)
+  if(r.cliente_telefone || r.cliente_email){
+    const pais = countryByCode(r.cliente_pais);
+    const lang = r.cliente_lang||pais.lang;
+    const itensTxt = (r.itens||[]).map(i=>i.nome).join(', ');
+    const msg = msgFor(lang, 'obrigado', {
+      nome: r.cliente_nome, loja: (state.cfg&&state.cfg.nome_negocio)||APP_NAME, itens: itensTxt
+    });
+    if(r.cliente_telefone) window.open(waUrl(r.cliente_telefone, msg, pais.dial), '_blank');
+    if(r.cliente_email) window.open(emailUrl(r.cliente_email, (SUBJ[lang]||SUBJ.pt).obrigado+' — '+((state.cfg&&state.cfg.nome_negocio)||APP_NAME), msg), '_blank');
+  }
+  toast('Devolvido — agradecimento enviado 🙏');
+  render();
+}
+function contactarCliente(id){
+  const r = state.rentals.find(x=>x.id===id);
+  if(!r || !r.cliente_telefone) return;
+  const pais = countryByCode(r.cliente_pais);
+  const lang = r.cliente_lang||pais.lang;
+  const itensTxt = (r.itens||[]).map(i=>i.quantidade+'× '+i.nome).join(', ');
+  const emAtraso = !r.devolucao_real && estadoEfectivo(r)==='atraso';
+  const msg = emAtraso
+    ? msgFor(lang, 'atraso', { nome:r.cliente_nome, loja:(state.cfg&&state.cfg.nome_negocio)||'Devolve', itens:itensTxt, prazo:fmtDateTime(r.devolucao_prevista) })
+    : msgFor(lang, 'confirm', { nome:r.cliente_nome, loja:(state.cfg&&state.cfg.nome_negocio)||'Devolve', itens:itensTxt, prazo:fmtDateTime(r.devolucao_prevista), preco:r.preco_total?r.preco_total.toFixed(2):'', caucao:r.caucao?r.caucao.toFixed(2):'' });
+  window.open(waUrl(r.cliente_telefone, msg, pais.dial), '_blank');
+}
+
+/* ============================================================
+   NOVO ALUGUER
+   ============================================================ */
+function renderNovo(){
+  const n = state.novo;
+  const cats = state.categories;
+  if(!n.catSel && cats.length) n.catSel = cats[0].id;
+  const catAtual = cats.find(c=>c.id===n.catSel);
+  const itensCat = catAtual? state.items.filter(i=>i.category_id===catAtual.id && i.activo!==false) : [];
+
+  const totalCarrinho = n.cart.reduce((s,c)=>s+c.unit_ids.length,0);
+  const precoAtual = n.preco_manual!=null? n.preco_manual : estimarPreco();
+
+  return `
+  <div style="${totalCarrinho>0?'padding-bottom:88px':''}">
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">1. Cliente</span></div>
+        <div class="card-body">
+          <div class="field"><label>Nome do cliente *</label><input type="text" id="nv-nome" value="${n.cliente_nome}" oninput="nv_bind('cliente_nome',this.value.toUpperCase())" style="text-transform:uppercase" placeholder="NOME DO CLIENTE"></div>
+          <div class="field-row">
+            <div class="field"><label>País / Nacionalidade *</label><select id="nv-pais" onchange="nv_setPais(this.value)">${COUNTRIES.map(c=>`<option value="${c.c}" ${n.cliente_pais===c.c?'selected':''}>${c.flag} ${c.nome}</option>`).join('')}</select></div>
+            <div class="field"><label>Telefone (WhatsApp) *</label>
+              <div style="display:flex;gap:6px;align-items:stretch">
+                <span style="display:flex;align-items:center;padding:0 10px;background:var(--surface3);border:1px solid var(--border);border-radius:var(--radius);font-weight:700;font-size:13px;white-space:nowrap">+${countryByCode(n.cliente_pais).dial}</span>
+                <input type="tel" id="nv-tel" value="${n.cliente_telefone}" oninput="nv_bind('cliente_telefone',this.value)" placeholder="912 345 678" style="flex:1">
+              </div>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Email (para confirmação)</label><input type="email" id="nv-email" value="${n.cliente_email}" oninput="nv_bind('cliente_email',this.value)" placeholder="cliente@email.com"></div>
+            <div class="field"><label>Nº documento</label><input type="text" id="nv-doc" value="${n.cliente_doc}" oninput="nv_bind('cliente_doc',this.value)" placeholder="opcional"></div>
+          </div>
+          <div style="font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px">💬 Vai receber a confirmação por WhatsApp em <b style="color:var(--accent)">${({pt:'Português',ptbr:'Português (BR)',en:'Inglês',es:'Espanhol',fr:'Francês',de:'Alemão',nl:'Neerlandês',it:'Italiano'})[countryByCode(n.cliente_pais).lang]}</b></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">2. Artigos e serviços</span></div>
+        <div class="card-body">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Toca num artigo para escolher quantidade e duração — cada artigo pode ter o seu próprio prazo (horas ou dias).</p>
+          ${cats.length===0? `<div class="empty">Ainda não tens categorias. <a onclick="setAppView('catalogo')" style="color:var(--accent);cursor:pointer">Criar catálogo →</a></div>` : `
+          <div class="chip-row" style="margin-bottom:14px">
+            ${cats.map(c=>`<div class="chip ${n.catSel===c.id?'sel':''}" onclick="nv_setCat('${c.id}')">${c.icone} ${c.nome}</div>`).join('')}
+          </div>
+          <div class="item-pick-grid">
+            ${itensCat.map(it=>{
+              const disp = stockDisponivel(it.id);
+              const inCart = n.cart.find(c=>c.item_id===it.id);
+              const qty = inCart? inCart.unit_ids.length : 0;
+              return `<div class="item-pick ${inCart?'in-cart-pick':''}" onclick="${disp>0||inCart?`nv_openItemAdd('${it.id}')`:''}" style="${disp<=0 && !inCart?'opacity:.5;cursor:default':'cursor:pointer'}">
+                <div class="pick-thumb">${it.foto? `<img src="${it.foto}" alt="${it.nome}">` : productArt(it.nome, catAtual&&catAtual.icone)}</div>
+                <div class="n">${it.nome}</div>
+                <div style="color:var(--accent);font-weight:700;font-size:12px;margin-bottom:2px">€${(it.preco||0).toFixed(2)}/dia</div>
+                <div class="avail ${disp<=0?'zero':''}">${disp} disponíveis</div>
+                ${inCart? `<div class="pick-in-cart">✓ ${qty}× · ${inCart.duracao} ${inCart.unidade==='dias'?(inCart.duracao===1?'dia':'dias'):(inCart.duracao===1?'hora':'horas')} <span style="margin-left:auto;color:var(--accent);font-weight:700">editar</span></div>`
+                  : `<button class="add-btn" style="margin-top:8px">+ Adicionar</button>`}
+              </div>`;
+            }).join('')}
+          </div>`}
+        </div>
+      </div>
+    </div>
+  </div>
+  ${totalCarrinho>0? `<div class="novo-cart-bar"><div class="novo-cart-bar-in">
+      <div class="cnt">🛒 <b>${totalCarrinho}</b> ${totalCarrinho===1?'artigo':'artigos'} · <b class="tabular">€${precoAtual.toFixed(2)}</b></div>
+      <button class="btn primary" onclick="nv_openResumo()">Rever & Confirmar →</button>
+    </div></div>` : ''}
+  <div id="modal-host"></div>`;
+}
+
+/* ---- adicionar/editar 1 artigo ao carrinho (com a sua própria duração) ---- */
+let _itemDraft = null;
+function nv_openItemAdd(itemId){
+  const item = state.items.find(i=>i.id===itemId);
+  const existing = state.novo.cart.find(c=>c.item_id===itemId);
+  const disp = stockDisponivel(itemId);
+  _itemDraft = existing
+    ? { item_id:itemId, nome:item.nome, quantidade:existing.unit_ids.length, unidade:existing.unidade, duracao:existing.duracao, disp }
+    : { item_id:itemId, nome:item.nome, quantidade: disp>0?1:0, unidade: state.novo.lastUnidade||'dias', duracao: state.novo.lastDuracao||1, disp };
+  renderModal(itemAddModalHtml());
+}
+function itemAddModalHtml(){
+  const d = _itemDraft;
+  const item = state.items.find(i=>i.id===d.item_id);
+  const prevista = calcDevolucaoPrevista(new Date().toISOString(), d.unidade, d.duracao, state.cfg? state.cfg.horario_fecho : '18:00');
+  const jaExiste = state.novo.cart.some(c=>c.item_id===d.item_id);
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>${d.nome}</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Quantidade (${d.disp} disponíveis)</label>
+        <div class="item-pick-row">
+          <button class="qty-btn" onclick="id_qty(-1)">−</button>
+          <span class="qty-val tabular">${d.quantidade}</span>
+          <button class="qty-btn" onclick="id_qty(1)" ${d.quantidade>=d.disp?'disabled':''}>+</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Duração deste artigo</label>
+        <div class="chip-row"><div class="chip ${d.unidade==='horas'?'sel':''}" onclick="id_setUnidade('horas')">Horas</div><div class="chip ${d.unidade==='dias'?'sel':''}" onclick="id_setUnidade('dias')">Dias</div></div>
+      </div>
+      <div class="field"><label>Nº de ${d.unidade}</label><input type="number" min="1" id="id-dur" value="${d.duracao}" oninput="id_setDuracao(this.value)"></div>
+      ${d.quantidade>0? `<div class="summary-devol">Devolução prevista: <b>${fmtDateTime(prevista)}</b> · €${(d.quantidade*precoPorUnidade(item,d.unidade,d.duracao)).toFixed(2)}</div>` : ''}
+    </div>
+    <div class="modal-foot">
+      ${jaExiste? `<button class="btn danger" onclick="nv_removeCart('${d.item_id}');closeModal()">Remover</button>` : ''}
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="nv_confirmItemDraft()" ${d.quantidade<=0?'disabled':''}>${jaExiste?'Guardar':'Adicionar'}</button>
+    </div>
+  </div></div>`;
+}
+function id_qty(delta){ _itemDraft.quantidade = Math.max(0, Math.min(_itemDraft.disp, _itemDraft.quantidade+delta)); renderModal(itemAddModalHtml()); }
+function id_setUnidade(u){ _itemDraft.unidade = u; renderModal(itemAddModalHtml()); }
+function id_setDuracao(v){ _itemDraft.duracao = Math.max(1, parseInt(v)||1); renderModal(itemAddModalHtml()); }
+function nv_confirmItemDraft(){
+  const d = _itemDraft;
+  const n = state.novo;
+  n.cart = n.cart.filter(c=>c.item_id!==d.item_id);
+  if(d.quantidade>0){
+    const unidades = state.units.filter(u=>u.item_id===d.item_id && u.estado==='disponivel').sort((a,b)=>a.codigo.localeCompare(b.codigo)).slice(0,d.quantidade);
+    n.cart.push({ item_id:d.item_id, nome:d.nome, unit_ids:unidades.map(u=>u.id), unidade:d.unidade, duracao:d.duracao });
+    n.lastUnidade = d.unidade; n.lastDuracao = d.duracao;
+  }
+  closeModal();
+  render();
+}
+function nv_openResumo(){ renderModal(resumoModalHtml()); }
+function linhaDuracaoTxt(c){
+  return c.duracao+' '+(c.unidade==='dias'? (c.duracao===1?'dia':'dias') : (c.duracao===1?'hora':'horas'));
+}
+function resumoModalHtml(){
+  const n = state.novo;
+  const gruposDif = new Set(n.cart.map(c=>c.unidade+'|'+c.duracao)).size;
+  const caucaoSugerida = n.cart.reduce((sum,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return sum + c.unit_ids.length*(item&&item.caucao_sugerida||0); },0);
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>Resumo do aluguer</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      ${n.cart.length===0? `<div class="empty" style="padding:24px 10px"><div class="ico">🛒</div>Sem artigos seleccionados</div>` :
+        n.cart.map(c=>{
+          const item = state.items.find(i=>i.id===c.item_id);
+          const codigos = c.unit_ids.map(uidv=>{ const u=state.units.find(x=>x.id===uidv); return u? u.codigo : ''; }).join(', ');
+          const subtotal = c.unit_ids.length*precoPorUnidade(item, c.unidade, c.duracao);
+          return `<div class="cart-line" onclick="closeModal();nv_openItemAdd('${c.item_id}')" style="cursor:pointer">
+            <span>${c.unit_ids.length}× ${c.nome} <span style="color:var(--muted);font-size:11.5px">(${codigos}) · ${linhaDuracaoTxt(c)} · €${subtotal.toFixed(2)}</span></span>
+            <span class="x" onclick="event.stopPropagation();nv_removeCart('${c.item_id}');renderModal(resumoModalHtml())">✕</span>
+          </div>`;
+        }).join('')
+      }
+      ${gruposDif>1? `<div style="font-size:11.5px;color:var(--accent);margin-top:8px">ℹ️ Este aluguer tem ${gruposDif} prazos diferentes — vai gerar ${gruposDif} registos separados (mesmo cliente), um WhatsApp só com tudo.</div>` : ''}
+      ${n.cart.length>0? `
+        <div class="field-row" style="margin-top:14px">
+          <div class="field"><label>Caução (€)</label><input type="number" min="0" step="1" id="nv-caucao" value="${n.caucao}" oninput="nv_bind('caucao', parseFloat(this.value)||0)"></div>
+          <div class="field"><label>Preço total (€)${gruposDif>1?' <span style="color:var(--muted);font-weight:400">— desactivado com prazos diferentes</span>':''}</label>
+            <input type="number" min="0" step="0.5" id="nv-preco" ${gruposDif>1?'disabled':''} value="${(n.preco_manual!=null? n.preco_manual : estimarPreco()).toFixed(2)}" oninput="nv_bind('preco_manual', parseFloat(this.value)||0)">
+          </div>
+        </div>
+        ${caucaoSugerida>0? `<div style="font-size:11.5px;color:var(--muted);margin-top:5px">Caução sugerida pelos artigos: €${caucaoSugerida.toFixed(2)} — <a onclick="nv_usarCaucaoSugerida(${caucaoSugerida});renderModal(resumoModalHtml())" style="color:var(--accent);cursor:pointer;font-weight:600">usar</a></div>` : ''}
+        ${gruposDif===1 && n.preco_manual!=null? `<div style="font-size:11.5px;color:var(--muted);margin-top:5px">Estimativa: €${estimarPreco().toFixed(2)} — <a onclick="nv_resetPreco();renderModal(resumoModalHtml())" style="color:var(--accent);cursor:pointer;font-weight:600">repor</a></div>` : ''}
+        <div class="summary-devol">Total estimado: <b>€${estimarPreco().toFixed(2)}</b></div>
+      ` : ''}
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">← Voltar</button>
+      <button class="btn primary block" onclick="confirmarAluguer()" ${(!n.cliente_nome || !n.cliente_telefone || n.cart.length===0)?'disabled':''}>Confirmar & Enviar WhatsApp</button>
+    </div>
+    ${(!n.cliente_telefone && n.cart.length>0)? `<div style="font-size:11.5px;color:var(--yellow);padding:0 20px 16px;text-align:center">⚠ Telefone obrigatório para contactar o cliente</div>`:''}
+  </div></div>`;
+}
+function estimarPreco(){
+  const n = state.novo;
+  return n.cart.reduce((sum,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return sum + c.unit_ids.length*precoPorUnidade(item,c.unidade,c.duracao); },0);
+}
+function nv_bind(k,v){ state.novo[k]=v; }
+function nv_setPais(v){ state.novo.cliente_pais=v; render(); }
+function nv_resetPreco(){ state.novo.preco_manual=null; render(); }
+function nv_usarCaucaoSugerida(valor){ state.novo.caucao = valor; render(); }
+function nv_setCat(id){ state.novo.catSel = id; render(); }
+function nv_removeCart(itemId){ state.novo.cart = state.novo.cart.filter(c=>c.item_id!==itemId); render(); }
+
+function confirmarAluguer(){
+  const n = state.novo;
+  if(!n.cliente_nome){ toast('Falta o nome do cliente.'); return; }
+  if(!n.cliente_telefone){ toast('O telefone é obrigatório para contactar o cliente.'); return; }
+  if(n.cart.length===0) return;
+  const pais = countryByCode(n.cliente_pais);
+  const inicio = new Date().toISOString();
+  const horarioFecho = state.cfg? state.cfg.horario_fecho : '18:00';
+
+  // Agrupar as linhas do carrinho por prazo (unidade+duração) — cada grupo gera um registo de aluguer próprio
+  const grupos = {};
+  const ordem = [];
+  n.cart.forEach(c=>{
+    const chave = c.unidade+'|'+c.duracao;
+    if(!grupos[chave]){ grupos[chave] = { unidade:c.unidade, duracao:c.duracao, linhas:[] }; ordem.push(chave); }
+    grupos[chave].linhas.push(c);
+  });
+
+  const precoTotalGeral = n.preco_manual!=null ? n.preco_manual : estimarPreco();
+  const rentalsGerados = [];
+  let devolucaoMaisCedo = null;
+  const linhasParaMsg = [];
+
+  ordem.forEach((chave, idx)=>{
+    const g = grupos[chave];
+    const prevista = calcDevolucaoPrevista(inicio, g.unidade, g.duracao, horarioFecho);
+    if(!devolucaoMaisCedo || prevista < devolucaoMaisCedo) devolucaoMaisCedo = prevista;
+
+    const itensSnapshot = g.linhas.map(c=>{
+      const codigos = c.unit_ids.map(uidv=>{ const u=state.units.find(x=>x.id===uidv); return u? u.codigo : ''; });
+      return { item_id:c.item_id, nome:c.nome, quantidade:c.unit_ids.length, unit_ids:[...c.unit_ids], unit_codigos:codigos };
+    });
+    const precoGrupo = g.linhas.reduce((sum,c)=>{ const item=state.items.find(i=>i.id===c.item_id); return sum + c.unit_ids.length*precoPorUnidade(item,c.unidade,c.duracao); },0);
+    // se houver 1 só prazo, respeita o preço manual (se definido); com vários prazos, cada registo fica com o seu preço calculado
+    const precoRegisto = (ordem.length===1 && n.preco_manual!=null) ? n.preco_manual : precoGrupo;
+
+    g.linhas.forEach(c=>{
+      linhasParaMsg.push(c.unit_ids.length+'× '+c.nome+' ('+linhaDuracaoTxt(c)+') — devolução '+fmtDateTime(prevista));
+    });
+
+    const rental = {
+      id: uid(), tenant_id: state.tenantId,
+      cliente_nome: n.cliente_nome, cliente_telefone: n.cliente_telefone,
+      cliente_email: n.cliente_email, cliente_doc: n.cliente_doc,
+      cliente_pais: n.cliente_pais, cliente_lang: pais.lang,
+      itens: itensSnapshot, inicio, unidade_duracao: g.unidade, duracao: g.duracao,
+      devolucao_prevista: prevista.toISOString(), devolucao_real: null,
+      estado:'activo', caucao: idx===0? n.caucao : 0, preco_total: precoRegisto, notas: n.notas, criado_em: inicio
+    };
+    rentalsGerados.push(rental);
+  });
+
+  // abrir WhatsApp/email ANTES de qualquer processamento, para não serem bloqueados pelo browser
+  const itensTxt = linhasParaMsg.join('\n');
+  const msg = msgFor(pais.lang, 'confirm', {
+    nome: n.cliente_nome, loja: (state.cfg&&state.cfg.nome_negocio)||APP_NAME,
+    itens: itensTxt, prazo: fmtDateTime(devolucaoMaisCedo),
+    preco: precoTotalGeral? precoTotalGeral.toFixed(2) : '', caucao: n.caucao? n.caucao.toFixed(2) : ''
+  });
+  window.open(waUrl(n.cliente_telefone, msg, pais.dial), '_blank');
+  if(n.cliente_email) window.open(emailUrl(n.cliente_email, (SUBJ[pais.lang]||SUBJ.pt).confirm+' — '+((state.cfg&&state.cfg.nome_negocio)||APP_NAME), msg), '_blank');
+
+  n.cart.forEach(c=> c.unit_ids.forEach(uidv=>{
+    const u = state.units.find(x=>x.id===uidv);
+    if(u) u.estado = 'alugada';
+  }));
+  rentalsGerados.reverse().forEach(r=> state.rentals.unshift(r));
+  saveLocal();
+  state.novo = { cliente_nome:'', cliente_telefone:'', cliente_email:'', cliente_doc:'', cliente_pais:n.cliente_pais, catSel:n.catSel, cart:[], unidade:'dias', duracao:1, caucao:0, preco_manual:null, notas:'' };
+  toast(rentalsGerados.length>1? rentalsGerados.length+' registos criados (prazos diferentes) — WhatsApp aberto ✅' : 'Aluguer registado — WhatsApp aberto ✅');
+  closeModal();
+  setAppView('ativos');
+}
+
+/* ============================================================
+   ACTIVOS / EM ATRASO
+   ============================================================ */
+function renderAtivos(){ return renderRentalListView(state.rentals.filter(r=>!r.devolucao_real && r.estado!=='pendente'), false); }
+function renderAtrasoView(){ return renderRentalListView(state.rentals.filter(r=>!r.devolucao_real && estadoEfectivo(r)==='atraso'), true); }
+
+function renderRentalListView(list, isAtraso){
+  const q = state.ativosFiltro.toLowerCase();
+  const catF = state.ativosCat;
+  let filtered = list.filter(r=>{
+    const matchQ = !q || r.cliente_nome.toLowerCase().includes(q) || (r.cliente_telefone||'').includes(q);
+    const matchCat = !catF || (r.itens||[]).some(i=>{
+      const item = state.items.find(x=>x.id===i.item_id);
+      return item && item.category_id===catF;
+    });
+    return matchQ && matchCat;
+  });
+  filtered.sort((a,b)=> new Date(a.devolucao_prevista)-new Date(b.devolucao_prevista));
+
+  return `
+    <div class="toolbar">
+      <input type="text" placeholder="Pesquisar cliente ou telefone..." value="${state.ativosFiltro}" oninput="setAtivosFiltro(this.value)">
+      <select onchange="setAtivosCat(this.value)">
+        <option value="">Todas as categorias</option>
+        ${state.categories.map(c=>`<option value="${c.id}" ${catF===c.id?'selected':''}>${c.icone} ${c.nome}</option>`).join('')}
+      </select>
+    </div>
+    ${filtered.length===0? `<div class="empty"><div class="ico">${isAtraso?'✅':'📋'}</div>${isAtraso?'Sem atrasos — tudo em dia.':'Nenhum aluguer activo.'}</div>` :
+      `<div class="rental-grid">${filtered.map(r=>rentalCard(r)).join('')}</div>`}
+  `;
+}
+function setAtivosFiltro(v){ state.ativosFiltro=v; render(); document.querySelector('.toolbar input')?.focus(); }
+function setAtivosCat(v){ state.ativosCat=v; render(); }
+
+/* ============================================================
+   HISTÓRICO
+   ============================================================ */
+function renderHistorico(){
+  const done = state.rentals.filter(r=>r.devolucao_real);
+  const f = state.histFiltro;
+  let filtered = done.filter(r=>{
+    if(f.q && !r.cliente_nome.toLowerCase().includes(f.q.toLowerCase())) return false;
+    if(f.de && new Date(r.criado_em) < new Date(f.de)) return false;
+    if(f.ate && new Date(r.criado_em) > new Date(f.ate+'T23:59:59')) return false;
+    return true;
+  });
+  filtered.sort((a,b)=> new Date(b.criado_em)-new Date(a.criado_em));
+
+  return `
+    <div class="toolbar">
+      <input type="text" placeholder="Pesquisar cliente..." value="${f.q}" oninput="hist_bind('q',this.value)">
+      <input type="date" value="${f.de}" oninput="hist_bind('de',this.value)" style="max-width:160px">
+      <input type="date" value="${f.ate}" oninput="hist_bind('ate',this.value)" style="max-width:160px">
+      <button class="btn sm" onclick="exportHistorico()">⇩ Exportar</button>
+    </div>
+    <div class="card"><div class="tablewrap" style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="text-align:left;color:var(--muted);font-size:11.5px;text-transform:uppercase">
+          <th style="padding:10px 16px">Cliente</th><th>Artigos</th><th>Início</th><th>Devolvido</th><th>Estado</th>
+        </tr></thead>
+        <tbody>
+        ${filtered.map(r=>`<tr style="border-top:1px solid var(--border)">
+          <td style="padding:10px 16px">${r.cliente_nome}</td>
+          <td>${(r.itens||[]).map(i=>i.quantidade+'× '+i.nome+(i.unit_codigos&&i.unit_codigos.length? ' ['+i.unit_codigos.join(', ')+']' : '')).join(', ')}</td>
+          <td>${fmtDateTime(r.criado_em)}</td>
+          <td>${fmtDateTime(r.devolucao_real)}</td>
+          <td>${r.estado==='atraso'? '<span class="pill crit">Atraso</span>' : '<span class="pill ok">A tempo</span>'}</td>
+        </tr>`).join('') || `<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--muted)">Sem registos.</td></tr>`}
+        </tbody>
+      </table>
+    </div></div>
+  `;
+}
+function hist_bind(k,v){ state.histFiltro[k]=v; render(); }
+function exportHistorico(){
+  const done = state.rentals.filter(r=>r.devolucao_real);
+  const rows = [['Cliente','Telefone','Artigos','Inicio','Devolvido','Estado']];
+  done.forEach(r=> rows.push([r.cliente_nome, r.cliente_telefone||'', (r.itens||[]).map(i=>i.quantidade+'x '+i.nome).join('; '), fmtDateTime(r.criado_em), fmtDateTime(r.devolucao_real), r.estado]));
+  const csv = rows.map(row=> row.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  if(!window.claude || !window.claude.downloads){ toast('Exportação não disponível nesta pré-visualização.'); return; }
+  window.claude.downloads.save({ filename:'devolve-historico.txt', data: csv })
+    .then(()=> toast('Histórico exportado.'))
+    .catch(err=>{
+      if(err && err.code==='declined') return;
+      toast('Não foi possível exportar agora.');
+    });
+}
+
+/* ============================================================
+   CATÁLOGO
+   ============================================================ */
+function renderCatalogo(){
+  const filtro = state.catalogFiltro;
+  const itensFiltrados = filtro? state.items.filter(i=>i.category_id===filtro) : state.items;
+  return `
+    <div class="shop-toolbar">
+      <div class="chip-row">
+        <div class="chip ${!filtro?'sel':''}" onclick="setCatalogFiltro('')">Todos</div>
+        ${state.categories.map(c=>`<div class="chip ${filtro===c.id?'sel':''}" onclick="setCatalogFiltro('${c.id}')">${c.icone} ${c.nome}</div>`).join('')}
+      </div>
+      <button class="btn sm" onclick="openCategoriasModal()">⚙ Categorias</button>
+      <button class="btn primary sm" onclick="openItemModal()" ${state.categories.length===0?'disabled title="Cria primeiro uma categoria"':''}>+ Novo Artigo</button>
+    </div>
+    ${state.items.length===0? `<div class="empty"><div class="ico">📦</div>${state.categories.length===0? 'Cria primeiro uma categoria em "⚙ Categorias".' : 'Ainda sem artigos — clica em "+ Novo Artigo".'}</div>` :
+      `<div class="shop-grid">${itensFiltrados.map(it=>shopCardHtml(it)).join('')}</div>`}
+    <div id="modal-host"></div>
+  `;
+}
+function setCatalogFiltro(id){ state.catalogFiltro = id; render(); }
+function shopCardHtml(it){
+  const cat = state.categories.find(c=>c.id===it.category_id) || {};
+  const units = unidadesDoItem(it.id);
+  const disp = units.filter(u=>u.estado==='disponivel').length;
+  return `<div class="shop-card" onclick="openItemModal('${it.category_id}','${it.id}')">
+    <div class="photo">${it.foto? `<img src="${it.foto}" alt="${it.nome}">` : productArt(it.nome, cat.icone)}</div>
+    <div class="body">
+      <div class="cat-tag">${cat.nome||''}</div>
+      <div class="name">${it.nome}</div>
+      <div class="price">€${(it.preco||0).toFixed(2)} <small>/dia</small></div>
+      <div class="stock-row"><span class="cnt">${disp}/${units.length} disponíveis</span></div>
+    </div>
+  </div>`;
+}
+function toggleUnidadeEstado(id){
+  const u = state.units.find(x=>x.id===id);
+  if(!u || u.estado==='alugada') return;
+  u.estado = u.estado==='disponivel' ? 'manutencao' : 'disponivel';
+  saveLocal();
+  if(_itemForm && _itemForm.id===u.item_id) renderModal(itemModalHtml());
+  render();
+}
+function adicionarUnidade(itemId){
+  const item = state.items.find(i=>i.id===itemId);
+  if(!item) return;
+  state.units.push({ id:uid(), tenant_id: state.tenantId, item_id:itemId, codigo: proximoCodigo(itemId, item.nome), atributos:{}, estado:'disponivel' });
+  saveLocal();
+  if(_itemForm && _itemForm.id===itemId) renderModal(itemModalHtml());
+  render();
+}
+function openCategoriasModal(){ renderModal(categoriasModalHtml()); }
+function categoriasModalHtml(){
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>Categorias</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      ${state.categories.length===0? `<p style="color:var(--muted);font-size:13px">Ainda sem categorias.</p>` :
+        state.categories.map(c=>`<div class="item-row"><span class="ico">${c.icone}</span><span class="n">${c.nome}</span>
+          <button class="btn sm" onclick="openCatModal('${c.id}')">Editar</button>
+          <button class="btn sm danger" onclick="apagarCategoria('${c.id}')">Apagar</button>
+        </div>`).join('')}
+      <button class="btn block" style="margin-top:14px" onclick="openCatModal()">+ Nova Categoria</button>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Fechar</button></div>
+  </div></div>`;
+}
+
+let _catForm = null;
+function openCatModal(id){
+  const existing = id? state.categories.find(c=>c.id===id) : null;
+  _catForm = existing? {id:existing.id, nome:existing.nome, icone:existing.icone, campos_extra:[...existing.campos_extra]} : {id:null, nome:'', icone:'📦', campos_extra:[]};
+  renderModal(catModalHtml());
+}
+function catModalHtml(){
+  const f = _catForm;
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>${f.id? 'Editar categoria':'Nova categoria'}</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nome</label><input type="text" id="cf-nome" value="${f.nome}" placeholder="Ex: Bicicletas"></div>
+      <div class="field"><label>Ícone (emoji)</label><input type="text" id="cf-icone" value="${f.icone}" maxlength="4"></div>
+      <div class="field"><label>Campos extra (atributos por artigo)</label>
+        <div id="cf-extra-list">${f.campos_extra.map((ex,i)=>fieldExtraRow(ex,i)).join('')}</div>
+        <button class="btn sm" onclick="cf_addExtra()">+ Adicionar campo</button>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveCategoria()">Guardar</button></div>
+  </div></div>`;
+}
+function fieldExtraRow(ex,i){
+  return `<div class="field-extra-row"><b>${ex.chave}</b><span style="color:var(--muted)">(${ex.tipo}${ex.opcoes&&ex.opcoes.length?': '+ex.opcoes.join('/'):''})</span><span class="x" onclick="cf_removeExtra(${i})">✕</span></div>`;
+}
+function cf_addExtra(){
+  const chave = prompt('Nome do campo (ex: tamanho, cor, nº série):');
+  if(!chave) return;
+  const tipo = confirm('Este campo tem opções fixas (ex: S/M/L)? OK = sim, Cancelar = texto livre') ? 'select' : 'texto';
+  let opcoes = [];
+  if(tipo==='select'){
+    const raw = prompt('Opções separadas por vírgula (ex: S,M,L,XL):');
+    opcoes = (raw||'').split(',').map(s=>s.trim()).filter(Boolean);
+  }
+  _catForm.campos_extra.push({chave, tipo, opcoes});
+  renderModal(catModalHtml());
+}
+function cf_removeExtra(i){ _catForm.campos_extra.splice(i,1); renderModal(catModalHtml()); }
+
+function saveCategoria(){
+  const nome = el('cf-nome').value.trim();
+  const icone = el('cf-icone').value.trim() || '📦';
+  if(!nome){ toast('Dá um nome à categoria.'); return; }
+  if(_catForm.id){
+    const existing = state.categories.find(c=>c.id===_catForm.id);
+    Object.assign(existing, { nome, icone, campos_extra: _catForm.campos_extra });
+  } else {
+    state.categories.push({ id:uid(), tenant_id: state.tenantId, nome, icone, campos_extra: _catForm.campos_extra, ordem: state.categories.length });
+  }
+  saveLocal();
+  closeModal(); render();
+}
+function apagarCategoria(id){
+  if(!confirm('Apagar esta categoria e todos os seus artigos?')) return;
+  const itemIds = state.items.filter(i=>i.category_id===id).map(i=>i.id);
+  state.categories = state.categories.filter(c=>c.id!==id);
+  state.items = state.items.filter(i=>i.category_id!==id);
+  state.units = state.units.filter(u=>!itemIds.includes(u.item_id));
+  saveLocal();
+  closeModal();
+  render();
+}
+
+let _itemForm = null;
+function openItemModal(categoryId, itemId){
+  const existing = itemId? state.items.find(i=>i.id===itemId) : null;
+  _itemForm = existing
+    ? {id:existing.id, category_id:existing.category_id, nome:existing.nome, preco:existing.preco||0, caucao_sugerida:existing.caucao_sugerida||0, foto:existing.foto||''}
+    : {id:null, category_id:categoryId || (state.categories[0]? state.categories[0].id : ''), nome:'', preco:0, caucao_sugerida:0, foto:'', quantidade_inicial:1};
+  renderModal(itemModalHtml());
+}
+function itemModalHtml(){
+  const f = _itemForm;
+  const units = f.id? unidadesDoItem(f.id) : [];
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>${f.id?'Editar artigo':'Novo artigo'}</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="photo-upload">
+        <div class="preview" id="if-preview">${f.foto? `<img src="${f.foto}">` : '📷'}</div>
+        <div style="flex:1"><label>Foto do artigo</label><input type="file" accept="image/*" id="if-foto" onchange="if_onPhoto(event)"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Nome</label><input type="text" id="if-nome" value="${f.nome}" placeholder="Ex: BTT aro 29"></div>
+        <div class="field"><label>Preço (€ / dia)</label><input type="number" min="0" step="0.5" id="if-preco" value="${f.preco}"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Categoria</label><select id="if-cat">${state.categories.map(c=>`<option value="${c.id}" ${f.category_id===c.id?'selected':''}>${c.icone} ${c.nome}</option>`).join('')}</select></div>
+        <div class="field"><label>Caução sugerida (€, opcional)</label><input type="number" min="0" step="1" id="if-caucao" value="${f.caucao_sugerida}" placeholder="Ex: 50"></div>
+      </div>
+      ${f.id? '' : `<div class="field"><label>Quantidade inicial (gera um código por unidade, ex: BTT-001, BTT-002...)</label><input type="number" min="0" id="if-qtd" value="${f.quantidade_inicial}"></div>`}
+      ${f.id? `<div class="item-detail-units">
+        <label>Unidades</label>
+        <div class="chip-row">
+          ${units.map(u=>`<div class="chip ${u.estado==='disponivel'?'u-ok':u.estado==='alugada'?'u-crit':'u-warn'}" title="${u.estado==='alugada'?'Em aluguer — não editável':'Toca para marcar manutenção/disponível'}" onclick="toggleUnidadeEstado('${u.id}')">${u.codigo}</div>`).join('')}
+          <button class="btn sm" onclick="adicionarUnidade('${f.id}')">+ Unidade</button>
+        </div>
+      </div>` : ''}
+    </div>
+    <div class="modal-foot">
+      ${f.id? `<button class="btn danger" onclick="apagarItem('${f.id}')">Apagar</button>` : ''}
+      <button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveItem()">Guardar</button>
+    </div>
+  </div></div>`;
+}
+function if_onPhoto(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{ _itemForm.foto = reader.result; renderModal(itemModalHtml()); };
+  reader.readAsDataURL(file);
+}
+function saveItem(){
+  const f = _itemForm;
+  const nome = el('if-nome').value.trim();
+  const preco = parseFloat(el('if-preco').value)||0;
+  const caucaoSugerida = parseFloat(el('if-caucao').value)||0;
+  const categoryId = el('if-cat').value;
+  if(!nome){ toast('Dá um nome ao artigo.'); return; }
+  if(!categoryId){ toast('Escolhe uma categoria.'); return; }
+  if(f.id){
+    const existing = state.items.find(i=>i.id===f.id);
+    Object.assign(existing, { nome, preco, caucao_sugerida:caucaoSugerida, foto:f.foto, category_id:categoryId });
+  } else {
+    const qtd = parseInt(el('if-qtd').value)||0;
+    const itemId = uid();
+    state.items.push({ id:itemId, tenant_id: state.tenantId, category_id:categoryId, nome, preco, caucao_sugerida:caucaoSugerida, foto:f.foto, activo:true });
+    for(let n=1; n<=qtd; n++){
+      state.units.push({ id:uid(), tenant_id: state.tenantId, item_id:itemId, codigo:prefixoCodigo(nome)+'-'+String(n).padStart(3,'0'), atributos:{}, estado:'disponivel' });
+    }
+  }
+  saveLocal();
+  closeModal(); render();
+}
+function apagarItem(id){
+  if(!confirm('Apagar este artigo e todas as suas unidades?')) return;
+  state.items = state.items.filter(i=>i.id!==id);
+  state.units = state.units.filter(u=>u.item_id!==id);
+  saveLocal();
+  closeModal();
+  render();
+}
+
+function renderModal(html){
+  let host = el('modal-root');
+  if(!host){ host = document.createElement('div'); host.id='modal-root'; document.body.appendChild(host); }
+  host.innerHTML = html;
+}
+function closeModal(){ const host = el('modal-root'); if(host) host.innerHTML=''; }
+
+/* ============================================================
+   CONFIGURAÇÕES
+   ============================================================ */
+function renderConfig(){
+  const c = state.cfg || {};
+  return `
+  <div class="card" style="max-width:560px;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">Dados do negócio</span></div>
+    <div class="card-body">
+      <div class="field"><label>Nome do negócio</label><input type="text" id="cfg-nome" value="${c.nome_negocio||''}"></div>
+      <div class="field"><label>Morada</label><input type="text" id="cfg-morada" value="${c.morada||''}"></div>
+      <div class="field-row">
+        <div class="field"><label>Email</label><input type="email" id="cfg-email" value="${c.email||''}"></div>
+        <div class="field"><label>WhatsApp</label><input type="tel" id="cfg-whats" value="${c.whatsapp_numero||''}"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Hora de fecho (p/ aluguer em dias)</label><input type="text" id="cfg-fecho" value="${c.horario_fecho||'18:00'}" placeholder="18:00"></div>
+        <div class="field"><label>Alertar atraso após (horas)</label><input type="number" min="0" id="cfg-atraso" value="${c.notif_atraso_horas!=null?c.notif_atraso_horas:1}"></div>
+      </div>
+      <div class="field"><label class="check"><input type="checkbox" id="cfg-wa" ${c.notif_whatsapp_auto?'checked':''}> Enviar WhatsApp automático ao confirmar aluguer</label></div>
+      <button class="btn primary" onclick="guardarConfig()">Guardar Configurações</button>
+    </div>
+  </div>
+  <div class="card" style="max-width:560px;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">💳 Estado da subscrição (simulação do ${APP_NAME} HQ)</span></div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">Na versão real, isto <b>não fica aqui</b> — é o painel <b>${APP_NAME} HQ</b> (teu, Ivo, como dono do ${APP_NAME}) que gere os pagamentos mês a mês. Passado o prazo sem pagamento, a conta bloqueia-se <b>sozinha</b> — não precisas de fazer nada manualmente. Aqui simulas o efeito.</p>
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${contaSuspensa()?'10px':'0'}">
+          <div>
+            <div style="font-weight:700;color:var(--text-bright);font-size:13.5px">${contaSuspensa()?'🔒 Bloqueada':'✅ Activa'}</div>
+            <div style="font-size:12px;color:var(--muted)">${state.tenant&&state.tenant.proximo_pagamento? (pagamentoEmAtraso()? 'Pagamento em atraso desde '+fmtDate(state.tenant.proximo_pagamento) : 'Próximo pagamento: '+fmtDate(state.tenant.proximo_pagamento)) : ''}</div>
+          </div>
+          <button class="btn sm primary" onclick="abrirModalPagamento()">💳 Marcar pagamento</button>
+        </div>
+        ${contaSuspensa()? `<div style="font-size:11.5px;color:var(--red)">A conta já está bloqueada — só volta ao normal depois de marcares o pagamento.</div>` : ''}
+      </div>
+      <button class="btn sm ${state.tenant&&state.tenant.conta_activa===false?'primary':'danger'}" onclick="toggleContaActiva()">${state.tenant&&state.tenant.conta_activa===false?'Reactivar manualmente':'Suspender manualmente agora'}</button>
+    </div>
+  </div>
+  <div class="card" style="max-width:560px">
+    <div class="card-header"><span class="card-title">Sobre esta pré-visualização</span></div>
+    <div class="card-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">Esta versão corre inteiramente neste browser — sem servidor, sem conta partilhada entre dispositivos. Serve para experimentares o fluxo todo do ${APP_NAME} antes de decidires avançar para a versão real (multi-negócio, dados sincronizados, acessível de qualquer telemóvel).</p>
+      <button class="btn danger" onclick="resetDemo()">Reiniciar dados desta pré-visualização</button>
+    </div>
+  </div>`;
+}
+function toggleContaActiva(){
+  if(!state.tenant) return;
+  const activaAgora = state.tenant.conta_activa !== false;
+  state.tenant.conta_activa = !activaAgora;
+  saveLocal();
+  toast(state.tenant.conta_activa? 'Conta reactivada.' : 'Conta suspensa — simulação activa.');
+  render();
+}
+function baseDoPagamento(){
+  const t = state.tenant;
+  // pagou em dia (ou adiantado) → conta a partir do prazo actual, nunca perde dias já pagos
+  // pagou atrasado → conta a partir de hoje
+  return (t && t.proximo_pagamento && new Date(t.proximo_pagamento) > new Date())
+    ? new Date(t.proximo_pagamento)
+    : new Date();
+}
+let _pagamentoMeses = 1;
+function abrirModalPagamento(){
+  _pagamentoMeses = 1;
+  renderModal(pagamentoModalHtml());
+}
+function pagamentoModalHtml(){
+  const base = baseDoPagamento();
+  const resultado = addMonths(base, _pagamentoMeses);
+  const atraso = pagamentoEmAtraso();
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>💳 Marcar pagamento</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">${atraso? 'Estava em atraso — a contagem começa a partir de <b style=\"color:var(--text-bright)\">hoje</b>.' : (state.tenant&&state.tenant.proximo_pagamento? 'Ainda dentro do prazo — a contagem soma a partir de <b style=\"color:var(--text-bright)\">'+fmtDate(state.tenant.proximo_pagamento)+'</b>, sem perder dias já pagos.' : 'Primeiro pagamento.')}</p>
+      <div class="field">
+        <label>Quantos meses foram pagos?</label>
+        <input type="number" min="1" max="24" id="pg-meses" value="${_pagamentoMeses}" oninput="pg_setMeses(this.value)">
+      </div>
+      <div class="summary-devol">Fica activa até: <b>${fmtDate(resultado)}</b> ${_pagamentoMeses>1? `<span style="color:var(--muted);font-weight:400">(${_pagamentoMeses} meses)</span>` : ''}</div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="confirmarPagamento()">✅ Confirmar pagamento</button></div>
+  </div></div>`;
+}
+function pg_setMeses(v){
+  const n = parseInt(v)||1;
+  _pagamentoMeses = Math.min(24, Math.max(1, n));
+  renderModal(pagamentoModalHtml());
+}
+function confirmarPagamento(){
+  if(!state.tenant) return;
+  const base = baseDoPagamento();
+  const novaData = addMonths(base, _pagamentoMeses);
+  state.tenant.proximo_pagamento = novaData.toISOString();
+  state.tenant.conta_activa = true;
+  saveLocal();
+  toast(`Pagamento de ${_pagamentoMeses} ${_pagamentoMeses===1?'mês':'meses'} registado — activa até ${fmtDate(novaData)}`);
+  closeModal();
+  render();
+}
+function guardarConfig(){
+  state.cfg = {
+    ...state.cfg,
+    tenant_id: state.tenantId,
+    nome_negocio: el('cfg-nome').value.trim(),
+    morada: el('cfg-morada').value.trim(),
+    email: el('cfg-email').value.trim(),
+    whatsapp_numero: el('cfg-whats').value.trim(),
+    horario_fecho: el('cfg-fecho').value.trim() || '18:00',
+    notif_atraso_horas: parseInt(el('cfg-atraso').value)||0,
+    notif_whatsapp_auto: el('cfg-wa').checked
+  };
+  saveLocal();
+  toast('Configurações guardadas.');
+}
+
+/* ============================================================
+   ANALYTICS
+   ============================================================ */
+function renderAnalytics(){
+  const CAT_COLORS = ['var(--cat-1)','var(--cat-2)','var(--cat-3)','var(--cat-4)'];
+  const confirmados = state.rentals.filter(r=>r.estado!=='pendente');
+  const last30 = Array.from({length:30}, (_,i)=>{
+    const d = new Date(); d.setDate(d.getDate()-(29-i)); d.setHours(0,0,0,0);
+    return d;
+  });
+  const revByDay = last30.map(d=>{
+    const next = new Date(d); next.setDate(next.getDate()+1);
+    return confirmados.filter(r=> new Date(r.criado_em)>=d && new Date(r.criado_em)<next).reduce((s,r)=>s+(r.preco_total||0),0);
+  });
+  const receitaTotal = revByDay.reduce((a,b)=>a+b,0);
+
+  // artigos mais alugados (magnitude — um só tom, a categoria não importa aqui)
+  const itemCounts = {};
+  confirmados.forEach(r=>(r.itens||[]).forEach(i=>{ itemCounts[i.nome]=(itemCounts[i.nome]||0)+i.quantidade; }));
+  const ranking = Object.entries(itemCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxRank = ranking.length? ranking[0][1] : 1;
+
+  // receita por categoria (identidade — cor fixa por categoria, não por posição no ranking)
+  const catNomeById = {}; state.categories.forEach(c=>catNomeById[c.id]=c.nome);
+  const itemCatById = {}; state.items.forEach(i=>itemCatById[i.id]=i.category_id);
+  const revByCat = {};
+  confirmados.forEach(r=>(r.itens||[]).forEach(l=>{
+    const catId = itemCatById[l.item_id]; if(!catId) return;
+    const preco = precoPorUnidade(state.items.find(i=>i.id===l.item_id), r.unidade_duracao, r.duracao) * l.quantidade;
+    revByCat[catId] = (revByCat[catId]||0) + preco;
+  }));
+  const catRanking = state.categories.map(c=>({nome:c.nome, icone:c.icone, valor:revByCat[c.id]||0})).sort((a,b)=>b.valor-a.valor);
+  const maxCat = Math.max(...catRanking.map(c=>c.valor), 1);
+
+  // ocupação actual por categoria (identidade — mesma cor fixa da categoria)
+  const ocupCat = state.categories.map((c,i)=>{
+    const itemIds = state.items.filter(it=>it.category_id===c.id).map(it=>it.id);
+    const unidades = state.units.filter(u=>itemIds.includes(u.item_id));
+    const fora = unidades.filter(u=>u.estado==='alugada').length;
+    return { nome:c.nome, icone:c.icone, pct: unidades.length? Math.round(fora/unidades.length*100) : 0, cor: CAT_COLORS[i%CAT_COLORS.length] };
+  });
+
+  const finished = confirmados.filter(r=>r.devolucao_real);
+  const onTime = finished.filter(r=>r.estado!=='atraso').length;
+  const pctOnTime = finished.length? Math.round(onTime/finished.length*100) : 0;
+
+  const duracoes = confirmados.map(r=> r.unidade_duracao==='dias'? r.duracao : r.duracao/24);
+  const duracaoMedia = duracoes.length? (duracoes.reduce((a,b)=>a+b,0)/duracoes.length) : 0;
+
+  const porCliente = {};
+  confirmados.forEach(r=>{ const k=r.cliente_telefone||r.cliente_nome; if(!k) return; porCliente[k]=porCliente[k]||{nome:r.cliente_nome,pais:r.cliente_pais,n:0,receita:0}; porCliente[k].n++; porCliente[k].receita+=(r.preco_total||0); });
+  const clientesArr = Object.values(porCliente);
+  const recorrentes = clientesArr.filter(c=>c.n>1).length;
+  const topClientes = [...clientesArr].sort((a,b)=>b.receita-a.receita).slice(0,5);
+  const ticketMedio = confirmados.length? receitaTotal/confirmados.length : 0;
+
+  setTimeout(()=>drawAreaChart('chart-30d', revByDay), 0);
+
+  return `
+    <div class="stat-row" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stat ok"><span class="stat-ico">💶</span><div class="lbl">Receita (30d)</div><div class="num tabular" style="font-size:24px">€${receitaTotal.toFixed(0)}</div></div>
+      <div class="stat ok"><span class="stat-ico">🎫</span><div class="lbl">Ticket médio</div><div class="num tabular" style="font-size:24px">€${ticketMedio.toFixed(0)}</div></div>
+      <div class="stat warn"><span class="stat-ico">⏱️</span><div class="lbl">Duração média</div><div class="num tabular" style="font-size:24px">${duracaoMedia.toFixed(1)}d</div></div>
+      <div class="stat ok"><span class="stat-ico">🔁</span><div class="lbl">Clientes recorrentes</div><div class="num tabular" style="font-size:24px">${recorrentes}</div></div>
+    </div>
+    <div class="stat-row" style="grid-template-columns:1fr;margin-bottom:16px">
+      <div class="stat ok" style="cursor:default"><span class="stat-ico">✅</span><div class="lbl">Devoluções a tempo</div><div class="num tabular">${pctOnTime}%</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px" class="analytics-grid">
+      <div class="chart-box">
+        <div class="section-title" style="font-size:14px">Receita — últimos 30 dias</div>
+        <canvas id="chart-30d" height="140"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="section-title" style="font-size:14px">Artigos mais alugados</div>
+        ${ranking.length===0? `<div class="empty" style="padding:20px">Sem dados ainda.</div>` :
+          ranking.map(([nome,count])=>`<div class="rank-row"><span style="min-width:110px">${nome}</span><div class="bar-track"><div class="bar" style="width:${Math.round(count/maxRank*100)}%"></div></div><span class="tabular" style="min-width:24px;text-align:right">${count}</span></div>`).join('')}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px" class="analytics-grid">
+      <div class="chart-box">
+        <div class="section-title" style="font-size:14px">Receita por categoria</div>
+        ${catRanking.length===0? `<div class="empty" style="padding:20px">Sem categorias.</div>` :
+          catRanking.map((c,i)=>`<div class="rank-row"><span style="min-width:110px">${c.icone} ${c.nome}</span><div class="bar-track"><div class="bar" style="width:${Math.round(c.valor/maxCat*100)}%;background:${CAT_COLORS[state.categories.findIndex(x=>x.nome===c.nome)%CAT_COLORS.length]}"></div></div><span class="tabular" style="min-width:44px;text-align:right">€${c.valor.toFixed(0)}</span></div>`).join('')}
+      </div>
+      <div class="chart-box">
+        <div class="section-title" style="font-size:14px">Ocupação actual por categoria</div>
+        ${ocupCat.length===0? `<div class="empty" style="padding:20px">Sem categorias.</div>` :
+          ocupCat.map(c=>`<div class="rank-row"><span style="min-width:110px">${c.icone} ${c.nome}</span><div class="bar-track"><div class="bar" style="width:${c.pct}%;background:${c.cor}"></div></div><span class="tabular" style="min-width:36px;text-align:right">${c.pct}%</span></div>`).join('')}
+      </div>
+    </div>
+    <div class="chart-box" style="margin-top:16px">
+      <div class="section-title" style="font-size:14px">Top clientes por receita</div>
+      ${topClientes.length===0? `<div class="empty" style="padding:20px">Ainda sem alugueres confirmados.</div>` :
+        topClientes.map((c,i)=>`<div class="rank-row"><span style="min-width:16px;color:var(--muted);font-family:ui-monospace,monospace">${i+1}</span><span style="flex:1">${c.pais?countryByCode(c.pais).flag+' ':''}${c.nome}</span><span style="color:var(--muted);font-size:12px">${c.n} ${c.n===1?'aluguer':'alugueres'}</span><span class="tabular" style="min-width:56px;text-align:right;font-weight:700;color:var(--text-bright)">€${c.receita.toFixed(0)}</span></div>`).join('')}
+    </div>
+    <style>@media(max-width:820px){.analytics-grid{grid-template-columns:1fr!important}}</style>
+  `;
+}
+function drawAreaChart(canvasId, values){
+  const canvas = el(canvasId); if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio||1;
+  const w = canvas.clientWidth || 600, h = 140;
+  canvas.width = w*dpr; canvas.height = h*dpr; canvas.style.height = h+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  const max = Math.max(...values, 1);
+  const padL = 4, padR = 4, padT = 14, padB = 18;
+  const plotW = w-padL-padR, plotH = h-padT-padB;
+  const stepX = plotW/(values.length-1||1);
+  const yFor = v => padT + plotH - (v/max)*plotH;
+
+  // grelha discreta (recessiva)
+  ctx.strokeStyle = 'rgba(255,255,255,.06)';
+  ctx.lineWidth = 1;
+  for(let i=0;i<=3;i++){ const y = padT + (plotH/3)*i; ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(w-padR,y); ctx.stroke(); }
+
+  // área com gradiente
+  const grad = ctx.createLinearGradient(0,padT,0,padT+plotH);
+  grad.addColorStop(0,'rgba(45,212,191,.35)'); grad.addColorStop(1,'rgba(45,212,191,.02)');
+  ctx.beginPath();
+  ctx.moveTo(padL, yFor(values[0]));
+  values.forEach((v,i)=> ctx.lineTo(padL+i*stepX, yFor(v)));
+  ctx.lineTo(padL+(values.length-1)*stepX, padT+plotH);
+  ctx.lineTo(padL, padT+plotH);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // linha
+  ctx.beginPath();
+  values.forEach((v,i)=>{ const x=padL+i*stepX, y=yFor(v); i===0? ctx.moveTo(x,y) : ctx.lineTo(x,y); });
+  ctx.strokeStyle = '#2dd4bf'; ctx.lineWidth = 2; ctx.lineJoin='round'; ctx.stroke();
+
+  // ponto final em destaque + valor
+  const lastX = padL+(values.length-1)*stepX, lastY = yFor(values[values.length-1]);
+  ctx.beginPath(); ctx.arc(lastX,lastY,4,0,Math.PI*2); ctx.fillStyle='#2dd4bf'; ctx.fill();
+  ctx.beginPath(); ctx.arc(lastX,lastY,4,0,Math.PI*2); ctx.strokeStyle='#0d1117'; ctx.lineWidth=2; ctx.stroke();
+  const lastVal = values[values.length-1];
+  ctx.font = '11px -apple-system,sans-serif'; ctx.fillStyle = '#f0f6fc'; ctx.textAlign = 'right';
+  ctx.fillText('€'+lastVal.toFixed(0), Math.min(lastX+2, w-padR), Math.max(lastY-8, 12));
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+(function init(){
+  const existing = loadLocal();
+  if(existing && existing.tenant){
+    hydrateFromLocal(existing);
+    state.loading = false; state.view = 'app'; state.appView = 'dashboard';
+    render();
+    startTicker();
+  } else {
+    state.loading = false;
+    render();
+  }
+})();
+</script>
