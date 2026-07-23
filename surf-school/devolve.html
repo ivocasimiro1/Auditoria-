@@ -438,6 +438,7 @@ const _metaDesc = document.querySelector('meta[name="description"]');
 if(_metaDesc) _metaDesc.setAttribute('content', APP_NAME+': gestão de aluguer e reservas para qualquer negócio — equipamentos e serviços. Bicicletas, ferramentas, festas, aulas, praia — o que for. Sabe sempre o que está fora e quando deve voltar, ou quem tem uma sessão marcada.');
 
 const DEVOLVE_HQ_WHATSAPP = '351962800400'; // número do Ivo para receber aviso de novos pedidos de conta
+const DEVOLVE_HQ_EMAIL = 'ivo@despomar.com'; // email do Ivo para receber o mesmo aviso, em paralelo ao WhatsApp
 
 function el(id){ return document.getElementById(id); }
 function fmtDate(d){ if(!d) return ''; const dt=new Date(d); return dt.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'}); }
@@ -457,6 +458,9 @@ function prefixoCodigo(nome){
 function waUrl(numero, msg){
   const n = (numero||'').replace(/\D/g,'');
   return 'https://wa.me/'+n+'?text='+encodeURIComponent(msg);
+}
+function mailUrl(to, subject, body){
+  return 'mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
 }
 
 /* ============================================================
@@ -773,9 +777,10 @@ async function finishSignup(){
   });
   if(rpcErr){ if(btn){btn.disabled=false;btn.textContent='Criar conta e começar →';} state.err = rpcErr.message; render(); return; }
 
-  if(DEVOLVE_HQ_WHATSAPP){
+  if(DEVOLVE_HQ_WHATSAPP || DEVOLVE_HQ_EMAIL){
     const avisoMsg = `Novo pedido de conta ${APP_NAME}: ${s.nomeNegocio} (${s.sector}), contacto ${s.whatsapp||s.email}. Aprovar em ${APP_NAME} HQ.`;
-    window.open(waUrl(DEVOLVE_HQ_WHATSAPP, avisoMsg), '_blank');
+    if(DEVOLVE_HQ_WHATSAPP) window.open(waUrl(DEVOLVE_HQ_WHATSAPP, avisoMsg), '_blank');
+    if(DEVOLVE_HQ_EMAIL) window.open(mailUrl(DEVOLVE_HQ_EMAIL, 'Novo pedido de conta '+APP_NAME, avisoMsg), '_blank');
   }
   toast('Pedido enviado! A tua conta fica activa assim que for aprovada.');
   await bootAfterAuth(user);
@@ -1233,12 +1238,13 @@ async function confirmarPendente(id){
     unitIds.forEach(uidv=>{ const u = state.units.find(x=>x.id===uidv); if(u) u.estado='alugada'; });
   }
   r.itens = itensAtualizados; r.estado = 'activo';
-  if(r.cliente_telefone && state.cfg && state.cfg.notif_whatsapp_auto){
+  if((r.cliente_telefone || r.cliente_email) && state.cfg && state.cfg.notif_whatsapp_auto){
     const itensTxt = itensAtualizados.map(i=>i.quantidade+'x '+i.nome).join(', ');
     const msg = `Olá ${r.cliente_nome}! O teu pedido (${itensTxt}) está confirmado. Devolução prevista: ${fmtDateTime(r.devolucao_prevista)}. Obrigado!`;
-    window.open(waUrl(r.cliente_telefone, msg), '_blank');
+    if(r.cliente_telefone) window.open(waUrl(r.cliente_telefone, msg), '_blank');
+    if(r.cliente_email) window.open(mailUrl(r.cliente_email, 'Confirmação de reserva'+(state.cfg.nome_negocio?' — '+state.cfg.nome_negocio:''), msg), '_blank');
   }
-  toast(faltou? 'Confirmado, mas faltou stock nalguns artigos.' : 'Reserva confirmada — WhatsApp enviado ✅');
+  toast(faltou? 'Confirmado, mas faltou stock nalguns artigos.' : 'Reserva confirmada — aviso enviado ✅');
   render();
 }
 async function recusarPendente(id){
@@ -1264,7 +1270,7 @@ function rentalCard(r){
     <div class="meta">Prevista: ${fmtDateTime(r.devolucao_prevista)}${r.preco_total? ' · €'+r.preco_total.toFixed(2) : ''}</div>
     <div class="rcard-actions">
       <button class="btn sm primary block" onclick="devolverAluguer('${r.id}')">Devolver</button>
-      ${r.cliente_telefone? `<button class="btn sm" onclick="contactarCliente('${r.id}')">💬</button>`:''}
+      ${(r.cliente_telefone||r.cliente_email)? `<button class="btn sm" onclick="contactarCliente('${r.id}')">💬</button>`:''}
     </div>
   </div>`;
 }
@@ -1288,9 +1294,10 @@ async function devolverAluguer(id){
 }
 function contactarCliente(id){
   const r = state.rentals.find(x=>x.id===id);
-  if(!r || !r.cliente_telefone) return;
+  if(!r || (!r.cliente_telefone && !r.cliente_email)) return;
   const msg = `Olá ${r.cliente_nome}! Sobre o teu aluguer (${(r.itens||[]).map(i=>i.nome).join(', ')}): o prazo de devolução era ${fmtDateTime(r.devolucao_prevista)}. Podes confirmar quando consegues devolver?`;
-  window.open(waUrl(r.cliente_telefone, msg), '_blank');
+  if(r.cliente_telefone) window.open(waUrl(r.cliente_telefone, msg), '_blank');
+  if(r.cliente_email) window.open(mailUrl(r.cliente_email, 'Lembrete de devolução'+(state.cfg&&state.cfg.nome_negocio?' — '+state.cfg.nome_negocio:''), msg), '_blank');
 }
 
 /* ============================================================
@@ -1506,10 +1513,11 @@ async function confirmarAluguer(){
     });
   });
 
-  // abrir WhatsApp antes do await, para não ser bloqueado pelo browser
-  if(n.cliente_telefone && state.cfg && state.cfg.notif_whatsapp_auto){
+  // abrir WhatsApp/email antes do await, para não serem bloqueados pelo browser
+  if((n.cliente_telefone || n.cliente_email) && state.cfg && state.cfg.notif_whatsapp_auto){
     const msg = `Olá ${n.cliente_nome}! O teu aluguer está confirmado:\n${linhasParaMsg.join('\n')}\nObrigado!`;
-    window.open(waUrl(n.cliente_telefone, msg), '_blank');
+    if(n.cliente_telefone) window.open(waUrl(n.cliente_telefone, msg), '_blank');
+    if(n.cliente_email) window.open(mailUrl(n.cliente_email, 'Confirmação de aluguer'+(state.cfg.nome_negocio?' — '+state.cfg.nome_negocio:''), msg), '_blank');
   }
 
   const unitIds = n.cart.flatMap(c=>c.unit_ids);
