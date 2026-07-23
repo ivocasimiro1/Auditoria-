@@ -748,52 +748,34 @@ async function finishSignup(){
   const btn = el('su-finish-btn'); if(btn){ btn.disabled=true; btn.textContent='A criar...'; }
   const { error: signErr } = await SB.auth.signUp({ email: s.email, password: s.password });
   if(signErr){ if(btn){btn.disabled=false;btn.textContent='Criar conta e começar →';} state.err = signErr.message; render(); return; }
-  // Independentemente do que signUp() devolveu, faz sempre login explícito a seguir —
-  // é o caminho garantido para o cliente Supabase ficar com uma sessão activa antes
-  // de tentarmos criar a loja (sem isto, auth.uid() fica nulo e a RLS bloqueia tudo).
+  // signOut() antes do login explícito limpa qualquer estado deixado pelo signUp(),
+  // para o signInWithPassword() a seguir arrancar de uma sessão 100% limpa.
+  await SB.auth.signOut();
   const { data: liData, error: liErr } = await SB.auth.signInWithPassword({ email:s.email, password:s.password });
   if(liErr){ if(btn){btn.disabled=false;btn.textContent='Criar conta e começar →';} state.err='Conta criada mas não foi possível iniciar sessão ('+liErr.message+'). Tenta entrar com "Já tens conta? Entrar".'; state.view='login'; render(); return; }
   const user = liData.user;
-  const { data: sessCheck } = await SB.auth.getSession();
-  if(!sessCheck.session){ if(btn){btn.disabled=false;btn.textContent='Criar conta e começar →';} state.err='Sessão não ficou activa depois do login — tenta novamente ou usa "Entrar" manualmente.'; state.view='login'; render(); return; }
-  // 1. tenant — pedidos vindos deste signup público nascem por aprovar (Devolve HQ decide o preço e activa)
-  const { data: tenantRow, error: tErr } = await SB.from('devolve_tenants')
-    .insert({ nome: s.nomeNegocio, sector: s.sector, whatsapp_numero: s.whatsapp, plano:'trial', aprovado:false, slug: gerarSlug(s.nomeNegocio) })
-    .select().single();
-  if(tErr){ if(btn){btn.disabled=false;btn.textContent='Criar conta e começar →';} state.err = tErr.message+' (sessão activa: '+(!!sessCheck.session)+')'; render(); return; }
+
+  // A criação da loja (tenant + utilizador + config + catálogo) é feita toda de uma vez
+  // numa única função na base de dados (devolve_criar_negocio) — em vez de várias
+  // escritas separadas do lado do cliente, que dependiam da sessão estar disponível em
+  // cada uma delas. Assim ou fica tudo criado, ou nada fica criado.
+  const tpl = CATALOG_TEMPLATES[s.template];
+  const catalogoPayload = tpl.categorias.map(cat=>({
+    nome: cat.nome, icone: cat.icone, campos_extra: cat.campos_extra,
+    itens: cat.itens.map(it=>({
+      nome: it.nome, preco: it.preco||0, caucao_sugerida: it.caucao_sugerida||0,
+      quantidade_inicial: it.quantidade_inicial||0, prefixo: prefixoCodigo(it.nome)
+    }))
+  }));
+  const { error: rpcErr } = await SB.rpc('devolve_criar_negocio', {
+    p_nome_negocio: s.nomeNegocio, p_sector: s.sector, p_whatsapp: s.whatsapp,
+    p_nome_resp: s.nomeResp, p_catalogo: catalogoPayload
+  });
+  if(rpcErr){ if(btn){btn.disabled=false;btn.textContent='Criar conta e começar →';} state.err = rpcErr.message; render(); return; }
+
   if(DEVOLVE_HQ_WHATSAPP){
     const avisoMsg = `Novo pedido de conta ${APP_NAME}: ${s.nomeNegocio} (${s.sector}), contacto ${s.whatsapp||s.email}. Aprovar em ${APP_NAME} HQ.`;
     window.open(waUrl(DEVOLVE_HQ_WHATSAPP, avisoMsg), '_blank');
-  }
-  // 2. user->tenant
-  const { error: uErr } = await SB.from('devolve_users')
-    .insert({ id: user.id, tenant_id: tenantRow.id, role:'owner', nome: s.nomeResp });
-  if(uErr){ if(btn){btn.disabled=false;btn.textContent='Criar conta e começar →';} state.err = uErr.message; render(); return; }
-  // 3. config
-  await SB.from('devolve_config').insert({
-    tenant_id: tenantRow.id, nome_negocio: s.nomeNegocio, whatsapp_numero: s.whatsapp,
-    horario_fecho:'18:00', notif_whatsapp_auto:true, notif_atraso_horas:1, idioma:'pt'
-  });
-  // 4. catálogo do template
-  const tpl = CATALOG_TEMPLATES[s.template];
-  for(const cat of tpl.categorias){
-    const { data: catRow } = await SB.from('devolve_categories').insert({
-      tenant_id: tenantRow.id, nome: cat.nome, icone: cat.icone, campos_extra: cat.campos_extra, ordem:0
-    }).select().single();
-    if(catRow){
-      for(const it of cat.itens){
-        const { data: itemRow } = await SB.from('devolve_items').insert({
-          tenant_id: tenantRow.id, category_id: catRow.id, nome: it.nome, preco: it.preco||0, caucao_sugerida: it.caucao_sugerida||0, foto:'', activo:true
-        }).select().single();
-        if(itemRow){
-          const unidades = [];
-          for(let n=1; n<=it.quantidade_inicial; n++){
-            unidades.push({ tenant_id: tenantRow.id, item_id: itemRow.id, codigo: prefixoCodigo(it.nome)+'-'+String(n).padStart(3,'0'), atributos:{}, estado:'disponivel' });
-          }
-          if(unidades.length) await SB.from('devolve_units').insert(unidades);
-        }
-      }
-    }
   }
   toast('Pedido enviado! A tua conta fica activa assim que for aprovada.');
   await bootAfterAuth(user);
