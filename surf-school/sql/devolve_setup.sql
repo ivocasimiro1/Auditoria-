@@ -130,6 +130,72 @@ LANGUAGE SQL SECURITY DEFINER STABLE AS $$
 $$;
 GRANT EXECUTE ON FUNCTION devolve_public_tenant_info(TEXT) TO anon, authenticated;
 
+-- devolve_criar_negocio: cria a loja inteira (tenant + utilizador + config + catálogo)
+-- numa única transacção, em vez de várias escritas separadas do lado do cliente.
+-- Corre com privilégios elevados (SECURITY DEFINER) — não depende da RLS de cada
+-- tabela nem de o cliente reenviar a sessão correctamente em cada passo. Se algo
+-- falhar a meio, a função inteira é desfeita (nada fica criado pela metade).
+CREATE OR REPLACE FUNCTION devolve_criar_negocio(
+  p_nome_negocio TEXT,
+  p_sector TEXT,
+  p_whatsapp TEXT,
+  p_nome_resp TEXT,
+  p_catalogo JSONB  -- [{nome,icone,campos_extra,itens:[{nome,preco,caucao_sugerida,quantidade_inicial,prefixo}]}]
+) RETURNS UUID
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_uid UUID := auth.uid();
+  v_tenant_id UUID;
+  v_cat JSONB;
+  v_cat_id UUID;
+  v_item JSONB;
+  v_item_id UUID;
+  v_slug TEXT;
+  v_n INT;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Utilizador não autenticado — inicia sessão antes de criar o negócio';
+  END IF;
+  IF EXISTS (SELECT 1 FROM devolve_users WHERE id = v_uid) THEN
+    RAISE EXCEPTION 'Esta conta já está associada a um negócio';
+  END IF;
+
+  v_slug := lower(regexp_replace(p_nome_negocio, '[^a-zA-Z0-9]+', '-', 'g')) || '-' || substr(md5(random()::text), 1, 4);
+
+  INSERT INTO devolve_tenants (nome, sector, whatsapp_numero, plano, aprovado, slug)
+  VALUES (p_nome_negocio, p_sector, p_whatsapp, 'trial', false, v_slug)
+  RETURNING id INTO v_tenant_id;
+
+  INSERT INTO devolve_users (id, tenant_id, role, nome) VALUES (v_uid, v_tenant_id, 'owner', p_nome_resp);
+
+  INSERT INTO devolve_config (tenant_id, nome_negocio, whatsapp_numero, horario_fecho, notif_whatsapp_auto, notif_atraso_horas, idioma)
+  VALUES (v_tenant_id, p_nome_negocio, p_whatsapp, '18:00', true, 1, 'pt');
+
+  FOR v_cat IN SELECT * FROM jsonb_array_elements(p_catalogo)
+  LOOP
+    INSERT INTO devolve_categories (tenant_id, nome, icone, campos_extra, ordem)
+    VALUES (v_tenant_id, v_cat->>'nome', COALESCE(v_cat->>'icone','📦'), COALESCE(v_cat->'campos_extra','[]'::jsonb), 0)
+    RETURNING id INTO v_cat_id;
+
+    FOR v_item IN SELECT * FROM jsonb_array_elements(COALESCE(v_cat->'itens','[]'::jsonb))
+    LOOP
+      INSERT INTO devolve_items (tenant_id, category_id, nome, preco, caucao_sugerida, foto, activo)
+      VALUES (v_tenant_id, v_cat_id, v_item->>'nome', COALESCE((v_item->>'preco')::numeric,0), COALESCE((v_item->>'caucao_sugerida')::numeric,0), '', true)
+      RETURNING id INTO v_item_id;
+
+      FOR v_n IN 1..COALESCE((v_item->>'quantidade_inicial')::int,0)
+      LOOP
+        INSERT INTO devolve_units (tenant_id, item_id, codigo, atributos, estado)
+        VALUES (v_tenant_id, v_item_id, COALESCE(v_item->>'prefixo','ART')||'-'||lpad(v_n::text,3,'0'), '{}'::jsonb, 'disponivel');
+      END LOOP;
+    END LOOP;
+  END LOOP;
+
+  RETURN v_tenant_id;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION devolve_criar_negocio(TEXT,TEXT,TEXT,TEXT,JSONB) TO authenticated;
+
 -- Privilégio de base nas tabelas (RLS por si só não chega — sem isto dá
 -- "permission denied for table" mesmo com as políticas todas certas).
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
