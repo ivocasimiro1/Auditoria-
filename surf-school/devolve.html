@@ -1026,7 +1026,7 @@ async function bootAfterAuth(user){
   await loadAll();
   state.loading = false;
   state.view = 'app';
-  state.appView = 'dashboard';
+  state.appView = profile.role==='super_admin' ? 'hq' : 'dashboard'; // super_admin não tem negócio próprio — o dashboard normal ficaria vazio
   render();
   subscribeRealtime();
   startTicker();
