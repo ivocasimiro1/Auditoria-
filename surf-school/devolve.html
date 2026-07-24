@@ -2132,7 +2132,12 @@ async function hqToggleActivo(tenantId, estaActivo){
    INIT
    ============================================================ */
 (async function init(){
-  const slug = new URLSearchParams(location.search).get('loja');
+  // O rewrite do _redirects (/loja/:slug -> devolve.html, código 200) é transparente
+  // para o browser: a barra de endereço fica em /loja/<slug>, sem query string nenhuma
+  // visível ao JS — por isso o slug tem de ser lido do caminho (pathname), não de
+  // location.search. Mantém o parâmetro ?loja= como alternativa para testes directos.
+  const pathMatch = location.pathname.match(/^\/loja\/([^/]+)/);
+  const slug = pathMatch ? decodeURIComponent(pathMatch[1]) : new URLSearchParams(location.search).get('loja');
   if(slug){ await bootPublicStore(slug); return; }
   const { data: { session } } = await SB.auth.getSession();
   if(session && session.user){
