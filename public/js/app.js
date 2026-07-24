@@ -105,6 +105,20 @@ const ROUTES = {
   '/login': () => import('./pages/login.js').then(m => m.render()),
 };
 
+const ROUTE_TITLES = {
+  '/': 'Início — Panini WC2026',
+  '/catalog': 'Catálogo de Cromos — Panini WC2026',
+  '/collection': 'A Minha Caderneta — Panini WC2026',
+  '/trades': 'Trocas — Panini WC2026',
+  '/matches': 'Matches — Panini WC2026',
+  '/listings': 'Anúncios — Panini WC2026',
+  '/orders': 'Encomendas — Panini WC2026',
+  '/notifications': 'Notificações — Panini WC2026',
+  '/profile': 'Perfil — Panini WC2026',
+  '/admin': 'Admin — Panini WC2026',
+  '/login': 'Entrar — Panini WC2026',
+};
+
 function getRoute() {
   const hash = window.location.hash.slice(1) || '/';
   const base = hash.split('?')[0];
@@ -144,6 +158,7 @@ async function router() {
     main.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><h3>Página não encontrada</h3></div>';
   }
 
+  document.title = ROUTE_TITLES[route] || 'Panini WC2026 — Troca de Cromos';
   updateNav(route);
 }
 
