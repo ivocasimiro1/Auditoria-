@@ -1865,7 +1865,7 @@ function closeModal(){ const host = el('modal-root'); if(host) host.innerHTML=''
 function renderConfig(){
   const c = state.cfg || {};
   const slug = state.tenant && state.tenant.slug;
-  const linkPublico = slug? location.origin+'/loja/'+slug : '';
+  const linkPublico = slug? location.origin+'/devolve?loja='+slug : '';
   return `
   ${state.tenant? `
   <div class="card" style="max-width:560px;margin-bottom:16px">
@@ -2022,7 +2022,7 @@ function renderHQ(){
       ${tenants.map(t=>{
         const atraso = !!(t.proximo_pagamento && new Date() > new Date(t.proximo_pagamento+'T23:59:59'));
         const activo = t.activo!==false && !atraso;
-        const link = t.slug? location.origin+'/loja/'+t.slug : '';
+        const link = t.slug? location.origin+'/devolve?loja='+t.slug : '';
         return `<div class="rcard">
           <div class="rcard-top">
             <div><div class="client">${t.nome}</div><div class="phone">Plano: ${t.plano}</div></div>
