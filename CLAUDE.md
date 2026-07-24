@@ -35,7 +35,7 @@ que uma vez.
 | `/depositos`, `/manual-depositos` | `ivocasimiro1/depositos-despomar` → `depositos-despomar.pages.dev` |
 | Bot Telegram (ranking/status lojas) | `ivocasimiro1/depositos-despomar` → `functions/api/tg-webhook.js` |
 | Site de reservas de escolas de surf (público + admin + super-admin) | `ivocasimiro1/surf-escola` |
-| Devolve (versão em migração) | `ivocasimiro1/Devolve` — confirmar com o Ivo qual repo é a fonte de verdade antes de editar `surf-school/devolve.html` aqui |
+| Devolve (código à frente, mas ainda NÃO publicado) | `ivocasimiro1/Devolve` — tem código mais recente, mas confirmado pelo Ivo em Jul 2026 que **não está publicado em lado nenhum**. `surf-school/devolve.html` aqui é a versão real em produção (`/devolve`). Não copiar código de lá para cá às cegas — pode faltar coisas que só existem na versão daqui. Confirmar com o Ivo antes de qualquer migração. |
 
 ---
 
