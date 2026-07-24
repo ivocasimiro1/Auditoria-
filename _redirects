@@ -8,26 +8,7 @@
 /rotacao               /surf-school/redistribuicao-stock.html  301
 /redistribuicao        /surf-school/redistribuicao-stock.html  301
 
-# Surf School shortcuts — with and without .html
-/admin              /surf-school/admin.html         301
-/admin.html         /surf-school/admin.html         301
-/super-admin        /surf-school/super-admin.html   301
-/super-admin.html   /surf-school/super-admin.html   301
-/proposta           /surf-school/proposta.html      301
-/proposta.html      /surf-school/proposta.html      301
-/surf               /surf-school/                   301
-/reservar           /surf-school/                   301
-/onboarding         /surf-school/onboarding.html    301
-/configurar         /surf-school/onboarding.html    301
-/review             /surf-school/review.html        301
-/avaliar            /surf-school/review.html        301
-/parceiros          /surf-school/parceiros.html     301
-/candidatura        /surf-school/parceiros.html     301
-
 # Devolve — gestão de aluguer (qualquer negócio)
 /devolve            /surf-school/devolve.html       301
 /devolve.html       /surf-school/devolve.html       301
 /loja/:slug         /surf-school/devolve.html?loja=:slug   200
-
-# CromoSwap — landing.html passou a ser a homepage (/)
-/landing.html       /                                301
