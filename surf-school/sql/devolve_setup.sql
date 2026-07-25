@@ -225,6 +225,10 @@ CREATE POLICY "devolve_tenants_update" ON devolve_tenants
   FOR UPDATE USING (devolve_is_sa() OR id = devolve_my_tenant())
   WITH CHECK (devolve_is_sa() OR id = devolve_my_tenant());
 
+-- só o super-admin pode apagar negócios (rejeitar pedidos / limpar contas de teste)
+CREATE POLICY "devolve_tenants_delete" ON devolve_tenants
+  FOR DELETE USING (devolve_is_sa());
+
 -- devolve_users: cada utilizador cria/vê o seu próprio perfil; super_admin vê todos
 CREATE POLICY "devolve_users_insert" ON devolve_users
   FOR INSERT WITH CHECK (id = auth.uid());
