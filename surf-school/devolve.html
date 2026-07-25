@@ -612,7 +612,7 @@ function renderLanding(){
       <a href="#negocios">Para quem</a>
     </div>
     <button class="btn ghost" onclick="goto('login')">Entrar</button>
-    <button class="btn primary" onclick="goto('signup')">Criar conta grátis</button>
+    <button class="btn primary" onclick="goto('signup')">Pedir acesso</button>
   </div></nav>
 
   <header class="hero">
@@ -620,7 +620,7 @@ function renderLanding(){
     <h1>Sabe sempre o que está <em>fora</em> e quando deve <em>voltar</em>.</h1>
     <p>Bicicletas, ferramentas, insufláveis, pranchas, aulas — o ${APP_NAME} adapta-se ao teu catálogo de equipamentos e serviços. Regista o empréstimo ou a marcação em segundos, e recebe o alerta automático assim que algo passa do prazo.</p>
     <div class="hero-cta">
-      <button class="btn primary" onclick="goto('signup')">Criar conta grátis →</button>
+      <button class="btn primary" onclick="goto('signup')">Pedir acesso →</button>
       <button class="btn ghost" onclick="document.getElementById('como-funciona').scrollIntoView({behavior:'smooth'})">Ver como funciona</button>
     </div>
   </header>
@@ -662,26 +662,19 @@ function renderLanding(){
   <section class="section-wrap" id="precos">
     <div class="section-head">
       <div class="kicker">Preços</div>
-      <h2>Começa grátis, cresce quando precisares</h2>
+      <h2>Preço combinado com cada negócio</h2>
+      <p style="color:var(--muted);font-size:14.5px;margin-top:8px">Sem planos fixos nem cartão de crédito — pedes acesso, combinamos o valor mensal conforme o teu negócio, e a conta fica pronta a usar.</p>
     </div>
-    <div class="pricing-grid">
-      <div class="price-card">
-        <div class="tier">Trial</div>
-        <div class="amount">0€</div>
-        <ul><li>Até 20 alugueres/mês</li><li>1 utilizador</li><li>Catálogo ilimitado</li></ul>
-        <button class="btn block" onclick="goto('signup')">Começar</button>
-      </div>
+    <div class="pricing-grid" style="grid-template-columns:1fr;max-width:420px;margin:0 auto;">
       <div class="price-card featured">
-        <div class="tier">Básico</div>
-        <div class="amount">19€ <span>/mês</span></div>
-        <ul><li>Alugueres ilimitados</li><li>3 utilizadores</li><li>WhatsApp automático</li><li>Analytics</li></ul>
-        <button class="btn primary block" onclick="goto('signup')">Começar</button>
-      </div>
-      <div class="price-card">
-        <div class="tier">Pro</div>
-        <div class="amount">39€ <span>/mês</span></div>
-        <ul><li>Tudo do Básico</li><li>Utilizadores ilimitados</li><li>Múltiplas lojas</li><li>Suporte prioritário</li></ul>
-        <button class="btn block" onclick="goto('signup')">Começar</button>
+        <div class="tier">Como funciona</div>
+        <ul>
+          <li>Pedes acesso — sem custos nem compromisso</li>
+          <li>Combinamos o valor mensal contigo</li>
+          <li>Alugueres ilimitados, catálogo ilimitado</li>
+          <li>WhatsApp automático + analytics incluídos</li>
+        </ul>
+        <button class="btn primary block" onclick="goto('signup')">Pedir acesso</button>
       </div>
     </div>
   </section>
@@ -705,7 +698,7 @@ function renderLogin(){
     <div class="field"><label>Password</label><input type="password" id="li-pass" placeholder="••••••••"></div>
     <button class="btn primary block" onclick="doLogin()">Entrar</button>
     <div class="auth-switch"><a onclick="goto('forgot')">Esqueci-me da password</a></div>
-    <div class="auth-switch">Ainda não tens conta? <a onclick="goto('signup')">Criar conta grátis</a></div>
+    <div class="auth-switch">Ainda não tens conta? <a onclick="goto('signup')">Pedir acesso</a></div>
     <div class="auth-switch"><a onclick="goto('landing')">← Voltar</a></div>
   </div></div>`;
 }
@@ -2102,7 +2095,7 @@ function renderHQ(){
           </div>
           <div class="meta">Pedido em: ${fmtDate(t.criado_em)}</div>
           <div class="rcard-actions">
-            <button class="btn sm primary block" onclick="hqAprovarConta('${t.id}')">✅ Aprovar</button>
+            <button class="btn sm primary block" onclick="hqAbrirModalAprovar('${t.id}')">✅ Aprovar</button>
             <button class="btn sm danger" onclick="hqRejeitarConta('${t.id}')">✕ Rejeitar</button>
           </div>
         </div>`).join('')}
@@ -2116,7 +2109,7 @@ function renderHQ(){
         const link = t.slug? location.origin+'/devolve?loja='+t.slug : '';
         return `<div class="rcard">
           <div class="rcard-top">
-            <div><div class="client">${t.nome}</div><div class="phone">Plano: ${t.plano}</div></div>
+            <div><div class="client">${t.nome}</div><div class="phone">${t.plano? 'Plano: '+t.plano : '<span style="color:var(--yellow)">Sem preço definido</span>'}</div></div>
             ${activo? '<span class="pill ok">Activa</span>' : t.activo===false? '<span class="pill crit">Suspensa</span>' : '<span class="pill crit">Bloqueada</span>'}
           </div>
           <div class="meta" style="color:${atraso?'var(--red)':'var(--muted)'}">Próx. pagamento: ${t.proximo_pagamento? fmtDate(t.proximo_pagamento) : '—'}</div>
@@ -2131,17 +2124,40 @@ function renderHQ(){
     </div>`}
   `;
 }
-async function hqAprovarConta(tenantId){
+let _hqAprovarTenantId = null;
+function hqAbrirModalAprovar(tenantId){
+  _hqAprovarTenantId = tenantId;
+  renderModal(hqAprovarModalHtml());
+}
+function hqAprovarModalHtml(){
+  const t = state.allTenants.find(x=>x.id===_hqAprovarTenantId);
+  if(!t) return '';
+  const proximo = new Date(); proximo.setMonth(proximo.getMonth()+1);
+  return `
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-head"><h3>✅ Aprovar — ${t.nome}</h3><button class="close-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Define o valor mensal combinado com este negócio antes de activares o acesso — não há plano gratuito automático.</p>
+      <div class="field"><label>Valor mensal combinado</label><input type="text" id="hq-ap-plano" placeholder="Ex: 25€/mês"></div>
+      <div class="summary-devol">Primeiro pagamento vence em: <b>${fmtDate(proximo.toISOString().slice(0,10))}</b></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="hqConfirmarAprovacao()">✅ Aprovar e activar</button></div>
+  </div></div>`;
+}
+async function hqConfirmarAprovacao(){
+  const plano = el('hq-ap-plano').value.trim();
+  if(!plano){ toast('Indica o valor mensal combinado.'); return; }
   const proximo = new Date(); proximo.setMonth(proximo.getMonth()+1);
   const novaData = proximo.toISOString().slice(0,10);
-  const t0 = state.allTenants.find(x=>x.id===tenantId);
-  const payload = { aprovado:true, proximo_pagamento: novaData };
+  const t0 = state.allTenants.find(x=>x.id===_hqAprovarTenantId);
+  const payload = { aprovado:true, proximo_pagamento: novaData, plano };
   if(t0 && !t0.slug) payload.slug = gerarSlug(t0.nome); // negócios anteriores a esta funcionalidade também recebem link público
-  const { error } = await SB.from('devolve_tenants').update(payload).eq('id', tenantId);
+  const { error } = await SB.from('devolve_tenants').update(payload).eq('id', _hqAprovarTenantId);
   if(error){ toast('Erro: '+error.message); return; }
-  const t = state.allTenants.find(x=>x.id===tenantId);
+  const t = state.allTenants.find(x=>x.id===_hqAprovarTenantId);
   if(t) Object.assign(t, payload);
-  toast('Conta aprovada — 1º mês grátis até '+fmtDate(novaData));
+  toast('Conta aprovada — '+plano+', primeiro pagamento até '+fmtDate(novaData));
+  closeModal();
   render();
 }
 async function hqRejeitarConta(tenantId){

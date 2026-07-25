@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS devolve_tenants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nome TEXT NOT NULL,
   sector TEXT DEFAULT '',              -- livre — só sugere catálogo inicial
-  plano TEXT DEFAULT 'trial',          -- trial | basico | pro
+  plano TEXT DEFAULT '',                -- valor mensal combinado (texto livre, ex: "25€/mês") — em branco até o Devolve HQ aprovar e definir o preço
   whatsapp_numero TEXT DEFAULT '',
   slug TEXT UNIQUE,                    -- identifica o link público de reservas: /loja/<slug>
   activo BOOLEAN DEFAULT true,         -- suspensão manual (o Devolve pode forçar bloqueio a qualquer momento)
@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS devolve_tenants (
 -- Migração para bases de dados já existentes (idempotente — seguro correr outra vez)
 ALTER TABLE devolve_tenants ADD COLUMN IF NOT EXISTS aprovado BOOLEAN DEFAULT true;
 ALTER TABLE devolve_tenants ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE;
+ALTER TABLE devolve_tenants ALTER COLUMN plano SET DEFAULT '';
+UPDATE devolve_tenants SET plano = '' WHERE plano = 'trial'; -- "trial" era um valor automático fictício, nunca reflectiu um preço real combinado
 
 -- devolve_users: liga cada utilizador autenticado a um negócio (tenant)
 CREATE TABLE IF NOT EXISTS devolve_users (
@@ -163,7 +165,7 @@ BEGIN
   v_slug := lower(regexp_replace(p_nome_negocio, '[^a-zA-Z0-9]+', '-', 'g')) || '-' || substr(md5(random()::text), 1, 4);
 
   INSERT INTO devolve_tenants (nome, sector, whatsapp_numero, plano, aprovado, slug)
-  VALUES (p_nome_negocio, p_sector, p_whatsapp, 'trial', false, v_slug)
+  VALUES (p_nome_negocio, p_sector, p_whatsapp, '', false, v_slug)
   RETURNING id INTO v_tenant_id;
 
   INSERT INTO devolve_users (id, tenant_id, role, nome) VALUES (v_uid, v_tenant_id, 'owner', p_nome_resp);
