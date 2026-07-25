@@ -139,10 +139,10 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
 .ok-box{background:var(--green-dim);border:1px solid var(--green);color:#b7f0c0;padding:9px 12px;border-radius:var(--radius);font-size:13px;margin-bottom:14px;}
 
 /* ================= APP SHELL ================= */
-.shell{display:flex;min-height:100vh;}
+.shell{display:flex;flex-direction:column;min-height:100vh;}
+@media(min-width:901px){.shell{flex-direction:row;}}
 .sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;overflow-y:auto;box-shadow:var(--shadow-md);}
-.sidebar .logo{padding:18px 20px;border-bottom:1px solid var(--border);}
-.side-biz{padding:14px 20px;border-bottom:1px solid var(--border);}
+.side-biz{padding:16px 20px;border-bottom:1px solid var(--border);}
 .side-biz .n{font-size:13px;font-weight:700;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .side-biz .p{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
 .side-nav{flex:1;padding:12px;display:flex;flex-direction:column;gap:2px;}
@@ -153,10 +153,11 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
 .side-link .badge{margin-left:auto;background:var(--red);color:#fff;font-size:10.5px;font-weight:700;border-radius:20px;padding:1px 6px;}
 .side-foot{padding:12px;border-top:1px solid var(--border);}
 .main{flex:1;margin-left:220px;min-height:100vh;display:flex;flex-direction:column;}
-.topbar{position:sticky;top:0;z-index:20;background:rgba(13,17,23,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 0 rgba(0,0,0,.2);}
+.topbar{position:sticky;top:0;z-index:20;background:rgba(13,17,23,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:16px;box-shadow:0 1px 0 rgba(0,0,0,.2);}
+.topbar .logo{font-size:15.5px;padding-right:16px;border-right:1px solid var(--border);flex-shrink:0;}
 .topbar h1{font-size:17px;color:var(--text-bright);letter-spacing:-.2px;}
 .topbar .spacer{flex:1;}
-.content{padding:26px 28px 60px;max-width:1220px;width:100%;}
+.content{padding:26px 28px 60px;max-width:1280px;width:100%;margin:0 auto;}
 .mobile-topbar{display:none;}
 .bottom-nav{display:none;}
 @media(max-width:900px){
@@ -198,13 +199,17 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
 
 .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
 @media(max-width:700px){.stat-row{grid-template-columns:repeat(3,1fr);gap:9px;}}
-.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;cursor:pointer;transition:.15s;overflow:hidden;box-shadow:var(--shadow-sm);}
+.stat{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;cursor:pointer;transition:.15s;overflow:hidden;box-shadow:var(--shadow-sm);}
 .stat:hover{border-color:var(--muted);box-shadow:var(--shadow-md);transform:translateY(-1px);}
-.stat .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:8px;}
+.stat .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:8px;max-width:calc(100% - 40px);}
 .stat .num{font-size:30px;font-weight:800;color:var(--text-bright);letter-spacing:-.5px;}
+.stat .stat-ico{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;}
 .stat.ok{border-left:3px solid var(--green);}
+.stat.ok .stat-ico{background:var(--green-dim);}
 .stat.warn{border-left:3px solid var(--yellow);}
+.stat.warn .stat-ico{background:var(--yellow-dim);}
 .stat.crit{border-left:3px solid var(--red);}
+.stat.crit .stat-ico{background:var(--red-dim);}
 @media(max-width:700px){
   .stat{padding:14px 12px;border-radius:12px;}
   .stat .lbl{font-size:9.5px;letter-spacing:.02em;margin-bottom:4px;line-height:1.2;}
@@ -228,7 +233,7 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
 .empty .ico{font-size:36px;margin-bottom:12px;}
 
 /* ---------- rental cards ---------- */
-.rental-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.rental-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,340px));gap:14px;}
 .rcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow-sm);transition:.15s;}
 .rcard:hover{border-color:var(--muted);box-shadow:var(--shadow-md);}
 .rcard.crit{border-color:var(--red);}
@@ -1224,7 +1229,6 @@ function renderApp(){
   return `
   <div class="shell">
     <div class="sidebar" id="sidebar">
-      <div class="logo"><span class="mark">↻</span> ${APP_NAME}</div>
       <div class="side-biz"><div class="n">${state.tenant? state.tenant.nome : ''}</div><div class="p">${state.tenant? state.tenant.plano : ''}</div></div>
       <div class="side-nav">${navHtml}</div>
       <div class="side-foot"><button class="btn ghost block" onclick="doLogout()">↩ Sair</button></div>
@@ -1234,7 +1238,7 @@ function renderApp(){
       <h1>${currentLabel}</h1>
     </div>
     <div class="main">
-      <div class="topbar"><h1>${currentLabel}</h1><div class="spacer"></div></div>
+      <div class="topbar"><div class="logo"><span class="mark">↻</span> ${APP_NAME}</div><h1>${currentLabel}</h1><div class="spacer"></div></div>
       <div class="content" id="view-content">${viewHtml}</div>
     </div>
     <div class="bottom-nav">${bottomNavHtml}</div>
@@ -1279,9 +1283,9 @@ function renderDashboard(){
     </div>` : ''}
     ${emAtraso.length>0? `<div class="banner">🚨 <b>${emAtraso.length}</b> aluguer(es) em atraso agora mesmo. <button class="btn sm danger" onclick="setAppView('atraso')">Ver atrasos</button></div>` : ''}
     <div class="stat-row">
-      <div class="stat ok" onclick="setAppView('ativos')"><div class="lbl">Activos</div><div class="num tabular">${activos.length}</div></div>
-      <div class="stat warn" onclick="setAppView('ativos')"><div class="lbl">A vencer em breve</div><div class="num tabular">${aVencer.length}</div></div>
-      <div class="stat crit" onclick="setAppView('atraso')"><div class="lbl">Em atraso</div><div class="num tabular">${emAtraso.length}</div></div>
+      <div class="stat ok" onclick="setAppView('ativos')"><div class="stat-ico">📋</div><div class="lbl">Activos</div><div class="num tabular">${activos.length}</div></div>
+      <div class="stat warn" onclick="setAppView('ativos')"><div class="stat-ico">⏳</div><div class="lbl">A vencer em breve</div><div class="num tabular">${aVencer.length}</div></div>
+      <div class="stat crit" onclick="setAppView('atraso')"><div class="stat-ico">🚨</div><div class="lbl">Em atraso</div><div class="num tabular">${emAtraso.length}</div></div>
     </div>
     <div class="card">
       <div class="card-header"><span class="card-title">Mais urgentes</span></div>
@@ -2047,9 +2051,9 @@ function renderAnalytics(){
 
   return `
     <div class="stat-row">
-      <div class="stat ok"><div class="lbl">Total de alugueres</div><div class="num tabular">${done.length}</div></div>
-      <div class="stat ok"><div class="lbl">Devoluções a tempo</div><div class="num tabular">${pctOnTime}%</div></div>
-      <div class="stat warn"><div class="lbl">Aluguer por horas vs dias</div><div class="num tabular" style="font-size:20px">${byUnit.horas||0} / ${byUnit.dias||0}</div></div>
+      <div class="stat ok"><div class="stat-ico">📦</div><div class="lbl">Total de alugueres</div><div class="num tabular">${done.length}</div></div>
+      <div class="stat ok"><div class="stat-ico">✅</div><div class="lbl">Devoluções a tempo</div><div class="num tabular">${pctOnTime}%</div></div>
+      <div class="stat warn"><div class="stat-ico">⏱️</div><div class="lbl">Aluguer por horas vs dias</div><div class="num tabular" style="font-size:20px">${byUnit.horas||0} / ${byUnit.dias||0}</div></div>
     </div>
     <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px" class="analytics-grid">
       <div class="chart-box"><div class="section-title" style="font-size:14px">Alugueres — últimos 30 dias</div><canvas id="chart-30d" height="140"></canvas></div>
