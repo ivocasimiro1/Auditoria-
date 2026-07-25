@@ -363,6 +363,22 @@ const SUPABASE_URL = 'https://yclgwqiieejsyhdoojeb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljbGd3cWlpZWVqc3loZG9vamViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4MDM5NTIsImV4cCI6MjEwMDM3OTk1Mn0.Ai0jusd2Mle1f3RTXx0EnybeFrBvlKK0AkJHhHcGVig';
 const SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Link de "esqueci-me da password" leva a Supabase a redireccionar de volta
+// para cá com um token de recuperação na URL; SB deteta isso sozinho e
+// dispara este evento — mostramos o ecrã de definir nova password.
+SB.auth.onAuthStateChange((event)=>{
+  if(event==='PASSWORD_RECOVERY'){ state.view='reset-password'; state.err=''; render(); }
+});
+
+function traduzErroAuth(msg){
+  const m = (msg||'').toLowerCase();
+  if(m.includes('invalid login credentials')) return 'Email ou password incorrectos.';
+  if(m.includes('email not confirmed')) return 'Este email ainda não foi confirmado — verifica a tua caixa de entrada.';
+  if(m.includes('user already registered')) return 'Já existe uma conta com este email.';
+  if(m.includes('password') && m.includes('6')) return 'A password tem de ter pelo menos 6 caracteres.';
+  return msg;
+}
+
 const CATALOG_TEMPLATES = {
   bicicletas: { nome:'Bicicletas', categorias:[
     { nome:'Bicicletas', icone:'🚲', campos_extra:[{chave:'tamanho',tipo:'select',opcoes:['S','M','L','XL']}],
@@ -549,6 +565,8 @@ function render(){
   if(contaSuspensa() && state.view==='app'){ app.innerHTML = renderContaSuspensa(); window.scrollTo(0,0); return; }
   if(state.view==='landing') app.innerHTML = renderLanding();
   else if(state.view==='login') app.innerHTML = renderLogin();
+  else if(state.view==='forgot') app.innerHTML = renderForgot();
+  else if(state.view==='reset-password') app.innerHTML = renderResetPassword();
   else if(state.view==='signup') app.innerHTML = renderSignup();
   else if(state.view==='app') app.innerHTML = renderApp();
   window.scrollTo(0,0);
@@ -667,7 +685,7 @@ function renderLanding(){
   `;
 }
 
-function goto(view){ state.view = view; state.err=''; render(); }
+function goto(view){ state.view = view; state.err=''; if(view!=='forgot'){ state.forgotSent=false; } render(); }
 
 /* ============================================================
    LOGIN
@@ -681,17 +699,68 @@ function renderLogin(){
     <div class="field"><label>Email</label><input type="email" id="li-email" placeholder="tu@negocio.com"></div>
     <div class="field"><label>Password</label><input type="password" id="li-pass" placeholder="••••••••"></div>
     <button class="btn primary block" onclick="doLogin()">Entrar</button>
+    <div class="auth-switch"><a onclick="goto('forgot')">Esqueci-me da password</a></div>
     <div class="auth-switch">Ainda não tens conta? <a onclick="goto('signup')">Criar conta grátis</a></div>
     <div class="auth-switch"><a onclick="goto('landing')">← Voltar</a></div>
   </div></div>`;
 }
 
 async function doLogin(){
-  const email = el('li-email').value.trim();
+  const email = el('li-email').value.trim().toLowerCase();
   const password = el('li-pass').value;
   if(!email || !password){ state.err='Preenche email e password.'; render(); return; }
   const { data, error } = await SB.auth.signInWithPassword({ email, password });
-  if(error){ state.err = error.message; render(); return; }
+  if(error){ state.err = traduzErroAuth(error.message); render(); return; }
+  await bootAfterAuth(data.user);
+}
+
+/* ============================================================
+   RECUPERAR PASSWORD
+   ============================================================ */
+function renderForgot(){
+  return `
+  <div class="auth-wrap"><div class="auth-card">
+    <div class="logo"><span class="mark">↻</span> ${APP_NAME}</div>
+    <div class="sub">Recuperar password</div>
+    ${state.err? `<div class="err-box">${state.err}</div>` : ''}
+    ${state.forgotSent? `
+      <p style="color:var(--text);font-size:14px;line-height:1.6">Enviámos um link para <b>${state.forgotEmail}</b>. Abre o email no telemóvel ou PC e segue o link para definires uma password nova.</p>
+      <div class="auth-switch"><a onclick="goto('login')">← Voltar a entrar</a></div>
+    ` : `
+      <p style="color:var(--muted);font-size:13.5px;margin-bottom:16px">Introduz o email da tua conta — enviamos um link para definires uma password nova.</p>
+      <div class="field"><label>Email</label><input type="email" id="fg-email" placeholder="tu@negocio.com"></div>
+      <button class="btn primary block" id="fg-btn" onclick="forgotSend()">Enviar link</button>
+      <div class="auth-switch"><a onclick="goto('login')">← Voltar a entrar</a></div>
+    `}
+  </div></div>`;
+}
+async function forgotSend(){
+  const email = el('fg-email').value.trim().toLowerCase();
+  if(!email){ state.err='Introduz o teu email.'; render(); return; }
+  const btn = el('fg-btn'); if(btn){ btn.disabled=true; btn.textContent='A enviar…'; }
+  const { error } = await SB.auth.resetPasswordForEmail(email, { redirectTo: location.origin+'/devolve' });
+  if(error){ state.err = traduzErroAuth(error.message); render(); return; }
+  state.err=''; state.forgotSent=true; state.forgotEmail=email; render();
+}
+function renderResetPassword(){
+  return `
+  <div class="auth-wrap"><div class="auth-card">
+    <div class="logo"><span class="mark">↻</span> ${APP_NAME}</div>
+    <div class="sub">Define a tua nova password</div>
+    ${state.err? `<div class="err-box">${state.err}</div>` : ''}
+    <div class="field"><label>Nova password</label><input type="password" id="rp-pass" placeholder="mínimo 6 caracteres"></div>
+    <div class="field"><label>Confirmar password</label><input type="password" id="rp-pass2" placeholder="repete a password"></div>
+    <button class="btn primary block" id="rp-btn" onclick="resetPasswordSubmit()">Guardar e entrar</button>
+  </div></div>`;
+}
+async function resetPasswordSubmit(){
+  const p1 = el('rp-pass').value, p2 = el('rp-pass2').value;
+  if(!p1 || p1.length<6){ state.err='A password tem de ter pelo menos 6 caracteres.'; render(); return; }
+  if(p1!==p2){ state.err='As passwords não coincidem.'; render(); return; }
+  const btn = el('rp-btn'); if(btn){ btn.disabled=true; btn.textContent='A guardar…'; }
+  const { data, error } = await SB.auth.updateUser({ password: p1 });
+  if(error){ state.err = traduzErroAuth(error.message); render(); return; }
+  toast('Password alterada com sucesso.');
   await bootAfterAuth(data.user);
 }
 
