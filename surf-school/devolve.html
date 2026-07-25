@@ -192,14 +192,23 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-wei
 .section-sub{color:var(--muted);font-size:13px;margin-bottom:20px;}
 
 .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
-@media(max-width:700px){.stat-row{grid-template-columns:1fr;}}
-.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;cursor:pointer;transition:.15s;}
+@media(max-width:700px){.stat-row{grid-template-columns:repeat(3,1fr);gap:9px;}}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;cursor:pointer;transition:.15s;overflow:hidden;}
 .stat:hover{border-color:var(--muted);}
 .stat .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:8px;}
 .stat .num{font-size:30px;font-weight:800;color:var(--text-bright);}
 .stat.ok{border-left:3px solid var(--green);}
 .stat.warn{border-left:3px solid var(--yellow);}
 .stat.crit{border-left:3px solid var(--red);}
+@media(max-width:700px){
+  .stat{padding:14px 12px;border-radius:12px;}
+  .stat .lbl{font-size:9.5px;letter-spacing:.02em;margin-bottom:4px;line-height:1.2;}
+  .stat .num{font-size:26px;}
+  .stat.ok,.stat.warn,.stat.crit{border-left-width:0;border-top:3px solid;}
+  .stat.ok{border-top-color:var(--green);}
+  .stat.warn{border-top-color:var(--yellow);}
+  .stat.crit{border-top-color:var(--red);}
+}
 
 .pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;}
 .pill.ok{background:var(--green-dim);color:#7ee08a;}
@@ -1092,10 +1101,12 @@ const NAV_ITEMS = [
 ];
 
 function renderApp(){
+  const isSA = state.myRole==='super_admin';
   const overdue = state.rentals.filter(r=>!r.devolucao_real && estadoEfectivo(r)==='atraso').length;
-  const pendentesHQ = state.myRole==='super_admin'? state.allTenants.filter(t=>t.aprovado===false).length : 0;
-  const nav = [...NAV_ITEMS];
-  if(state.myRole==='super_admin') nav.push({k:'hq', l:APP_NAME+' HQ', i:'🛡️'});
+  const pendentesHQ = isSA? state.allTenants.filter(t=>t.aprovado===false).length : 0;
+  // super-admin não tem loja própria — as páginas de gestão de negócio (Dashboard,
+  // Novo Aluguer, Catálogo, etc.) não fazem sentido para essa conta, só o Devolve HQ.
+  const nav = isSA? [{k:'hq', l:APP_NAME+' HQ', i:'🛡️'}] : [...NAV_ITEMS];
 
   const navHtml = nav.map(n=>`
     <div class="side-link ${state.appView===n.k?'on':''}" onclick="setAppView('${n.k}')">
@@ -1117,20 +1128,23 @@ function renderApp(){
 
   const currentLabel = (nav.find(n=>n.k===state.appView)||{}).l || '';
 
-  const bottomItems = [
-    {k:'dashboard', l:'Início', i:'🏠'},
-    {k:'novo', l:'Novo', i:'➕'},
-    {k:'ativos', l:'Activos', i:'📋'},
-    {k:'atraso', l:'Atrasos', i:'🚨'},
-  ];
-  const maisKeys = ['historico','catalogo','analytics','config','hq'];
+  const bottomItems = isSA
+    ? [{k:'hq', l:APP_NAME+' HQ', i:'🛡️'}]
+    : [
+        {k:'dashboard', l:'Início', i:'🏠'},
+        {k:'novo', l:'Novo', i:'➕'},
+        {k:'ativos', l:'Activos', i:'📋'},
+        {k:'atraso', l:'Atrasos', i:'🚨'},
+      ];
+  const maisKeys = isSA? [] : ['historico','catalogo','analytics','config','hq'];
   const maisActivo = maisKeys.includes(state.appView);
   const bottomNavHtml = bottomItems.map(n=>`
     <div class="bottom-nav-item ${state.appView===n.k?'on':''}" onclick="setAppView('${n.k}')">
       <span class="ico">${n.i}</span>${n.l}
       ${n.k==='atraso' && overdue>0 ? `<span class="badge">${overdue}</span>` : ''}
+      ${n.k==='hq' && pendentesHQ>0 ? `<span class="badge">${pendentesHQ}</span>` : ''}
     </div>`).join('') + `
-    <div class="bottom-nav-item ${maisActivo?'on':''}" onclick="openMaisModal()"><span class="ico">☰</span>Mais${pendentesHQ>0?`<span class="badge">${pendentesHQ}</span>`:''}</div>`;
+    <div class="bottom-nav-item ${maisActivo?'on':''}" onclick="openMaisModal()"><span class="ico">☰</span>Mais</div>`;
 
   return `
   <div class="shell">
@@ -1154,14 +1168,12 @@ function renderApp(){
 function setAppView(k){ state.appView = k; render(); }
 function openMaisModal(){ renderModal(maisModalHtml()); }
 function maisModalHtml(){
-  const items = [
+  const items = state.myRole==='super_admin'? [] : [
     {k:'historico', l:'Histórico', i:'🗂️'},
     {k:'catalogo', l:'Catálogo', i:'📦'},
     {k:'analytics', l:'Analytics', i:'📊'},
     {k:'config', l:'Configurações', i:'⚙️'},
   ];
-  const pendentesHQ = state.myRole==='super_admin'? state.allTenants.filter(t=>t.aprovado===false).length : 0;
-  if(state.myRole==='super_admin') items.push({k:'hq', l:APP_NAME+' HQ'+(pendentesHQ>0?` (${pendentesHQ})`:''), i:'🛡️'});
   return `
   <div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
     <div class="modal-head"><h3>Mais</h3><button class="close-x" onclick="closeModal()">✕</button></div>
