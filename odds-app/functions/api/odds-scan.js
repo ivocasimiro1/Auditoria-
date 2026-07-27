@@ -22,6 +22,8 @@ export async function onRequestGet(context) {
   const minEdge = parseFloat(url.searchParams.get('minEdge') || '3');
   const minArb = parseFloat(url.searchParams.get('minArb') || '0.5');
   const notify = url.searchParams.get('notify') === '1';
+  const casasFiltro = (url.searchParams.get('casas') || '')
+    .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
   const oddsUrl = `${ODDS_API_BASE}/sports/${encodeURIComponent(sport)}/odds/`
     + `?apiKey=${env.ODDS_API_KEY}&regions=${encodeURIComponent(regions)}&markets=h2h&oddsFormat=decimal`;
@@ -39,11 +41,12 @@ export async function onRequestGet(context) {
   }
 
   const events = await resp.json();
-  const { arbitrages, valueBets } = analyzeEvents(events, { minEdge, minArb });
+  const { arbitrages, valueBets } = analyzeEvents(events, { minEdge, minArb, casasFiltro });
 
   const meta = {
     sport,
     regions,
+    casasFiltro,
     eventsAnalisados: events.length,
     requestsRestantes: resp.headers.get('x-requests-remaining'),
     requestsUsadas: resp.headers.get('x-requests-used'),
@@ -59,9 +62,12 @@ export async function onRequestGet(context) {
 
 // --- Lógica de deteção ---------------------------------------------------
 
-function analyzeEvents(events, { minEdge, minArb }) {
+function analyzeEvents(events, { minEdge, minArb, casasFiltro = [] }) {
   const arbitrages = [];
   const valueBets = [];
+
+  const passaFiltro = (titulo) =>
+    casasFiltro.length === 0 || casasFiltro.some(f => titulo.toLowerCase().includes(f));
 
   for (const ev of events) {
     const books = (ev.bookmakers || [])
@@ -73,9 +79,10 @@ function analyzeEvents(events, { minEdge, minArb }) {
     const outcomeNames = [...new Set(books.flatMap(bk => bk.market.outcomes.map(o => o.name)))];
     if (outcomeNames.length < 2) continue;
 
-    // Melhor odd por outcome (para arbitragem) + probabilidades "de-vigged" por casa (para value bet)
-    const best = {}; // outcome -> { price, bookmaker }
-    const fairProbSum = {}; // outcome -> soma das probabilidades sem vig
+    // Probabilidade "justa" de consenso usa SEMPRE todas as casas disponíveis (estimativa mais robusta),
+    // independentemente do filtro — o filtro só decide que odds são mostradas/utilizáveis.
+    const best = {}; // outcome -> { price, bookmaker } — só entre casas que passam o filtro
+    const fairProbSum = {}; // outcome -> soma das probabilidades sem vig (todas as casas)
     let booksWithFullMarket = 0;
 
     for (const bk of books) {
@@ -85,11 +92,12 @@ function analyzeEvents(events, { minEdge, minArb }) {
       booksWithFullMarket++;
 
       const overround = outcomeNames.reduce((s, n) => s + 1 / prices[n], 0);
+      const elegivel = passaFiltro(bk.title);
       for (const n of outcomeNames) {
         const fairP = (1 / prices[n]) / overround;
         fairProbSum[n] = (fairProbSum[n] || 0) + fairP;
 
-        if (!best[n] || prices[n] > best[n].price) {
+        if (elegivel && (!best[n] || prices[n] > best[n].price)) {
           best[n] = { price: prices[n], bookmaker: bk.title };
         }
       }
@@ -97,33 +105,36 @@ function analyzeEvents(events, { minEdge, minArb }) {
 
     if (booksWithFullMarket < 2) continue;
 
-    // Arbitragem: melhor odd de cada outcome, possivelmente em casas diferentes
-    const arbSum = outcomeNames.reduce((s, n) => s + 1 / best[n].price, 0);
-    if (arbSum < 1) {
-      const arbPct = (1 - arbSum) * 100;
-      if (arbPct >= minArb) {
-        arbitrages.push({
-          evento: `${ev.home_team} vs ${ev.away_team}`,
-          desporto: ev.sport_title,
-          inicio: ev.commence_time,
-          lucroPct: round2(arbPct),
-          pernas: outcomeNames.map(n => ({
-            resultado: n,
-            casa: best[n].bookmaker,
-            odd: best[n].price,
-            stakePct: round2((1 / best[n].price / arbSum) * 100),
-          })),
-        });
+    // Arbitragem: só entre as casas do filtro (senão a combinação não é realmente jogável)
+    if (outcomeNames.every(n => best[n])) {
+      const arbSum = outcomeNames.reduce((s, n) => s + 1 / best[n].price, 0);
+      if (arbSum < 1) {
+        const arbPct = (1 - arbSum) * 100;
+        if (arbPct >= minArb) {
+          arbitrages.push({
+            evento: `${ev.home_team} vs ${ev.away_team}`,
+            desporto: ev.sport_title,
+            inicio: ev.commence_time,
+            lucroPct: round2(arbPct),
+            pernas: outcomeNames.map(n => ({
+              resultado: n,
+              casa: best[n].bookmaker,
+              odd: best[n].price,
+              stakePct: round2((1 / best[n].price / arbSum) * 100),
+            })),
+          });
+        }
       }
     }
 
-    // Value bets: odd de uma casa vs probabilidade justa de consenso (média das casas sem vig)
+    // Value bets: odd de uma casa (do filtro) vs probabilidade justa de consenso (todas as casas)
     for (const n of outcomeNames) {
       const consensusFairP = fairProbSum[n] / booksWithFullMarket;
       if (!consensusFairP) continue;
       const fairOdd = 1 / consensusFairP;
 
       for (const bk of books) {
+        if (!passaFiltro(bk.title)) continue;
         const outcome = bk.market.outcomes.find(o => o.name === n);
         if (!outcome) continue;
         const edgePct = (outcome.price * consensusFairP - 1) * 100;
