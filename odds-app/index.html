@@ -140,28 +140,29 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
   </div>
   <div class="field">
     <label>Edge mín. (value %)</label>
-    <input type="number" id="minEdge" value="3" step="0.5" min="0">
+    <input type="number" id="minEdge" value="2" step="0.5" min="0">
   </div>
   <div class="field">
     <label>Lucro mín. (arb %)</label>
-    <input type="number" id="minArb" value="0.5" step="0.1" min="0">
+    <input type="number" id="minArb" value="0.3" step="0.1" min="0">
   </div>
   <div class="field">
     <label>Casas (vazio = todas)</label>
-    <input type="text" id="casas" value="bwin, Betclic" placeholder="ex: bwin, Betclic">
+    <input type="text" id="casas" value="" placeholder="ex: bwin, Betclic (vazio = todas)">
   </div>
   <button class="primary" id="scanBtn" onclick="scan()">Analisar</button>
 </div>
 
 <div class="controls">
   <div class="field" style="flex:1;min-width:220px;">
-    <label>Scan diário</label>
+    <label>Scan</label>
     <div style="color:var(--muted);font-size:12px;line-height:1.5;">
-      Corre as principais ligas + competições FIFA/UEFA de uma vez (~15 pedidos à API) e junta tudo
-      numa lista só, ordenada por confiança. Usa os mesmos filtros (Edge/Lucro/Casas) de cima.
+      Corre 1ªs e 2ªs divisões principais, FIFA/UEFA, NBA e EuroLeague de uma vez (~22 pedidos à API)
+      e junta tudo numa lista só, ordenada por confiança. Usa os mesmos filtros (Edge/Lucro/Casas) de
+      cima. Automático a cada 2 dias ao abrir a página; toca no botão para forçar antes disso.
     </div>
   </div>
-  <button class="primary" id="dailyBtn" onclick="scanDiario()">🌍 Scan diário (ligas + FIFA/UEFA)</button>
+  <button class="primary" id="dailyBtn" onclick="scanDiario()">🌍 Scan completo (1ªs + 2ªs divisões)</button>
 </div>
 
 <div class="meta" id="meta"></div>
@@ -188,7 +189,8 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
     <b>O que é:</b> uma casa está a oferecer uma odd mais alta do que a probabilidade real do evento sugere —
     não é lucro garantido (podes perder essa aposta), mas é uma vantagem matemática que compensa a longo prazo,
     ao longo de muitas apostas.<br>
-    <b>Odd oferecida</b> — a odd que a casa (bwin/Betclic, no teu filtro) está a dar.<br>
+    <b>Odd oferecida</b> — a odd que essa casa está a dar (todas por defeito; usa o campo "Casas"
+    acima para restringir só às que tens conta, ex: bwin, Betclic).<br>
     <b>Odd justa (consenso)</b> — a odd que "deveria" ser, calculada pela média de várias casas sem a margem
     de lucro de cada uma. Quanto mais alta a odd oferecida for <i>face</i> a esta, maior a vantagem.<br>
     <b>% no topo do card (edge)</b> — vantagem esperada por unidade apostada, a longo prazo
@@ -233,12 +235,12 @@ async function loadSports(){
 // escondidas — ver "Fora de época/não encontradas" nos resultados.
 const LIGAS_PRINCIPAIS = [
   { nome:'Premier League',        busca:['premier league', 'epl'] },
-  { nome:'La Liga',               busca:['la liga', 'spain'] },
-  { nome:'Serie A',               busca:['serie a', 'italy'] },
-  { nome:'Bundesliga',            busca:['bundesliga', 'germany'] },
-  { nome:'Ligue 1',               busca:['ligue 1', 'france'] },
-  { nome:'Primeira Liga',         busca:['primeira liga', 'portugal'] },
-  { nome:'Brasileirão',           busca:['brazil', 'brasileir'] },
+  { nome:'La Liga',               busca:['la liga'], excluir:['la liga 2', 'segunda'] },
+  { nome:'Serie A',               busca:['serie a'], excluir:['serie b'] },
+  { nome:'Bundesliga',            busca:['bundesliga'], excluir:['bundesliga 2', '2. bundesliga', '2.bundesliga'] },
+  { nome:'Ligue 1',               busca:['ligue 1'], excluir:['ligue 2'] },
+  { nome:'Primeira Liga',         busca:['primeira liga', 'liga portugal'], excluir:['liga portugal 2', 'segunda liga'] },
+  { nome:'Brasileirão',           busca:['brazil'], excluir:['serie b'] },
   { nome:'MLS',                   busca:['mls', 'major league soccer'] },
   // FIFA
   { nome:'Mundial FIFA',          busca:['fifa world cup'] },
@@ -248,12 +250,35 @@ const LIGAS_PRINCIPAIS = [
   { nome:'Europa League',         busca:['europa league'] },
   { nome:'Conference League',     busca:['conference league'] },
   { nome:'Liga das Nações UEFA',  busca:['nations league'] },
-  { nome:'Europeu de Seleções',   busca:['euro championship', 'uefa european'] },
+  { nome:'Europeu de Seleções',   busca:['euro championship', 'uefa european championship'] },
+  // Basquetebol
+  { nome:'NBA',                   busca:['nba'] },
+  { nome:'EuroLeague',            busca:['euroleague'] },
+  // Segundas divisões — menos seguidas por bookmakers "afiados", mais hipótese
+  // de discrepância real entre casas (mas também mais risco de dados fracos —
+  // é o `minBooks` que protege contra isso, não a exclusão destas ligas).
+  { nome:'Championship (Inglaterra)', busca:['championship'], excluir:['euro', 'uefa', 'world', 'fifa'] },
+  { nome:'La Liga 2 (Espanha)',   busca:['la liga 2', 'segunda división', 'segunda division'] },
+  { nome:'Serie B (Itália)',      busca:['serie b'] },
+  { nome:'2. Bundesliga (Alemanha)', busca:['bundesliga 2', '2. bundesliga', '2.bundesliga'] },
+  { nome:'Liga Portugal 2',       busca:['liga portugal 2', 'segunda liga'] },
+  // Nota: ténis (ATP/WTA) foi ponderado mas ficou de fora — corre por torneio
+  // semanal, não por "liga" fixa, e vários torneios em simultâneo disparariam
+  // o consumo de créditos do auto-scan diário para lá do free tier (500/mês).
 ];
 
-function resolverLiga(liga){
+// Devolve até `liga.limite` (default 1) desportos que correspondem a esta entrada,
+// da lista real devolvida por /api/odds-sports. `excluir` filtra falsos positivos
+// entre ligas com nomes parecidos (ex: "La Liga" vs "La Liga 2").
+function resolverLigas(liga){
   const alvo = (s) => (s.title + ' ' + s.group + ' ' + (s.description||'')).toLowerCase();
-  return SPORTS_CACHE.find(s => liga.busca.some(termo => alvo(s).includes(termo)));
+  const encontrados = SPORTS_CACHE.filter(s => {
+    const texto = alvo(s);
+    const incluido = liga.busca.some(termo => texto.includes(termo));
+    const excluido = (liga.excluir || []).some(termo => texto.includes(termo));
+    return incluido && !excluido;
+  });
+  return encontrados.slice(0, liga.limite || 1);
 }
 
 function buildUrl(sport, regions, minEdge, minArb, casas){
@@ -323,17 +348,25 @@ async function scanDiario(){
   const falhas = [];
   const naoEncontradas = [];
 
-  for(let i = 0; i < LIGAS_PRINCIPAIS.length; i++){
-    const liga = LIGAS_PRINCIPAIS[i];
-    const sportInfo = resolverLiga(liga);
-    if(!sportInfo){ naoEncontradas.push(liga.nome); continue; }
+  // Expande cada entrada (algumas podem ter `limite` > 1 e corresponder a mais
+  // do que um desporto concreto) numa lista plana de desportos a analisar.
+  const alvos = [];
+  for(const liga of LIGAS_PRINCIPAIS){
+    const encontrados = resolverLigas(liga);
+    if(encontrados.length === 0){ naoEncontradas.push(liga.nome); continue; }
+    for(const sportInfo of encontrados){
+      alvos.push({ nome: encontrados.length > 1 ? `${liga.nome}: ${sportInfo.title}` : liga.nome, sportInfo });
+    }
+  }
 
-    btn.textContent = `A analisar… (${i+1}/${LIGAS_PRINCIPAIS.length}: ${liga.nome})`;
-    arbList.innerHTML = `<div class="loading">A analisar ${liga.nome}… (${i+1}/${LIGAS_PRINCIPAIS.length})</div>`;
+  for(let i = 0; i < alvos.length; i++){
+    const alvo = alvos[i];
+    btn.textContent = `A analisar… (${i+1}/${alvos.length}: ${alvo.nome})`;
+    arbList.innerHTML = `<div class="loading">A analisar ${alvo.nome}… (${i+1}/${alvos.length})</div>`;
     try{
-      const r = await fetch(buildUrl(sportInfo.key, regions, minEdge, minArb, casas));
+      const r = await fetch(buildUrl(alvo.sportInfo.key, regions, minEdge, minArb, casas));
       const d = await r.json();
-      if(d.error){ falhas.push(liga.nome); continue; }
+      if(d.error){ falhas.push(alvo.nome); continue; }
       agregado.arbitrages.push(...d.arbitrages);
       agregado.valueBets.push(...d.valueBets);
       agregado.meta.eventsAnalisados += d.meta.eventsAnalisados || 0;
@@ -342,7 +375,7 @@ async function scanDiario(){
       agregado.meta.casasFiltro = d.meta.casasFiltro;
       agregado.meta.janelaAte = d.meta.janelaAte;
     }catch(e){
-      falhas.push(liga.nome);
+      falhas.push(alvo.nome);
     }
   }
 
@@ -357,7 +390,7 @@ async function scanDiario(){
     document.getElementById('meta').innerHTML += `<span style="color:var(--red)">Falhou: ${falhas.join(', ')}</span>`;
   }
 
-  btn.disabled = false; btn.textContent = '🌍 Scan diário (ligas + FIFA/UEFA)';
+  btn.disabled = false; btn.textContent = '🌍 Scan completo (1ªs + 2ªs divisões)';
 }
 
 function renderResultados(d){
@@ -413,20 +446,23 @@ function renderResultados(d){
     `).join('') : '<div class="empty">Nenhum value bet encontrado com os filtros atuais.</div>';
 }
 
-// Ao abrir a página, corre o scan diário automaticamente — mas só uma vez por dia,
-// para não gastar créditos da API de cada vez que abres a app. Se já correu hoje,
-// mostra quando foi em vez de repetir.
+// Ao abrir a página, corre o scan automaticamente — mas só a cada N dias, para
+// caber no free tier da API agora que a lista de ligas cresceu (~22 pedidos por
+// scan). Se ainda não passou o intervalo, mostra quando foi o último em vez de
+// repetir (podes sempre forçar manualmente tocando nos botões acima).
 const CHAVE_ULTIMO_AUTO = 'oddsapp_ultimo_auto_scan';
+const INTERVALO_AUTO_DIAS = 2;
 
 async function autoScanSeNecessario(){
   await loadSports();
-  const hoje = new Date().toISOString().slice(0, 10);
   const ultimo = localStorage.getItem(CHAVE_ULTIMO_AUTO);
+  const diasPassados = ultimo ? (Date.now() - new Date(ultimo).getTime()) / 86_400_000 : Infinity;
 
-  if(ultimo && ultimo.startsWith(hoje)){
-    const hora = ultimo.split('T')[1]?.slice(0,5) || '';
+  if(diasPassados < INTERVALO_AUTO_DIAS){
+    const proximo = new Date(new Date(ultimo).getTime() + INTERVALO_AUTO_DIAS * 86_400_000);
     document.getElementById('meta').innerHTML =
-      `<span>Scan diário automático já feito hoje às ${hora} — toca num dos botões acima para repetir.</span>`;
+      `<span>Scan automático corre a cada ${INTERVALO_AUTO_DIAS} dias — último em ${fmtDate(ultimo)},`
+      + ` próximo a partir de ${fmtDate(proximo.toISOString())}. Toca num dos botões acima para repetir já.</span>`;
     return;
   }
 
