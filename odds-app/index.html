@@ -160,14 +160,10 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
       <option value="us">EUA</option>
     </select>
   </div>
-  <div class="field">
-    <label>Edge mín. (value %)</label>
-    <input type="number" id="minEdge" value="2" step="0.5" min="0">
-  </div>
-  <div class="field">
-    <label>Lucro mín. (arb %)</label>
-    <input type="number" id="minArb" value="0.3" step="0.1" min="0">
-  </div>
+  <!-- Edge/Lucro mín. deixaram de ser campos visíveis — usam valores fixos e
+       sensatos por omissão, para não obrigar a configurar percentagens. -->
+  <input type="hidden" id="minEdge" value="2">
+  <input type="hidden" id="minArb" value="0.3">
   <div class="field">
     <label>Casas (vazio = todas)</label>
     <input type="text" id="casas" value="bwin, Betclic" placeholder="ex: bwin, Betclic (vazio = todas)">
@@ -178,9 +174,10 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
   </div>
   <button class="primary" id="scanBtn" onclick="scan()">Analisar</button>
 </div>
+
 <div style="max-width:1100px;margin:6px auto 0;padding:0 16px;color:var(--muted);font-size:11.5px;">
-  Edge/Lucro mín. só filtram as listas completas abaixo — a "Sugestão principal" mostra sempre a melhor
-  oportunidade encontrada, seja qual for o valor nestes campos.
+  A "Sugestão principal" mostra sempre a melhor oportunidade encontrada — não precisas de configurar
+  limiares.
 </div>
 
 <div class="controls">
