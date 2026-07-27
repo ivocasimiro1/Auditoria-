@@ -77,6 +77,14 @@ button.primary:hover:not(:disabled){filter:brightness(1.08);}
   font-size:11px;padding:2px 8px;border-radius:999px;background:var(--surface3);color:var(--muted);
 }
 
+.statsGrid{display:flex;gap:10px;flex-wrap:wrap;}
+.statTile{
+  flex:1;min-width:110px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 14px;
+}
+.statTile .valor{font-size:22px;font-weight:700;color:var(--text-bright);}
+.statTile .rotulo{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+
 .card{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
   padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow-sm);
@@ -144,6 +152,11 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
   ⚠️ Ferramenta de análise, não conselho financeiro. Apostar com arbitragem/value betting é legal na maioria das jurisdições,
   mas as casas de apostas ativamente detetam e podem limitar ou banir contas que o façam de forma consistente.
   Os dados dependem da disponibilidade e latência do fornecedor (The Odds API) — confirma sempre as odds na própria casa antes de apostar.
+</div>
+
+<div class="section" id="historicoSection" style="display:none;margin-top:16px;">
+  <h2>Histórico de acertos</h2>
+  <div id="historicoConteudo"></div>
 </div>
 
 <div class="controls">
@@ -749,8 +762,48 @@ async function autoScanSeNecessario(){
   await scanDiario();
 }
 
+// Histórico de acertos — opcional, só aparece se o KV estiver configurado no
+// Cloudflare Pages (ver README). Sem isso, a secção fica simplesmente escondida.
+const NOMES_TIPO = { arbitragem: 'Arbitragem', value: 'Value bets', valorModelo: 'Value bets do modelo' };
+
+async function carregarHistorico(){
+  try{
+    const r = await fetch('/api/historico');
+    const d = await r.json();
+    if(!d.disponivel) return; // KV não configurado — não mostra nada
+
+    const secao = document.getElementById('historicoSection');
+    const conteudo = document.getElementById('historicoConteudo');
+    secao.style.display = 'block';
+
+    const tiposComDados = Object.entries(d.porTipo).filter(([, s]) => s.resolvidos > 0);
+    if(tiposComDados.length === 0){
+      conteudo.innerHTML = '<div class="empty">Ainda sem oportunidades confirmadas — volta aqui daqui a uns dias, depois dos primeiros jogos acabarem.</div>';
+      return;
+    }
+
+    const tiles = tiposComDados.map(([tipo, s]) => {
+      const taxa = s.resolvidos ? Math.round((s.acertos / s.resolvidos) * 100) : 0;
+      return `
+        <div class="statTile">
+          <div class="valor">${taxa}%</div>
+          <div class="rotulo">${esc(NOMES_TIPO[tipo] || tipo)} (${s.acertos}/${s.resolvidos})</div>
+        </div>`;
+    }).join('');
+
+    conteudo.innerHTML = `
+      <div class="statsGrid">${tiles}</div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:10px;">
+        Taxa de acerto real, confirmada depois dos jogos terminarem — não é a "Confiança" estimada
+        antes do jogo. Arbitragem conta sempre como acerto (lucro garantido por construção); o que
+        varia ali é se o jogo se realizou normalmente.
+      </div>`;
+  }catch(e){ /* histórico é um extra — falha aqui não deve afetar o resto da app */ }
+}
+
 carregarFiltrosGuardados();
 autoScanSeNecessario();
+carregarHistorico();
 </script>
 </body>
 </html>

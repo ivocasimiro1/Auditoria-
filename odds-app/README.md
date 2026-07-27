@@ -30,6 +30,11 @@ para não arriscar interferir com essa configuração. Fica com o seu próprio d
   estatística. Encontra valor que o método de consenso nunca veria — quando todas as casas
   concordam entre si, mas o nosso modelo discorda de todas ao mesmo tempo. Só cobre as mesmas
   ligas das Previsões.
+- **Histórico de acertos** (opcional, precisa de KV — ver abaixo): cada oportunidade detetada fica
+  registada; depois do jogo terminar, `functions/api/verificar-resultados.js` confirma o resultado
+  real via The Odds API e marca se a aposta teria sido ganha. `functions/api/historico.js` resume
+  isto numa taxa de acerto real por tipo (arbitragem/value/value do modelo) — não é a "Confiança"
+  estimada antes do jogo, é o que realmente aconteceu.
 
 ## Criar o projeto Cloudflare Pages (uma vez)
 
@@ -52,6 +57,28 @@ qualquer alteração aqui não afeta `/depositos`, `/rotacao`, `/devolve`, etc.
 | `ODDS_API_KEY` | Sim | Chave de https://the-odds-api.com (free tier: 500 pedidos/mês) |
 | `TELEGRAM_BOT_TOKEN` | Não | Token do bot Telegram, só necessário para alertas automáticos |
 | `TELEGRAM_CHAT_ID` | Não | Chat ID para onde enviar os alertas |
+
+## Histórico de acertos (opcional — precisa de KV)
+
+Para ativar a secção "Histórico de acertos" (taxa de acerto real, confirmada depois dos jogos
+terminarem), é preciso criar e ligar um namespace KV:
+
+1. **dash.cloudflare.com** → **Workers & Pages** → **KV** (no menu lateral) → **Create a namespace**
+2. Dá-lhe um nome (ex: `odds-historico`) → **Add**
+3. Volta ao projeto `odds-app` → **Settings** → **Functions** → **KV namespace bindings** → **Add binding**
+4. **Variable name**: `ODDS_KV` (tem de ser exatamente este nome) → escolhe o namespace criado no passo 2 → **Save**
+5. Faz um novo deploy (Retry deployment no último, ou um commit novo) para a binding ficar ativa
+
+Depois disto:
+- Cada scan regista automaticamente as oportunidades detetadas (sem custo extra de créditos da API)
+- Aponta um cron externo (o mesmo mecanismo dos alertas Telegram) a
+  `https://<o-teu-projeto>.pages.dev/api/verificar-resultados` — sugestão: 1x/dia — para confirmar
+  os resultados reais dos jogos já terminados
+- A secção "Histórico de acertos" no dashboard mostra a taxa de acerto real assim que houver jogos
+  já confirmados (normalmente uns dias depois de ativares isto)
+
+Sem esta configuração, tudo o resto da app funciona na mesma — esta secção fica simplesmente
+escondida.
 
 ## Alertas automáticos (opcional)
 

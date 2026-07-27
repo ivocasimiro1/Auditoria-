@@ -6,6 +6,10 @@
 //   ODDS_API_KEY        (obrigatória)   — chave de https://the-odds-api.com
 //   TELEGRAM_BOT_TOKEN   (opcional)     — só necessária para alertas
 //   TELEGRAM_CHAT_ID     (opcional)     — só necessária para alertas
+//
+// KV binding opcional (Cloudflare Pages → Settings → Functions → KV namespace
+// bindings), nome da binding: ODDS_KV — sem isto, tudo funciona igual, só sem
+// histórico de acertos (ver README).
 
 const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
 
@@ -81,6 +85,14 @@ export async function onRequestGet(context) {
   // método de consenso nunca veria — quando TODAS as casas concordam entre si,
   // mas o nosso modelo, com dados históricos, discorda de todas ao mesmo tempo.
   const valueBetsModelo = await calcularValorModelo(events, casasFiltro, minEdgeModelo, maxEdgeModelo, Date.now());
+
+  // Regista cada oportunidade detetada no KV (se configurado), para depois
+  // confirmarmos o resultado real e sabermos a taxa de acerto verdadeira —
+  // não bloqueia a resposta (corre em segundo plano via waitUntil).
+  if (env.ODDS_KV) {
+    const registo = registarPrevisoes(env, arbitrages, valueBets, valueBetsModelo).catch(() => {});
+    if (context.waitUntil) context.waitUntil(registo); else await registo;
+  }
 
   const meta = {
     sport,
@@ -169,6 +181,7 @@ function analyzeEvents(events, { minEdge, minArb, maxEdge, maxArb, minBooks, cas
           arbitrages.push({
             evento: `${ev.home_team} vs ${ev.away_team}`,
             desporto: ev.sport_title,
+            sportKey: ev.sport_key,
             inicio: ev.commence_time,
             lucroPct: round2(arbPct),
             confianca: confianca.score,
@@ -205,6 +218,7 @@ function analyzeEvents(events, { minEdge, minArb, maxEdge, maxArb, minBooks, cas
           valueBets.push({
             evento: `${ev.home_team} vs ${ev.away_team}`,
             desporto: ev.sport_title,
+            sportKey: ev.sport_key,
             inicio: ev.commence_time,
             resultado: n,
             casa: bk.title,
@@ -292,6 +306,66 @@ function json(data, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
   });
+}
+
+// --- Histórico de acertos (opcional, precisa de KV configurado) ----------
+//
+// Cada oportunidade detetada fica registada por uma chave estável (mesmo
+// jogo + tipo + resultado + casa), para que scans repetidos do mesmo jogo
+// antes do início atualizem o mesmo registo em vez de duplicar. Depois do
+// jogo terminar, verificar-resultados.js confirma o resultado real e marca
+// se a aposta teria sido ganha — dados que alimentam /api/historico.
+
+async function registarPrevisoes(env, arbitrages, valueBets, valueBetsModelo) {
+  const agora = new Date().toISOString();
+  const tarefas = [];
+
+  for (const a of arbitrages) {
+    for (const p of a.pernas) {
+      const chave = `pred:arb:${a.evento}:${a.inicio}:${p.resultado}:${p.casa}`;
+      tarefas.push(gravarPrevisao(env, chave, {
+        tipo: 'arbitragem', evento: a.evento, desporto: a.desporto, sportKey: a.sportKey, inicio: a.inicio,
+        resultado: p.resultado, casa: p.casa, odd: p.odd, confiancaLabel: a.confiancaLabel,
+      }, agora));
+    }
+  }
+  for (const v of valueBets) {
+    const chave = `pred:val:${v.evento}:${v.inicio}:${v.resultado}:${v.casa}`;
+    tarefas.push(gravarPrevisao(env, chave, {
+      tipo: 'value', evento: v.evento, desporto: v.desporto, sportKey: v.sportKey, inicio: v.inicio,
+      resultado: v.resultado, casa: v.casa, odd: v.odd, oddReferencia: v.oddJusta,
+      confiancaLabel: v.confiancaLabel,
+    }, agora));
+  }
+  for (const v of valueBetsModelo) {
+    const chave = `pred:modelo:${v.evento}:${v.inicio}:${v.resultado}:${v.casa}`;
+    tarefas.push(gravarPrevisao(env, chave, {
+      tipo: 'valorModelo', evento: v.evento, desporto: v.desporto, sportKey: v.sportKey, inicio: v.inicio,
+      resultado: v.resultado, casa: v.casa, odd: v.odd, oddReferencia: v.oddModelo,
+      confiancaLabel: v.confiancaLabel,
+    }, agora));
+  }
+
+  await Promise.allSettled(tarefas);
+}
+
+async function gravarPrevisao(env, chave, dados, agora) {
+  try {
+    const existente = await env.ODDS_KV.get(chave, 'json');
+    const registo = existente || {
+      ...dados,
+      detetadoEm: agora,
+      resolvido: false,
+      resultadoReal: null,
+      acertou: null,
+      verificadoEm: null,
+    };
+    registo.odd = dados.odd; // atualiza para a odd mais recente vista antes do jogo começar
+    if (dados.oddReferencia !== undefined) registo.oddReferencia = dados.oddReferencia;
+    registo.confiancaLabel = dados.confiancaLabel;
+    registo.atualizadoEm = agora;
+    await env.ODDS_KV.put(chave, JSON.stringify(registo));
+  } catch (err) { /* KV indisponível ou erro transitório — não bloqueia o pedido principal */ }
 }
 
 // --- Previsões por modelo estatístico (histórico de golos) ---------------
@@ -521,6 +595,7 @@ async function calcularPrevisoes(events){
     previsoes.push({
       evento: `${ev.home_team} vs ${ev.away_team}`,
       desporto: ev.sport_title,
+      sportKey: ev.sport_key,
       inicio: ev.commence_time,
       vitoriaCasa: round2(pCasa * 100),
       empate: round2(pEmpate * 100),
@@ -576,6 +651,7 @@ async function calcularValorModelo(events, casasFiltro, minEdgeModelo, maxEdgeMo
           valueBetsModelo.push({
             evento: `${ev.home_team} vs ${ev.away_team}`,
             desporto: ev.sport_title,
+            sportKey: ev.sport_key,
             inicio: ev.commence_time,
             resultado: outcome.name,
             casa: bk.title,
