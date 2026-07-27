@@ -476,7 +476,7 @@ async function scanDiario(){
     try{
       const r = await fetch(buildUrl(alvo.sportInfo.key, regions, casas));
       const d = await r.json();
-      if(d.error){ falhas.push({ nome: alvo.nome, motivo: d.error }); continue; }
+      if(d.error){ falhas.push({ nome: alvo.nome, motivo: d.error, detalhe: d.details }); continue; }
       agregado.arbitrages.push(...d.arbitrages);
       agregado.valueBets.push(...d.valueBets);
       agregado.valueBetsModelo.push(...(d.valueBetsModelo || []));
@@ -501,7 +501,7 @@ async function scanDiario(){
     document.getElementById('meta').innerHTML += `<span style="color:var(--yellow)">Fora de época/não encontradas: ${esc(naoEncontradas.join(', '))}</span>`;
   }
   if(falhas.length){
-    const falhasTxt = falhas.map(f => `${esc(f.nome)} (${esc(f.motivo)})`).join(', ');
+    const falhasTxt = falhas.map(f => `${esc(f.nome)} (${esc(f.motivo)}${f.detalhe ? ': ' + esc(String(f.detalhe).slice(0, 200)) : ''})`).join(', ');
     document.getElementById('meta').innerHTML += `<span style="color:var(--red)">Falhou: ${falhasTxt}</span>`;
   }
 
