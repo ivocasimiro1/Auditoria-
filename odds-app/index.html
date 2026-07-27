@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Odds Desajustadas — Grupo Despomar</title>
+<style>
+:root{
+  color-scheme: dark;
+  --bg:#0d1117; --surface:#161b22; --surface2:#21262d; --surface3:#2d333b;
+  --border:#30363d;
+  --accent:#2dd4bf; --accent-dim:#0f3d38; --accent-text:#0d1117;
+  --green:#3fb950; --green-dim:#1a4a24;
+  --yellow:#d29922; --yellow-dim:#4a3800;
+  --red:#f85149; --red-dim:#4a1515;
+  --purple:#8b5cf6; --purple-dim:#2e1b5e;
+  --text:#c9d1d9; --text-bright:#f0f6fc; --muted:#8b949e;
+  --radius:8px; --radius-lg:14px;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.28);
+  --shadow-md:0 6px 20px rgba(0,0,0,.32);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-size:14px;
+  -webkit-text-size-adjust:100%;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{overscroll-behavior:none;background:var(--bg);color:var(--text);}
+body{padding-bottom:40px;}
+
+header{
+  padding:20px 20px 16px;border-bottom:1px solid var(--border);
+  background:var(--surface);position:sticky;top:0;z-index:10;
+}
+header h1{font-size:18px;color:var(--text-bright);display:flex;align-items:center;gap:8px;}
+header p{color:var(--muted);font-size:12.5px;margin-top:4px;}
+
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px;}
+
+.disclaimer{
+  margin:16px auto 0;max-width:1100px;padding:12px 16px;
+  background:var(--yellow-dim);border:1px solid var(--yellow);border-radius:var(--radius);
+  color:var(--yellow);font-size:12.5px;line-height:1.5;
+}
+
+.controls{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;
+  margin:18px auto 0;max-width:1100px;padding:16px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+.field select,.field input{
+  background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  padding:8px 10px;border-radius:var(--radius);font-size:13px;min-width:120px;
+}
+.field input[type=number]{width:80px;}
+button.primary{
+  background:var(--accent);color:var(--accent-text);border:none;font-weight:600;
+  padding:9px 18px;border-radius:var(--radius);cursor:pointer;font-size:13px;
+}
+button.primary:disabled{opacity:.5;cursor:default;}
+button.primary:hover:not(:disabled){filter:brightness(1.08);}
+
+.meta{
+  max-width:1100px;margin:10px auto 0;padding:0 16px;
+  color:var(--muted);font-size:12px;display:flex;gap:16px;flex-wrap:wrap;
+}
+
+.section{max-width:1100px;margin:22px auto 0;padding:0 16px;}
+.section h2{font-size:15px;color:var(--text-bright);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.badge{
+  font-size:11px;padding:2px 8px;border-radius:999px;background:var(--surface3);color:var(--muted);
+}
+
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow-sm);
+}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;}
+.card-title{font-weight:600;color:var(--text-bright);}
+.card-sub{color:var(--muted);font-size:12px;margin-top:2px;}
+.pct{font-size:20px;font-weight:700;}
+.pct.arb{color:var(--green);}
+.pct.val{color:var(--accent);}
+
+.legs{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+.leg{
+  display:flex;justify-content:space-between;font-size:12.5px;
+  background:var(--surface2);padding:7px 10px;border-radius:var(--radius);
+}
+.leg .r{color:var(--muted);}
+
+.empty{color:var(--muted);font-size:13px;padding:20px;text-align:center;background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius-lg);}
+.error{color:var(--red);background:var(--red-dim);border:1px solid var(--red);padding:12px;border-radius:var(--radius);font-size:13px;}
+.loading{color:var(--muted);font-size:13px;padding:20px;text-align:center;}
+
+footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);font-size:11.5px;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>📊 Odds Desajustadas</h1>
+    <p>Deteção de arbitragem (surebets) e value bets — Grupo Despomar</p>
+  </div>
+</header>
+
+<div class="disclaimer">
+  ⚠️ Ferramenta de análise, não conselho financeiro. Apostar com arbitragem/value betting é legal na maioria das jurisdições,
+  mas as casas de apostas ativamente detetam e podem limitar ou banir contas que o façam de forma consistente.
+  Os dados dependem da disponibilidade e latência do fornecedor (The Odds API) — confirma sempre as odds na própria casa antes de apostar.
+</div>
+
+<div class="controls">
+  <div class="field">
+    <label>Desporto</label>
+    <select id="sport"><option value="upcoming">Próximos jogos (todos)</option></select>
+  </div>
+  <div class="field">
+    <label>Regiões</label>
+    <select id="regions">
+      <option value="eu">Europa</option>
+      <option value="uk">Reino Unido</option>
+      <option value="eu,uk">Europa + UK</option>
+      <option value="us">EUA</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Edge mín. (value %)</label>
+    <input type="number" id="minEdge" value="3" step="0.5" min="0">
+  </div>
+  <div class="field">
+    <label>Lucro mín. (arb %)</label>
+    <input type="number" id="minArb" value="0.5" step="0.1" min="0">
+  </div>
+  <button class="primary" id="scanBtn" onclick="scan()">Analisar</button>
+</div>
+
+<div class="meta" id="meta"></div>
+
+<div class="section">
+  <h2>Arbitragem <span class="badge" id="arbCount">0</span></h2>
+  <div id="arbList"></div>
+</div>
+
+<div class="section">
+  <h2>Value bets <span class="badge" id="valCount">0</span></h2>
+  <div id="valList"></div>
+</div>
+
+<footer>
+  Fonte de dados: <a href="https://the-odds-api.com" style="color:var(--accent)">The Odds API</a>.
+  Alertas automáticos via Telegram — ver <code>odds-app/README.md</code> para configuração.
+</footer>
+
+<script>
+const fmtDate = iso => new Date(iso).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+
+async function loadSports(){
+  try{
+    const r = await fetch('/api/odds-sports');
+    const d = await r.json();
+    if(!d.sports) return;
+    const sel = document.getElementById('sport');
+    for(const s of d.sports){
+      const opt = document.createElement('option');
+      opt.value = s.key;
+      opt.textContent = s.group + ' — ' + s.title;
+      sel.appendChild(opt);
+    }
+  }catch(e){ /* fica só com "Próximos jogos" */ }
+}
+
+async function scan(){
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = true; btn.textContent = 'A analisar…';
+
+  const sport = document.getElementById('sport').value;
+  const regions = document.getElementById('regions').value;
+  const minEdge = document.getElementById('minEdge').value;
+  const minArb = document.getElementById('minArb').value;
+
+  const arbList = document.getElementById('arbList');
+  const valList = document.getElementById('valList');
+  arbList.innerHTML = '<div class="loading">A carregar odds…</div>';
+  valList.innerHTML = '';
+  document.getElementById('meta').innerHTML = '';
+
+  try{
+    const url = `/api/odds-scan?sport=${encodeURIComponent(sport)}&regions=${encodeURIComponent(regions)}&minEdge=${minEdge}&minArb=${minArb}`;
+    const r = await fetch(url);
+    const d = await r.json();
+
+    if(d.error){
+      arbList.innerHTML = `<div class="error">${d.error}${d.details ? '<br><small>'+d.details+'</small>' : ''}</div>`;
+      return;
+    }
+
+    document.getElementById('meta').innerHTML =
+      `<span>${d.meta.eventsAnalisados} eventos analisados</span>` +
+      (d.meta.requestsRestantes !== null ? `<span>${d.meta.requestsRestantes} pedidos restantes na API</span>` : '') +
+      `<span>Atualizado às ${new Date(d.meta.geradoEm).toLocaleTimeString('pt-PT')}</span>`;
+
+    document.getElementById('arbCount').textContent = d.arbitrages.length;
+    document.getElementById('valCount').textContent = d.valueBets.length;
+
+    arbList.innerHTML = d.arbitrages.length ? d.arbitrages.map(a => `
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="card-title">${a.evento}</div>
+            <div class="card-sub">${a.desporto} · ${fmtDate(a.inicio)}</div>
+          </div>
+          <div class="pct arb">+${a.lucroPct}%</div>
+        </div>
+        <div class="legs">
+          ${a.pernas.map(p => `<div class="leg"><span class="r">${p.resultado} @ ${p.casa}</span><span>${p.odd} · stake ${p.stakePct}%</span></div>`).join('')}
+        </div>
+      </div>
+    `).join('') : '<div class="empty">Nenhuma oportunidade de arbitragem encontrada com os filtros atuais.</div>';
+
+    valList.innerHTML = d.valueBets.length ? d.valueBets.map(v => `
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="card-title">${v.evento} — ${v.resultado}</div>
+            <div class="card-sub">${v.desporto} · ${fmtDate(v.inicio)} · ${v.casa}</div>
+          </div>
+          <div class="pct val">+${v.edgePct}%</div>
+        </div>
+        <div class="legs">
+          <div class="leg"><span class="r">Odd oferecida</span><span>${v.odd}</span></div>
+          <div class="leg"><span class="r">Odd justa (consenso)</span><span>${v.oddJusta}</span></div>
+        </div>
+      </div>
+    `).join('') : '<div class="empty">Nenhum value bet encontrado com os filtros atuais.</div>';
+
+  }catch(e){
+    arbList.innerHTML = `<div class="error">Erro ao analisar: ${e.message}</div>`;
+  }finally{
+    btn.disabled = false; btn.textContent = 'Analisar';
+  }
+}
+
+loadSports();
+</script>
+</body>
+</html>
