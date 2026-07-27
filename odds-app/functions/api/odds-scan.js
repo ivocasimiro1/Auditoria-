@@ -441,6 +441,32 @@ function probabilidadesResultado(expGolosCasa, expGolosFora, maxGolos = 8){
   return { pCasa, pEmpate, pFora };
 }
 
+// Converte os números crus da previsão numa frase única, ao estilo de um
+// comentário de analista — para não obrigar a ler percentagens para perceber
+// o que o modelo está a dizer sobre o jogo.
+function comentarioEspecialista(casa, fora, pCasa, pEmpate, pFora, expCasa, expFora){
+  const favoritoPct = Math.max(pCasa, pEmpate, pFora) * 100;
+  const golosTotais = expCasa + expFora;
+
+  let linha;
+  if(favoritoPct >= pCasa * 100 && pCasa >= pFora && pCasa >= pEmpate){
+    if(favoritoPct >= 60) linha = `Favorito claro: ${casa} deve vencer em casa, segundo o histórico de golos desta época.`;
+    else if(favoritoPct >= 45) linha = `Ligeira vantagem para ${casa} em casa, mas sem grande margem de segurança.`;
+    else linha = `Jogo em aberto — ${casa} tem uma ligeira preferência, mas nada decisivo.`;
+  } else if(pFora >= pCasa && pFora >= pEmpate){
+    if(favoritoPct >= 60) linha = `Favorito claro: ${fora} deve vencer fora, apesar de jogar fora de casa.`;
+    else if(favoritoPct >= 45) linha = `Ligeira vantagem para ${fora}, mesmo a jogar fora.`;
+    else linha = `Jogo em aberto — ${fora} tem uma ligeira preferência a visitar, mas nada decisivo.`;
+  } else {
+    linha = `Sem favorito claro — o empate é o resultado mais provável segundo o histórico.`;
+  }
+
+  if(golosTotais >= 3.2) linha += ' Espera-se um jogo com muitos golos.';
+  else if(golosTotais <= 2.0) linha += ' Espera-se um jogo mais fechado, com poucos golos.';
+
+  return linha;
+}
+
 async function calcularPrevisoes(events){
   const previsoes = [];
 
@@ -460,6 +486,7 @@ async function calcularPrevisoes(events){
     const expGolosCasa = historico.mediaGolosCasa * fCasa.ataqueCasa * fFora.defesaFora;
     const expGolosFora = historico.mediaGolosFora * fFora.ataqueFora * fCasa.defesaCasa;
     const { pCasa, pEmpate, pFora } = probabilidadesResultado(expGolosCasa, expGolosFora);
+    const favoritoPct = Math.max(pCasa, pEmpate, pFora) * 100;
 
     previsoes.push({
       evento: `${ev.home_team} vs ${ev.away_team}`,
@@ -470,9 +497,13 @@ async function calcularPrevisoes(events){
       vitoriaFora: round2(pFora * 100),
       golosEsperadosCasa: round2(expGolosCasa),
       golosEsperadosFora: round2(expGolosFora),
+      favoritoPct: round2(favoritoPct),
+      comentario: comentarioEspecialista(ev.home_team, ev.away_team, pCasa, pEmpate, pFora, expGolosCasa, expGolosFora),
     });
   }
 
-  previsoes.sort((a, b) => new Date(a.inicio) - new Date(b.inicio));
+  // Jogos com favoritismo mais claro primeiro — são os que têm "mais valor" para
+  // ler rapidamente; jogos muito equilibrados (perto de 33/33/33) ficam no fim.
+  previsoes.sort((a, b) => b.favoritoPct - a.favoritoPct);
   return previsoes;
 }

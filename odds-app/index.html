@@ -623,38 +623,34 @@ function renderResultados(d){
       </div>
     `).join('') : '<div class="empty">Nenhum value bet encontrado com os filtros atuais.</div>';
 
+  // Só os jogos com favoritismo mais claro (já vêm ordenados assim do backend) —
+  // uma lista curta e útil em vez de uma tabela exaustiva de percentagens.
   const previsaoList = document.getElementById('previsaoList');
-  const previsoes = d.previsoes || [];
+  const previsoes = (d.previsoes || []).slice(0, 15);
   document.getElementById('previsaoCount').textContent = previsoes.length;
-  previsaoList.innerHTML = previsoes.length ? previsoes.map(p => {
-    const resultado = p.vitoriaCasa >= p.empate && p.vitoriaCasa >= p.vitoriaFora ? 'vitoriaCasa'
-      : p.vitoriaFora >= p.empate ? 'vitoriaFora' : 'empate';
-    const favoritoTxt = resultado === 'vitoriaCasa' ? 'Vitória casa' : resultado === 'vitoriaFora' ? 'Vitória fora' : 'Empate';
-    const favoritoPct = Math.max(p.vitoriaCasa, p.empate, p.vitoriaFora);
-    return `
+  previsaoList.innerHTML = previsoes.length ? previsoes.map(p => `
       <div class="card">
         <div class="card-top">
           <div>
             <div class="card-title">${esc(p.evento)}</div>
             <div class="card-sub">${esc(p.desporto)} · ${fmtDate(p.inicio)}</div>
           </div>
-          <div>
-            <div class="pct val">${favoritoPct}%</div>
-            <div class="card-sub" style="text-align:right;">${favoritoTxt}</div>
+        </div>
+        <div class="aposta" style="font-size:14px;margin-top:8px;">${esc(p.comentario)}</div>
+        <details style="margin-top:8px;">
+          <summary style="cursor:pointer;color:var(--muted);font-size:11.5px;">Ver números</summary>
+          <div class="probBarra">
+            <div class="pCasa" style="width:${p.vitoriaCasa}%;">${p.vitoriaCasa >= 10 ? p.vitoriaCasa + '%' : ''}</div>
+            <div class="pEmpate" style="width:${p.empate}%;">${p.empate >= 10 ? p.empate + '%' : ''}</div>
+            <div class="pFora" style="width:${p.vitoriaFora}%;">${p.vitoriaFora >= 10 ? p.vitoriaFora + '%' : ''}</div>
           </div>
-        </div>
-        <div class="probBarra">
-          <div class="pCasa" style="width:${p.vitoriaCasa}%;">${p.vitoriaCasa >= 10 ? p.vitoriaCasa + '%' : ''}</div>
-          <div class="pEmpate" style="width:${p.empate}%;">${p.empate >= 10 ? p.empate + '%' : ''}</div>
-          <div class="pFora" style="width:${p.vitoriaFora}%;">${p.vitoriaFora >= 10 ? p.vitoriaFora + '%' : ''}</div>
-        </div>
-        <div class="probLegenda"><span>Casa</span><span>Empate</span><span>Fora</span></div>
-        <div class="legs" style="margin-top:10px;">
-          <div class="leg"><span class="r">Golos esperados</span><span>${p.golosEsperadosCasa} – ${p.golosEsperadosFora}</span></div>
-        </div>
+          <div class="probLegenda"><span>Casa</span><span>Empate</span><span>Fora</span></div>
+          <div class="legs" style="margin-top:10px;">
+            <div class="leg"><span class="r">Golos esperados</span><span>${p.golosEsperadosCasa} – ${p.golosEsperadosFora}</span></div>
+          </div>
+        </details>
       </div>
-    `;
-  }).join('') : '<div class="empty">Sem previsões disponíveis para os jogos analisados (fora das ligas cobertas, ou equipa não reconhecida nos dados históricos).</div>';
+    `).join('') : '<div class="empty">Sem previsões disponíveis para os jogos analisados (fora das ligas cobertas, ou equipa não reconhecida nos dados históricos).</div>';
 }
 
 // Ao abrir a página, corre o scan automaticamente — mas só a cada N dias, para
