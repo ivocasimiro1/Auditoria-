@@ -204,6 +204,7 @@ async function scan(){
 
     document.getElementById('meta').innerHTML =
       `<span>${d.meta.eventsAnalisados} eventos analisados</span>` +
+      (d.meta.eventosIgnorados ? `<span>${d.meta.eventosIgnorados} ao vivo ignorados</span>` : '') +
       (d.meta.requestsRestantes !== null ? `<span>${d.meta.requestsRestantes} pedidos restantes na API</span>` : '') +
       (d.meta.casasFiltro && d.meta.casasFiltro.length ? `<span>Casas: ${d.meta.casasFiltro.join(', ')}</span>` : `<span>Casas: todas</span>`) +
       `<span>Atualizado às ${new Date(d.meta.geradoEm).toLocaleTimeString('pt-PT')}</span>`;
