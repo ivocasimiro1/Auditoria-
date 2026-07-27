@@ -19,8 +19,13 @@ export async function onRequestGet(context) {
 
   const sport = url.searchParams.get('sport') || 'upcoming';
   const regions = url.searchParams.get('regions') || 'eu';
-  const minEdge = parseFloat(url.searchParams.get('minEdge') || '3');
-  const minArb = parseFloat(url.searchParams.get('minArb') || '0.5');
+  // Chão bem baixo por omissão: o frontend já não filtra aqui por Edge/Lucro mín.
+  // (isso é feito do lado do cliente, para as listas completas), esta função
+  // devolve sempre o conjunto mais amplo possível dentro dos limites de segurança
+  // (maxEdge/maxArb/minBooks/ao vivo), para a "Sugestão principal" nunca ficar
+  // escondida por um limiar demasiado alto.
+  const minEdge = parseFloat(url.searchParams.get('minEdge') || '0.5');
+  const minArb = parseFloat(url.searchParams.get('minArb') || '0.1');
   const maxEdge = parseFloat(url.searchParams.get('maxEdge') || '25');
   const maxArb = parseFloat(url.searchParams.get('maxArb') || '15');
   const minBooks = parseInt(url.searchParams.get('minBooks') || '3', 10);

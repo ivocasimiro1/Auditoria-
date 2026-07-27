@@ -164,6 +164,10 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
   </div>
   <button class="primary" id="scanBtn" onclick="scan()">Analisar</button>
 </div>
+<div style="max-width:1100px;margin:6px auto 0;padding:0 16px;color:var(--muted);font-size:11.5px;">
+  Edge/Lucro mín. só filtram as listas completas abaixo — a "Sugestão principal" mostra sempre a melhor
+  oportunidade encontrada, seja qual for o valor nestes campos.
+</div>
 
 <div class="controls">
   <div class="field" style="flex:1;min-width:220px;">
@@ -303,8 +307,12 @@ function resolverLigas(liga){
   return encontrados.slice(0, liga.limite || 1);
 }
 
-function buildUrl(sport, regions, minEdge, minArb, casas){
-  let url = `/api/odds-scan?sport=${encodeURIComponent(sport)}&regions=${encodeURIComponent(regions)}&minEdge=${minEdge}&minArb=${minArb}`;
+// Não manda Edge/Lucro mín. à API — o backend devolve sempre o conjunto mais
+// amplo possível (dentro dos limites de segurança), e o filtro por esses campos
+// é feito aqui no cliente (ver filtrarPorLimiares), para a Sugestão principal
+// nunca ficar escondida por um limiar demasiado alto nesses campos.
+function buildUrl(sport, regions, casas){
+  let url = `/api/odds-scan?sport=${encodeURIComponent(sport)}&regions=${encodeURIComponent(regions)}`;
   if(casas) url += `&casas=${encodeURIComponent(casas)}`;
   return url;
 }
@@ -341,7 +349,7 @@ async function scan(){
   btn.disabled = true; btn.textContent = 'A analisar…';
 
   const sport = document.getElementById('sport').value;
-  const { regions, minEdge, minArb, casas } = lerFiltros();
+  const { regions, casas } = lerFiltros();
 
   const arbList = document.getElementById('arbList');
   const valList = document.getElementById('valList');
@@ -350,7 +358,7 @@ async function scan(){
   document.getElementById('meta').innerHTML = '';
 
   try{
-    const url = buildUrl(sport, regions, minEdge, minArb, casas);
+    const url = buildUrl(sport, regions, casas);
     const r = await fetch(url);
     const d = await r.json();
 
@@ -371,7 +379,7 @@ async function scanDiario(){
   const btn = document.getElementById('dailyBtn');
   btn.disabled = true;
 
-  const { regions, minEdge, minArb, casas } = lerFiltros();
+  const { regions, casas } = lerFiltros();
   const arbList = document.getElementById('arbList');
   const valList = document.getElementById('valList');
   valList.innerHTML = '';
@@ -404,7 +412,7 @@ async function scanDiario(){
     btn.textContent = `A analisar… (${i+1}/${alvos.length}: ${alvo.nome})`;
     arbList.innerHTML = `<div class="loading">A analisar ${esc(alvo.nome)}… (${i+1}/${alvos.length})</div>`;
     try{
-      const r = await fetch(buildUrl(alvo.sportInfo.key, regions, minEdge, minArb, casas));
+      const r = await fetch(buildUrl(alvo.sportInfo.key, regions, casas));
       const d = await r.json();
       if(d.error){ falhas.push(alvo.nome); continue; }
       agregado.arbitrages.push(...d.arbitrages);
@@ -499,7 +507,14 @@ function renderResultados(d){
   const arbList = document.getElementById('arbList');
   const valList = document.getElementById('valList');
 
+  // A Sugestão principal olha sempre para o conjunto completo (d), sem filtrar
+  // por Edge/Lucro mín. — só as listas técnicas abaixo respeitam esses campos.
   renderDestaque(d);
+
+  const minEdge = parseFloat(document.getElementById('minEdge').value) || 0;
+  const minArb = parseFloat(document.getElementById('minArb').value) || 0;
+  const arbitragens = d.arbitrages.filter(a => a.lucroPct >= minArb);
+  const valueBets = d.valueBets.filter(v => v.edgePct >= minEdge);
 
   document.getElementById('meta').innerHTML =
     `<span>${d.meta.eventsAnalisados} eventos analisados</span>` +
@@ -509,10 +524,10 @@ function renderResultados(d){
     (d.meta.janelaAte ? `<span>Jogos até ${fmtDate(d.meta.janelaAte)}</span>` : '') +
     `<span>Atualizado às ${new Date(d.meta.geradoEm).toLocaleTimeString('pt-PT')}</span>`;
 
-  document.getElementById('arbCount').textContent = d.arbitrages.length;
-  document.getElementById('valCount').textContent = d.valueBets.length;
+  document.getElementById('arbCount').textContent = arbitragens.length;
+  document.getElementById('valCount').textContent = valueBets.length;
 
-  arbList.innerHTML = d.arbitrages.length ? d.arbitrages.map(a => `
+  arbList.innerHTML = arbitragens.length ? arbitragens.map(a => `
       <div class="card">
         <div class="card-top">
           <div>
@@ -530,7 +545,7 @@ function renderResultados(d){
       </div>
     `).join('') : '<div class="empty">Nenhuma oportunidade de arbitragem encontrada com os filtros atuais.</div>';
 
-    valList.innerHTML = d.valueBets.length ? d.valueBets.map(v => `
+    valList.innerHTML = valueBets.length ? valueBets.map(v => `
       <div class="card">
         <div class="card-top">
           <div>
