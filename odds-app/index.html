@@ -94,6 +94,13 @@ button.primary:hover:not(:disabled){filter:brightness(1.08);}
 }
 .leg .r{color:var(--muted);}
 
+.probBarra{display:flex;height:22px;border-radius:6px;overflow:hidden;margin-top:8px;font-size:11px;font-weight:600;}
+.probBarra div{display:flex;align-items:center;justify-content:center;color:var(--accent-text);white-space:nowrap;overflow:hidden;}
+.probBarra .pCasa{background:var(--accent);}
+.probBarra .pEmpate{background:var(--muted);}
+.probBarra .pFora{background:var(--purple);}
+.probLegenda{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px;}
+
 .explain{
   color:var(--muted);font-size:12.5px;line-height:1.6;margin-bottom:12px;
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
@@ -220,6 +227,25 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
     (nem marginal nem suspeito) e se o jogo é em breve. Ajuda a priorizar, não é garantia de nada.
   </div>
   <div id="valList"></div>
+</div>
+
+<div class="section">
+  <h2>Previsões (modelo estatístico) <span class="badge" id="previsaoCount">0</span></h2>
+  <div class="explain">
+    <b>O que é:</b> uma estimativa própria da probabilidade de cada resultado, calculada a partir do
+    histórico de golos marcados/sofridos por cada equipa esta época (dados públicos do
+    <a href="https://www.football-data.co.uk" style="color:var(--accent)">football-data.co.uk</a>) —
+    <b>não depende de nenhuma casa de apostas</b>, por isso aparece mesmo quando não há nenhuma
+    discrepância entre bookmakers a explorar.<br>
+    <b>Golos esperados</b> — quantos golos o modelo espera de cada equipa, dado o seu ataque e a
+    defesa do adversário.<br>
+    Cobre só as principais ligas europeias (Premier League, La Liga, Serie A, Bundesliga, Ligue 1,
+    Primeira Liga) e só equipas cujo nome foi reconhecido nos dados históricos — jogos fora disso
+    simplesmente não aparecem aqui. É um modelo simplificado (versão mais simples do que o motor
+    Dixon-Coles completo do projeto EdgeBet), pensado para apontar uma direção, não para prever
+    resultados com certeza.
+  </div>
+  <div id="previsaoList"></div>
 </div>
 
 <footer>
@@ -390,7 +416,7 @@ async function scanDiario(){
     await loadSports();
   }
 
-  const agregado = { arbitrages: [], valueBets: [], meta: {
+  const agregado = { arbitrages: [], valueBets: [], previsoes: [], meta: {
     eventsAnalisados: 0, eventosIgnorados: 0, requestsRestantes: null, casasFiltro: [], geradoEm: new Date().toISOString(),
   }};
   const falhas = [];
@@ -417,6 +443,7 @@ async function scanDiario(){
       if(d.error){ falhas.push(alvo.nome); continue; }
       agregado.arbitrages.push(...d.arbitrages);
       agregado.valueBets.push(...d.valueBets);
+      agregado.previsoes.push(...(d.previsoes || []));
       agregado.meta.eventsAnalisados += d.meta.eventsAnalisados || 0;
       agregado.meta.eventosIgnorados += d.meta.eventosIgnorados || 0;
       agregado.meta.requestsRestantes = d.meta.requestsRestantes;
@@ -563,6 +590,39 @@ function renderResultados(d){
         </div>
       </div>
     `).join('') : '<div class="empty">Nenhum value bet encontrado com os filtros atuais.</div>';
+
+  const previsaoList = document.getElementById('previsaoList');
+  const previsoes = d.previsoes || [];
+  document.getElementById('previsaoCount').textContent = previsoes.length;
+  previsaoList.innerHTML = previsoes.length ? previsoes.map(p => {
+    const resultado = p.vitoriaCasa >= p.empate && p.vitoriaCasa >= p.vitoriaFora ? 'vitoriaCasa'
+      : p.vitoriaFora >= p.empate ? 'vitoriaFora' : 'empate';
+    const favoritoTxt = resultado === 'vitoriaCasa' ? 'Vitória casa' : resultado === 'vitoriaFora' ? 'Vitória fora' : 'Empate';
+    const favoritoPct = Math.max(p.vitoriaCasa, p.empate, p.vitoriaFora);
+    return `
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="card-title">${esc(p.evento)}</div>
+            <div class="card-sub">${esc(p.desporto)} · ${fmtDate(p.inicio)}</div>
+          </div>
+          <div>
+            <div class="pct val">${favoritoPct}%</div>
+            <div class="card-sub" style="text-align:right;">${favoritoTxt}</div>
+          </div>
+        </div>
+        <div class="probBarra">
+          <div class="pCasa" style="width:${p.vitoriaCasa}%;">${p.vitoriaCasa >= 10 ? p.vitoriaCasa + '%' : ''}</div>
+          <div class="pEmpate" style="width:${p.empate}%;">${p.empate >= 10 ? p.empate + '%' : ''}</div>
+          <div class="pFora" style="width:${p.vitoriaFora}%;">${p.vitoriaFora >= 10 ? p.vitoriaFora + '%' : ''}</div>
+        </div>
+        <div class="probLegenda"><span>Casa</span><span>Empate</span><span>Fora</span></div>
+        <div class="legs" style="margin-top:10px;">
+          <div class="leg"><span class="r">Golos esperados</span><span>${p.golosEsperadosCasa} – ${p.golosEsperadosFora}</span></div>
+        </div>
+      </div>
+    `;
+  }).join('') : '<div class="empty">Sem previsões disponíveis para os jogos analisados (fora das ligas cobertas, ou equipa não reconhecida nos dados históricos).</div>';
 }
 
 // Ao abrir a página, corre o scan automaticamente — mas só a cada N dias, para
