@@ -411,7 +411,28 @@ function renderResultados(d){
     `).join('') : '<div class="empty">Nenhum value bet encontrado com os filtros atuais.</div>';
 }
 
-loadSports();
+// Ao abrir a página, corre o scan diário automaticamente — mas só uma vez por dia,
+// para não gastar créditos da API de cada vez que abres a app. Se já correu hoje,
+// mostra quando foi em vez de repetir.
+const CHAVE_ULTIMO_AUTO = 'oddsapp_ultimo_auto_scan';
+
+async function autoScanSeNecessario(){
+  await loadSports();
+  const hoje = new Date().toISOString().slice(0, 10);
+  const ultimo = localStorage.getItem(CHAVE_ULTIMO_AUTO);
+
+  if(ultimo && ultimo.startsWith(hoje)){
+    const hora = ultimo.split('T')[1]?.slice(0,5) || '';
+    document.getElementById('meta').innerHTML =
+      `<span>Scan diário automático já feito hoje às ${hora} — toca num dos botões acima para repetir.</span>`;
+    return;
+  }
+
+  localStorage.setItem(CHAVE_ULTIMO_AUTO, new Date().toISOString());
+  await scanDiario();
+}
+
+autoScanSeNecessario();
 </script>
 </body>
 </html>
