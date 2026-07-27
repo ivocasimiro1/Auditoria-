@@ -17,6 +17,14 @@ para não arriscar interferir com essa configuração. Fica com o seu próprio d
   - **Value bet**: compara a odd de cada casa com a probabilidade "justa" de consenso
     (média das probabilidades sem margem de todas as casas do evento)
 - `functions/api/odds-sports.js` — lista os desportos/ligas disponíveis para o dropdown
+- **Previsões por modelo estatístico**: calculadas dentro do próprio `odds-scan.js`, a partir de
+  dados históricos gratuitos do [football-data.co.uk](https://www.football-data.co.uk) (força de
+  ataque/defesa de cada equipa por golos marcados/sofridos + distribuição de Poisson) —
+  independente de qualquer casa de apostas. Cobre só Premier League, La Liga, Serie A, Bundesliga,
+  Ligue 1 e Primeira Liga; jogos de equipas cujo nome não bate certo com os dados históricos
+  simplesmente não aparecem nesta lista. É uma versão simplificada do motor Dixon-Coles usado no
+  projeto EdgeBet deste repositório (sem correção de baixa pontuação nem decaimento temporal), para
+  caber numa função Cloudflare sem bibliotecas de otimização.
 
 ## Criar o projeto Cloudflare Pages (uma vez)
 

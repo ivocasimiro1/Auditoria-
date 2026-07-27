@@ -61,6 +61,12 @@ export async function onRequestGet(context) {
     minEdge, minArb, maxEdge, maxArb, minBooks, casasFiltro, incluirAoVivo,
   });
 
+  // Previsões por modelo estatístico próprio (histórico de golos), independente
+  // de qualquer casa de apostas — dá sugestões mesmo quando não há discrepância
+  // nenhuma entre bookmakers. Falhas (liga sem dados, equipa não reconhecida)
+  // são silenciosas: o jogo simplesmente não aparece na lista de previsões.
+  const previsoes = await calcularPrevisoes(events);
+
   const meta = {
     sport,
     regions,
@@ -77,7 +83,7 @@ export async function onRequestGet(context) {
     await sendTelegramAlert(env, arbitrages, valueBets);
   }
 
-  return json({ meta, arbitrages, valueBets });
+  return json({ meta, arbitrages, valueBets, previsoes });
 }
 
 // --- Lógica de deteção ---------------------------------------------------
@@ -265,4 +271,208 @@ function json(data, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
   });
+}
+
+// --- Previsões por modelo estatístico (histórico de golos) ---------------
+//
+// Modelo Poisson simplificado (a mesma ideia-base do Dixon-Coles do EdgeBet,
+// sem a correção de baixa pontuação nem o decaimento temporal, para caber
+// numa função Cloudflare sem bibliotecas de otimização): força de ataque/
+// defesa de cada equipa a partir da média de golos marcados/sofridos na
+// época mais recente, depois golos esperados = média da liga × ataque ×
+// defesa do adversário, e probabilidades via distribuição de Poisson.
+//
+// Fonte de dados: football-data.co.uk (CSVs históricos gratuitos, sem
+// necessidade de chave/conta). Cobre só as principais ligas europeias onde
+// os nomes de equipas são razoavelmente previsíveis de mapear.
+
+const LIGAS_FOOTBALL_DATA = [
+  { codigo: 'E0',  match: (k, t) => /epl|premier_league|english_premier/i.test(k) || /premier league/i.test(t || '') },
+  { codigo: 'SP1', match: (k, t) => /la_liga|spain/i.test(k) && !/segunda/i.test(k) },
+  { codigo: 'I1',  match: (k, t) => /serie_a/i.test(k) && /italy/i.test(k) },
+  { codigo: 'D1',  match: (k, t) => /bundesliga/i.test(k) && !/bundesliga2|bundesliga_2/i.test(k) },
+  { codigo: 'F1',  match: (k, t) => /ligue_one|ligue1/i.test(k) },
+  { codigo: 'P1',  match: (k, t) => /portugal/i.test(k) && /primeira/i.test(k) },
+];
+
+function codigoFootballData(sportKey, sportTitle){
+  const liga = LIGAS_FOOTBALL_DATA.find(l => l.match(sportKey || '', sportTitle || ''));
+  return liga ? liga.codigo : null;
+}
+
+// Época mais recente completa: a época europeia corre ago-mai; em jun/jul
+// (entre épocas) usamos a que acabou de terminar, não a que ainda não começou.
+function temporadaFootballData(agora = new Date()){
+  const ano = agora.getUTCFullYear();
+  const mes = agora.getUTCMonth() + 1;
+  const anoInicio = mes >= 8 ? ano : ano - 1;
+  const yy1 = String(anoInicio % 100).padStart(2, '0');
+  const yy2 = String((anoInicio + 1) % 100).padStart(2, '0');
+  return yy1 + yy2;
+}
+
+function normalizarNomeEquipa(nome){
+  return String(nome || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+    .replace(/\b(fc|cf|afc|ac|sc|cd|sad)\b/g, '')
+    .replace(/[^a-z0-9]/g, '')
+    .trim();
+}
+
+// Aliases conhecidos onde a grafia da The Odds API e do football-data.co.uk
+// divergem o suficiente para o normalizarNomeEquipa() não bater certo sozinho.
+const ALIASES_EQUIPAS = {
+  manchesterunited: 'manutd', manutd: 'manutd',
+  manchestercity: 'mancity',
+  tottenhamhotspur: 'tottenham', spurs: 'tottenham',
+  wolverhamptonwanderers: 'wolves',
+  newcastleunited: 'newcastle',
+  brightonhovealbion: 'brighton',
+  westhamunited: 'westham',
+  nottinghamforest: 'nottmforest',
+  athleticbilbao: 'athletic', athleticclub: 'athletic',
+  atleticomadrid: 'atletico',
+  realsociedad: 'sociedad',
+  internazionale: 'inter',
+  acmilan: 'milan',
+  parisstgermain: 'psg', parissaintgermain: 'psg',
+  sportingcp: 'sporting', sportinglisbon: 'sporting',
+};
+
+function chaveEquipa(nome){
+  const n = normalizarNomeEquipa(nome);
+  return ALIASES_EQUIPAS[n] || n;
+}
+
+// Cache de dados históricos por código de liga, para não pedir o mesmo CSV
+// duas vezes dentro do mesmo pedido (vários jogos da mesma liga).
+const cacheHistorico = new Map();
+
+async function carregarHistoricoLiga(codigo){
+  if(cacheHistorico.has(codigo)) return cacheHistorico.get(codigo);
+
+  const temporada = temporadaFootballData();
+  const url = `https://www.football-data.co.uk/mmz4281/${temporada}/${codigo}.csv`;
+
+  let dados = null;
+  try{
+    const resp = await fetch(url);
+    if(resp.ok){
+      const texto = await resp.text();
+      dados = calcularForcasEquipas(texto);
+    }
+  }catch(err){ /* sem dados históricos para esta liga agora — segue sem previsão */ }
+
+  cacheHistorico.set(codigo, dados);
+  return dados;
+}
+
+function calcularForcasEquipas(csvTexto){
+  const linhas = csvTexto.split(/\r?\n/).filter(Boolean);
+  if(linhas.length < 2) return null;
+
+  const header = linhas[0].split(',');
+  const idx = (col) => header.indexOf(col);
+  const iHome = idx('HomeTeam'), iAway = idx('AwayTeam'), iFTHG = idx('FTHG'), iFTAG = idx('FTAG');
+  if([iHome, iAway, iFTHG, iFTAG].some(i => i === -1)) return null;
+
+  const stats = {}; // chave equipa -> { golosMarcadosCasa, jogosCasa, golosSofridosCasa, golosMarcadosFora, jogosFora, golosSofridosFora, nomeOriginal }
+  let somaGolosCasa = 0, somaGolosFora = 0, totalJogos = 0;
+
+  for(let i = 1; i < linhas.length; i++){
+    const campos = linhas[i].split(',');
+    const homeNome = campos[iHome], awayNome = campos[iAway];
+    const gCasa = parseInt(campos[iFTHG], 10), gFora = parseInt(campos[iFTAG], 10);
+    if(!homeNome || !awayNome || Number.isNaN(gCasa) || Number.isNaN(gFora)) continue;
+
+    const kHome = chaveEquipa(homeNome), kAway = chaveEquipa(awayNome);
+    if(!stats[kHome]) stats[kHome] = { golosMarcadosCasa:0, jogosCasa:0, golosSofridosCasa:0, golosMarcadosFora:0, jogosFora:0, golosSofridosFora:0, nomeOriginal:homeNome };
+    if(!stats[kAway]) stats[kAway] = { golosMarcadosCasa:0, jogosCasa:0, golosSofridosCasa:0, golosMarcadosFora:0, jogosFora:0, golosSofridosFora:0, nomeOriginal:awayNome };
+
+    stats[kHome].golosMarcadosCasa += gCasa;
+    stats[kHome].golosSofridosCasa += gFora;
+    stats[kHome].jogosCasa++;
+    stats[kAway].golosMarcadosFora += gFora;
+    stats[kAway].golosSofridosFora += gCasa;
+    stats[kAway].jogosFora++;
+
+    somaGolosCasa += gCasa;
+    somaGolosFora += gFora;
+    totalJogos++;
+  }
+
+  if(totalJogos < 20) return null; // dados insuficientes para uma estimativa minimamente estável
+
+  const mediaGolosCasa = somaGolosCasa / totalJogos;
+  const mediaGolosFora = somaGolosFora / totalJogos;
+
+  const forcas = {};
+  for(const k in stats){
+    const s = stats[k];
+    forcas[k] = {
+      ataqueCasa: s.jogosCasa ? (s.golosMarcadosCasa / s.jogosCasa) / mediaGolosCasa : 1,
+      defesaCasa: s.jogosCasa ? (s.golosSofridosCasa / s.jogosCasa) / mediaGolosFora : 1,
+      ataqueFora: s.jogosFora ? (s.golosMarcadosFora / s.jogosFora) / mediaGolosFora : 1,
+      defesaFora: s.jogosFora ? (s.golosSofridosFora / s.jogosFora) / mediaGolosCasa : 1,
+    };
+  }
+
+  return { forcas, mediaGolosCasa, mediaGolosFora };
+}
+
+function poissonPmf(k, lambda){
+  if(lambda <= 0) return k === 0 ? 1 : 0;
+  let logP = -lambda + k * Math.log(lambda);
+  for(let i = 2; i <= k; i++) logP -= Math.log(i);
+  return Math.exp(logP);
+}
+
+function probabilidadesResultado(expGolosCasa, expGolosFora, maxGolos = 8){
+  let pCasa = 0, pEmpate = 0, pFora = 0;
+  for(let i = 0; i <= maxGolos; i++){
+    for(let j = 0; j <= maxGolos; j++){
+      const p = poissonPmf(i, expGolosCasa) * poissonPmf(j, expGolosFora);
+      if(i > j) pCasa += p;
+      else if(i === j) pEmpate += p;
+      else pFora += p;
+    }
+  }
+  return { pCasa, pEmpate, pFora };
+}
+
+async function calcularPrevisoes(events){
+  const previsoes = [];
+
+  for(const ev of events){
+    const codigo = codigoFootballData(ev.sport_key, ev.sport_title);
+    if(!codigo) continue;
+
+    const historico = await carregarHistoricoLiga(codigo);
+    if(!historico) continue;
+
+    const kCasa = chaveEquipa(ev.home_team);
+    const kFora = chaveEquipa(ev.away_team);
+    const fCasa = historico.forcas[kCasa];
+    const fFora = historico.forcas[kFora];
+    if(!fCasa || !fFora) continue; // equipa não reconhecida nos dados históricos (nome não bateu certo)
+
+    const expGolosCasa = historico.mediaGolosCasa * fCasa.ataqueCasa * fFora.defesaFora;
+    const expGolosFora = historico.mediaGolosFora * fFora.ataqueFora * fCasa.defesaCasa;
+    const { pCasa, pEmpate, pFora } = probabilidadesResultado(expGolosCasa, expGolosFora);
+
+    previsoes.push({
+      evento: `${ev.home_team} vs ${ev.away_team}`,
+      desporto: ev.sport_title,
+      inicio: ev.commence_time,
+      vitoriaCasa: round2(pCasa * 100),
+      empate: round2(pEmpate * 100),
+      vitoriaFora: round2(pFora * 100),
+      golosEsperadosCasa: round2(expGolosCasa),
+      golosEsperadosFora: round2(expGolosFora),
+    });
+  }
+
+  previsoes.sort((a, b) => new Date(a.inicio) - new Date(b.inicio));
+  return previsoes;
 }
