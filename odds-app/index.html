@@ -84,9 +84,6 @@ button.primary:hover:not(:disabled){filter:brightness(1.08);}
 .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;}
 .card-title{font-weight:600;color:var(--text-bright);}
 .card-sub{color:var(--muted);font-size:12px;margin-top:2px;}
-.pct{font-size:20px;font-weight:700;text-align:right;}
-.pct.arb{color:var(--green);}
-.pct.val{color:var(--accent);}
 
 .conf{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;margin-top:4px;display:inline-block;}
 .conf.Alta{background:var(--green-dim);color:var(--green);}
@@ -210,9 +207,8 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
     <b>O que é:</b> apostar em <b>todos</b> os resultados possíveis do jogo, cada um numa casa diferente,
     de forma a ganhar dinheiro <b>seja qual for o resultado</b>. Só é possível porque as casas discordam
     o suficiente entre si sobre as probabilidades.<br>
-    <b>% no topo do card</b> — lucro garantido sobre o total apostado (ex: <code>+0.8%</code> = apostas 100€
-    no total, ganhas 100.80€ sempre, independentemente do resultado).<br>
-    <b>Stake %</b> — que fatia desse total apostar em cada perna, para o lucro ser igual seja qual for o resultado.<br>
+    Cada perna já mostra o valor em euros a apostar (se definires uma Banca acima) — os números em
+    percentagem (lucro, stake) ficam escondidos atrás de "Ver números", para não confundir.<br>
     <b>Confiança</b> — combina 3 sinais: quantas casas a API tinha para este jogo (mais = dados mais fiáveis),
     se o valor está numa faixa "normal" e não suspeita, e se o jogo é em breve (odds mais assentes).
     Não é garantia — é só uma bússola para saberes onde vale mais a pena olhar primeiro.
@@ -230,14 +226,13 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
     acima para restringir só às que tens conta, ex: bwin, Betclic).<br>
     <b>Odd justa (consenso)</b> — a odd que "deveria" ser, calculada pela média de várias casas sem a margem
     de lucro de cada uma. Quanto mais alta a odd oferecida for <i>face</i> a esta, maior a vantagem.<br>
-    <b>% no topo do card (edge)</b> — vantagem esperada por unidade apostada, a longo prazo
-    (ex: <code>+8%</code> = em média, por cada 100€ apostados em situações destas, esperas ganhar 8€ a mais
-    do que o "justo" — mas em cada aposta individual podes perder na mesma).<br>
+    A vantagem em percentagem (edge) fica escondida atrás de "Ver números" — o que importa no
+    dia-a-dia é o stake sugerido em euros, já calculado abaixo.<br>
     <b>Confiança</b> — combina quantas casas confirmam a odd justa, se o edge está numa faixa normal
     (nem marginal nem suspeito) e se o jogo é em breve. Ajuda a priorizar, não é garantia de nada.<br>
-    <b>Stake sugerido (¼ Kelly)</b> — quanto apostar da tua Banca (campo acima) nesta aposta específica,
-    segundo o critério de Kelly fracionário (¼, mais conservador) — dimensiona o risco à vantagem
-    matemática, sem arriscar a banca toda numa só aposta.
+    <b>Stake sugerido</b> — quanto apostar da tua Banca (campo acima) nesta aposta específica, segundo
+    o critério de Kelly fracionário (¼, mais conservador) — dimensiona o risco à vantagem matemática,
+    sem arriscar a banca toda numa só aposta.
   </div>
   <div id="valList"></div>
 </div>
@@ -548,19 +543,19 @@ function renderDestaque(d){
   if(melhor.tipo === 'arb'){
     const a = melhor.item;
     const pernasTxt = a.pernas.map(p => {
-      const euros = banca > 0 ? ` · <b>€${(banca * p.stakePct / 100).toFixed(2)}</b>` : '';
-      return `<b>${esc(p.resultado)}</b> @ ${p.odd} na <b>${esc(p.casa)}</b> (${p.stakePct}% da banca${euros})`;
+      const euros = banca > 0 ? ` · <b>€${(banca * p.stakePct / 100).toFixed(2)}</b>` : ` (${p.stakePct}% da banca)`;
+      return `<b>${esc(p.resultado)}</b> @ ${p.odd} na <b>${esc(p.casa)}</b>${euros}`;
     }).join(' · ');
-    const lucroEuros = banca > 0 ? ` (€${(banca * a.lucroPct / 100).toFixed(2)} sobre €${banca.toFixed(0)})` : '';
+    const lucroTxt = banca > 0 ? `ganhas <b>€${(banca * a.lucroPct / 100).toFixed(2)}</b> sobre €${banca.toFixed(0)}` : 'ganhas dinheiro';
     card.innerHTML = `
       <div class="destaque">
         <div class="rotulo">🎯 Sugestão principal — Arbitragem (lucro garantido)</div>
         <div class="titulo">${esc(a.evento)}</div>
         <div class="aposta">Aposta em todos os resultados: ${pernasTxt}</div>
-        <div class="conf ${esc(a.confiancaLabel)}">Confiança ${esc(a.confiancaLabel)} · ${a.confianca}/100</div>
+        <div class="conf ${esc(a.confiancaLabel)}">Confiança ${esc(a.confiancaLabel)}</div>
         <div class="porque" style="margin-top:10px;">
           Porquê: as casas envolvidas discordam o suficiente sobre este jogo para, apostando em
-          <b>todos</b> os resultados possíveis nas casas certas, ganhares <b>+${a.lucroPct}%</b>${lucroEuros} seja
+          <b>todos</b> os resultados possíveis nas casas certas, ${lucroTxt}, seja
           qual for o resultado final. ${esc(a.desporto)} · ${fmtDate(a.inicio)}.
         </div>
       </div>`;
@@ -570,20 +565,19 @@ function renderDestaque(d){
   if(melhor.tipo === 'valmodelo'){
     const v = melhor.item;
     const stakeV = kellyStakeEUR(v.odd, v.oddModelo, banca);
-    const stakeTxt = banca > 0 ? `<div class="aposta">Stake sugerido (¼ Kelly): <b>€${stakeV.toFixed(2)}</b> de €${banca.toFixed(0)}</div>` : '';
+    const stakeTxt = banca > 0 ? `<div class="aposta">Stake sugerido: <b>€${stakeV.toFixed(2)}</b> de €${banca.toFixed(0)}</div>` : '';
     card.innerHTML = `
       <div class="destaque">
         <div class="rotulo">🎯 Sugestão principal — Value bet do modelo próprio</div>
         <div class="titulo">${esc(v.evento)}</div>
         <div class="aposta">Aposta: <b>${esc(v.resultado)}</b> @ <b>${v.odd}</b> na <b>${esc(v.casa)}</b></div>
         ${stakeTxt}
-        <div class="conf ${esc(v.confiancaLabel)}">Confiança ${esc(v.confiancaLabel)} · ${v.confianca}/100</div>
+        <div class="conf ${esc(v.confiancaLabel)}">Confiança ${esc(v.confiancaLabel)}</div>
         <div class="porque" style="margin-top:10px;">
           Porquê: o nosso modelo estatístico (histórico de golos, independente de qualquer casa de
-          apostas) estima a odd justa em ${v.oddModelo} — a ${esc(v.casa)} está a oferecer ${v.odd},
-          uma vantagem de <b>+${v.edgePct}%</b> face à nossa própria estimativa, não à de outras casas.
-          Isto pode acontecer mesmo quando todas as casas concordam entre si. Não é lucro garantido.
-          ${esc(v.desporto)} · ${fmtDate(v.inicio)}.
+          apostas) considera esta odd vantajosa face à nossa própria estimativa, não à de outras
+          casas — pode acontecer mesmo quando todas as casas concordam entre si. Não é lucro
+          garantido. ${esc(v.desporto)} · ${fmtDate(v.inicio)}.
         </div>
       </div>`;
     return;
@@ -591,18 +585,18 @@ function renderDestaque(d){
 
   const v = melhor.item;
   const stakeV = kellyStakeEUR(v.odd, v.oddJusta, banca);
-  const stakeTxt = banca > 0 ? `<div class="aposta">Stake sugerido (¼ Kelly): <b>€${stakeV.toFixed(2)}</b> de €${banca.toFixed(0)}</div>` : '';
+  const stakeTxt = banca > 0 ? `<div class="aposta">Stake sugerido: <b>€${stakeV.toFixed(2)}</b> de €${banca.toFixed(0)}</div>` : '';
   card.innerHTML = `
     <div class="destaque">
       <div class="rotulo">🎯 Sugestão principal — Value bet</div>
       <div class="titulo">${esc(v.evento)}</div>
       <div class="aposta">Aposta: <b>${esc(v.resultado)}</b> @ <b>${v.odd}</b> na <b>${esc(v.casa)}</b></div>
       ${stakeTxt}
-      <div class="conf ${esc(v.confiancaLabel)}">Confiança ${esc(v.confiancaLabel)} · ${v.confianca}/100</div>
+      <div class="conf ${esc(v.confiancaLabel)}">Confiança ${esc(v.confiancaLabel)}</div>
       <div class="porque" style="margin-top:10px;">
         Porquê: a ${esc(v.casa)} está a oferecer ${v.odd}, mas a odd "justa" segundo o consenso de
-        várias casas seria ${v.oddJusta} — uma vantagem de <b>+${v.edgePct}%</b> a favor desta aposta,
-        a longo prazo (não é garantia em cada aposta individual). Isto <b>não é</b> lucro garantido —
+        várias casas seria ${v.oddJusta} — uma vantagem a favor desta aposta, a longo prazo (não é
+        garantia em cada aposta individual). Isto <b>não é</b> lucro garantido —
         podes perder esta aposta específica. ${esc(v.desporto)} · ${fmtDate(v.inicio)}.
       </div>
     </div>`;
@@ -640,14 +634,18 @@ function renderResultados(d){
             <div class="card-title">${esc(a.evento)}</div>
             <div class="card-sub">${esc(a.desporto)} · ${fmtDate(a.inicio)}</div>
           </div>
-          <div>
-            <div class="pct arb">+${a.lucroPct}%</div>
-            <div class="conf ${esc(a.confiancaLabel)}">Confiança ${esc(a.confiancaLabel)} · ${a.confianca}/100</div>
-          </div>
+          <div class="conf ${esc(a.confiancaLabel)}">Confiança ${esc(a.confiancaLabel)}</div>
         </div>
         <div class="legs">
-          ${a.pernas.map(p => `<div class="leg"><span class="r">${esc(p.resultado)} @ ${esc(p.casa)}</span><span>${p.odd} · stake ${p.stakePct}%${banca > 0 ? ' · €' + (banca * p.stakePct / 100).toFixed(2) : ''}</span></div>`).join('')}
+          ${a.pernas.map(p => `<div class="leg"><span class="r">${esc(p.resultado)} @ ${esc(p.casa)}</span><span>${p.odd}${banca > 0 ? ' · €' + (banca * p.stakePct / 100).toFixed(2) : ''}</span></div>`).join('')}
         </div>
+        <details style="margin-top:8px;">
+          <summary style="cursor:pointer;color:var(--muted);font-size:11.5px;">Ver números</summary>
+          <div class="legs" style="margin-top:8px;">
+            <div class="leg"><span class="r">Lucro garantido</span><span>+${a.lucroPct}%</span></div>
+            ${a.pernas.map(p => `<div class="leg"><span class="r">Stake — ${esc(p.resultado)}</span><span>${p.stakePct}%</span></div>`).join('')}
+          </div>
+        </details>
       </div>
     `).join('') : '<div class="empty">Nenhuma oportunidade de arbitragem encontrada com os filtros atuais.</div>';
 
@@ -658,16 +656,19 @@ function renderResultados(d){
             <div class="card-title">${esc(v.evento)} — ${esc(v.resultado)}</div>
             <div class="card-sub">${esc(v.desporto)} · ${fmtDate(v.inicio)} · ${esc(v.casa)}</div>
           </div>
-          <div>
-            <div class="pct val">+${v.edgePct}%</div>
-            <div class="conf ${esc(v.confiancaLabel)}">Confiança ${esc(v.confiancaLabel)} · ${v.confianca}/100</div>
-          </div>
+          <div class="conf ${esc(v.confiancaLabel)}">Confiança ${esc(v.confiancaLabel)}</div>
         </div>
         <div class="legs">
           <div class="leg"><span class="r">Odd oferecida</span><span>${v.odd}</span></div>
-          <div class="leg"><span class="r">Odd justa (consenso)</span><span>${v.oddJusta}</span></div>
-          ${banca > 0 ? `<div class="leg"><span class="r">Stake sugerido (¼ Kelly)</span><span>€${kellyStakeEUR(v.odd, v.oddJusta, banca).toFixed(2)}</span></div>` : ''}
+          ${banca > 0 ? `<div class="leg"><span class="r">Stake sugerido</span><span>€${kellyStakeEUR(v.odd, v.oddJusta, banca).toFixed(2)}</span></div>` : ''}
         </div>
+        <details style="margin-top:8px;">
+          <summary style="cursor:pointer;color:var(--muted);font-size:11.5px;">Ver números</summary>
+          <div class="legs" style="margin-top:8px;">
+            <div class="leg"><span class="r">Edge</span><span>+${v.edgePct}%</span></div>
+            <div class="leg"><span class="r">Odd justa (consenso)</span><span>${v.oddJusta}</span></div>
+          </div>
+        </details>
       </div>
     `).join('') : '<div class="empty">Nenhum value bet encontrado com os filtros atuais.</div>';
 
@@ -681,16 +682,19 @@ function renderResultados(d){
             <div class="card-title">${esc(v.evento)} — ${esc(v.resultado)}</div>
             <div class="card-sub">${esc(v.desporto)} · ${fmtDate(v.inicio)} · ${esc(v.casa)}</div>
           </div>
-          <div>
-            <div class="pct val">+${v.edgePct}%</div>
-            <div class="conf ${esc(v.confiancaLabel)}">Confiança ${esc(v.confiancaLabel)} · ${v.confianca}/100</div>
-          </div>
+          <div class="conf ${esc(v.confiancaLabel)}">Confiança ${esc(v.confiancaLabel)}</div>
         </div>
         <div class="legs">
           <div class="leg"><span class="r">Odd oferecida</span><span>${v.odd}</span></div>
-          <div class="leg"><span class="r">Odd do modelo</span><span>${v.oddModelo}</span></div>
-          ${banca > 0 ? `<div class="leg"><span class="r">Stake sugerido (¼ Kelly)</span><span>€${kellyStakeEUR(v.odd, v.oddModelo, banca).toFixed(2)}</span></div>` : ''}
+          ${banca > 0 ? `<div class="leg"><span class="r">Stake sugerido</span><span>€${kellyStakeEUR(v.odd, v.oddModelo, banca).toFixed(2)}</span></div>` : ''}
         </div>
+        <details style="margin-top:8px;">
+          <summary style="cursor:pointer;color:var(--muted);font-size:11.5px;">Ver números</summary>
+          <div class="legs" style="margin-top:8px;">
+            <div class="leg"><span class="r">Edge</span><span>+${v.edgePct}%</span></div>
+            <div class="leg"><span class="r">Odd do modelo</span><span>${v.oddModelo}</span></div>
+          </div>
+        </details>
       </div>
     `).join('') : '<div class="empty">Nenhum value bet do modelo encontrado com os filtros atuais.</div>';
 
