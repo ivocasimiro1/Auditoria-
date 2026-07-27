@@ -133,6 +133,10 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
     <label>Lucro mín. (arb %)</label>
     <input type="number" id="minArb" value="0.5" step="0.1" min="0">
   </div>
+  <div class="field">
+    <label>Casas (vazio = todas)</label>
+    <input type="text" id="casas" value="bwin, Betclic" placeholder="ex: bwin, Betclic">
+  </div>
   <button class="primary" id="scanBtn" onclick="scan()">Analisar</button>
 </div>
 
@@ -179,6 +183,7 @@ async function scan(){
   const regions = document.getElementById('regions').value;
   const minEdge = document.getElementById('minEdge').value;
   const minArb = document.getElementById('minArb').value;
+  const casas = document.getElementById('casas').value.trim();
 
   const arbList = document.getElementById('arbList');
   const valList = document.getElementById('valList');
@@ -187,7 +192,8 @@ async function scan(){
   document.getElementById('meta').innerHTML = '';
 
   try{
-    const url = `/api/odds-scan?sport=${encodeURIComponent(sport)}&regions=${encodeURIComponent(regions)}&minEdge=${minEdge}&minArb=${minArb}`;
+    let url = `/api/odds-scan?sport=${encodeURIComponent(sport)}&regions=${encodeURIComponent(regions)}&minEdge=${minEdge}&minArb=${minArb}`;
+    if(casas) url += `&casas=${encodeURIComponent(casas)}`;
     const r = await fetch(url);
     const d = await r.json();
 
@@ -199,6 +205,7 @@ async function scan(){
     document.getElementById('meta').innerHTML =
       `<span>${d.meta.eventsAnalisados} eventos analisados</span>` +
       (d.meta.requestsRestantes !== null ? `<span>${d.meta.requestsRestantes} pedidos restantes na API</span>` : '') +
+      (d.meta.casasFiltro && d.meta.casasFiltro.length ? `<span>Casas: ${d.meta.casasFiltro.join(', ')}</span>` : `<span>Casas: todas</span>`) +
       `<span>Atualizado às ${new Date(d.meta.geradoEm).toLocaleTimeString('pt-PT')}</span>`;
 
     document.getElementById('arbCount').textContent = d.arbitrages.length;
