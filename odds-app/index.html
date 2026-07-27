@@ -157,11 +157,11 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
   <div class="field" style="flex:1;min-width:220px;">
     <label>Scan diário</label>
     <div style="color:var(--muted);font-size:12px;line-height:1.5;">
-      Corre as 10 principais ligas de futebol do mundo de uma vez (~10 pedidos à API) e junta tudo
+      Corre as principais ligas + competições FIFA/UEFA de uma vez (~15 pedidos à API) e junta tudo
       numa lista só, ordenada por confiança. Usa os mesmos filtros (Edge/Lucro/Casas) de cima.
     </div>
   </div>
-  <button class="primary" id="dailyBtn" onclick="scanDiario()">🌍 Scan diário (10 ligas)</button>
+  <button class="primary" id="dailyBtn" onclick="scanDiario()">🌍 Scan diário (ligas + FIFA/UEFA)</button>
 </div>
 
 <div class="meta" id="meta"></div>
@@ -226,20 +226,29 @@ async function loadSports(){
   }catch(e){ /* fica só com "Próximos jogos" */ }
 }
 
-// 10 principais campeonatos de futebol do mundo. Em vez de depender de chaves fixas
-// da The Odds API (podem mudar de época para época), procuramos o desporto certo
-// dinamicamente na lista real devolvida por /api/odds-sports, por título/grupo.
+// Principais campeonatos + competições FIFA/UEFA do mundo. Em vez de depender de
+// chaves fixas da The Odds API (podem mudar de época para época), procuramos o
+// desporto certo dinamicamente na lista real devolvida por /api/odds-sports,
+// por título/grupo. Ligas fora de época na altura do scan são reportadas, não
+// escondidas — ver "Fora de época/não encontradas" nos resultados.
 const LIGAS_PRINCIPAIS = [
-  { nome:'Premier League',    busca:['premier league', 'epl'] },
-  { nome:'La Liga',           busca:['la liga', 'spain'] },
-  { nome:'Serie A',           busca:['serie a', 'italy'] },
-  { nome:'Bundesliga',        busca:['bundesliga', 'germany'] },
-  { nome:'Ligue 1',           busca:['ligue 1', 'france'] },
-  { nome:'Primeira Liga',     busca:['primeira liga', 'portugal'] },
-  { nome:'Champions League',  busca:['champions league'] },
-  { nome:'Europa League',     busca:['europa league'] },
-  { nome:'Brasileirão',       busca:['brazil', 'brasileir'] },
-  { nome:'MLS',               busca:['mls', 'major league soccer'] },
+  { nome:'Premier League',        busca:['premier league', 'epl'] },
+  { nome:'La Liga',               busca:['la liga', 'spain'] },
+  { nome:'Serie A',               busca:['serie a', 'italy'] },
+  { nome:'Bundesliga',            busca:['bundesliga', 'germany'] },
+  { nome:'Ligue 1',               busca:['ligue 1', 'france'] },
+  { nome:'Primeira Liga',         busca:['primeira liga', 'portugal'] },
+  { nome:'Brasileirão',           busca:['brazil', 'brasileir'] },
+  { nome:'MLS',                   busca:['mls', 'major league soccer'] },
+  // FIFA
+  { nome:'Mundial FIFA',          busca:['fifa world cup'] },
+  { nome:'Mundial de Clubes FIFA', busca:['club world cup'] },
+  // UEFA
+  { nome:'Champions League',      busca:['champions league'] },
+  { nome:'Europa League',         busca:['europa league'] },
+  { nome:'Conference League',     busca:['conference league'] },
+  { nome:'Liga das Nações UEFA',  busca:['nations league'] },
+  { nome:'Europeu de Seleções',   busca:['euro championship', 'uefa european'] },
 ];
 
 function resolverLiga(liga){
@@ -347,7 +356,7 @@ async function scanDiario(){
     document.getElementById('meta').innerHTML += `<span style="color:var(--red)">Falhou: ${falhas.join(', ')}</span>`;
   }
 
-  btn.disabled = false; btn.textContent = '🌍 Scan diário (10 ligas)';
+  btn.disabled = false; btn.textContent = '🌍 Scan diário (ligas + FIFA/UEFA)';
 }
 
 function renderResultados(d){
