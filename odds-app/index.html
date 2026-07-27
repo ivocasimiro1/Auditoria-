@@ -157,11 +157,11 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
   <div class="field" style="flex:1;min-width:220px;">
     <label>Scan diário</label>
     <div style="color:var(--muted);font-size:12px;line-height:1.5;">
-      Corre as principais ligas + competições FIFA/UEFA de uma vez (~15 pedidos à API) e junta tudo
-      numa lista só, ordenada por confiança. Usa os mesmos filtros (Edge/Lucro/Casas) de cima.
+      Corre futebol (ligas + FIFA/UEFA), NBA e EuroLeague de uma vez (~17 pedidos à API) e junta
+      tudo numa lista só, ordenada por confiança. Usa os mesmos filtros (Edge/Lucro/Casas) de cima.
     </div>
   </div>
-  <button class="primary" id="dailyBtn" onclick="scanDiario()">🌍 Scan diário (ligas + FIFA/UEFA)</button>
+  <button class="primary" id="dailyBtn" onclick="scanDiario()">🌍 Scan diário (futebol + NBA)</button>
 </div>
 
 <div class="meta" id="meta"></div>
@@ -249,11 +249,20 @@ const LIGAS_PRINCIPAIS = [
   { nome:'Conference League',     busca:['conference league'] },
   { nome:'Liga das Nações UEFA',  busca:['nations league'] },
   { nome:'Europeu de Seleções',   busca:['euro championship', 'uefa european'] },
+  // Basquetebol
+  { nome:'NBA',                   busca:['nba'] },
+  { nome:'EuroLeague',            busca:['euroleague'] },
+  // Nota: ténis (ATP/WTA) foi ponderado mas ficou de fora — corre por torneio
+  // semanal, não por "liga" fixa, e vários torneios em simultâneo disparariam
+  // o consumo de créditos do auto-scan diário para lá do free tier (500/mês).
 ];
 
-function resolverLiga(liga){
+// Devolve até `liga.limite` (default 1) desportos que correspondem a esta entrada,
+// da lista real devolvida por /api/odds-sports.
+function resolverLigas(liga){
   const alvo = (s) => (s.title + ' ' + s.group + ' ' + (s.description||'')).toLowerCase();
-  return SPORTS_CACHE.find(s => liga.busca.some(termo => alvo(s).includes(termo)));
+  const encontrados = SPORTS_CACHE.filter(s => liga.busca.some(termo => alvo(s).includes(termo)));
+  return encontrados.slice(0, liga.limite || 1);
 }
 
 function buildUrl(sport, regions, minEdge, minArb, casas){
@@ -323,17 +332,25 @@ async function scanDiario(){
   const falhas = [];
   const naoEncontradas = [];
 
-  for(let i = 0; i < LIGAS_PRINCIPAIS.length; i++){
-    const liga = LIGAS_PRINCIPAIS[i];
-    const sportInfo = resolverLiga(liga);
-    if(!sportInfo){ naoEncontradas.push(liga.nome); continue; }
+  // Expande cada entrada (algumas podem ter `limite` > 1 e corresponder a mais
+  // do que um desporto concreto) numa lista plana de desportos a analisar.
+  const alvos = [];
+  for(const liga of LIGAS_PRINCIPAIS){
+    const encontrados = resolverLigas(liga);
+    if(encontrados.length === 0){ naoEncontradas.push(liga.nome); continue; }
+    for(const sportInfo of encontrados){
+      alvos.push({ nome: encontrados.length > 1 ? `${liga.nome}: ${sportInfo.title}` : liga.nome, sportInfo });
+    }
+  }
 
-    btn.textContent = `A analisar… (${i+1}/${LIGAS_PRINCIPAIS.length}: ${liga.nome})`;
-    arbList.innerHTML = `<div class="loading">A analisar ${liga.nome}… (${i+1}/${LIGAS_PRINCIPAIS.length})</div>`;
+  for(let i = 0; i < alvos.length; i++){
+    const alvo = alvos[i];
+    btn.textContent = `A analisar… (${i+1}/${alvos.length}: ${alvo.nome})`;
+    arbList.innerHTML = `<div class="loading">A analisar ${alvo.nome}… (${i+1}/${alvos.length})</div>`;
     try{
-      const r = await fetch(buildUrl(sportInfo.key, regions, minEdge, minArb, casas));
+      const r = await fetch(buildUrl(alvo.sportInfo.key, regions, minEdge, minArb, casas));
       const d = await r.json();
-      if(d.error){ falhas.push(liga.nome); continue; }
+      if(d.error){ falhas.push(alvo.nome); continue; }
       agregado.arbitrages.push(...d.arbitrages);
       agregado.valueBets.push(...d.valueBets);
       agregado.meta.eventsAnalisados += d.meta.eventsAnalisados || 0;
@@ -342,7 +359,7 @@ async function scanDiario(){
       agregado.meta.casasFiltro = d.meta.casasFiltro;
       agregado.meta.janelaAte = d.meta.janelaAte;
     }catch(e){
-      falhas.push(liga.nome);
+      falhas.push(alvo.nome);
     }
   }
 
@@ -357,7 +374,7 @@ async function scanDiario(){
     document.getElementById('meta').innerHTML += `<span style="color:var(--red)">Falhou: ${falhas.join(', ')}</span>`;
   }
 
-  btn.disabled = false; btn.textContent = '🌍 Scan diário (ligas + FIFA/UEFA)';
+  btn.disabled = false; btn.textContent = '🌍 Scan diário (futebol + NBA)';
 }
 
 function renderResultados(d){
