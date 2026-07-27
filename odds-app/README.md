@@ -3,17 +3,34 @@
 Ferramenta para detetar **arbitragem (surebets)** e **value bets** entre casas de apostas, usando
 a [The Odds API](https://the-odds-api.com) como fonte de dados (agregador legítimo, sem scraping).
 
-URL: `/odds`
+Este projeto é **autónomo** — vive na pasta `odds-app/` deste repositório mas deploya-se como um
+**projeto Cloudflare Pages separado** do `auditoria` (que serve as restantes ferramentas Despomar),
+para não arriscar interferir com essa configuração. Fica com o seu próprio domínio
+`*.pages.dev` (ou domínio próprio, se quiseres).
 
 ## Como funciona
 
-- `odds-app/index.html` — dashboard (filtros por desporto/região/thresholds, listas de oportunidades)
+- `index.html` — dashboard (filtros por desporto/região/thresholds, listas de oportunidades)
 - `functions/api/odds-scan.js` — Cloudflare Pages Function que chama a The Odds API server-side
   (a chave nunca é exposta ao browser), calcula:
   - **Arbitragem**: soma de `1/melhor_odd` por resultado, entre casas diferentes; se < 1, há lucro garantido
   - **Value bet**: compara a odd de cada casa com a probabilidade "justa" de consenso
     (média das probabilidades sem margem de todas as casas do evento)
 - `functions/api/odds-sports.js` — lista os desportos/ligas disponíveis para o dropdown
+
+## Criar o projeto Cloudflare Pages (uma vez)
+
+1. **dash.cloudflare.com** → **Workers & Pages** → **Create application** → **Pages** → **Connect to Git**
+2. Escolhe o repositório `ivocasimiro1/Auditoria-`
+3. Nas definições de build:
+   - **Root directory (diretório raiz)**: `odds-app`
+   - **Build command**: deixa vazio
+   - **Build output directory**: deixa vazio (ou `/`, equivale à raiz de `odds-app`)
+4. **Save and Deploy**
+5. Depois do primeiro deploy, em **Settings → Environment variables**, configura as variáveis abaixo
+
+Isto cria um projeto novo (ex: `odds-desajustadas.pages.dev`), completamente separado do `auditoria` —
+qualquer alteração aqui não afeta `/depositos`, `/rotacao`, `/devolve`, etc.
 
 ## Configuração necessária (Cloudflare Pages → Settings → Environment variables)
 
@@ -27,11 +44,11 @@ URL: `/odds`
 
 O endpoint `/api/odds-scan?notify=1&...` envia um alerta Telegram sempre que é chamado e existem
 oportunidades acima dos thresholds. Este projeto **não tem cron interno** — para alertas periódicos,
-aponta um serviço de cron externo gratuito (ex: [cron-job.org](https://cron-job.org)) a este URL,
-com a frequência desejada, por exemplo:
+aponta um serviço de cron externo gratuito (ex: [cron-job.org](https://cron-job.org)) a este URL
+(substitui pelo domínio real do teu projeto Cloudflare Pages), com a frequência desejada, por exemplo:
 
 ```
-https://auditoria-25b.pages.dev/api/odds-scan?sport=upcoming&regions=eu&minEdge=3&minArb=0.5&notify=1
+https://<o-teu-projeto>.pages.dev/api/odds-scan?sport=upcoming&regions=eu&minEdge=3&minArb=0.5&notify=1
 ```
 
 **Limitação conhecida**: sem armazenamento de estado (KV), cada chamada com `notify=1` reenvia todas
