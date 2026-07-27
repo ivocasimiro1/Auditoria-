@@ -425,7 +425,13 @@ async function scan(){
     const d = await r.json();
 
     if(d.error){
-      arbList.innerHTML = `<div class="error">${d.error}${d.details ? '<br><small>'+d.details+'</small>' : ''}</div>`;
+      let codigoErro = null;
+      try{ codigoErro = JSON.parse(d.details).error_code; }catch(e){}
+      if(codigoErro === 'INVALID_MARKET_COMBO'){
+        arbList.innerHTML = '<div class="empty">Esta competição está completamente fora de época agora (zero jogos agendados) — tenta outra ou volta mais tarde.</div>';
+      }else{
+        arbList.innerHTML = `<div class="error">${esc(d.error)}${d.details ? '<br><small>'+esc(String(d.details).slice(0,300))+'</small>' : ''}</div>`;
+      }
       return;
     }
 
@@ -476,7 +482,18 @@ async function scanDiario(){
     try{
       const r = await fetch(buildUrl(alvo.sportInfo.key, regions, casas));
       const d = await r.json();
-      if(d.error){ falhas.push({ nome: alvo.nome, motivo: d.error, detalhe: d.details }); continue; }
+      if(d.error){
+        // "INVALID_MARKET_COMBO" acontece quando a liga está completamente fora
+        // de época (zero jogos agendados) — a API não consegue oferecer o
+        // mercado h2h (que depende de existirem jogos concretos) e rejeita o
+        // pedido em vez de devolver uma lista vazia. É o mesmo "fora de época"
+        // de sempre, só que manifestado como erro em vez de lista vazia.
+        let codigoErro = null;
+        try{ codigoErro = JSON.parse(d.details).error_code; }catch(e){}
+        if(codigoErro === 'INVALID_MARKET_COMBO'){ naoEncontradas.push(alvo.nome); continue; }
+        falhas.push({ nome: alvo.nome, motivo: d.error, detalhe: d.details });
+        continue;
+      }
       agregado.arbitrages.push(...d.arbitrages);
       agregado.valueBets.push(...d.valueBets);
       agregado.valueBetsModelo.push(...(d.valueBetsModelo || []));
