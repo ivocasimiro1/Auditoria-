@@ -26,11 +26,18 @@ export async function onRequestGet(context) {
   const minBooks = parseInt(url.searchParams.get('minBooks') || '3', 10);
   const incluirAoVivo = url.searchParams.get('aoVivo') === '1';
   const notify = url.searchParams.get('notify') === '1';
+  const diasJanela = parseFloat(url.searchParams.get('dias') || '7');
   const casasFiltro = (url.searchParams.get('casas') || '')
     .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
+  // Garante explicitamente que cobrimos "a semana toda" (hoje até +N dias), em vez de
+  // depender do que a The Odds API decide devolver por padrão para cada desporto.
+  const agoraISO = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const ateISO = new Date(Date.now() + diasJanela * 86_400_000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+
   const oddsUrl = `${ODDS_API_BASE}/sports/${encodeURIComponent(sport)}/odds/`
-    + `?apiKey=${env.ODDS_API_KEY}&regions=${encodeURIComponent(regions)}&markets=h2h&oddsFormat=decimal`;
+    + `?apiKey=${env.ODDS_API_KEY}&regions=${encodeURIComponent(regions)}&markets=h2h&oddsFormat=decimal`
+    + `&commenceTimeFrom=${agoraISO}&commenceTimeTo=${ateISO}`;
 
   let resp;
   try {
@@ -55,6 +62,7 @@ export async function onRequestGet(context) {
     casasFiltro,
     eventsAnalisados: events.length,
     eventosIgnorados,
+    janelaAte: ateISO,
     requestsRestantes: resp.headers.get('x-requests-remaining'),
     requestsUsadas: resp.headers.get('x-requests-used'),
     geradoEm: new Date().toISOString(),

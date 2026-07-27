@@ -340,6 +340,7 @@ async function scanDiario(){
       agregado.meta.eventosIgnorados += d.meta.eventosIgnorados || 0;
       agregado.meta.requestsRestantes = d.meta.requestsRestantes;
       agregado.meta.casasFiltro = d.meta.casasFiltro;
+      agregado.meta.janelaAte = d.meta.janelaAte;
     }catch(e){
       falhas.push(liga.nome);
     }
@@ -368,6 +369,7 @@ function renderResultados(d){
     (d.meta.eventosIgnorados ? `<span>${d.meta.eventosIgnorados} ao vivo ignorados</span>` : '') +
     (d.meta.requestsRestantes !== null ? `<span>${d.meta.requestsRestantes} pedidos restantes na API</span>` : '') +
     (d.meta.casasFiltro && d.meta.casasFiltro.length ? `<span>Casas: ${d.meta.casasFiltro.join(', ')}</span>` : `<span>Casas: todas</span>`) +
+    (d.meta.janelaAte ? `<span>Jogos até ${fmtDate(d.meta.janelaAte)}</span>` : '') +
     `<span>Atualizado às ${new Date(d.meta.geradoEm).toLocaleTimeString('pt-PT')}</span>`;
 
   document.getElementById('arbCount').textContent = d.arbitrages.length;
