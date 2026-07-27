@@ -169,6 +169,10 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
     <label>Casas (vazio = todas)</label>
     <input type="text" id="casas" value="bwin, Betclic" placeholder="ex: bwin, Betclic (vazio = todas)">
   </div>
+  <div class="field">
+    <label>Banca (€)</label>
+    <input type="number" id="banca" value="100" step="10" min="0">
+  </div>
   <button class="primary" id="scanBtn" onclick="scan()">Analisar</button>
 </div>
 <div style="max-width:1100px;margin:6px auto 0;padding:0 16px;color:var(--muted);font-size:11.5px;">
@@ -224,7 +228,10 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
     (ex: <code>+8%</code> = em média, por cada 100€ apostados em situações destas, esperas ganhar 8€ a mais
     do que o "justo" — mas em cada aposta individual podes perder na mesma).<br>
     <b>Confiança</b> — combina quantas casas confirmam a odd justa, se o edge está numa faixa normal
-    (nem marginal nem suspeito) e se o jogo é em breve. Ajuda a priorizar, não é garantia de nada.
+    (nem marginal nem suspeito) e se o jogo é em breve. Ajuda a priorizar, não é garantia de nada.<br>
+    <b>Stake sugerido (¼ Kelly)</b> — quanto apostar da tua Banca (campo acima) nesta aposta específica,
+    segundo o critério de Kelly fracionário (¼, mais conservador) — dimensiona o risco à vantagem
+    matemática, sem arriscar a banca toda numa só aposta.
   </div>
   <div id="valList"></div>
 </div>
@@ -354,6 +361,7 @@ function lerFiltros(){
     minEdge: document.getElementById('minEdge').value,
     minArb: document.getElementById('minArb').value,
     casas: document.getElementById('casas').value.trim(),
+    banca: document.getElementById('banca').value,
   };
   try{ localStorage.setItem(CHAVE_FILTROS, JSON.stringify(f)); }catch(e){}
   return f;
@@ -367,6 +375,7 @@ function carregarFiltrosGuardados(){
     if(f.minEdge !== undefined && f.minEdge !== '') document.getElementById('minEdge').value = f.minEdge;
     if(f.minArb !== undefined && f.minArb !== '') document.getElementById('minArb').value = f.minArb;
     if(f.casas !== undefined) document.getElementById('casas').value = f.casas;
+    if(f.banca !== undefined && f.banca !== '') document.getElementById('banca').value = f.banca;
   }catch(e){ /* fica com os valores por defeito do HTML */ }
 }
 
@@ -471,6 +480,18 @@ async function scanDiario(){
 // Escolhe a única melhor oportunidade (maior confiança) entre arbitragem e value
 // bets, e mostra-a em destaque no topo, em linguagem direta — em vez de obrigar
 // a ler a lista técnica toda para perceber "qual é a aposta boa agora".
+// Critério de Kelly fracionário (¼ Kelly, o mesmo método usado no motor EdgeBet
+// deste repositório) — stake sugerido para value bets, dado que não há lucro
+// garantido como na arbitragem, só uma vantagem estatística a longo prazo.
+// p = probabilidade "justa" implícita na odd de consenso; b = odd-1.
+function kellyStakeEUR(odd, oddJusta, banca){
+  const p = 1 / oddJusta;
+  const b = odd - 1;
+  if(b <= 0 || banca <= 0) return 0;
+  const fracaoKelly = Math.max(0, (b * p - (1 - p)) / b);
+  return banca * fracaoKelly * 0.25;
+}
+
 function renderDestaque(d){
   const secao = document.getElementById('destaqueSection');
   const card = document.getElementById('destaqueCard');
@@ -482,6 +503,7 @@ function renderDestaque(d){
   ].sort((x,y) => y.confianca - x.confianca);
 
   const melhor = candidatos[0];
+  const banca = parseFloat(document.getElementById('banca').value) || 0;
 
   // Só sugere algo se a confiança for pelo menos "Média" — abaixo disso é mais
   // provável ser ruído/dados fracos do que uma vantagem real que valha a pena.
@@ -499,7 +521,11 @@ function renderDestaque(d){
 
   if(melhor.tipo === 'arb'){
     const a = melhor.item;
-    const pernasTxt = a.pernas.map(p => `<b>${esc(p.resultado)}</b> @ ${p.odd} na <b>${esc(p.casa)}</b> (${p.stakePct}% da banca)`).join(' · ');
+    const pernasTxt = a.pernas.map(p => {
+      const euros = banca > 0 ? ` · <b>€${(banca * p.stakePct / 100).toFixed(2)}</b>` : '';
+      return `<b>${esc(p.resultado)}</b> @ ${p.odd} na <b>${esc(p.casa)}</b> (${p.stakePct}% da banca${euros})`;
+    }).join(' · ');
+    const lucroEuros = banca > 0 ? ` (€${(banca * a.lucroPct / 100).toFixed(2)} sobre €${banca.toFixed(0)})` : '';
     card.innerHTML = `
       <div class="destaque">
         <div class="rotulo">🎯 Sugestão principal — Arbitragem (lucro garantido)</div>
@@ -508,7 +534,7 @@ function renderDestaque(d){
         <div class="conf ${esc(a.confiancaLabel)}">Confiança ${esc(a.confiancaLabel)} · ${a.confianca}/100</div>
         <div class="porque" style="margin-top:10px;">
           Porquê: as casas envolvidas discordam o suficiente sobre este jogo para, apostando em
-          <b>todos</b> os resultados possíveis nas casas certas, ganhares <b>+${a.lucroPct}%</b> seja
+          <b>todos</b> os resultados possíveis nas casas certas, ganhares <b>+${a.lucroPct}%</b>${lucroEuros} seja
           qual for o resultado final. ${esc(a.desporto)} · ${fmtDate(a.inicio)}.
         </div>
       </div>`;
@@ -516,16 +542,20 @@ function renderDestaque(d){
   }
 
   const v = melhor.item;
+  const stakeV = kellyStakeEUR(v.odd, v.oddJusta, banca);
+  const stakeTxt = banca > 0 ? `<div class="aposta">Stake sugerido (¼ Kelly): <b>€${stakeV.toFixed(2)}</b> de €${banca.toFixed(0)}</div>` : '';
   card.innerHTML = `
     <div class="destaque">
       <div class="rotulo">🎯 Sugestão principal — Value bet</div>
       <div class="titulo">${esc(v.evento)}</div>
       <div class="aposta">Aposta: <b>${esc(v.resultado)}</b> @ <b>${v.odd}</b> na <b>${esc(v.casa)}</b></div>
+      ${stakeTxt}
       <div class="conf ${esc(v.confiancaLabel)}">Confiança ${esc(v.confiancaLabel)} · ${v.confianca}/100</div>
       <div class="porque" style="margin-top:10px;">
         Porquê: a ${esc(v.casa)} está a oferecer ${v.odd}, mas a odd "justa" segundo o consenso de
         várias casas seria ${v.oddJusta} — uma vantagem de <b>+${v.edgePct}%</b> a favor desta aposta,
-        a longo prazo (não é garantia em cada aposta individual). ${esc(v.desporto)} · ${fmtDate(v.inicio)}.
+        a longo prazo (não é garantia em cada aposta individual). Isto <b>não é</b> lucro garantido —
+        podes perder esta aposta específica. ${esc(v.desporto)} · ${fmtDate(v.inicio)}.
       </div>
     </div>`;
 }
@@ -540,6 +570,7 @@ function renderResultados(d){
 
   const minEdge = parseFloat(document.getElementById('minEdge').value) || 0;
   const minArb = parseFloat(document.getElementById('minArb').value) || 0;
+  const banca = parseFloat(document.getElementById('banca').value) || 0;
   const arbitragens = d.arbitrages.filter(a => a.lucroPct >= minArb);
   const valueBets = d.valueBets.filter(v => v.edgePct >= minEdge);
 
@@ -567,7 +598,7 @@ function renderResultados(d){
           </div>
         </div>
         <div class="legs">
-          ${a.pernas.map(p => `<div class="leg"><span class="r">${esc(p.resultado)} @ ${esc(p.casa)}</span><span>${p.odd} · stake ${p.stakePct}%</span></div>`).join('')}
+          ${a.pernas.map(p => `<div class="leg"><span class="r">${esc(p.resultado)} @ ${esc(p.casa)}</span><span>${p.odd} · stake ${p.stakePct}%${banca > 0 ? ' · €' + (banca * p.stakePct / 100).toFixed(2) : ''}</span></div>`).join('')}
         </div>
       </div>
     `).join('') : '<div class="empty">Nenhuma oportunidade de arbitragem encontrada com os filtros atuais.</div>';
@@ -587,6 +618,7 @@ function renderResultados(d){
         <div class="legs">
           <div class="leg"><span class="r">Odd oferecida</span><span>${v.odd}</span></div>
           <div class="leg"><span class="r">Odd justa (consenso)</span><span>${v.oddJusta}</span></div>
+          ${banca > 0 ? `<div class="leg"><span class="r">Stake sugerido (¼ Kelly)</span><span>€${kellyStakeEUR(v.odd, v.oddJusta, banca).toFixed(2)}</span></div>` : ''}
         </div>
       </div>
     `).join('') : '<div class="empty">Nenhum value bet encontrado com os filtros atuais.</div>';
