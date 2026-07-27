@@ -210,6 +210,12 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
 <script>
 const fmtDate = iso => new Date(iso).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 
+// Nomes de equipas/casas/desportos vêm da The Odds API (externa) — escapar antes
+// de inserir em innerHTML, para nunca partir a página nem correr risco de injeção
+// caso algum dia apareça um caractere especial num nome.
+const ESC_MAP = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ESC_MAP[c]);
+
 let SPORTS_CACHE = [];
 
 async function loadSports(){
@@ -287,13 +293,31 @@ function buildUrl(sport, regions, minEdge, minArb, casas){
   return url;
 }
 
+// Guarda os filtros sempre que são lidos (ou seja, sempre que corres uma análise,
+// manual ou automática), para sobreviverem a fechares e reabrires a página —
+// sem isto, cada abertura voltava aos valores por defeito do HTML.
+const CHAVE_FILTROS = 'oddsapp_filtros';
+
 function lerFiltros(){
-  return {
+  const f = {
     regions: document.getElementById('regions').value,
     minEdge: document.getElementById('minEdge').value,
     minArb: document.getElementById('minArb').value,
     casas: document.getElementById('casas').value.trim(),
   };
+  try{ localStorage.setItem(CHAVE_FILTROS, JSON.stringify(f)); }catch(e){}
+  return f;
+}
+
+function carregarFiltrosGuardados(){
+  try{
+    const f = JSON.parse(localStorage.getItem(CHAVE_FILTROS) || 'null');
+    if(!f) return;
+    if(f.regions) document.getElementById('regions').value = f.regions;
+    if(f.minEdge !== undefined && f.minEdge !== '') document.getElementById('minEdge').value = f.minEdge;
+    if(f.minArb !== undefined && f.minArb !== '') document.getElementById('minArb').value = f.minArb;
+    if(f.casas !== undefined) document.getElementById('casas').value = f.casas;
+  }catch(e){ /* fica com os valores por defeito do HTML */ }
 }
 
 async function scan(){
@@ -362,7 +386,7 @@ async function scanDiario(){
   for(let i = 0; i < alvos.length; i++){
     const alvo = alvos[i];
     btn.textContent = `A analisar… (${i+1}/${alvos.length}: ${alvo.nome})`;
-    arbList.innerHTML = `<div class="loading">A analisar ${alvo.nome}… (${i+1}/${alvos.length})</div>`;
+    arbList.innerHTML = `<div class="loading">A analisar ${esc(alvo.nome)}… (${i+1}/${alvos.length})</div>`;
     try{
       const r = await fetch(buildUrl(alvo.sportInfo.key, regions, minEdge, minArb, casas));
       const d = await r.json();
@@ -384,10 +408,10 @@ async function scanDiario(){
 
   renderResultados(agregado);
   if(naoEncontradas.length){
-    document.getElementById('meta').innerHTML += `<span style="color:var(--yellow)">Fora de época/não encontradas: ${naoEncontradas.join(', ')}</span>`;
+    document.getElementById('meta').innerHTML += `<span style="color:var(--yellow)">Fora de época/não encontradas: ${esc(naoEncontradas.join(', '))}</span>`;
   }
   if(falhas.length){
-    document.getElementById('meta').innerHTML += `<span style="color:var(--red)">Falhou: ${falhas.join(', ')}</span>`;
+    document.getElementById('meta').innerHTML += `<span style="color:var(--red)">Falhou: ${esc(falhas.join(', '))}</span>`;
   }
 
   btn.disabled = false; btn.textContent = '🌍 Scan completo (1ªs + 2ªs divisões)';
@@ -412,16 +436,16 @@ function renderResultados(d){
       <div class="card">
         <div class="card-top">
           <div>
-            <div class="card-title">${a.evento}</div>
-            <div class="card-sub">${a.desporto} · ${fmtDate(a.inicio)}</div>
+            <div class="card-title">${esc(a.evento)}</div>
+            <div class="card-sub">${esc(a.desporto)} · ${fmtDate(a.inicio)}</div>
           </div>
           <div>
             <div class="pct arb">+${a.lucroPct}%</div>
-            <div class="conf ${a.confiancaLabel}">Confiança ${a.confiancaLabel} · ${a.confianca}/100</div>
+            <div class="conf ${esc(a.confiancaLabel)}">Confiança ${esc(a.confiancaLabel)} · ${a.confianca}/100</div>
           </div>
         </div>
         <div class="legs">
-          ${a.pernas.map(p => `<div class="leg"><span class="r">${p.resultado} @ ${p.casa}</span><span>${p.odd} · stake ${p.stakePct}%</span></div>`).join('')}
+          ${a.pernas.map(p => `<div class="leg"><span class="r">${esc(p.resultado)} @ ${esc(p.casa)}</span><span>${p.odd} · stake ${p.stakePct}%</span></div>`).join('')}
         </div>
       </div>
     `).join('') : '<div class="empty">Nenhuma oportunidade de arbitragem encontrada com os filtros atuais.</div>';
@@ -430,12 +454,12 @@ function renderResultados(d){
       <div class="card">
         <div class="card-top">
           <div>
-            <div class="card-title">${v.evento} — ${v.resultado}</div>
-            <div class="card-sub">${v.desporto} · ${fmtDate(v.inicio)} · ${v.casa}</div>
+            <div class="card-title">${esc(v.evento)} — ${esc(v.resultado)}</div>
+            <div class="card-sub">${esc(v.desporto)} · ${fmtDate(v.inicio)} · ${esc(v.casa)}</div>
           </div>
           <div>
             <div class="pct val">+${v.edgePct}%</div>
-            <div class="conf ${v.confiancaLabel}">Confiança ${v.confiancaLabel} · ${v.confianca}/100</div>
+            <div class="conf ${esc(v.confiancaLabel)}">Confiança ${esc(v.confiancaLabel)} · ${v.confianca}/100</div>
           </div>
         </div>
         <div class="legs">
@@ -470,6 +494,7 @@ async function autoScanSeNecessario(){
   await scanDiario();
 }
 
+carregarFiltrosGuardados();
 autoScanSeNecessario();
 </script>
 </body>
