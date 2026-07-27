@@ -25,6 +25,11 @@ para não arriscar interferir com essa configuração. Fica com o seu próprio d
   simplesmente não aparecem nesta lista. É uma versão simplificada do motor Dixon-Coles usado no
   projeto EdgeBet deste repositório (sem correção de baixa pontuação nem decaimento temporal), para
   caber numa função Cloudflare sem bibliotecas de otimização.
+- **Value bets do modelo próprio**: em vez de comparar as casas entre si (só funciona quando as
+  casas discordam umas das outras), compara a odd de cada casa contra a nossa própria previsão
+  estatística. Encontra valor que o método de consenso nunca veria — quando todas as casas
+  concordam entre si, mas o nosso modelo discorda de todas ao mesmo tempo. Só cobre as mesmas
+  ligas das Previsões.
 
 ## Criar o projeto Cloudflare Pages (uma vez)
 

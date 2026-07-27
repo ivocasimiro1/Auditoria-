@@ -237,6 +237,22 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
 </div>
 
 <div class="section">
+  <h2>Value bets do modelo próprio <span class="badge" id="valModeloCount">0</span></h2>
+  <div class="explain">
+    <b>O que é:</b> em vez de comparar as casas entre si (o que só encontra valor quando as casas
+    discordam umas das outras), compara a odd de cada casa contra a <b>nossa própria previsão</b>
+    (histórico de golos, mesma base da secção Previsões). Encontra oportunidades que a secção
+    "Value bets" acima nunca conseguiria ver — quando <b>todas</b> as casas concordam entre si, mas
+    o nosso modelo, com dados históricos, discorda de todas ao mesmo tempo.<br>
+    <b>Odd do modelo</b> — a odd "justa" segundo a nossa própria estimativa (não o consenso de outras
+    casas).<br>
+    Só cobre as ligas onde há previsão disponível (ver secção Previsões abaixo) — jogos fora disso não
+    aparecem aqui. Tal como os value bets normais, não é lucro garantido.
+  </div>
+  <div id="valModeloList"></div>
+</div>
+
+<div class="section">
   <h2>Previsões (modelo estatístico) <span class="badge" id="previsaoCount">0</span></h2>
   <div class="explain">
     <b>O que é:</b> uma estimativa própria da probabilidade de cada resultado, calculada a partir do
@@ -425,7 +441,7 @@ async function scanDiario(){
     await loadSports();
   }
 
-  const agregado = { arbitrages: [], valueBets: [], previsoes: [], meta: {
+  const agregado = { arbitrages: [], valueBets: [], valueBetsModelo: [], previsoes: [], meta: {
     eventsAnalisados: 0, eventosIgnorados: 0, requestsRestantes: null, casasFiltro: [], geradoEm: new Date().toISOString(),
   }};
   const falhas = [];
@@ -452,6 +468,7 @@ async function scanDiario(){
       if(d.error){ falhas.push(alvo.nome); continue; }
       agregado.arbitrages.push(...d.arbitrages);
       agregado.valueBets.push(...d.valueBets);
+      agregado.valueBetsModelo.push(...(d.valueBetsModelo || []));
       agregado.previsoes.push(...(d.previsoes || []));
       agregado.meta.eventsAnalisados += d.meta.eventsAnalisados || 0;
       agregado.meta.eventosIgnorados += d.meta.eventosIgnorados || 0;
@@ -465,6 +482,8 @@ async function scanDiario(){
 
   agregado.arbitrages.sort((a,b) => b.confianca - a.confianca);
   agregado.valueBets.sort((a,b) => b.confianca - a.confianca);
+  agregado.valueBetsModelo.sort((a,b) => b.confianca - a.confianca);
+  agregado.previsoes.sort((a,b) => b.favoritoPct - a.favoritoPct);
 
   renderResultados(agregado);
   if(naoEncontradas.length){
@@ -500,6 +519,7 @@ function renderDestaque(d){
   const candidatos = [
     ...d.arbitrages.map(a => ({ tipo:'arb', item:a, confianca:a.confianca })),
     ...d.valueBets.map(v => ({ tipo:'val', item:v, confianca:v.confianca })),
+    ...(d.valueBetsModelo || []).map(v => ({ tipo:'valmodelo', item:v, confianca:v.confianca })),
   ].sort((x,y) => y.confianca - x.confianca);
 
   const melhor = candidatos[0];
@@ -536,6 +556,28 @@ function renderDestaque(d){
           Porquê: as casas envolvidas discordam o suficiente sobre este jogo para, apostando em
           <b>todos</b> os resultados possíveis nas casas certas, ganhares <b>+${a.lucroPct}%</b>${lucroEuros} seja
           qual for o resultado final. ${esc(a.desporto)} · ${fmtDate(a.inicio)}.
+        </div>
+      </div>`;
+    return;
+  }
+
+  if(melhor.tipo === 'valmodelo'){
+    const v = melhor.item;
+    const stakeV = kellyStakeEUR(v.odd, v.oddModelo, banca);
+    const stakeTxt = banca > 0 ? `<div class="aposta">Stake sugerido (¼ Kelly): <b>€${stakeV.toFixed(2)}</b> de €${banca.toFixed(0)}</div>` : '';
+    card.innerHTML = `
+      <div class="destaque">
+        <div class="rotulo">🎯 Sugestão principal — Value bet do modelo próprio</div>
+        <div class="titulo">${esc(v.evento)}</div>
+        <div class="aposta">Aposta: <b>${esc(v.resultado)}</b> @ <b>${v.odd}</b> na <b>${esc(v.casa)}</b></div>
+        ${stakeTxt}
+        <div class="conf ${esc(v.confiancaLabel)}">Confiança ${esc(v.confiancaLabel)} · ${v.confianca}/100</div>
+        <div class="porque" style="margin-top:10px;">
+          Porquê: o nosso modelo estatístico (histórico de golos, independente de qualquer casa de
+          apostas) estima a odd justa em ${v.oddModelo} — a ${esc(v.casa)} está a oferecer ${v.odd},
+          uma vantagem de <b>+${v.edgePct}%</b> face à nossa própria estimativa, não à de outras casas.
+          Isto pode acontecer mesmo quando todas as casas concordam entre si. Não é lucro garantido.
+          ${esc(v.desporto)} · ${fmtDate(v.inicio)}.
         </div>
       </div>`;
     return;
@@ -622,6 +664,29 @@ function renderResultados(d){
         </div>
       </div>
     `).join('') : '<div class="empty">Nenhum value bet encontrado com os filtros atuais.</div>';
+
+  const valModeloList = document.getElementById('valModeloList');
+  const valueBetsModelo = (d.valueBetsModelo || []).filter(v => v.edgePct >= minEdge);
+  document.getElementById('valModeloCount').textContent = valueBetsModelo.length;
+  valModeloList.innerHTML = valueBetsModelo.length ? valueBetsModelo.map(v => `
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="card-title">${esc(v.evento)} — ${esc(v.resultado)}</div>
+            <div class="card-sub">${esc(v.desporto)} · ${fmtDate(v.inicio)} · ${esc(v.casa)}</div>
+          </div>
+          <div>
+            <div class="pct val">+${v.edgePct}%</div>
+            <div class="conf ${esc(v.confiancaLabel)}">Confiança ${esc(v.confiancaLabel)} · ${v.confianca}/100</div>
+          </div>
+        </div>
+        <div class="legs">
+          <div class="leg"><span class="r">Odd oferecida</span><span>${v.odd}</span></div>
+          <div class="leg"><span class="r">Odd do modelo</span><span>${v.oddModelo}</span></div>
+          ${banca > 0 ? `<div class="leg"><span class="r">Stake sugerido (¼ Kelly)</span><span>€${kellyStakeEUR(v.odd, v.oddModelo, banca).toFixed(2)}</span></div>` : ''}
+        </div>
+      </div>
+    `).join('') : '<div class="empty">Nenhum value bet do modelo encontrado com os filtros atuais.</div>';
 
   // Só os jogos com favoritismo mais claro (já vêm ordenados assim do backend) —
   // uma lista curta e útil em vez de uma tabela exaustiva de percentagens.

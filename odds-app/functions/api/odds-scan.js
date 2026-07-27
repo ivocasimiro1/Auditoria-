@@ -32,6 +32,14 @@ export async function onRequestGet(context) {
   const incluirAoVivo = url.searchParams.get('aoVivo') === '1';
   const notify = url.searchParams.get('notify') === '1';
   const diasJanela = parseFloat(url.searchParams.get('dias') || '7');
+  // Value bets do modelo próprio: comparam a odd da casa contra a nossa própria
+  // previsão estatística (não contra o consenso de outras casas). Tecto mais alto
+  // que os value bets normais (35 vs 25) porque um modelo independente pode
+  // legitimamente discordar mais do mercado do que as casas discordam entre si —
+  // mas continua a existir, para não confiar cegamente num erro de mapeamento
+  // de equipa ou numa estimativa maluca do modelo.
+  const minEdgeModelo = parseFloat(url.searchParams.get('minEdgeModelo') || '5');
+  const maxEdgeModelo = parseFloat(url.searchParams.get('maxEdgeModelo') || '35');
   const casasFiltro = (url.searchParams.get('casas') || '')
     .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
@@ -67,6 +75,13 @@ export async function onRequestGet(context) {
   // são silenciosas: o jogo simplesmente não aparece na lista de previsões.
   const previsoes = await calcularPrevisoes(events);
 
+  // Value bets do modelo próprio: em vez de comparar casas entre si (o que só
+  // encontra valor quando as casas discordam umas das outras), compara cada
+  // odd contra a nossa própria estimativa. Encontra oportunidades que o
+  // método de consenso nunca veria — quando TODAS as casas concordam entre si,
+  // mas o nosso modelo, com dados históricos, discorda de todas ao mesmo tempo.
+  const valueBetsModelo = await calcularValorModelo(events, casasFiltro, minEdgeModelo, maxEdgeModelo, Date.now());
+
   const meta = {
     sport,
     regions,
@@ -80,10 +95,10 @@ export async function onRequestGet(context) {
   };
 
   if (notify && env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
-    await sendTelegramAlert(env, arbitrages, valueBets);
+    await sendTelegramAlert(env, arbitrages, valueBets, valueBetsModelo);
   }
 
-  return json({ meta, arbitrages, valueBets, previsoes });
+  return json({ meta, arbitrages, valueBets, previsoes, valueBetsModelo });
 }
 
 // --- Lógica de deteção ---------------------------------------------------
@@ -240,8 +255,8 @@ function calcularConfianca(valorPct, numCasas, inicioISO, agora, idealPct = 8) {
 
 function round2(n) { return Math.round(n * 100) / 100; }
 
-async function sendTelegramAlert(env, arbitrages, valueBets) {
-  if (arbitrages.length === 0 && valueBets.length === 0) return;
+async function sendTelegramAlert(env, arbitrages, valueBets, valueBetsModelo = []) {
+  if (arbitrages.length === 0 && valueBets.length === 0 && valueBetsModelo.length === 0) return;
 
   const lines = [];
   if (arbitrages.length) {
@@ -255,6 +270,12 @@ async function sendTelegramAlert(env, arbitrages, valueBets) {
     lines.push(`\n*Value bets (${valueBets.length})*`);
     for (const v of valueBets.slice(0, 5)) {
       lines.push(`• ${v.evento} — ${v.resultado} @ ${v.casa}: ${v.odd} (edge ${v.edgePct}%, justa ${v.oddJusta}, confiança: ${v.confiancaLabel} ${v.confianca}/100)`);
+    }
+  }
+  if (valueBetsModelo.length) {
+    lines.push(`\n*Value bets do modelo próprio (${valueBetsModelo.length})*`);
+    for (const v of valueBetsModelo.slice(0, 5)) {
+      lines.push(`• ${v.evento} — ${v.resultado} @ ${v.casa}: ${v.odd} (edge ${v.edgePct}%, odd modelo ${v.oddModelo}, confiança: ${v.confiancaLabel} ${v.confianca}/100)`);
     }
   }
 
@@ -467,25 +488,34 @@ function comentarioEspecialista(casa, fora, pCasa, pEmpate, pFora, expCasa, expF
   return linha;
 }
 
+// Núcleo do modelo, partilhado entre a lista de Previsões e a deteção de value
+// bets do modelo próprio — calcula-se uma vez, usa-se para as duas coisas.
+async function preverJogo(ev){
+  const codigo = codigoFootballData(ev.sport_key, ev.sport_title);
+  if(!codigo) return null;
+
+  const historico = await carregarHistoricoLiga(codigo);
+  if(!historico) return null;
+
+  const kCasa = chaveEquipa(ev.home_team);
+  const kFora = chaveEquipa(ev.away_team);
+  const fCasa = historico.forcas[kCasa];
+  const fFora = historico.forcas[kFora];
+  if(!fCasa || !fFora) return null; // equipa não reconhecida nos dados históricos (nome não bateu certo)
+
+  const expGolosCasa = historico.mediaGolosCasa * fCasa.ataqueCasa * fFora.defesaFora;
+  const expGolosFora = historico.mediaGolosFora * fFora.ataqueFora * fCasa.defesaCasa;
+  const { pCasa, pEmpate, pFora } = probabilidadesResultado(expGolosCasa, expGolosFora);
+  return { pCasa, pEmpate, pFora, expGolosCasa, expGolosFora };
+}
+
 async function calcularPrevisoes(events){
   const previsoes = [];
 
   for(const ev of events){
-    const codigo = codigoFootballData(ev.sport_key, ev.sport_title);
-    if(!codigo) continue;
-
-    const historico = await carregarHistoricoLiga(codigo);
-    if(!historico) continue;
-
-    const kCasa = chaveEquipa(ev.home_team);
-    const kFora = chaveEquipa(ev.away_team);
-    const fCasa = historico.forcas[kCasa];
-    const fFora = historico.forcas[kFora];
-    if(!fCasa || !fFora) continue; // equipa não reconhecida nos dados históricos (nome não bateu certo)
-
-    const expGolosCasa = historico.mediaGolosCasa * fCasa.ataqueCasa * fFora.defesaFora;
-    const expGolosFora = historico.mediaGolosFora * fFora.ataqueFora * fCasa.defesaCasa;
-    const { pCasa, pEmpate, pFora } = probabilidadesResultado(expGolosCasa, expGolosFora);
+    const p = await preverJogo(ev);
+    if(!p) continue;
+    const { pCasa, pEmpate, pFora, expGolosCasa, expGolosFora } = p;
     const favoritoPct = Math.max(pCasa, pEmpate, pFora) * 100;
 
     previsoes.push({
@@ -506,4 +536,60 @@ async function calcularPrevisoes(events){
   // ler rapidamente; jogos muito equilibrados (perto de 33/33/33) ficam no fim.
   previsoes.sort((a, b) => b.favoritoPct - a.favoritoPct);
   return previsoes;
+}
+
+// Value bets do modelo próprio: compara a odd de cada casa contra a NOSSA
+// probabilidade (não contra o consenso de outras casas). Consegue encontrar
+// valor mesmo quando todas as casas concordam entre si — coisa que o método
+// de consenso (analyzeEvents) nunca consegue ver, porque esse precisa de
+// discrepância entre casas para funcionar.
+async function calcularValorModelo(events, casasFiltro, minEdgeModelo, maxEdgeModelo, agora){
+  const valueBetsModelo = [];
+  const passaFiltro = (titulo) =>
+    casasFiltro.length === 0 || casasFiltro.some(f => titulo.toLowerCase().includes(f));
+
+  for(const ev of events){
+    const p = await preverJogo(ev);
+    if(!p) continue;
+
+    const books = (ev.bookmakers || [])
+      .map(bk => ({ title: bk.title, market: (bk.markets || []).find(m => m.key === 'h2h') }))
+      .filter(bk => bk.market && bk.market.outcomes && bk.market.outcomes.length >= 2);
+    if(books.length === 0) continue;
+
+    const probPorResultado = {
+      [ev.home_team]: p.pCasa,
+      [ev.away_team]: p.pFora,
+      Draw: p.pEmpate,
+    };
+
+    for(const bk of books){
+      if(!passaFiltro(bk.title)) continue;
+
+      for(const outcome of bk.market.outcomes){
+        const modelP = probPorResultado[outcome.name];
+        if(!modelP || modelP <= 0) continue;
+
+        const edgePct = (outcome.price * modelP - 1) * 100;
+        if(edgePct >= minEdgeModelo && edgePct <= maxEdgeModelo){
+          const confianca = calcularConfianca(edgePct, books.length, ev.commence_time, agora);
+          valueBetsModelo.push({
+            evento: `${ev.home_team} vs ${ev.away_team}`,
+            desporto: ev.sport_title,
+            inicio: ev.commence_time,
+            resultado: outcome.name,
+            casa: bk.title,
+            odd: outcome.price,
+            oddModelo: round2(1 / modelP),
+            edgePct: round2(edgePct),
+            confianca: confianca.score,
+            confiancaLabel: confianca.label,
+          });
+        }
+      }
+    }
+  }
+
+  valueBetsModelo.sort((a, b) => b.confianca - a.confianca || b.edgePct - a.edgePct);
+  return valueBetsModelo;
 }
