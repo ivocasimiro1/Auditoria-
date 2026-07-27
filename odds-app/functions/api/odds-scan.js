@@ -21,6 +21,10 @@ export async function onRequestGet(context) {
   const regions = url.searchParams.get('regions') || 'eu';
   const minEdge = parseFloat(url.searchParams.get('minEdge') || '3');
   const minArb = parseFloat(url.searchParams.get('minArb') || '0.5');
+  const maxEdge = parseFloat(url.searchParams.get('maxEdge') || '25');
+  const maxArb = parseFloat(url.searchParams.get('maxArb') || '15');
+  const minBooks = parseInt(url.searchParams.get('minBooks') || '3', 10);
+  const incluirAoVivo = url.searchParams.get('aoVivo') === '1';
   const notify = url.searchParams.get('notify') === '1';
   const casasFiltro = (url.searchParams.get('casas') || '')
     .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -41,13 +45,16 @@ export async function onRequestGet(context) {
   }
 
   const events = await resp.json();
-  const { arbitrages, valueBets } = analyzeEvents(events, { minEdge, minArb, casasFiltro });
+  const { arbitrages, valueBets, eventosIgnorados } = analyzeEvents(events, {
+    minEdge, minArb, maxEdge, maxArb, minBooks, casasFiltro, incluirAoVivo,
+  });
 
   const meta = {
     sport,
     regions,
     casasFiltro,
     eventsAnalisados: events.length,
+    eventosIgnorados,
     requestsRestantes: resp.headers.get('x-requests-remaining'),
     requestsUsadas: resp.headers.get('x-requests-used'),
     geradoEm: new Date().toISOString(),
@@ -62,14 +69,25 @@ export async function onRequestGet(context) {
 
 // --- Lógica de deteção ---------------------------------------------------
 
-function analyzeEvents(events, { minEdge, minArb, casasFiltro = [] }) {
+function analyzeEvents(events, { minEdge, minArb, maxEdge, maxArb, minBooks, casasFiltro = [], incluirAoVivo }) {
   const arbitrages = [];
   const valueBets = [];
+  let eventosIgnorados = 0;
 
   const passaFiltro = (titulo) =>
     casasFiltro.length === 0 || casasFiltro.some(f => titulo.toLowerCase().includes(f));
 
+  const agora = Date.now();
+
   for (const ev of events) {
+    // Jogos já começados (ao vivo) têm odds que mudam demasiado depressa — a snapshot da API
+    // fica desatualizada em segundos e gera arbitragens/value bets "fantasma" (odds que já
+    // não existem quando tentas apostar). Por omissão, só consideramos jogos ainda não começados.
+    if (!incluirAoVivo && ev.commence_time && new Date(ev.commence_time).getTime() <= agora) {
+      eventosIgnorados++;
+      continue;
+    }
+
     const books = (ev.bookmakers || [])
       .map(bk => ({ key: bk.key, title: bk.title, market: (bk.markets || []).find(m => m.key === 'h2h') }))
       .filter(bk => bk.market && bk.market.outcomes && bk.market.outcomes.length >= 2);
@@ -105,12 +123,14 @@ function analyzeEvents(events, { minEdge, minArb, casasFiltro = [] }) {
 
     if (booksWithFullMarket < 2) continue;
 
-    // Arbitragem: só entre as casas do filtro (senão a combinação não é realmente jogável)
+    // Arbitragem: só entre as casas do filtro (senão a combinação não é realmente jogável).
+    // Tecto de sanidade (maxArb): lucros muito acima do normal são quase sempre odds erradas/
+    // desatualizadas, não vantagem real — filtramos em vez de mostrar como "grande oportunidade".
     if (outcomeNames.every(n => best[n])) {
       const arbSum = outcomeNames.reduce((s, n) => s + 1 / best[n].price, 0);
       if (arbSum < 1) {
         const arbPct = (1 - arbSum) * 100;
-        if (arbPct >= minArb) {
+        if (arbPct >= minArb && arbPct <= maxArb) {
           arbitrages.push({
             evento: `${ev.home_team} vs ${ev.away_team}`,
             desporto: ev.sport_title,
@@ -127,7 +147,12 @@ function analyzeEvents(events, { minEdge, minArb, casasFiltro = [] }) {
       }
     }
 
-    // Value bets: odd de uma casa (do filtro) vs probabilidade justa de consenso (todas as casas)
+    // Value bets: odd de uma casa (do filtro) vs probabilidade justa de consenso (todas as casas).
+    // Exige pelo menos `minBooks` casas no consenso — com poucas casas (ligas pouco líquidas),
+    // uma única odd mal colocada distorce a "odd justa" e gera edges gigantes e falsos.
+    // Tecto de sanidade (maxEdge): edges muito acima do normal são quase sempre erro de dados.
+    if (booksWithFullMarket < minBooks) continue;
+
     for (const n of outcomeNames) {
       const consensusFairP = fairProbSum[n] / booksWithFullMarket;
       if (!consensusFairP) continue;
@@ -138,7 +163,7 @@ function analyzeEvents(events, { minEdge, minArb, casasFiltro = [] }) {
         const outcome = bk.market.outcomes.find(o => o.name === n);
         if (!outcome) continue;
         const edgePct = (outcome.price * consensusFairP - 1) * 100;
-        if (edgePct >= minEdge) {
+        if (edgePct >= minEdge && edgePct <= maxEdge) {
           valueBets.push({
             evento: `${ev.home_team} vs ${ev.away_team}`,
             desporto: ev.sport_title,
@@ -156,7 +181,7 @@ function analyzeEvents(events, { minEdge, minArb, casasFiltro = [] }) {
 
   arbitrages.sort((a, b) => b.lucroPct - a.lucroPct);
   valueBets.sort((a, b) => b.edgePct - a.edgePct);
-  return { arbitrages, valueBets };
+  return { arbitrages, valueBets, eventosIgnorados };
 }
 
 function round2(n) { return Math.round(n * 100) / 100; }
