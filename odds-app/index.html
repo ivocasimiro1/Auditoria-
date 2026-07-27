@@ -153,6 +153,17 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
   <button class="primary" id="scanBtn" onclick="scan()">Analisar</button>
 </div>
 
+<div class="controls">
+  <div class="field" style="flex:1;min-width:220px;">
+    <label>Scan diário</label>
+    <div style="color:var(--muted);font-size:12px;line-height:1.5;">
+      Corre as 10 principais ligas de futebol do mundo de uma vez (~10 pedidos à API) e junta tudo
+      numa lista só, ordenada por confiança. Usa os mesmos filtros (Edge/Lucro/Casas) de cima.
+    </div>
+  </div>
+  <button class="primary" id="dailyBtn" onclick="scanDiario()">🌍 Scan diário (10 ligas)</button>
+</div>
+
 <div class="meta" id="meta"></div>
 
 <div class="section">
@@ -212,15 +223,43 @@ async function loadSports(){
   }catch(e){ /* fica só com "Próximos jogos" */ }
 }
 
+// 10 principais campeonatos de futebol do mundo (chaves da The Odds API).
+// Confirma/ajusta em /api/odds-sports se alguma liga não devolver dados —
+// a chave exata pode mudar de época para época.
+const LIGAS_PRINCIPAIS = [
+  { key:'soccer_epl',                  nome:'Premier League' },
+  { key:'soccer_spain_la_liga',        nome:'La Liga' },
+  { key:'soccer_italy_serie_a',        nome:'Serie A' },
+  { key:'soccer_germany_bundesliga',   nome:'Bundesliga' },
+  { key:'soccer_france_ligue_one',     nome:'Ligue 1' },
+  { key:'soccer_portugal_primeira_liga', nome:'Primeira Liga' },
+  { key:'soccer_uefa_champs_league',   nome:'Champions League' },
+  { key:'soccer_uefa_europa_league',   nome:'Europa League' },
+  { key:'soccer_brazil_campeonato',    nome:'Brasileirão' },
+  { key:'soccer_usa_mls',              nome:'MLS' },
+];
+
+function buildUrl(sport, regions, minEdge, minArb, casas){
+  let url = `/api/odds-scan?sport=${encodeURIComponent(sport)}&regions=${encodeURIComponent(regions)}&minEdge=${minEdge}&minArb=${minArb}`;
+  if(casas) url += `&casas=${encodeURIComponent(casas)}`;
+  return url;
+}
+
+function lerFiltros(){
+  return {
+    regions: document.getElementById('regions').value,
+    minEdge: document.getElementById('minEdge').value,
+    minArb: document.getElementById('minArb').value,
+    casas: document.getElementById('casas').value.trim(),
+  };
+}
+
 async function scan(){
   const btn = document.getElementById('scanBtn');
   btn.disabled = true; btn.textContent = 'A analisar…';
 
   const sport = document.getElementById('sport').value;
-  const regions = document.getElementById('regions').value;
-  const minEdge = document.getElementById('minEdge').value;
-  const minArb = document.getElementById('minArb').value;
-  const casas = document.getElementById('casas').value.trim();
+  const { regions, minEdge, minArb, casas } = lerFiltros();
 
   const arbList = document.getElementById('arbList');
   const valList = document.getElementById('valList');
@@ -229,8 +268,7 @@ async function scan(){
   document.getElementById('meta').innerHTML = '';
 
   try{
-    let url = `/api/odds-scan?sport=${encodeURIComponent(sport)}&regions=${encodeURIComponent(regions)}&minEdge=${minEdge}&minArb=${minArb}`;
-    if(casas) url += `&casas=${encodeURIComponent(casas)}`;
+    const url = buildUrl(sport, regions, minEdge, minArb, casas);
     const r = await fetch(url);
     const d = await r.json();
 
@@ -239,17 +277,74 @@ async function scan(){
       return;
     }
 
-    document.getElementById('meta').innerHTML =
-      `<span>${d.meta.eventsAnalisados} eventos analisados</span>` +
-      (d.meta.eventosIgnorados ? `<span>${d.meta.eventosIgnorados} ao vivo ignorados</span>` : '') +
-      (d.meta.requestsRestantes !== null ? `<span>${d.meta.requestsRestantes} pedidos restantes na API</span>` : '') +
-      (d.meta.casasFiltro && d.meta.casasFiltro.length ? `<span>Casas: ${d.meta.casasFiltro.join(', ')}</span>` : `<span>Casas: todas</span>`) +
-      `<span>Atualizado às ${new Date(d.meta.geradoEm).toLocaleTimeString('pt-PT')}</span>`;
+    renderResultados(d);
+  }catch(e){
+    arbList.innerHTML = `<div class="error">Erro ao analisar: ${e.message}</div>`;
+  }finally{
+    btn.disabled = false; btn.textContent = 'Analisar';
+  }
+}
 
-    document.getElementById('arbCount').textContent = d.arbitrages.length;
-    document.getElementById('valCount').textContent = d.valueBets.length;
+async function scanDiario(){
+  const btn = document.getElementById('dailyBtn');
+  btn.disabled = true;
 
-    arbList.innerHTML = d.arbitrages.length ? d.arbitrages.map(a => `
+  const { regions, minEdge, minArb, casas } = lerFiltros();
+  const arbList = document.getElementById('arbList');
+  const valList = document.getElementById('valList');
+  valList.innerHTML = '';
+  document.getElementById('meta').innerHTML = '';
+
+  const agregado = { arbitrages: [], valueBets: [], meta: {
+    eventsAnalisados: 0, eventosIgnorados: 0, requestsRestantes: null, casasFiltro: [], geradoEm: new Date().toISOString(),
+  }};
+  const falhas = [];
+
+  for(let i = 0; i < LIGAS_PRINCIPAIS.length; i++){
+    const liga = LIGAS_PRINCIPAIS[i];
+    btn.textContent = `A analisar… (${i+1}/${LIGAS_PRINCIPAIS.length}: ${liga.nome})`;
+    arbList.innerHTML = `<div class="loading">A analisar ${liga.nome}… (${i+1}/${LIGAS_PRINCIPAIS.length})</div>`;
+    try{
+      const r = await fetch(buildUrl(liga.key, regions, minEdge, minArb, casas));
+      const d = await r.json();
+      if(d.error){ falhas.push(liga.nome); continue; }
+      agregado.arbitrages.push(...d.arbitrages);
+      agregado.valueBets.push(...d.valueBets);
+      agregado.meta.eventsAnalisados += d.meta.eventsAnalisados || 0;
+      agregado.meta.eventosIgnorados += d.meta.eventosIgnorados || 0;
+      agregado.meta.requestsRestantes = d.meta.requestsRestantes;
+      agregado.meta.casasFiltro = d.meta.casasFiltro;
+    }catch(e){
+      falhas.push(liga.nome);
+    }
+  }
+
+  agregado.arbitrages.sort((a,b) => b.confianca - a.confianca);
+  agregado.valueBets.sort((a,b) => b.confianca - a.confianca);
+
+  renderResultados(agregado);
+  if(falhas.length){
+    document.getElementById('meta').innerHTML += `<span style="color:var(--red)">Falhou: ${falhas.join(', ')}</span>`;
+  }
+
+  btn.disabled = false; btn.textContent = '🌍 Scan diário (10 ligas)';
+}
+
+function renderResultados(d){
+  const arbList = document.getElementById('arbList');
+  const valList = document.getElementById('valList');
+
+  document.getElementById('meta').innerHTML =
+    `<span>${d.meta.eventsAnalisados} eventos analisados</span>` +
+    (d.meta.eventosIgnorados ? `<span>${d.meta.eventosIgnorados} ao vivo ignorados</span>` : '') +
+    (d.meta.requestsRestantes !== null ? `<span>${d.meta.requestsRestantes} pedidos restantes na API</span>` : '') +
+    (d.meta.casasFiltro && d.meta.casasFiltro.length ? `<span>Casas: ${d.meta.casasFiltro.join(', ')}</span>` : `<span>Casas: todas</span>`) +
+    `<span>Atualizado às ${new Date(d.meta.geradoEm).toLocaleTimeString('pt-PT')}</span>`;
+
+  document.getElementById('arbCount').textContent = d.arbitrages.length;
+  document.getElementById('valCount').textContent = d.valueBets.length;
+
+  arbList.innerHTML = d.arbitrages.length ? d.arbitrages.map(a => `
       <div class="card">
         <div class="card-top">
           <div>
@@ -285,12 +380,6 @@ async function scan(){
         </div>
       </div>
     `).join('') : '<div class="empty">Nenhum value bet encontrado com os filtros atuais.</div>';
-
-  }catch(e){
-    arbList.innerHTML = `<div class="error">Erro ao analisar: ${e.message}</div>`;
-  }finally{
-    btn.disabled = false; btn.textContent = 'Analisar';
-  }
 }
 
 loadSports();
