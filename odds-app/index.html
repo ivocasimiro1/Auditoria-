@@ -208,11 +208,14 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
 <script>
 const fmtDate = iso => new Date(iso).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 
+let SPORTS_CACHE = [];
+
 async function loadSports(){
   try{
     const r = await fetch('/api/odds-sports');
     const d = await r.json();
     if(!d.sports) return;
+    SPORTS_CACHE = d.sports;
     const sel = document.getElementById('sport');
     for(const s of d.sports){
       const opt = document.createElement('option');
@@ -223,21 +226,26 @@ async function loadSports(){
   }catch(e){ /* fica só com "Próximos jogos" */ }
 }
 
-// 10 principais campeonatos de futebol do mundo (chaves da The Odds API).
-// Confirma/ajusta em /api/odds-sports se alguma liga não devolver dados —
-// a chave exata pode mudar de época para época.
+// 10 principais campeonatos de futebol do mundo. Em vez de depender de chaves fixas
+// da The Odds API (podem mudar de época para época), procuramos o desporto certo
+// dinamicamente na lista real devolvida por /api/odds-sports, por título/grupo.
 const LIGAS_PRINCIPAIS = [
-  { key:'soccer_epl',                  nome:'Premier League' },
-  { key:'soccer_spain_la_liga',        nome:'La Liga' },
-  { key:'soccer_italy_serie_a',        nome:'Serie A' },
-  { key:'soccer_germany_bundesliga',   nome:'Bundesliga' },
-  { key:'soccer_france_ligue_one',     nome:'Ligue 1' },
-  { key:'soccer_portugal_primeira_liga', nome:'Primeira Liga' },
-  { key:'soccer_uefa_champs_league',   nome:'Champions League' },
-  { key:'soccer_uefa_europa_league',   nome:'Europa League' },
-  { key:'soccer_brazil_campeonato',    nome:'Brasileirão' },
-  { key:'soccer_usa_mls',              nome:'MLS' },
+  { nome:'Premier League',    busca:['premier league', 'epl'] },
+  { nome:'La Liga',           busca:['la liga', 'spain'] },
+  { nome:'Serie A',           busca:['serie a', 'italy'] },
+  { nome:'Bundesliga',        busca:['bundesliga', 'germany'] },
+  { nome:'Ligue 1',           busca:['ligue 1', 'france'] },
+  { nome:'Primeira Liga',     busca:['primeira liga', 'portugal'] },
+  { nome:'Champions League',  busca:['champions league'] },
+  { nome:'Europa League',     busca:['europa league'] },
+  { nome:'Brasileirão',       busca:['brazil', 'brasileir'] },
+  { nome:'MLS',               busca:['mls', 'major league soccer'] },
 ];
+
+function resolverLiga(liga){
+  const alvo = (s) => (s.title + ' ' + s.group + ' ' + (s.description||'')).toLowerCase();
+  return SPORTS_CACHE.find(s => liga.busca.some(termo => alvo(s).includes(termo)));
+}
 
 function buildUrl(sport, regions, minEdge, minArb, casas){
   let url = `/api/odds-scan?sport=${encodeURIComponent(sport)}&regions=${encodeURIComponent(regions)}&minEdge=${minEdge}&minArb=${minArb}`;
@@ -295,17 +303,26 @@ async function scanDiario(){
   valList.innerHTML = '';
   document.getElementById('meta').innerHTML = '';
 
+  if(SPORTS_CACHE.length === 0){
+    arbList.innerHTML = '<div class="loading">A carregar lista de desportos…</div>';
+    await loadSports();
+  }
+
   const agregado = { arbitrages: [], valueBets: [], meta: {
     eventsAnalisados: 0, eventosIgnorados: 0, requestsRestantes: null, casasFiltro: [], geradoEm: new Date().toISOString(),
   }};
   const falhas = [];
+  const naoEncontradas = [];
 
   for(let i = 0; i < LIGAS_PRINCIPAIS.length; i++){
     const liga = LIGAS_PRINCIPAIS[i];
+    const sportInfo = resolverLiga(liga);
+    if(!sportInfo){ naoEncontradas.push(liga.nome); continue; }
+
     btn.textContent = `A analisar… (${i+1}/${LIGAS_PRINCIPAIS.length}: ${liga.nome})`;
     arbList.innerHTML = `<div class="loading">A analisar ${liga.nome}… (${i+1}/${LIGAS_PRINCIPAIS.length})</div>`;
     try{
-      const r = await fetch(buildUrl(liga.key, regions, minEdge, minArb, casas));
+      const r = await fetch(buildUrl(sportInfo.key, regions, minEdge, minArb, casas));
       const d = await r.json();
       if(d.error){ falhas.push(liga.nome); continue; }
       agregado.arbitrages.push(...d.arbitrages);
@@ -323,6 +340,9 @@ async function scanDiario(){
   agregado.valueBets.sort((a,b) => b.confianca - a.confianca);
 
   renderResultados(agregado);
+  if(naoEncontradas.length){
+    document.getElementById('meta').innerHTML += `<span style="color:var(--yellow)">Fora de época/não encontradas: ${naoEncontradas.join(', ')}</span>`;
+  }
   if(falhas.length){
     document.getElementById('meta').innerHTML += `<span style="color:var(--red)">Falhou: ${falhas.join(', ')}</span>`;
   }
