@@ -139,7 +139,7 @@ function analyzeEvents(events, { minEdge, minArb, maxEdge, maxArb, minBooks, cas
       if (arbSum < 1) {
         const arbPct = (1 - arbSum) * 100;
         if (arbPct >= minArb && arbPct <= maxArb) {
-          const confianca = calcularConfianca(arbPct, booksWithFullMarket, ev.commence_time, agora);
+          const confianca = calcularConfianca(arbPct, booksWithFullMarket, ev.commence_time, agora, 1.5);
           arbitrages.push({
             evento: `${ev.home_team} vs ${ev.away_team}`,
             desporto: ev.sport_title,
@@ -203,11 +203,17 @@ function analyzeEvents(events, { minEdge, minArb, maxEdge, maxArb, minBooks, cas
 //   - Robustez do mercado: quantas casas a API tinha para este evento (mais = dados mais fiáveis)
 //   - Qualidade do valor: penaliza tanto valores marginais como valores extremos (mais suspeitos)
 //   - Proximidade do jogo: jogos mais próximos têm odds mais "assentes"/menos propensas a mudar muito
-function calcularConfianca(valorPct, numCasas, inicioISO, agora) {
+//
+// `idealPct` é o "ponto doce" da qualidade — nem marginal nem suspeito — e MUDA
+// consoante o tipo de valor: arbitragem é tipicamente 0.3-3% (vs. minArb/maxArb
+// de 0.5/15 por omissão), bem mais pequena que value bets (2-25%). Usar o mesmo
+// ponto de referência para os dois subvalorizava sistematicamente arbitragens
+// boas (ex: uma arb de 0.5% com 5 casas ficava "Média" só por a % ser pequena,
+// quando essa % pequena é normal e saudável para arbitragem).
+function calcularConfianca(valorPct, numCasas, inicioISO, agora, idealPct = 8) {
   const scoreRobustez = Math.min(100, numCasas * 20); // 3 casas=60, 5=100
 
-  const idealEdge = 8; // ponto "doce": nem marginal nem suspeito
-  const scoreValor = Math.max(10, 100 - Math.abs(valorPct - idealEdge) * 4);
+  const scoreValor = Math.max(10, 100 - Math.abs(valorPct - idealPct) * 4);
 
   let scoreTempo = 40;
   if (inicioISO) {
