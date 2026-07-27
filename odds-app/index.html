@@ -89,6 +89,14 @@ button.primary:hover:not(:disabled){filter:brightness(1.08);}
 }
 .leg .r{color:var(--muted);}
 
+.explain{
+  color:var(--muted);font-size:12.5px;line-height:1.6;margin-bottom:12px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px 14px;
+}
+.explain b{color:var(--text);}
+.explain code{background:var(--surface2);padding:1px 5px;border-radius:4px;color:var(--accent);}
+
 .empty{color:var(--muted);font-size:13px;padding:20px;text-align:center;background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius-lg);}
 .error{color:var(--red);background:var(--red-dim);border:1px solid var(--red);padding:12px;border-radius:var(--radius);font-size:13px;}
 .loading{color:var(--muted);font-size:13px;padding:20px;text-align:center;}
@@ -144,11 +152,30 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
 
 <div class="section">
   <h2>Arbitragem <span class="badge" id="arbCount">0</span></h2>
+  <div class="explain">
+    <b>O que é:</b> apostar em <b>todos</b> os resultados possíveis do jogo, cada um numa casa diferente,
+    de forma a ganhar dinheiro <b>seja qual for o resultado</b>. Só é possível porque as casas discordam
+    o suficiente entre si sobre as probabilidades.<br>
+    <b>% no topo do card</b> — lucro garantido sobre o total apostado (ex: <code>+0.8%</code> = apostas 100€
+    no total, ganhas 100.80€ sempre, independentemente do resultado).<br>
+    <b>Stake %</b> — que fatia desse total apostar em cada perna, para o lucro ser igual seja qual for o resultado.
+  </div>
   <div id="arbList"></div>
 </div>
 
 <div class="section">
   <h2>Value bets <span class="badge" id="valCount">0</span></h2>
+  <div class="explain">
+    <b>O que é:</b> uma casa está a oferecer uma odd mais alta do que a probabilidade real do evento sugere —
+    não é lucro garantido (podes perder essa aposta), mas é uma vantagem matemática que compensa a longo prazo,
+    ao longo de muitas apostas.<br>
+    <b>Odd oferecida</b> — a odd que a casa (bwin/Betclic, no teu filtro) está a dar.<br>
+    <b>Odd justa (consenso)</b> — a odd que "deveria" ser, calculada pela média de várias casas sem a margem
+    de lucro de cada uma. Quanto mais alta a odd oferecida for <i>face</i> a esta, maior a vantagem.<br>
+    <b>% no topo do card (edge)</b> — vantagem esperada por unidade apostada, a longo prazo
+    (ex: <code>+8%</code> = em média, por cada 100€ apostados em situações destas, esperas ganhar 8€ a mais
+    do que o "justo" — mas em cada aposta individual podes perder na mesma).
+  </div>
   <div id="valList"></div>
 </div>
 
