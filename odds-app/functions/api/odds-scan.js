@@ -131,11 +131,14 @@ function analyzeEvents(events, { minEdge, minArb, maxEdge, maxArb, minBooks, cas
       if (arbSum < 1) {
         const arbPct = (1 - arbSum) * 100;
         if (arbPct >= minArb && arbPct <= maxArb) {
+          const confianca = calcularConfianca(arbPct, booksWithFullMarket, ev.commence_time, agora);
           arbitrages.push({
             evento: `${ev.home_team} vs ${ev.away_team}`,
             desporto: ev.sport_title,
             inicio: ev.commence_time,
             lucroPct: round2(arbPct),
+            confianca: confianca.score,
+            confiancaLabel: confianca.label,
             pernas: outcomeNames.map(n => ({
               resultado: n,
               casa: best[n].bookmaker,
@@ -164,6 +167,7 @@ function analyzeEvents(events, { minEdge, minArb, maxEdge, maxArb, minBooks, cas
         if (!outcome) continue;
         const edgePct = (outcome.price * consensusFairP - 1) * 100;
         if (edgePct >= minEdge && edgePct <= maxEdge) {
+          const confianca = calcularConfianca(edgePct, booksWithFullMarket, ev.commence_time, agora);
           valueBets.push({
             evento: `${ev.home_team} vs ${ev.away_team}`,
             desporto: ev.sport_title,
@@ -173,15 +177,40 @@ function analyzeEvents(events, { minEdge, minArb, maxEdge, maxArb, minBooks, cas
             odd: outcome.price,
             oddJusta: round2(fairOdd),
             edgePct: round2(edgePct),
+            confianca: confianca.score,
+            confiancaLabel: confianca.label,
           });
         }
       }
     }
   }
 
-  arbitrages.sort((a, b) => b.lucroPct - a.lucroPct);
-  valueBets.sort((a, b) => b.edgePct - a.edgePct);
+  arbitrages.sort((a, b) => b.confianca - a.confianca || b.lucroPct - a.lucroPct);
+  valueBets.sort((a, b) => b.confianca - a.confianca || b.edgePct - a.edgePct);
   return { arbitrages, valueBets, eventosIgnorados };
+}
+
+// Score de confiança (0-100): combina três sinais independentes do valor %,
+// para ajudar a decidir rapidamente onde vale a pena olhar primeiro.
+//   - Robustez do mercado: quantas casas a API tinha para este evento (mais = dados mais fiáveis)
+//   - Qualidade do valor: penaliza tanto valores marginais como valores extremos (mais suspeitos)
+//   - Proximidade do jogo: jogos mais próximos têm odds mais "assentes"/menos propensas a mudar muito
+function calcularConfianca(valorPct, numCasas, inicioISO, agora) {
+  const scoreRobustez = Math.min(100, numCasas * 20); // 3 casas=60, 5=100
+
+  const idealEdge = 8; // ponto "doce": nem marginal nem suspeito
+  const scoreValor = Math.max(10, 100 - Math.abs(valorPct - idealEdge) * 4);
+
+  let scoreTempo = 40;
+  if (inicioISO) {
+    const horasAteJogo = (new Date(inicioISO).getTime() - agora) / 3_600_000;
+    if (horasAteJogo <= 48) scoreTempo = 100;
+    else if (horasAteJogo <= 168) scoreTempo = 70;
+  }
+
+  const score = Math.round(scoreRobustez * 0.4 + scoreValor * 0.4 + scoreTempo * 0.2);
+  const label = score >= 75 ? 'Alta' : score >= 50 ? 'Média' : 'Baixa';
+  return { score, label };
 }
 
 function round2(n) { return Math.round(n * 100) / 100; }
@@ -193,14 +222,14 @@ async function sendTelegramAlert(env, arbitrages, valueBets) {
   if (arbitrages.length) {
     lines.push(`*Arbitragem detetada (${arbitrages.length})*`);
     for (const a of arbitrages.slice(0, 5)) {
-      lines.push(`• ${a.evento} — lucro ${a.lucroPct}%`);
+      lines.push(`• ${a.evento} — lucro ${a.lucroPct}% (confiança: ${a.confiancaLabel} ${a.confianca}/100)`);
       for (const p of a.pernas) lines.push(`   ${p.resultado}: ${p.odd} @ ${p.casa} (${p.stakePct}%)`);
     }
   }
   if (valueBets.length) {
     lines.push(`\n*Value bets (${valueBets.length})*`);
     for (const v of valueBets.slice(0, 5)) {
-      lines.push(`• ${v.evento} — ${v.resultado} @ ${v.casa}: ${v.odd} (edge ${v.edgePct}%, justa ${v.oddJusta})`);
+      lines.push(`• ${v.evento} — ${v.resultado} @ ${v.casa}: ${v.odd} (edge ${v.edgePct}%, justa ${v.oddJusta}, confiança: ${v.confiancaLabel} ${v.confianca}/100)`);
     }
   }
 

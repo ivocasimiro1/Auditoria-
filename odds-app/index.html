@@ -78,9 +78,14 @@ button.primary:hover:not(:disabled){filter:brightness(1.08);}
 .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;}
 .card-title{font-weight:600;color:var(--text-bright);}
 .card-sub{color:var(--muted);font-size:12px;margin-top:2px;}
-.pct{font-size:20px;font-weight:700;}
+.pct{font-size:20px;font-weight:700;text-align:right;}
 .pct.arb{color:var(--green);}
 .pct.val{color:var(--accent);}
+
+.conf{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;margin-top:4px;display:inline-block;}
+.conf.Alta{background:var(--green-dim);color:var(--green);}
+.conf.Média{background:var(--yellow-dim);color:var(--yellow);}
+.conf.Baixa{background:var(--red-dim);color:var(--red);}
 
 .legs{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
 .leg{
@@ -148,6 +153,17 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
   <button class="primary" id="scanBtn" onclick="scan()">Analisar</button>
 </div>
 
+<div class="controls">
+  <div class="field" style="flex:1;min-width:220px;">
+    <label>Scan diário</label>
+    <div style="color:var(--muted);font-size:12px;line-height:1.5;">
+      Corre as 10 principais ligas de futebol do mundo de uma vez (~10 pedidos à API) e junta tudo
+      numa lista só, ordenada por confiança. Usa os mesmos filtros (Edge/Lucro/Casas) de cima.
+    </div>
+  </div>
+  <button class="primary" id="dailyBtn" onclick="scanDiario()">🌍 Scan diário (10 ligas)</button>
+</div>
+
 <div class="meta" id="meta"></div>
 
 <div class="section">
@@ -158,7 +174,10 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
     o suficiente entre si sobre as probabilidades.<br>
     <b>% no topo do card</b> — lucro garantido sobre o total apostado (ex: <code>+0.8%</code> = apostas 100€
     no total, ganhas 100.80€ sempre, independentemente do resultado).<br>
-    <b>Stake %</b> — que fatia desse total apostar em cada perna, para o lucro ser igual seja qual for o resultado.
+    <b>Stake %</b> — que fatia desse total apostar em cada perna, para o lucro ser igual seja qual for o resultado.<br>
+    <b>Confiança</b> — combina 3 sinais: quantas casas a API tinha para este jogo (mais = dados mais fiáveis),
+    se o valor está numa faixa "normal" e não suspeita, e se o jogo é em breve (odds mais assentes).
+    Não é garantia — é só uma bússola para saberes onde vale mais a pena olhar primeiro.
   </div>
   <div id="arbList"></div>
 </div>
@@ -174,7 +193,9 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
     de lucro de cada uma. Quanto mais alta a odd oferecida for <i>face</i> a esta, maior a vantagem.<br>
     <b>% no topo do card (edge)</b> — vantagem esperada por unidade apostada, a longo prazo
     (ex: <code>+8%</code> = em média, por cada 100€ apostados em situações destas, esperas ganhar 8€ a mais
-    do que o "justo" — mas em cada aposta individual podes perder na mesma).
+    do que o "justo" — mas em cada aposta individual podes perder na mesma).<br>
+    <b>Confiança</b> — combina quantas casas confirmam a odd justa, se o edge está numa faixa normal
+    (nem marginal nem suspeito) e se o jogo é em breve. Ajuda a priorizar, não é garantia de nada.
   </div>
   <div id="valList"></div>
 </div>
@@ -187,11 +208,14 @@ footer{max-width:1100px;margin:30px auto 0;padding:0 16px;color:var(--muted);fon
 <script>
 const fmtDate = iso => new Date(iso).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
 
+let SPORTS_CACHE = [];
+
 async function loadSports(){
   try{
     const r = await fetch('/api/odds-sports');
     const d = await r.json();
     if(!d.sports) return;
+    SPORTS_CACHE = d.sports;
     const sel = document.getElementById('sport');
     for(const s of d.sports){
       const opt = document.createElement('option');
@@ -202,15 +226,48 @@ async function loadSports(){
   }catch(e){ /* fica só com "Próximos jogos" */ }
 }
 
+// 10 principais campeonatos de futebol do mundo. Em vez de depender de chaves fixas
+// da The Odds API (podem mudar de época para época), procuramos o desporto certo
+// dinamicamente na lista real devolvida por /api/odds-sports, por título/grupo.
+const LIGAS_PRINCIPAIS = [
+  { nome:'Premier League',    busca:['premier league', 'epl'] },
+  { nome:'La Liga',           busca:['la liga', 'spain'] },
+  { nome:'Serie A',           busca:['serie a', 'italy'] },
+  { nome:'Bundesliga',        busca:['bundesliga', 'germany'] },
+  { nome:'Ligue 1',           busca:['ligue 1', 'france'] },
+  { nome:'Primeira Liga',     busca:['primeira liga', 'portugal'] },
+  { nome:'Champions League',  busca:['champions league'] },
+  { nome:'Europa League',     busca:['europa league'] },
+  { nome:'Brasileirão',       busca:['brazil', 'brasileir'] },
+  { nome:'MLS',               busca:['mls', 'major league soccer'] },
+];
+
+function resolverLiga(liga){
+  const alvo = (s) => (s.title + ' ' + s.group + ' ' + (s.description||'')).toLowerCase();
+  return SPORTS_CACHE.find(s => liga.busca.some(termo => alvo(s).includes(termo)));
+}
+
+function buildUrl(sport, regions, minEdge, minArb, casas){
+  let url = `/api/odds-scan?sport=${encodeURIComponent(sport)}&regions=${encodeURIComponent(regions)}&minEdge=${minEdge}&minArb=${minArb}`;
+  if(casas) url += `&casas=${encodeURIComponent(casas)}`;
+  return url;
+}
+
+function lerFiltros(){
+  return {
+    regions: document.getElementById('regions').value,
+    minEdge: document.getElementById('minEdge').value,
+    minArb: document.getElementById('minArb').value,
+    casas: document.getElementById('casas').value.trim(),
+  };
+}
+
 async function scan(){
   const btn = document.getElementById('scanBtn');
   btn.disabled = true; btn.textContent = 'A analisar…';
 
   const sport = document.getElementById('sport').value;
-  const regions = document.getElementById('regions').value;
-  const minEdge = document.getElementById('minEdge').value;
-  const minArb = document.getElementById('minArb').value;
-  const casas = document.getElementById('casas').value.trim();
+  const { regions, minEdge, minArb, casas } = lerFiltros();
 
   const arbList = document.getElementById('arbList');
   const valList = document.getElementById('valList');
@@ -219,8 +276,7 @@ async function scan(){
   document.getElementById('meta').innerHTML = '';
 
   try{
-    let url = `/api/odds-scan?sport=${encodeURIComponent(sport)}&regions=${encodeURIComponent(regions)}&minEdge=${minEdge}&minArb=${minArb}`;
-    if(casas) url += `&casas=${encodeURIComponent(casas)}`;
+    const url = buildUrl(sport, regions, minEdge, minArb, casas);
     const r = await fetch(url);
     const d = await r.json();
 
@@ -229,24 +285,96 @@ async function scan(){
       return;
     }
 
-    document.getElementById('meta').innerHTML =
-      `<span>${d.meta.eventsAnalisados} eventos analisados</span>` +
-      (d.meta.eventosIgnorados ? `<span>${d.meta.eventosIgnorados} ao vivo ignorados</span>` : '') +
-      (d.meta.requestsRestantes !== null ? `<span>${d.meta.requestsRestantes} pedidos restantes na API</span>` : '') +
-      (d.meta.casasFiltro && d.meta.casasFiltro.length ? `<span>Casas: ${d.meta.casasFiltro.join(', ')}</span>` : `<span>Casas: todas</span>`) +
-      `<span>Atualizado às ${new Date(d.meta.geradoEm).toLocaleTimeString('pt-PT')}</span>`;
+    renderResultados(d);
+  }catch(e){
+    arbList.innerHTML = `<div class="error">Erro ao analisar: ${e.message}</div>`;
+  }finally{
+    btn.disabled = false; btn.textContent = 'Analisar';
+  }
+}
 
-    document.getElementById('arbCount').textContent = d.arbitrages.length;
-    document.getElementById('valCount').textContent = d.valueBets.length;
+async function scanDiario(){
+  const btn = document.getElementById('dailyBtn');
+  btn.disabled = true;
 
-    arbList.innerHTML = d.arbitrages.length ? d.arbitrages.map(a => `
+  const { regions, minEdge, minArb, casas } = lerFiltros();
+  const arbList = document.getElementById('arbList');
+  const valList = document.getElementById('valList');
+  valList.innerHTML = '';
+  document.getElementById('meta').innerHTML = '';
+
+  if(SPORTS_CACHE.length === 0){
+    arbList.innerHTML = '<div class="loading">A carregar lista de desportos…</div>';
+    await loadSports();
+  }
+
+  const agregado = { arbitrages: [], valueBets: [], meta: {
+    eventsAnalisados: 0, eventosIgnorados: 0, requestsRestantes: null, casasFiltro: [], geradoEm: new Date().toISOString(),
+  }};
+  const falhas = [];
+  const naoEncontradas = [];
+
+  for(let i = 0; i < LIGAS_PRINCIPAIS.length; i++){
+    const liga = LIGAS_PRINCIPAIS[i];
+    const sportInfo = resolverLiga(liga);
+    if(!sportInfo){ naoEncontradas.push(liga.nome); continue; }
+
+    btn.textContent = `A analisar… (${i+1}/${LIGAS_PRINCIPAIS.length}: ${liga.nome})`;
+    arbList.innerHTML = `<div class="loading">A analisar ${liga.nome}… (${i+1}/${LIGAS_PRINCIPAIS.length})</div>`;
+    try{
+      const r = await fetch(buildUrl(sportInfo.key, regions, minEdge, minArb, casas));
+      const d = await r.json();
+      if(d.error){ falhas.push(liga.nome); continue; }
+      agregado.arbitrages.push(...d.arbitrages);
+      agregado.valueBets.push(...d.valueBets);
+      agregado.meta.eventsAnalisados += d.meta.eventsAnalisados || 0;
+      agregado.meta.eventosIgnorados += d.meta.eventosIgnorados || 0;
+      agregado.meta.requestsRestantes = d.meta.requestsRestantes;
+      agregado.meta.casasFiltro = d.meta.casasFiltro;
+    }catch(e){
+      falhas.push(liga.nome);
+    }
+  }
+
+  agregado.arbitrages.sort((a,b) => b.confianca - a.confianca);
+  agregado.valueBets.sort((a,b) => b.confianca - a.confianca);
+
+  renderResultados(agregado);
+  if(naoEncontradas.length){
+    document.getElementById('meta').innerHTML += `<span style="color:var(--yellow)">Fora de época/não encontradas: ${naoEncontradas.join(', ')}</span>`;
+  }
+  if(falhas.length){
+    document.getElementById('meta').innerHTML += `<span style="color:var(--red)">Falhou: ${falhas.join(', ')}</span>`;
+  }
+
+  btn.disabled = false; btn.textContent = '🌍 Scan diário (10 ligas)';
+}
+
+function renderResultados(d){
+  const arbList = document.getElementById('arbList');
+  const valList = document.getElementById('valList');
+
+  document.getElementById('meta').innerHTML =
+    `<span>${d.meta.eventsAnalisados} eventos analisados</span>` +
+    (d.meta.eventosIgnorados ? `<span>${d.meta.eventosIgnorados} ao vivo ignorados</span>` : '') +
+    (d.meta.requestsRestantes !== null ? `<span>${d.meta.requestsRestantes} pedidos restantes na API</span>` : '') +
+    (d.meta.casasFiltro && d.meta.casasFiltro.length ? `<span>Casas: ${d.meta.casasFiltro.join(', ')}</span>` : `<span>Casas: todas</span>`) +
+    `<span>Atualizado às ${new Date(d.meta.geradoEm).toLocaleTimeString('pt-PT')}</span>`;
+
+  document.getElementById('arbCount').textContent = d.arbitrages.length;
+  document.getElementById('valCount').textContent = d.valueBets.length;
+
+  arbList.innerHTML = d.arbitrages.length ? d.arbitrages.map(a => `
       <div class="card">
         <div class="card-top">
           <div>
             <div class="card-title">${a.evento}</div>
             <div class="card-sub">${a.desporto} · ${fmtDate(a.inicio)}</div>
           </div>
-          <div class="pct arb">+${a.lucroPct}%</div>
+          <div>
+            <div class="pct arb">+${a.lucroPct}%</div>
+            <div class="conf ${a.confiancaLabel}">Confiança ${a.confiancaLabel} · ${a.confianca}/100</div>
+          </div>
         </div>
         <div class="legs">
           ${a.pernas.map(p => `<div class="leg"><span class="r">${p.resultado} @ ${p.casa}</span><span>${p.odd} · stake ${p.stakePct}%</span></div>`).join('')}
@@ -261,7 +389,10 @@ async function scan(){
             <div class="card-title">${v.evento} — ${v.resultado}</div>
             <div class="card-sub">${v.desporto} · ${fmtDate(v.inicio)} · ${v.casa}</div>
           </div>
-          <div class="pct val">+${v.edgePct}%</div>
+          <div>
+            <div class="pct val">+${v.edgePct}%</div>
+            <div class="conf ${v.confiancaLabel}">Confiança ${v.confiancaLabel} · ${v.confianca}/100</div>
+          </div>
         </div>
         <div class="legs">
           <div class="leg"><span class="r">Odd oferecida</span><span>${v.odd}</span></div>
@@ -269,12 +400,6 @@ async function scan(){
         </div>
       </div>
     `).join('') : '<div class="empty">Nenhum value bet encontrado com os filtros atuais.</div>';
-
-  }catch(e){
-    arbList.innerHTML = `<div class="error">Erro ao analisar: ${e.message}</div>`;
-  }finally{
-    btn.disabled = false; btn.textContent = 'Analisar';
-  }
 }
 
 loadSports();
