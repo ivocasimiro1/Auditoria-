@@ -785,12 +785,14 @@ function renderSignup(){
       <div class="field"><label>O teu nome</label><input type="text" id="su-nome" value="${s.nomeResp}" placeholder="Ex: Ivo Casimiro"></div>
       <div class="field"><label>Email</label><input type="email" id="su-email" value="${s.email}" placeholder="tu@negocio.com"></div>
       <div class="field"><label>Password</label><input type="password" id="su-pass" value="${s.password}" placeholder="mínimo 6 caracteres"></div>
+      ${state.err? `<div class="err-box">${state.err}</div>` : ''}
       <button class="btn primary block" onclick="signupStep2()">Continuar →</button>`;
   } else if(s.step===2){
     body = `
       <div class="field"><label>Nome do negócio</label><input type="text" id="su-negocio" value="${s.nomeNegocio}" placeholder="Ex: Bike Rent Lisboa"></div>
       <div class="field"><label>Sector</label><select id="su-sector">${SECTORS.map(x=>`<option value="${x.v}" ${s.sector===x.v?'selected':''}>${x.l}</option>`).join('')}</select></div>
       <div class="field"><label>WhatsApp do negócio</label><input type="tel" id="su-whats" value="${s.whatsapp}" placeholder="351912345678"></div>
+      ${state.err? `<div class="err-box">${state.err}</div>` : ''}
       <div style="display:flex;gap:10px">
         <button class="btn" onclick="s_step(1)">← Voltar</button>
         <button class="btn primary block" onclick="signupStep3()">Continuar →</button>
